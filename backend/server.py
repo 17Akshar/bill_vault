@@ -54,6 +54,7 @@ class Bill(BaseModel):
     user_id: str
     name: str
     amount: float
+    currency: str = "USD"
     due_date: datetime
     category: str
     vendor: Optional[str] = None
@@ -69,6 +70,7 @@ class Bill(BaseModel):
 class BillCreate(BaseModel):
     name: str
     amount: float
+    currency: str = "USD"
     due_date: str
     category: str
     vendor: Optional[str] = None
@@ -81,6 +83,7 @@ class BillCreate(BaseModel):
 class BillUpdate(BaseModel):
     name: Optional[str] = None
     amount: Optional[float] = None
+    currency: Optional[str] = None
     due_date: Optional[str] = None
     category: Optional[str] = None
     vendor: Optional[str] = None
@@ -140,6 +143,7 @@ class UserSettings(BaseModel):
     dark_mode: bool = False
     notifications_enabled: bool = True
     notification_days_before: int = 3
+    default_currency: str = "USD"
     storage_provider: str = "local"  # local, google_drive, onedrive
     updated_at: datetime
 
@@ -147,6 +151,7 @@ class SettingsUpdate(BaseModel):
     dark_mode: Optional[bool] = None
     notifications_enabled: Optional[bool] = None
     notification_days_before: Optional[int] = None
+    default_currency: Optional[str] = None
     storage_provider: Optional[str] = None
 
 # ==================== HELPER FUNCTIONS ====================
@@ -255,6 +260,7 @@ async def register(user_data: UserCreate):
         "dark_mode": False,
         "notifications_enabled": True,
         "notification_days_before": 3,
+        "default_currency": "USD",
         "storage_provider": "local",
         "updated_at": datetime.now(timezone.utc)
     }
