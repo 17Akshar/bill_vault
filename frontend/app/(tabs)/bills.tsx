@@ -16,11 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../utils/api';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { formatCurrency } from '../../utils/currencies';
 
 interface Bill {
   bill_id: string;
   name: string;
   amount: number;
+  currency: string;
   due_date: string;
   category: string;
   vendor?: string;
@@ -175,7 +177,7 @@ export default function BillsScreen() {
           
           <View style={styles.billRight}>
             <Text style={[styles.billAmount, { color: colors.text }]}>
-              ${item.amount.toFixed(2)}
+              {formatCurrency(item.amount, item.currency || 'USD')}
             </Text>
             <Text 
               style={[

@@ -11,6 +11,7 @@ import {
   Alert,
   Switch,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -20,6 +21,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../utils/api';
 import { format } from 'date-fns';
+import { CURRENCIES, getCurrencyByCode } from '../../utils/currencies';
 
 const DEFAULT_CATEGORIES = [
   { name: 'Utilities', color: '#FF6B6B', icon: 'flash' },
@@ -45,6 +47,8 @@ export default function AddBillScreen() {
   
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [category, setCategory] = useState('Utilities');
@@ -91,6 +95,7 @@ export default function AddBillScreen() {
       await api.post('/bills', {
         name,
         amount: amountNum,
+        currency,
         due_date: dueDate.toISOString(),
         category,
         vendor: vendor || null,
@@ -109,6 +114,8 @@ export default function AddBillScreen() {
       setIsLoading(false);
     }
   };
+
+  const selectedCurrency = getCurrencyByCode(currency);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -140,19 +147,33 @@ export default function AddBillScreen() {
             />
           </View>
 
-          {/* Amount */}
+          {/* Amount & Currency */}
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: colors.text }]}>Amount *</Text>
-            <View style={[styles.amountInput, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>$</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: 'transparent', flex: 1, borderWidth: 0 }]}
-                placeholder="0.00"
-                placeholderTextColor={colors.textSecondary}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="decimal-pad"
-              />
+            <View style={styles.amountRow}>
+              <View style={[styles.amountInput, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.currencyButton}
+                  onPress={() => setShowCurrencyModal(true)}
+                >
+                  <Text style={[styles.currencyButtonText, { color: colors.text }]}>
+                    {selectedCurrency.flag} {selectedCurrency.code}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <View style={styles.divider} />
+                <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>
+                  {selectedCurrency.symbol}
+                </Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: 'transparent', flex: 1, borderWidth: 0 }]}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.textSecondary}
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="decimal-pad"
+                />
+              </View>
             </View>
           </View>
 
@@ -314,6 +335,51 @@ export default function AddBillScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={showCurrencyModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCurrencyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Currency</Text>
+              <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.currencyList}>
+              {CURRENCIES.map((curr) => (
+                <TouchableOpacity
+                  key={curr.code}
+                  style={[
+                    styles.currencyItem,
+                    { borderBottomColor: colors.border },
+                    currency === curr.code && { backgroundColor: colors.primary + '20' }
+                  ]}
+                  onPress={() => {
+                    setCurrency(curr.code);
+                    setShowCurrencyModal(false);
+                  }}
+                >
+                  <Text style={styles.currencyFlag}>{curr.flag}</Text>
+                  <View style={styles.currencyInfo}>
+                    <Text style={[styles.currencyCode, { color: colors.text }]}>{curr.code}</Text>
+                    <Text style={[styles.currencyName, { color: colors.textSecondary }]}>{curr.name}</Text>
+                  </View>
+                  <Text style={[styles.currencySymbolDisplay, { color: colors.text }]}>{curr.symbol}</Text>
+                  {currency === curr.code && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -361,18 +427,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
   },
+  amountRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   amountInput: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     height: 52,
     borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderWidth: 1,
   },
-  currencySymbol: {
-    fontSize: 18,
+  currencyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  currencyButtonText: {
+    fontSize: 14,
     fontWeight: '600',
-    marginRight: 8,
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    marginHorizontal: 8,
+  },
+  currencySymbol: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 4,
   },
   dateButton: {
     flexDirection: 'row',
@@ -478,5 +565,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  currencyList: {
+    maxHeight: 500,
+  },
+  currencyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  currencyFlag: {
+    fontSize: 32,
+  },
+  currencyInfo: {
+    flex: 1,
+  },
+  currencyCode: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  currencyName: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  currencySymbolDisplay: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginRight: 8,
   },
 });
