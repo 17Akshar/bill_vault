@@ -173,7 +173,7 @@ def verify_token(token: str):
         logger.error(f"Unexpected error verifying token: {type(e).__name__}: {e}")
         raise HTTPException(status_code=401, detail=f"Token verification failed: {str(e)}")
 
-async def get_current_user(request: Request, authorization: Optional[str] = Header(default=None)):
+async def get_current_user(request: Request):
     """Get current user from session_token cookie or Authorization header"""
     token = None
     
@@ -181,18 +181,16 @@ async def get_current_user(request: Request, authorization: Optional[str] = Head
     token = request.cookies.get("session_token")
     
     # Fallback to Authorization header
-    if not token and authorization:
-        logger.info(f"Authorization header present, length: {len(authorization)}")
-        if authorization.startswith("Bearer "):
-            token = authorization[7:]  # Remove "Bearer " prefix
-        else:
-            token = authorization
+    if not token:
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+        if auth_header:
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:]  # Remove "Bearer " prefix
+            else:
+                token = auth_header
     
     if not token:
-        logger.error("No token found in cookie or Authorization header")
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    logger.info(f"Token to verify - JWT={len(token.split('.')) == 3}, length={len(token)}")
     
     # Check if it's a session token (Google OAuth)
     session_doc = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
