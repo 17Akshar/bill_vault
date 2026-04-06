@@ -36,6 +36,11 @@ class User(BaseModel):
     user_id: str
     email: str
     name: str
+    mobile_number: Optional[str] = None
+    security_question: Optional[str] = None
+    security_answer: Optional[str] = None
+    email_verified: bool = False
+    verification_token: Optional[str] = None
     picture: Optional[str] = None
     created_at: datetime
     use_single_user_mode: bool = False
@@ -44,6 +49,9 @@ class UserCreate(BaseModel):
     email: str
     password: str
     name: str
+    mobile_number: str
+    security_question: str
+    security_answer: str
 
 class UserLogin(BaseModel):
     email: str
