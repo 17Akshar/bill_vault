@@ -12,7 +12,7 @@ export default function Welcome() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)/bills');
+      router.replace('/(tabs)/dashboard');
     }
   }, [isAuthenticated]);
 

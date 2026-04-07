@@ -13,6 +13,13 @@ export default function RootLayout() {
             <Stack.Screen name="auth/login" />
             <Stack.Screen name="auth/register" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="accounts/add" />
+            <Stack.Screen name="transactions/add" />
+            <Stack.Screen name="profile/family" />
+            <Stack.Screen name="profile/categories" />
+            <Stack.Screen name="profile/budgets" />
+            <Stack.Screen name="bills/add" />
+            <Stack.Screen name="bills/[id]" />
           </Stack>
         </AuthProvider>
       </ThemeProvider>

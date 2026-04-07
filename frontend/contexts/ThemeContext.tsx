@@ -32,22 +32,22 @@ const lightColors = {
 };
 
 const darkColors = {
-  primary: '#0A84FF',
-  background: '#000000',
-  card: '#1C1C1E',
+  primary: '#6C5CE7',
+  background: '#0D0D12',
+  card: '#1A1A28',
   text: '#FFFFFF',
-  textSecondary: '#98989D',
-  border: '#38383A',
-  success: '#32D74B',
-  danger: '#FF453A',
-  warning: '#FF9F0A',
+  textSecondary: '#8E8EA0',
+  border: '#2C2C3E',
+  success: '#00E676',
+  danger: '#FF5252',
+  warning: '#FFB300',
   info: '#5E5CE6'
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     loadTheme();

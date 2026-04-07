@@ -37,7 +37,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(email, password);
-      router.replace('/(tabs)/bills');
+      router.replace('/(tabs)/dashboard');
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {
@@ -66,7 +66,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await useSingleUserMode();
-      router.replace('/(tabs)/bills');
+      router.replace('/(tabs)/dashboard');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

@@ -140,8 +140,26 @@ export default function ProfileScreen() {
 
         {/* Actions */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Actions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Management</Text>
           
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => router.push('/profile/family' as any)}
+          >
+            <Ionicons name="people-outline" size={24} color={colors.text} />
+            <Text style={[styles.actionLabel, { color: colors.text }]}>Family Members</Text>
+            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => router.push('/(tabs)/analytics' as any)}
+          >
+            <Ionicons name="stats-chart-outline" size={24} color={colors.text} />
+            <Text style={[styles.actionLabel, { color: colors.text }]}>Analytics</Text>
+            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.actionItem}
             onPress={() => router.push('/profile/categories' as any)}
