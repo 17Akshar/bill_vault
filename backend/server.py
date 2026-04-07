@@ -32,6 +32,9 @@ ALGORITHM = "HS256"
 
 # ==================== MODELS ====================
 
+# Import Indian currency utilities
+from indian_currency import format_indian_currency, inr
+
 class User(BaseModel):
     user_id: str
     email: str
@@ -57,12 +60,113 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+# Family Member Model
+class FamilyMember(BaseModel):
+    family_member_id: str
+    user_id: str
+    name: str
+    role: str  # self, spouse, child, parent
+    is_active: bool = True
+    created_at: datetime
+
+class FamilyMemberCreate(BaseModel):
+    name: str
+    role: str
+
+# Account Model
+class Account(BaseModel):
+    account_id: str
+    user_id: str
+    family_member_id: Optional[str] = None
+    name: str
+    account_type: str  # bank, cash, upi, credit_card
+    balance: float = 0.0
+    account_number: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+class AccountCreate(BaseModel):
+    name: str
+    account_type: str
+    initial_balance: float = 0.0
+    account_number: Optional[str] = None
+    family_member_id: Optional[str] = None
+
+class AccountUpdate(BaseModel):
+    name: Optional[str] = None
+    account_number: Optional[str] = None
+
+# Income Model
+class Income(BaseModel):
+    income_id: str
+    user_id: str
+    family_member_id: Optional[str] = None
+    account_id: str
+    amount: float
+    category: str  # salary, rental, business, other
+    source: str
+    date: datetime
+    notes: Optional[str] = None
+    created_at: datetime
+
+class IncomeCreate(BaseModel):
+    account_id: str
+    amount: float
+    category: str
+    source: str
+    date: str
+    notes: Optional[str] = None
+    family_member_id: Optional[str] = None
+
+class IncomeUpdate(BaseModel):
+    account_id: Optional[str] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    source: Optional[str] = None
+    date: Optional[str] = None
+    notes: Optional[str] = None
+
+# Expense Model
+class Expense(BaseModel):
+    expense_id: str
+    user_id: str
+    family_member_id: Optional[str] = None
+    account_id: str
+    amount: float
+    category: str
+    payment_type: str  # cash, bank, credit_card, upi
+    description: str
+    date: datetime
+    notes: Optional[str] = None
+    created_at: datetime
+
+class ExpenseCreate(BaseModel):
+    account_id: str
+    amount: float
+    category: str
+    payment_type: str
+    description: str
+    date: str
+    notes: Optional[str] = None
+    family_member_id: Optional[str] = None
+
+class ExpenseUpdate(BaseModel):
+    account_id: Optional[str] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    payment_type: Optional[str] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    notes: Optional[str] = None
+
 class Bill(BaseModel):
     bill_id: str
     user_id: str
+    family_member_id: Optional[str] = None
+    account_id: Optional[str] = None
     name: str
     amount: float
-    currency: str = "USD"
+    currency: str = "INR"
     due_date: datetime
     category: str
     vendor: Optional[str] = None
@@ -78,7 +182,7 @@ class Bill(BaseModel):
 class BillCreate(BaseModel):
     name: str
     amount: float
-    currency: str = "USD"
+    currency: str = "INR"
     due_date: str
     category: str
     vendor: Optional[str] = None
@@ -87,6 +191,8 @@ class BillCreate(BaseModel):
     is_recurring: bool = False
     recurrence_type: Optional[str] = None
     recurrence_interval: Optional[int] = 1
+    account_id: Optional[str] = None
+    family_member_id: Optional[str] = None
 
 class BillUpdate(BaseModel):
     name: Optional[str] = None
@@ -101,6 +207,7 @@ class BillUpdate(BaseModel):
     recurrence_type: Optional[str] = None
     recurrence_interval: Optional[int] = None
     payment_status: Optional[str] = None
+    account_id: Optional[str] = None
 
 class Payment(BaseModel):
     payment_id: str
@@ -802,6 +909,670 @@ async def update_settings(settings_data: SettingsUpdate, request: Request, autho
     settings = await db.user_settings.find_one({"user_id": user.user_id}, {"_id": 0})
     return UserSettings(**settings)
 
+# ==================== FAMILY MEMBER ENDPOINTS ====================
+
+@api_router.post("/family-members")
+async def create_family_member(data: FamilyMemberCreate, request: Request):
+    """Create a new family member"""
+    user = await get_current_user(request)
+    
+    member_id = f"fm_{uuid.uuid4().hex[:12]}"
+    member = {
+        "family_member_id": member_id,
+        "user_id": user.user_id,
+        "name": data.name,
+        "role": data.role,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.family_members.insert_one(member)
+    member.pop("_id", None)
+    return member
+
+@api_router.get("/family-members")
+async def get_family_members(request: Request):
+    """Get all family members for user"""
+    user = await get_current_user(request)
+    
+    members = await db.family_members.find(
+        {"user_id": user.user_id}, {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    return members
+
+@api_router.put("/family-members/{member_id}")
+async def update_family_member(member_id: str, data: FamilyMemberCreate, request: Request):
+    """Update a family member"""
+    user = await get_current_user(request)
+    
+    existing = await db.family_members.find_one(
+        {"family_member_id": member_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Family member not found")
+    
+    update_data = {"name": data.name, "role": data.role}
+    await db.family_members.update_one(
+        {"family_member_id": member_id, "user_id": user.user_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.family_members.find_one(
+        {"family_member_id": member_id}, {"_id": 0}
+    )
+    return updated
+
+@api_router.delete("/family-members/{member_id}")
+async def delete_family_member(member_id: str, request: Request):
+    """Delete a family member"""
+    user = await get_current_user(request)
+    
+    result = await db.family_members.delete_one(
+        {"family_member_id": member_id, "user_id": user.user_id}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Family member not found")
+    
+    return {"message": "Family member deleted successfully"}
+
+# ==================== ACCOUNT ENDPOINTS ====================
+
+@api_router.post("/accounts")
+async def create_account(data: AccountCreate, request: Request):
+    """Create a new financial account"""
+    user = await get_current_user(request)
+    
+    # Validate family member if provided
+    if data.family_member_id:
+        fm = await db.family_members.find_one(
+            {"family_member_id": data.family_member_id, "user_id": user.user_id}
+        )
+        if not fm:
+            raise HTTPException(status_code=404, detail="Family member not found")
+    
+    account_id = f"acc_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    account = {
+        "account_id": account_id,
+        "user_id": user.user_id,
+        "family_member_id": data.family_member_id,
+        "name": data.name,
+        "account_type": data.account_type,
+        "balance": data.initial_balance,
+        "account_number": data.account_number,
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.accounts.insert_one(account)
+    account.pop("_id", None)
+    return account
+
+@api_router.get("/accounts")
+async def get_accounts(
+    request: Request,
+    account_type: Optional[str] = None,
+    family_member_id: Optional[str] = None
+):
+    """Get all accounts for user with optional filters"""
+    user = await get_current_user(request)
+    
+    query = {"user_id": user.user_id, "is_active": True}
+    if account_type:
+        query["account_type"] = account_type
+    if family_member_id:
+        query["family_member_id"] = family_member_id
+    
+    accounts = await db.accounts.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
+    return accounts
+
+@api_router.get("/accounts/{account_id}")
+async def get_account(account_id: str, request: Request):
+    """Get a specific account"""
+    user = await get_current_user(request)
+    
+    account = await db.accounts.find_one(
+        {"account_id": account_id, "user_id": user.user_id}, {"_id": 0}
+    )
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return account
+
+@api_router.put("/accounts/{account_id}")
+async def update_account(account_id: str, data: AccountUpdate, request: Request):
+    """Update an account"""
+    user = await get_current_user(request)
+    
+    existing = await db.accounts.find_one(
+        {"account_id": account_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.accounts.update_one(
+        {"account_id": account_id, "user_id": user.user_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.accounts.find_one({"account_id": account_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/accounts/{account_id}")
+async def delete_account(account_id: str, request: Request):
+    """Soft-delete an account (preserves transaction history)"""
+    user = await get_current_user(request)
+    
+    existing = await db.accounts.find_one(
+        {"account_id": account_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    # Soft delete — mark inactive instead of removing
+    await db.accounts.update_one(
+        {"account_id": account_id, "user_id": user.user_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Account deactivated successfully"}
+
+# ==================== INCOME ENDPOINTS ====================
+
+@api_router.post("/income")
+async def create_income(data: IncomeCreate, request: Request):
+    """Create an income entry and update account balance"""
+    user = await get_current_user(request)
+    
+    # Validate account
+    account = await db.accounts.find_one(
+        {"account_id": data.account_id, "user_id": user.user_id, "is_active": True}
+    )
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    # Validate family member if provided
+    if data.family_member_id:
+        fm = await db.family_members.find_one(
+            {"family_member_id": data.family_member_id, "user_id": user.user_id}
+        )
+        if not fm:
+            raise HTTPException(status_code=404, detail="Family member not found")
+    
+    income_id = f"inc_{uuid.uuid4().hex[:12]}"
+    income = {
+        "income_id": income_id,
+        "user_id": user.user_id,
+        "family_member_id": data.family_member_id,
+        "account_id": data.account_id,
+        "amount": data.amount,
+        "category": data.category,
+        "source": data.source,
+        "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
+        "notes": data.notes,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.income.insert_one(income)
+    
+    # Update account balance (+)
+    await db.accounts.update_one(
+        {"account_id": data.account_id},
+        {"$inc": {"balance": data.amount}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    income.pop("_id", None)
+    return income
+
+@api_router.get("/income")
+async def get_income(
+    request: Request,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    category: Optional[str] = None,
+    account_id: Optional[str] = None,
+    family_member_id: Optional[str] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None
+):
+    """Get income entries with advanced filters"""
+    user = await get_current_user(request)
+    
+    query = {"user_id": user.user_id}
+    
+    # Date range filter
+    if start_date and end_date:
+        query["date"] = {
+            "$gte": datetime.fromisoformat(start_date.replace('Z', '+00:00')),
+            "$lte": datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        }
+    elif month and year:
+        start = datetime(year, month, 1, tzinfo=timezone.utc)
+        if month == 12:
+            end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            end = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        query["date"] = {"$gte": start, "$lt": end}
+    
+    if category:
+        query["category"] = category
+    if account_id:
+        query["account_id"] = account_id
+    if family_member_id:
+        query["family_member_id"] = family_member_id
+    
+    incomes = await db.income.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
+    return incomes
+
+@api_router.get("/income/{income_id}")
+async def get_income_single(income_id: str, request: Request):
+    """Get a specific income entry"""
+    user = await get_current_user(request)
+    
+    income = await db.income.find_one(
+        {"income_id": income_id, "user_id": user.user_id}, {"_id": 0}
+    )
+    if not income:
+        raise HTTPException(status_code=404, detail="Income entry not found")
+    return income
+
+@api_router.put("/income/{income_id}")
+async def update_income(income_id: str, data: IncomeUpdate, request: Request):
+    """Update an income entry and adjust account balance"""
+    user = await get_current_user(request)
+    
+    existing = await db.income.find_one(
+        {"income_id": income_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Income entry not found")
+    
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    
+    # Handle amount change → adjust account balance
+    if "amount" in update_data:
+        old_amount = existing["amount"]
+        new_amount = update_data["amount"]
+        diff = new_amount - old_amount
+        
+        account_id = update_data.get("account_id", existing["account_id"])
+        
+        # If account changed, reverse from old, add to new
+        if "account_id" in update_data and update_data["account_id"] != existing["account_id"]:
+            await db.accounts.update_one(
+                {"account_id": existing["account_id"]},
+                {"$inc": {"balance": -old_amount}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+            )
+            await db.accounts.update_one(
+                {"account_id": update_data["account_id"]},
+                {"$inc": {"balance": new_amount}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+            )
+        else:
+            await db.accounts.update_one(
+                {"account_id": existing["account_id"]},
+                {"$inc": {"balance": diff}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+            )
+    elif "account_id" in update_data and update_data["account_id"] != existing["account_id"]:
+        # Account changed but amount didn't
+        await db.accounts.update_one(
+            {"account_id": existing["account_id"]},
+            {"$inc": {"balance": -existing["amount"]}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+        await db.accounts.update_one(
+            {"account_id": update_data["account_id"]},
+            {"$inc": {"balance": existing["amount"]}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    if "date" in update_data:
+        update_data["date"] = datetime.fromisoformat(update_data["date"].replace('Z', '+00:00'))
+    
+    await db.income.update_one(
+        {"income_id": income_id, "user_id": user.user_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.income.find_one({"income_id": income_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/income/{income_id}")
+async def delete_income(income_id: str, request: Request):
+    """Delete an income entry and reverse account balance"""
+    user = await get_current_user(request)
+    
+    existing = await db.income.find_one(
+        {"income_id": income_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Income entry not found")
+    
+    # Reverse the balance change
+    await db.accounts.update_one(
+        {"account_id": existing["account_id"]},
+        {"$inc": {"balance": -existing["amount"]}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await db.income.delete_one({"income_id": income_id, "user_id": user.user_id})
+    return {"message": "Income entry deleted successfully"}
+
+# ==================== EXPENSE ENDPOINTS ====================
+
+@api_router.post("/expenses")
+async def create_expense(data: ExpenseCreate, request: Request):
+    """Create an expense entry and update account balance"""
+    user = await get_current_user(request)
+    
+    # Validate account
+    account = await db.accounts.find_one(
+        {"account_id": data.account_id, "user_id": user.user_id, "is_active": True}
+    )
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    # Validate family member if provided
+    if data.family_member_id:
+        fm = await db.family_members.find_one(
+            {"family_member_id": data.family_member_id, "user_id": user.user_id}
+        )
+        if not fm:
+            raise HTTPException(status_code=404, detail="Family member not found")
+    
+    expense_id = f"exp_{uuid.uuid4().hex[:12]}"
+    expense = {
+        "expense_id": expense_id,
+        "user_id": user.user_id,
+        "family_member_id": data.family_member_id,
+        "account_id": data.account_id,
+        "amount": data.amount,
+        "category": data.category,
+        "payment_type": data.payment_type,
+        "description": data.description,
+        "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
+        "notes": data.notes,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.expenses.insert_one(expense)
+    
+    # Update account balance (-)
+    await db.accounts.update_one(
+        {"account_id": data.account_id},
+        {"$inc": {"balance": -data.amount}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    expense.pop("_id", None)
+    return expense
+
+@api_router.get("/expenses")
+async def get_expenses(
+    request: Request,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    category: Optional[str] = None,
+    account_id: Optional[str] = None,
+    family_member_id: Optional[str] = None,
+    payment_type: Optional[str] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None
+):
+    """Get expense entries with advanced filters"""
+    user = await get_current_user(request)
+    
+    query = {"user_id": user.user_id}
+    
+    # Date range filter
+    if start_date and end_date:
+        query["date"] = {
+            "$gte": datetime.fromisoformat(start_date.replace('Z', '+00:00')),
+            "$lte": datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        }
+    elif month and year:
+        start = datetime(year, month, 1, tzinfo=timezone.utc)
+        if month == 12:
+            end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            end = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        query["date"] = {"$gte": start, "$lt": end}
+    
+    if category:
+        query["category"] = category
+    if account_id:
+        query["account_id"] = account_id
+    if family_member_id:
+        query["family_member_id"] = family_member_id
+    if payment_type:
+        query["payment_type"] = payment_type
+    
+    expenses = await db.expenses.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
+    return expenses
+
+@api_router.get("/expenses/{expense_id}")
+async def get_expense_single(expense_id: str, request: Request):
+    """Get a specific expense entry"""
+    user = await get_current_user(request)
+    
+    expense = await db.expenses.find_one(
+        {"expense_id": expense_id, "user_id": user.user_id}, {"_id": 0}
+    )
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense entry not found")
+    return expense
+
+@api_router.put("/expenses/{expense_id}")
+async def update_expense(expense_id: str, data: ExpenseUpdate, request: Request):
+    """Update an expense entry and adjust account balance"""
+    user = await get_current_user(request)
+    
+    existing = await db.expenses.find_one(
+        {"expense_id": expense_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Expense entry not found")
+    
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    
+    # Handle amount change → adjust account balance
+    if "amount" in update_data:
+        old_amount = existing["amount"]
+        new_amount = update_data["amount"]
+        diff = new_amount - old_amount
+        
+        if "account_id" in update_data and update_data["account_id"] != existing["account_id"]:
+            # Account changed: reverse old, apply new
+            await db.accounts.update_one(
+                {"account_id": existing["account_id"]},
+                {"$inc": {"balance": old_amount}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+            )
+            await db.accounts.update_one(
+                {"account_id": update_data["account_id"]},
+                {"$inc": {"balance": -new_amount}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+            )
+        else:
+            # Same account: adjust by diff (negative because expense)
+            await db.accounts.update_one(
+                {"account_id": existing["account_id"]},
+                {"$inc": {"balance": -diff}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+            )
+    elif "account_id" in update_data and update_data["account_id"] != existing["account_id"]:
+        # Account changed but amount didn't
+        await db.accounts.update_one(
+            {"account_id": existing["account_id"]},
+            {"$inc": {"balance": existing["amount"]}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+        await db.accounts.update_one(
+            {"account_id": update_data["account_id"]},
+            {"$inc": {"balance": -existing["amount"]}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    if "date" in update_data:
+        update_data["date"] = datetime.fromisoformat(update_data["date"].replace('Z', '+00:00'))
+    
+    await db.expenses.update_one(
+        {"expense_id": expense_id, "user_id": user.user_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.expenses.find_one({"expense_id": expense_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/expenses/{expense_id}")
+async def delete_expense(expense_id: str, request: Request):
+    """Delete an expense entry and reverse account balance"""
+    user = await get_current_user(request)
+    
+    existing = await db.expenses.find_one(
+        {"expense_id": expense_id, "user_id": user.user_id}
+    )
+    if not existing:
+        raise HTTPException(status_code=404, detail="Expense entry not found")
+    
+    # Reverse the balance change (add back the expense amount)
+    await db.accounts.update_one(
+        {"account_id": existing["account_id"]},
+        {"$inc": {"balance": existing["amount"]}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    await db.expenses.delete_one({"expense_id": expense_id, "user_id": user.user_id})
+    return {"message": "Expense entry deleted successfully"}
+
+# ==================== DASHBOARD ENDPOINT ====================
+
+@api_router.get("/dashboard")
+async def get_dashboard(request: Request):
+    """Get financial dashboard summary"""
+    user = await get_current_user(request)
+    
+    now = datetime.now(timezone.utc)
+    month_start = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    if now.month == 12:
+        month_end = datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        month_end = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
+    
+    # Total balance across all active accounts
+    accounts = await db.accounts.find(
+        {"user_id": user.user_id, "is_active": True}, {"_id": 0}
+    ).to_list(100)
+    total_balance = sum(a.get("balance", 0) for a in accounts)
+    
+    # Monthly income
+    monthly_incomes = await db.income.find(
+        {"user_id": user.user_id, "date": {"$gte": month_start, "$lt": month_end}},
+        {"_id": 0}
+    ).to_list(1000)
+    total_monthly_income = sum(i["amount"] for i in monthly_incomes)
+    
+    # Monthly expenses
+    monthly_expenses = await db.expenses.find(
+        {"user_id": user.user_id, "date": {"$gte": month_start, "$lt": month_end}},
+        {"_id": 0}
+    ).to_list(1000)
+    total_monthly_expenses = sum(e["amount"] for e in monthly_expenses)
+    
+    # Upcoming bills (unpaid, due within 30 days)
+    upcoming_bills = await db.bills.find(
+        {
+            "user_id": user.user_id,
+            "payment_status": "unpaid",
+            "due_date": {"$gte": now, "$lte": now + timedelta(days=30)}
+        },
+        {"_id": 0}
+    ).sort("due_date", 1).to_list(10)
+    
+    # Overdue bills
+    overdue_bills = await db.bills.find(
+        {
+            "user_id": user.user_id,
+            "payment_status": "unpaid",
+            "due_date": {"$lt": now}
+        },
+        {"_id": 0}
+    ).sort("due_date", 1).to_list(10)
+    
+    # Recent transactions (last 10 combined income + expenses)
+    recent_incomes = await db.income.find(
+        {"user_id": user.user_id}, {"_id": 0}
+    ).sort("date", -1).to_list(10)
+    
+    recent_expenses = await db.expenses.find(
+        {"user_id": user.user_id}, {"_id": 0}
+    ).sort("date", -1).to_list(10)
+    
+    # Merge and sort recent transactions
+    recent_transactions = []
+    for inc in recent_incomes:
+        recent_transactions.append({
+            "type": "income",
+            "id": inc["income_id"],
+            "amount": inc["amount"],
+            "category": inc["category"],
+            "description": inc.get("source", ""),
+            "date": inc["date"],
+            "account_id": inc["account_id"]
+        })
+    for exp in recent_expenses:
+        recent_transactions.append({
+            "type": "expense",
+            "id": exp["expense_id"],
+            "amount": exp["amount"],
+            "category": exp["category"],
+            "description": exp.get("description", ""),
+            "date": exp["date"],
+            "account_id": exp["account_id"]
+        })
+    
+    recent_transactions.sort(key=lambda x: x["date"], reverse=True)
+    recent_transactions = recent_transactions[:10]
+    
+    # Income category breakdown for the month
+    income_by_category = {}
+    for inc in monthly_incomes:
+        cat = inc["category"]
+        income_by_category[cat] = income_by_category.get(cat, 0) + inc["amount"]
+    
+    # Expense category breakdown for the month
+    expense_by_category = {}
+    for exp in monthly_expenses:
+        cat = exp["category"]
+        expense_by_category[cat] = expense_by_category.get(cat, 0) + exp["amount"]
+    
+    # Account-wise summary
+    account_summary = []
+    for acc in accounts:
+        account_summary.append({
+            "account_id": acc["account_id"],
+            "name": acc["name"],
+            "account_type": acc["account_type"],
+            "balance": acc["balance"]
+        })
+    
+    # Family members
+    family_members = await db.family_members.find(
+        {"user_id": user.user_id}, {"_id": 0}
+    ).to_list(50)
+    
+    return {
+        "total_balance": total_balance,
+        "total_balance_formatted": format_indian_currency(total_balance),
+        "monthly_income": total_monthly_income,
+        "monthly_income_formatted": format_indian_currency(total_monthly_income),
+        "monthly_expenses": total_monthly_expenses,
+        "monthly_expenses_formatted": format_indian_currency(total_monthly_expenses),
+        "monthly_savings": total_monthly_income - total_monthly_expenses,
+        "monthly_savings_formatted": format_indian_currency(total_monthly_income - total_monthly_expenses),
+        "accounts": account_summary,
+        "upcoming_bills": upcoming_bills,
+        "overdue_bills": overdue_bills,
+        "recent_transactions": recent_transactions,
+        "income_by_category": [{"category": k, "amount": v} for k, v in income_by_category.items()],
+        "expense_by_category": [{"category": k, "amount": v} for k, v in expense_by_category.items()],
+        "family_members": family_members,
+        "month": now.month,
+        "year": now.year
+    }
+
 # ==================== EXPORT ENDPOINT ====================
 
 @api_router.get("/export")
@@ -818,14 +1589,22 @@ async def export_data(
     payments = await db.payments.find({"user_id": user.user_id}, {"_id": 0}).to_list(10000)
     categories = await db.categories.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
     budgets = await db.budgets.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
+    accounts = await db.accounts.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    incomes = await db.income.find({"user_id": user.user_id}, {"_id": 0}).to_list(10000)
+    expenses = await db.expenses.find({"user_id": user.user_id}, {"_id": 0}).to_list(10000)
+    family_members = await db.family_members.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
     settings = await db.user_settings.find_one({"user_id": user.user_id}, {"_id": 0})
     
     export_data = {
         "user": user.dict(),
+        "accounts": accounts,
+        "income": incomes,
+        "expenses": expenses,
         "bills": bills,
         "payments": payments,
         "categories": categories,
         "budgets": budgets,
+        "family_members": family_members,
         "settings": settings,
         "exported_at": datetime.now(timezone.utc).isoformat()
     }
