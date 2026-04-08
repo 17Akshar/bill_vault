@@ -159,6 +159,81 @@ class ExpenseUpdate(BaseModel):
     date: Optional[str] = None
     notes: Optional[str] = None
 
+# ==================== PHASE 2 MODELS ====================
+
+# Credit Card Model
+class CreditCardCreate(BaseModel):
+    name: str
+    card_number_last4: str = ""
+    credit_limit: float
+    current_outstanding: float = 0.0
+    billing_date: int = 1
+    due_date: int = 15
+    interest_rate: float = 0.0
+    family_member_id: Optional[str] = None
+
+class CreditCardUpdate(BaseModel):
+    name: Optional[str] = None
+    credit_limit: Optional[float] = None
+    current_outstanding: Optional[float] = None
+    billing_date: Optional[int] = None
+    due_date: Optional[int] = None
+    interest_rate: Optional[float] = None
+
+# Loan Model
+class LoanCreate(BaseModel):
+    name: str
+    loan_type: str  # home, car, personal, education, gold, other
+    principal_amount: float
+    outstanding_amount: float
+    interest_rate: float
+    emi_amount: float
+    tenure_months: int
+    start_date: str
+    next_emi_date: Optional[str] = None
+    account_id: Optional[str] = None
+    family_member_id: Optional[str] = None
+    notes: Optional[str] = None
+
+class LoanUpdate(BaseModel):
+    name: Optional[str] = None
+    outstanding_amount: Optional[float] = None
+    emi_amount: Optional[float] = None
+    next_emi_date: Optional[str] = None
+    notes: Optional[str] = None
+
+# Lending (Money Lent / Borrowed) Model
+class LendingCreate(BaseModel):
+    lending_type: str  # lent, borrowed
+    person_name: str
+    amount: float
+    date: str
+    due_date: Optional[str] = None
+    notes: Optional[str] = None
+
+class LendingUpdate(BaseModel):
+    remaining_amount: Optional[float] = None
+    due_date: Optional[str] = None
+    notes: Optional[str] = None
+    is_settled: Optional[bool] = None
+
+# Investment Model
+class InvestmentCreate(BaseModel):
+    name: str
+    investment_type: str  # stocks, mutual_fund, fd, rd, ppf, nps, gold, real_estate, crypto, other
+    invested_amount: float
+    current_value: float
+    purchase_date: str
+    maturity_date: Optional[str] = None
+    family_member_id: Optional[str] = None
+    notes: Optional[str] = None
+
+class InvestmentUpdate(BaseModel):
+    name: Optional[str] = None
+    current_value: Optional[float] = None
+    maturity_date: Optional[str] = None
+    notes: Optional[str] = None
+
 class Bill(BaseModel):
     bill_id: str
     user_id: str
@@ -1436,6 +1511,258 @@ async def delete_expense(expense_id: str, request: Request):
     
     await db.expenses.delete_one({"expense_id": expense_id, "user_id": user.user_id})
     return {"message": "Expense entry deleted successfully"}
+
+# ==================== CREDIT CARD ENDPOINTS ====================
+
+@api_router.post("/credit-cards")
+async def create_credit_card(data: CreditCardCreate, request: Request):
+    user = await get_current_user(request)
+    card_id = f"cc_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    card = {
+        "card_id": card_id, "user_id": user.user_id, "name": data.name,
+        "card_number_last4": data.card_number_last4, "credit_limit": data.credit_limit,
+        "current_outstanding": data.current_outstanding, "billing_date": data.billing_date,
+        "due_date": data.due_date, "interest_rate": data.interest_rate,
+        "family_member_id": data.family_member_id, "is_active": True,
+        "created_at": now, "updated_at": now
+    }
+    await db.credit_cards.insert_one(card)
+    card.pop("_id", None)
+    return card
+
+@api_router.get("/credit-cards")
+async def get_credit_cards(request: Request):
+    user = await get_current_user(request)
+    cards = await db.credit_cards.find(
+        {"user_id": user.user_id, "is_active": True}, {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    return cards
+
+@api_router.put("/credit-cards/{card_id}")
+async def update_credit_card(card_id: str, data: CreditCardUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.credit_cards.find_one({"card_id": card_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Credit card not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.credit_cards.update_one({"card_id": card_id}, {"$set": update_data})
+    updated = await db.credit_cards.find_one({"card_id": card_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/credit-cards/{card_id}")
+async def delete_credit_card(card_id: str, request: Request):
+    user = await get_current_user(request)
+    existing = await db.credit_cards.find_one({"card_id": card_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Credit card not found")
+    await db.credit_cards.update_one({"card_id": card_id}, {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}})
+    return {"message": "Credit card deactivated"}
+
+# ==================== LOAN ENDPOINTS ====================
+
+@api_router.post("/loans")
+async def create_loan(data: LoanCreate, request: Request):
+    user = await get_current_user(request)
+    loan_id = f"loan_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    loan = {
+        "loan_id": loan_id, "user_id": user.user_id, "name": data.name,
+        "loan_type": data.loan_type, "principal_amount": data.principal_amount,
+        "outstanding_amount": data.outstanding_amount, "interest_rate": data.interest_rate,
+        "emi_amount": data.emi_amount, "tenure_months": data.tenure_months,
+        "start_date": datetime.fromisoformat(data.start_date.replace('Z', '+00:00')),
+        "next_emi_date": datetime.fromisoformat(data.next_emi_date.replace('Z', '+00:00')) if data.next_emi_date else None,
+        "account_id": data.account_id, "family_member_id": data.family_member_id,
+        "notes": data.notes, "is_active": True, "created_at": now, "updated_at": now
+    }
+    await db.loans.insert_one(loan)
+    loan.pop("_id", None)
+    return loan
+
+@api_router.get("/loans")
+async def get_loans(request: Request):
+    user = await get_current_user(request)
+    loans = await db.loans.find(
+        {"user_id": user.user_id, "is_active": True}, {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    return loans
+
+@api_router.put("/loans/{loan_id}")
+async def update_loan(loan_id: str, data: LoanUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.loans.find_one({"loan_id": loan_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    if "next_emi_date" in update_data and isinstance(update_data["next_emi_date"], str):
+        update_data["next_emi_date"] = datetime.fromisoformat(update_data["next_emi_date"].replace('Z', '+00:00'))
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.loans.update_one({"loan_id": loan_id}, {"$set": update_data})
+    updated = await db.loans.find_one({"loan_id": loan_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/loans/{loan_id}")
+async def delete_loan(loan_id: str, request: Request):
+    user = await get_current_user(request)
+    existing = await db.loans.find_one({"loan_id": loan_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    await db.loans.update_one({"loan_id": loan_id}, {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}})
+    return {"message": "Loan deactivated"}
+
+# ==================== LENDING (LENT/BORROWED) ENDPOINTS ====================
+
+@api_router.post("/lending")
+async def create_lending(data: LendingCreate, request: Request):
+    user = await get_current_user(request)
+    lending_id = f"lend_{uuid.uuid4().hex[:12]}"
+    lending = {
+        "lending_id": lending_id, "user_id": user.user_id,
+        "lending_type": data.lending_type, "person_name": data.person_name,
+        "amount": data.amount, "remaining_amount": data.amount,
+        "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
+        "due_date": datetime.fromisoformat(data.due_date.replace('Z', '+00:00')) if data.due_date else None,
+        "notes": data.notes, "is_settled": False,
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.lending.insert_one(lending)
+    lending.pop("_id", None)
+    return lending
+
+@api_router.get("/lending")
+async def get_lending(request: Request, lending_type: Optional[str] = None, is_settled: Optional[bool] = None):
+    user = await get_current_user(request)
+    query: Dict = {"user_id": user.user_id}
+    if lending_type:
+        query["lending_type"] = lending_type
+    if is_settled is not None:
+        query["is_settled"] = is_settled
+    records = await db.lending.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
+    return records
+
+@api_router.put("/lending/{lending_id}")
+async def update_lending(lending_id: str, data: LendingUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.lending.find_one({"lending_id": lending_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Lending record not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    if "due_date" in update_data and isinstance(update_data["due_date"], str):
+        update_data["due_date"] = datetime.fromisoformat(update_data["due_date"].replace('Z', '+00:00'))
+    await db.lending.update_one({"lending_id": lending_id}, {"$set": update_data})
+    updated = await db.lending.find_one({"lending_id": lending_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/lending/{lending_id}")
+async def delete_lending(lending_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.lending.delete_one({"lending_id": lending_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lending record not found")
+    return {"message": "Lending record deleted"}
+
+# ==================== INVESTMENT ENDPOINTS ====================
+
+@api_router.post("/investments")
+async def create_investment(data: InvestmentCreate, request: Request):
+    user = await get_current_user(request)
+    inv_id = f"inv_{uuid.uuid4().hex[:12]}"
+    investment = {
+        "investment_id": inv_id, "user_id": user.user_id, "name": data.name,
+        "investment_type": data.investment_type, "invested_amount": data.invested_amount,
+        "current_value": data.current_value,
+        "purchase_date": datetime.fromisoformat(data.purchase_date.replace('Z', '+00:00')),
+        "maturity_date": datetime.fromisoformat(data.maturity_date.replace('Z', '+00:00')) if data.maturity_date else None,
+        "family_member_id": data.family_member_id, "notes": data.notes,
+        "is_active": True, "created_at": datetime.now(timezone.utc)
+    }
+    await db.investments.insert_one(investment)
+    investment.pop("_id", None)
+    return investment
+
+@api_router.get("/investments")
+async def get_investments(request: Request, investment_type: Optional[str] = None):
+    user = await get_current_user(request)
+    query: Dict = {"user_id": user.user_id, "is_active": True}
+    if investment_type:
+        query["investment_type"] = investment_type
+    investments = await db.investments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return investments
+
+@api_router.put("/investments/{inv_id}")
+async def update_investment(inv_id: str, data: InvestmentUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.investments.find_one({"investment_id": inv_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    if "maturity_date" in update_data and isinstance(update_data["maturity_date"], str):
+        update_data["maturity_date"] = datetime.fromisoformat(update_data["maturity_date"].replace('Z', '+00:00'))
+    await db.investments.update_one({"investment_id": inv_id}, {"$set": update_data})
+    updated = await db.investments.find_one({"investment_id": inv_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/investments/{inv_id}")
+async def delete_investment(inv_id: str, request: Request):
+    user = await get_current_user(request)
+    existing = await db.investments.find_one({"investment_id": inv_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Investment not found")
+    await db.investments.update_one({"investment_id": inv_id}, {"$set": {"is_active": False}})
+    return {"message": "Investment removed"}
+
+# ==================== NET WORTH ENDPOINT ====================
+
+@api_router.get("/net-worth")
+async def get_net_worth(request: Request):
+    user = await get_current_user(request)
+    
+    # Assets
+    accounts = await db.accounts.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    total_account_balance = sum(a.get("balance", 0) for a in accounts)
+    
+    investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(1000)
+    total_investment_value = sum(i.get("current_value", 0) for i in investments)
+    total_invested = sum(i.get("invested_amount", 0) for i in investments)
+    
+    lent_records = await db.lending.find({"user_id": user.user_id, "lending_type": "lent", "is_settled": False}, {"_id": 0}).to_list(1000)
+    total_lent = sum(l.get("remaining_amount", 0) for l in lent_records)
+    
+    total_assets = total_account_balance + total_investment_value + total_lent
+    
+    # Liabilities
+    credit_cards = await db.credit_cards.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    total_cc_outstanding = sum(c.get("current_outstanding", 0) for c in credit_cards)
+    
+    loans = await db.loans.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    total_loan_outstanding = sum(l.get("outstanding_amount", 0) for l in loans)
+    
+    borrowed_records = await db.lending.find({"user_id": user.user_id, "lending_type": "borrowed", "is_settled": False}, {"_id": 0}).to_list(1000)
+    total_borrowed = sum(b.get("remaining_amount", 0) for b in borrowed_records)
+    
+    total_liabilities = total_cc_outstanding + total_loan_outstanding + total_borrowed
+    net_worth = total_assets - total_liabilities
+    
+    return {
+        "net_worth": net_worth,
+        "net_worth_formatted": format_indian_currency(net_worth),
+        "total_assets": total_assets,
+        "total_assets_formatted": format_indian_currency(total_assets),
+        "total_liabilities": total_liabilities,
+        "total_liabilities_formatted": format_indian_currency(total_liabilities),
+        "assets": {
+            "accounts": {"total": total_account_balance, "formatted": format_indian_currency(total_account_balance), "items": accounts},
+            "investments": {"total": total_investment_value, "invested": total_invested, "formatted": format_indian_currency(total_investment_value), "items": investments},
+            "money_lent": {"total": total_lent, "formatted": format_indian_currency(total_lent), "items": lent_records},
+        },
+        "liabilities": {
+            "credit_cards": {"total": total_cc_outstanding, "formatted": format_indian_currency(total_cc_outstanding), "items": credit_cards},
+            "loans": {"total": total_loan_outstanding, "formatted": format_indian_currency(total_loan_outstanding), "items": loans},
+            "money_borrowed": {"total": total_borrowed, "formatted": format_indian_currency(total_borrowed), "items": borrowed_records},
+        }
+    }
 
 # ==================== DASHBOARD ENDPOINT ====================
 

@@ -16,7 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../utils/api';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
-import { formatCurrency } from '../../utils/currencies';
+import { formatINR } from '../../utils/formatINR';
+import MonthYearPicker from '../../components/MonthYearPicker';
 
 interface Bill {
   bill_id: string;
@@ -115,14 +116,8 @@ export default function BillsScreen() {
     );
   };
 
-  const changeMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(selectedMonth);
-    if (direction === 'prev') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1);
-    }
-    setSelectedMonth(newDate);
+  const changeMonth = (_direction: 'prev' | 'next') => {
+    // Handled by MonthYearPicker
   };
 
   const totalAmount = bills.reduce((sum, bill) => sum + bill.amount, 0);
@@ -177,7 +172,7 @@ export default function BillsScreen() {
           
           <View style={styles.billRight}>
             <Text style={[styles.billAmount, { color: colors.text }]}>
-              {formatCurrency(item.amount, item.currency || 'USD')}
+              {formatINR(item.amount)}
             </Text>
             <Text 
               style={[
@@ -215,36 +210,26 @@ export default function BillsScreen() {
       </View>
 
       {/* Month Selector */}
-      <View style={[styles.monthSelector, { backgroundColor: colors.card }]}>
-        <TouchableOpacity onPress={() => changeMonth('prev')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.monthText, { color: colors.text }]}>
-          {format(selectedMonth, 'MMMM yyyy')}
-        </Text>
-        <TouchableOpacity onPress={() => changeMonth('next')}>
-          <Ionicons name="chevron-forward" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
+      <MonthYearPicker selectedDate={selectedMonth} onSelect={setSelectedMonth} />
 
       {/* Summary */}
       <View style={[styles.summary, { backgroundColor: colors.card }]}>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total</Text>
           <Text style={[styles.summaryValue, { color: colors.text }]}>
-            ${totalAmount.toFixed(2)}
+            {formatINR(totalAmount)}
           </Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Paid</Text>
           <Text style={[styles.summaryValue, { color: colors.success }]}>
-            ${paidAmount.toFixed(2)}
+            {formatINR(paidAmount)}
           </Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Unpaid</Text>
           <Text style={[styles.summaryValue, { color: colors.danger }]}>
-            ${unpaidAmount.toFixed(2)}
+            {formatINR(unpaidAmount)}
           </Text>
         </View>
       </View>

@@ -17,6 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import { formatINR, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../../utils/formatINR';
 import { format, parseISO } from 'date-fns';
+import MonthYearPicker from '../../components/MonthYearPicker';
 
 type FilterType = 'all' | 'income' | 'expense';
 
@@ -193,17 +194,7 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Month Selector */}
-      <View style={[styles.monthSelector, { backgroundColor: colors.card }]}>
-        <TouchableOpacity onPress={() => changeMonth('prev')} style={styles.monthArrow}>
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.monthText, { color: colors.text }]}>
-          {format(selectedMonth, 'MMMM yyyy')}
-        </Text>
-        <TouchableOpacity onPress={() => changeMonth('next')} style={styles.monthArrow}>
-          <Ionicons name="chevron-forward" size={22} color={colors.text} />
-        </TouchableOpacity>
-      </View>
+      <MonthYearPicker selectedDate={selectedMonth} onSelect={setSelectedMonth} />
 
       {/* Summary */}
       <View style={styles.summaryRow}>
