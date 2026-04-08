@@ -406,20 +406,243 @@ frontend:
         agent: "testing"
         comment: "✅ Profile/More screen working perfectly. All sections present: user info, preferences (dark mode toggle), management links (Family Members, Analytics, Categories, Budgets, Export). Family Members navigation working correctly."
 
+  - task: "Credit Cards CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - POST/GET/PUT/DELETE /api/credit-cards. Fields: name, card_number_last4, credit_limit, current_outstanding, billing_date, due_date, interest_rate, family_member_id."
+      - working: true
+        agent: "testing"
+        comment: "✅ Credit Cards CRUD API working perfectly. All operations tested: CREATE (HDFC Regalia card with 200k limit), READ (list all cards), UPDATE (outstanding amount 15k→20k), DELETE (soft delete/deactivate). All endpoints functional with proper data validation."
+
+  - task: "Loans CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - POST/GET/PUT/DELETE /api/loans. Fields: name, loan_type (home/car/personal/education/gold/other), principal_amount, outstanding_amount, interest_rate, emi_amount, tenure_months, start_date, next_emi_date."
+      - working: true
+        agent: "testing"
+        comment: "✅ Loans CRUD API working perfectly. All operations tested: CREATE (SBI Home Loan 50L principal, 45L outstanding), READ (list all loans), UPDATE (outstanding 45L→44L), DELETE (soft delete/deactivate). Date handling and loan type validation working correctly."
+
+  - task: "Lending CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - POST/GET/PUT/DELETE /api/lending. Types: lent/borrowed. Fields: person_name, amount, date, due_date, notes, remaining_amount, is_settled. Filter by type and settlement status."
+      - working: true
+        agent: "testing"
+        comment: "✅ Lending CRUD API working perfectly. All operations tested: CREATE (lent 50k to Rahul, borrowed 20k from Priya), READ with filters (lending_type=lent, is_settled=false), UPDATE (settle record), DELETE. Filtering by lending type and settlement status working correctly."
+
+  - task: "Investments CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - POST/GET/PUT/DELETE /api/investments. Types: stocks/mutual_fund/fd/rd/ppf/nps/gold/real_estate/crypto/other. Fields: name, invested_amount, current_value, purchase_date, maturity_date."
+      - working: true
+        agent: "testing"
+        comment: "✅ Investments CRUD API working perfectly. All operations tested: CREATE (HDFC Flexicap MF 1L→1.25L, TCS Shares 2L→2.2L), READ with filters (investment_type=stocks), UPDATE (current value 1.25L→1.35L), DELETE (soft delete). Investment type filtering and returns calculation working correctly."
+
+  - task: "Net Worth API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - GET /api/net-worth. Calculates total assets (accounts + investments + money lent) and total liabilities (credit cards + loans + money borrowed). Returns net_worth with formatted values."
+      - working: true
+        agent: "testing"
+        comment: "✅ Net Worth API working perfectly. All required fields present: net_worth, total_assets, total_liabilities with formatted values. Assets breakdown (accounts, investments, money_lent) and liabilities breakdown (credit_cards, loans, money_borrowed) all present with total, formatted, and items arrays. Calculation verified: Net Worth 238.5k = Assets 238.5k - Liabilities 0."
+
+frontend:
+  - task: "Dashboard Screen - Financial Overview"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/dashboard.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Dashboard with gradient balance card, monthly income/expenses/savings summary, quick action buttons, horizontal accounts scroll, recent transactions, overdue bills. Uses Indian Rupee formatting."
+      - working: true
+        agent: "testing"
+        comment: "✅ Dashboard working perfectly. All elements present: greeting text, Total Balance card with gradient, monthly income/expenses summary, quick action buttons (Add Income, Add Expense, Add Account), Recent Transactions section. Indian Rupee formatting working (₹1,03,500.00). Dark theme consistently applied."
+
+  - task: "Dashboard Financial Hub Section"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/(tabs)/dashboard.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - Added Financial Hub section with 5 navigable cards: Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth. Each card routes to its respective Phase 2 screen."
+
+  - task: "Credit Cards Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/credit-cards/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - Full credit cards screen: summary (total limit/outstanding/available), card list with usage progress bar, add modal with 7 fields, delete with confirmation. CRED dark theme."
+
+  - task: "Loans & EMI Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/loans/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - Full loans screen: summary (outstanding/monthly EMI), loan cards with type icons and repayment progress bar, add modal with loan type chips and form fields, delete. CRED dark theme."
+
+  - task: "Lending (Lent/Borrowed) Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/lending/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - Full lending screen: summary (total lent/borrowed), filter tabs (All/Lent/Borrowed), lent/borrowed cards with settle/delete actions, add modal with I Lent/I Borrowed toggle. CRED dark theme."
+
+  - task: "Investments Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/investments/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - Full investments screen: summary (invested/current/returns with percentage), investment cards with type icons and returns calculation, horizontal type selector in add modal. CRED dark theme."
+
+  - task: "Net Worth Screen"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/net-worth/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 2 - Comprehensive net worth view: gradient hero card with total net worth, assets breakdown (accounts/investments/money lent), liabilities breakdown (credit cards/loans/money borrowed). CRED dark theme."
+
+  - task: "Accounts Screen - List and Filter"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/accounts.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Accounts screen working perfectly."
+
+  - task: "Transactions Screen - Income and Expense List"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/transactions.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Transactions screen working perfectly."
+
+  - task: "Tab Navigation - 5 Tabs"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/_layout.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ All 5 tabs functional."
+
+  - task: "Authentication UI - Login and Single User Mode"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/auth/login.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Auth flow working."
+
+  - task: "Dark Theme - CRED Style Premium UI"
+    implemented: true
+    working: true
+    file: "/app/frontend/contexts/ThemeContext.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Dark theme consistently applied."
+
 metadata:
   created_by: "main_agent"
-  version: "3.0"
-  test_sequence: 3
-  run_ui: true
+  version: "5.0"
+  test_sequence: 5
+  run_ui: false
 
 test_plan:
   current_focus: []
   stuck_tasks: []
   test_all: false
-  test_priority: "completed"
+  test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Phase 1 frontend is complete. Please test ALL frontend screens in this flow: 1) App loads with dark theme on login screen, 2) Click 'Get Started' then 'Use Without Account' for single-user login → should redirect to Dashboard, 3) Dashboard: verify balance card, monthly summary, quick actions, accounts section, recent transactions, 4) Click Transactions tab: verify month selector, filter tabs, transaction list, 5) Click Accounts tab: verify total balance, filter chips, account cards, 6) Click + FAB on Accounts to test Add Account form, 7) Click + FAB on Transactions to test Add Transaction form (test both Income and Expense toggle), 8) Click More tab → Profile screen with Family Members link, 9) Tap Family Members → verify add/delete members, 10) Verify all 5 tab bar icons work. The app is at http://localhost:3000. Backend is fully tested and working. Use mobile dimensions (390x844)."
+    message: "Phase 2 backend APIs are implemented and need testing. Please test all 5 Phase 2 backend endpoints: 1) Credit Cards CRUD: POST/GET/PUT/DELETE /api/credit-cards, 2) Loans CRUD: POST/GET/PUT/DELETE /api/loans, 3) Lending CRUD: POST/GET/PUT/DELETE /api/lending with filter by lending_type and is_settled, 4) Investments CRUD: POST/GET/PUT/DELETE /api/investments with filter by investment_type, 5) Net Worth: GET /api/net-worth (calculates assets minus liabilities). First obtain auth token via POST /api/auth/single-user. Backend runs at http://localhost:8001. All endpoints require auth via Bearer token. For dates, use ISO format like '2025-01-15T00:00:00Z'."
   - agent: "testing"
-    message: "✅ COMPREHENSIVE FRONTEND TESTING COMPLETED SUCCESSFULLY! All 10 frontend tasks tested and working perfectly. Key findings: 1) Login flow (single-user mode) working seamlessly, 2) Dashboard showing all elements with proper Indian Rupee formatting (₹1,03,500.00), 3) All 5 tabs (Home/Transactions/Accounts/Bills/More) navigation smooth, 4) Accounts screen with filter chips and existing accounts functional, 5) Add Account form working with type selection and form validation, 6) Add Transaction form with Income/Expense toggle functional, 7) Family Members screen accessible with proper navigation, 8) Dark theme (CRED-style) consistently applied across all screens, 9) Mobile responsive design perfect at 390x844 viewport, 10) Backend integration working (API calls successful). No critical issues found. Ready for production use."
+    message: "✅ Phase 2 backend API testing completed successfully! All 5 API modules tested and working perfectly: 1) Credit Cards CRUD - All operations (CREATE/READ/UPDATE/DELETE) working with proper data validation, 2) Loans CRUD - All operations working with date handling and loan type validation, 3) Lending CRUD - All operations working with filtering by lending_type and is_settled status, 4) Investments CRUD - All operations working with investment type filtering, 5) Net Worth API - Complete calculation working with proper assets/liabilities breakdown and formatted values. Total: 28/28 tests passed (100% success rate). All endpoints properly authenticated and returning correct data structures. Backend Phase 2 implementation is production-ready."

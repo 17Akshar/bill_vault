@@ -172,6 +172,35 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Financial Hub */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Financial Hub</Text>
+          </View>
+          <View style={styles.hubGrid}>
+            {[
+              { route: '/credit-cards', icon: 'card', label: 'Credit Cards', color: '#FF9100', bg: 'rgba(255,145,0,0.12)' },
+              { route: '/loans', icon: 'document-text', label: 'Loans & EMI', color: '#FF5252', bg: 'rgba(255,82,82,0.12)' },
+              { route: '/investments', icon: 'trending-up', label: 'Investments', color: '#00E676', bg: 'rgba(0,230,118,0.12)' },
+              { route: '/lending', icon: 'people', label: 'Lent / Borrowed', color: '#7C4DFF', bg: 'rgba(124,77,255,0.12)' },
+              { route: '/net-worth', icon: 'diamond', label: 'Net Worth', color: '#448AFF', bg: 'rgba(68,138,255,0.12)' },
+            ].map((item) => (
+              <TouchableOpacity
+                key={item.route}
+                style={[styles.hubCard, { backgroundColor: colors.card }]}
+                onPress={() => router.push(item.route as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.hubIcon, { backgroundColor: item.bg }]}>
+                  <Ionicons name={item.icon as any} size={24} color={item.color} />
+                </View>
+                <Text style={[styles.hubLabel, { color: colors.text }]}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* My Accounts */}
         {dashboard?.accounts && dashboard.accounts.length > 0 && (
           <View style={styles.section}>
@@ -466,6 +495,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  hubGrid: {
+    gap: 10,
+  },
+  hubCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    padding: 16,
+  },
+  hubIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  hubLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
   },
   section: {
     marginBottom: 24,
