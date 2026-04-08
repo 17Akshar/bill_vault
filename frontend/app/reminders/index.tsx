@@ -49,6 +49,10 @@ export default function RemindersScreen() {
     recurrence: 'none',
   });
   const [saving, setSaving] = useState(false);
+  const [timeForm, setTimeForm] = useState({ hour: '09', minute: '00' });
+
+  // Date components for manual picker
+  const [dateComponents, setDateComponents] = useState({ day: '', month: '', year: '' });
 
   // Handle deep link params for pre-filled reminders
   useEffect(() => {
@@ -109,7 +113,11 @@ export default function RemindersScreen() {
       await api.post('/reminders', {
         title: form.title.trim(),
         description: form.description.trim() || null,
-        reminder_date: new Date(form.reminder_date).toISOString(),
+        reminder_date: (() => {
+          const d = new Date(form.reminder_date);
+          d.setHours(parseInt(timeForm.hour) || 9, parseInt(timeForm.minute) || 0, 0, 0);
+          return d.toISOString();
+        })(),
         reminder_type: form.reminder_type,
         related_id: form.related_id || null,
         is_recurring: form.recurrence !== 'none',
@@ -325,7 +333,7 @@ export default function RemindersScreen() {
 
               {/* Date Selection */}
               <Text style={[styles.fl, { color: colors.text, marginTop: 12 }]}>Reminder Date</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
                 {getQuickDates().slice(0, 14).map(d => (
                   <TouchableOpacity
                     key={d.date}
@@ -338,11 +346,54 @@ export default function RemindersScreen() {
                 ))}
               </ScrollView>
 
-              {/* Or manual date input */}
-              <View style={[styles.fi, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput style={[styles.ft, { color: colors.text }]} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textSecondary} value={form.reminder_date} onChangeText={v => setForm(p => ({ ...p, reminder_date: v }))} />
+              {/* Manual Date: Day / Month / Year */}
+              <Text style={[styles.fl, { color: colors.text }]}>Or set exact date</Text>
+              <View style={styles.dateRow}>
+                <View style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <TextInput style={[styles.dateFieldText, { color: colors.text }]} placeholder="DD" placeholderTextColor={colors.textSecondary} value={dateComponents.day} onChangeText={v => { const val = v.replace(/[^0-9]/g, '').slice(0, 2); setDateComponents(p => ({ ...p, day: val })); if (val.length === 2 && dateComponents.month && dateComponents.year.length === 4) setForm(p => ({ ...p, reminder_date: `${dateComponents.year}-${dateComponents.month.padStart(2, '0')}-${val.padStart(2, '0')}` })); }} keyboardType="number-pad" maxLength={2} />
+                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Day</Text>
+                </View>
+                <View style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <TextInput style={[styles.dateFieldText, { color: colors.text }]} placeholder="MM" placeholderTextColor={colors.textSecondary} value={dateComponents.month} onChangeText={v => { const val = v.replace(/[^0-9]/g, '').slice(0, 2); setDateComponents(p => ({ ...p, month: val })); if (val.length === 2 && dateComponents.day && dateComponents.year.length === 4) setForm(p => ({ ...p, reminder_date: `${dateComponents.year}-${val.padStart(2, '0')}-${dateComponents.day.padStart(2, '0')}` })); }} keyboardType="number-pad" maxLength={2} />
+                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Month</Text>
+                </View>
+                <View style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.background, flex: 1.5 }]}>
+                  <TextInput style={[styles.dateFieldText, { color: colors.text }]} placeholder="YYYY" placeholderTextColor={colors.textSecondary} value={dateComponents.year} onChangeText={v => { const val = v.replace(/[^0-9]/g, '').slice(0, 4); setDateComponents(p => ({ ...p, year: val })); if (val.length === 4 && dateComponents.day && dateComponents.month) setForm(p => ({ ...p, reminder_date: `${val}-${dateComponents.month.padStart(2, '0')}-${dateComponents.day.padStart(2, '0')}` })); }} keyboardType="number-pad" maxLength={4} />
+                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Year</Text>
+                </View>
               </View>
+
+              {/* Time Selection */}
+              <Text style={[styles.fl, { color: colors.text, marginTop: 12 }]}>Time</Text>
+              <View style={styles.timeRow}>
+                <View style={[styles.timeField, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <TextInput style={[styles.timeFieldText, { color: colors.text }]} placeholder="HH" placeholderTextColor={colors.textSecondary} value={timeForm.hour} onChangeText={v => setTimeForm(p => ({ ...p, hour: v.replace(/[^0-9]/g, '').slice(0, 2) }))} keyboardType="number-pad" maxLength={2} />
+                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Hour</Text>
+                </View>
+                <Text style={[styles.timeSep, { color: colors.text }]}>:</Text>
+                <View style={[styles.timeField, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <TextInput style={[styles.timeFieldText, { color: colors.text }]} placeholder="MM" placeholderTextColor={colors.textSecondary} value={timeForm.minute} onChangeText={v => setTimeForm(p => ({ ...p, minute: v.replace(/[^0-9]/g, '').slice(0, 2) }))} keyboardType="number-pad" maxLength={2} />
+                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Min</Text>
+                </View>
+                <View style={styles.timeQuick}>
+                  {[{ l: '9 AM', h: '09', m: '00' }, { l: '12 PM', h: '12', m: '00' }, { l: '6 PM', h: '18', m: '00' }, { l: '9 PM', h: '21', m: '00' }].map(t => (
+                    <TouchableOpacity key={t.l} style={[styles.timeQuickBtn, { borderColor: colors.border }, timeForm.hour === t.h && timeForm.minute === t.m && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setTimeForm({ hour: t.h, minute: t.m })}>
+                      <Text style={[styles.timeQuickText, { color: timeForm.hour === t.h && timeForm.minute === t.m ? '#FFF' : colors.text }]}>{t.l}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {form.reminder_date ? (
+                <View style={[styles.datePreview, { backgroundColor: colors.background }]}>
+                  <Ionicons name="calendar" size={16} color={colors.primary} />
+                  <Text style={[styles.datePreviewText, { color: colors.text }]}>
+                    {(() => { try { return format(new Date(form.reminder_date), 'EEEE, dd MMMM yyyy'); } catch { return form.reminder_date; } })()}
+                    {' at '}
+                    {timeForm.hour.padStart(2, '0')}:{timeForm.minute.padStart(2, '0')}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Recurrence */}
               <Text style={[styles.fl, { color: colors.text, marginTop: 12 }]}>Repeat</Text>
@@ -414,6 +465,19 @@ const styles = StyleSheet.create({
   dateChip: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, marginRight: 8, minWidth: 56 },
   dateChipDay: { fontSize: 10, marginBottom: 2 },
   dateChipLabel: { fontSize: 12, fontWeight: '600' },
+  dateRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  dateField: { flex: 1, borderWidth: 1, borderRadius: 10, padding: 8, alignItems: 'center' },
+  dateFieldText: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  dateFieldLabel: { fontSize: 9, marginTop: 2 },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
+  timeField: { width: 60, borderWidth: 1, borderRadius: 10, padding: 8, alignItems: 'center' },
+  timeFieldText: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  timeSep: { fontSize: 24, fontWeight: 'bold' },
+  timeQuick: { flexDirection: 'row', gap: 6, marginLeft: 8 },
+  timeQuickBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+  timeQuickText: { fontSize: 10, fontWeight: '600' },
+  datePreview: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, marginBottom: 8 },
+  datePreviewText: { fontSize: 13, fontWeight: '500' },
   recurrenceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   recurrenceChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
   recurrenceText: { fontSize: 12, fontWeight: '500' },

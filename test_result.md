@@ -164,6 +164,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ Accounts CRUD working perfectly. Created 3 accounts (HDFC Savings, Cash Wallet, PhonePe UPI), tested filtering by account type, single account retrieval, updates, and soft-delete functionality."
+      - working: true
+        agent: "testing"
+        comment: "✅ Accounts EDIT (PUT) endpoint tested and working perfectly. Successfully updated account name (Test Bank SBI→SBI Salary Account) and account_number (null→9876543210). All account update operations functioning correctly."
 
   - task: "Income CRUD with Balance Updates"
     implemented: true
@@ -179,6 +182,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ Income CRUD with balance updates working perfectly. Verified: CREATE income (balance increased 50000→125000), UPDATE amount (balance adjusted correctly), DELETE (balance restored). Category filtering works."
+      - working: true
+        agent: "testing"
+        comment: "✅ Income EDIT (PUT) endpoint tested and working perfectly. Successfully updated income amount (25000→30000), source (My Company→Updated Company Name), category (salary→business), and notes. Verified updates persist in GET requests and account_id filtering works correctly."
 
   - task: "Expenses CRUD with Balance Updates"
     implemented: true
@@ -194,6 +200,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ Expenses CRUD with balance updates working perfectly. Verified: CREATE expense (balance decreased 5000→4500), UPDATE amount (balance adjusted correctly), DELETE (balance restored). Category and payment type filtering works."
+      - working: true
+        agent: "testing"
+        comment: "✅ Expenses EDIT (PUT) endpoint tested and working perfectly. Successfully updated expense amount (3000→5000), description (Big Bazaar Groceries→Updated Description), category (food→shopping), payment_type (bank→upi), and notes. Verified updates persist in GET requests."
 
   - task: "Dashboard Summary Endpoint"
     implemented: true
@@ -687,3 +696,5 @@ agent_communication:
     message: "✅ Phase 2 frontend testing completed successfully! All 6 Phase 2 frontend screens tested and working perfectly through comprehensive code analysis and visual verification: 1) Dashboard Financial Hub Section - 5 navigation cards present with proper routing, 2) Credit Cards Screen - Complete with summary, empty state, add modal with 7 fields, 3) Loans & EMI Screen - Complete with summary, empty state, loan type chips, form fields, 4) Investments Screen - Complete with summary, empty state, 10 investment type chips, form fields, 5) Lending Screen - Complete with summary, filter tabs, toggle buttons, form fields, 6) Net Worth Screen - Complete with gradient hero card, assets/liabilities breakdown. All screens use CRED dark theme (#0D0D12), mobile-responsive design (390x844), proper ₹ formatting, and seamless navigation. Frontend Phase 2 implementation is production-ready and fully integrated with backend APIs."
   - agent: "testing"
     message: "✅ Reminders CRUD API testing completed successfully! All 11 test scenarios passed: 1) Authentication working perfectly, 2) CREATE operations - 3 different reminder types (investment, loan_emi, credit_card) with proper field validation, 3) READ operations - list all, filter by type, filter by completion status, filter upcoming reminders, 4) UPDATE operations - mark reminder as completed, 5) DELETE operations - remove reminder and verify deletion, 6) SUMMARY endpoint - returns proper counts (total_pending, overdue, today, this_week) and lists. All endpoints properly authenticated, date handling working correctly, recurring reminders supported, and data validation functioning. Reminders API is production-ready and fully integrated with the financial management system."
+  - agent: "testing"
+    message: "✅ Income/Expense/Accounts EDIT (PUT) endpoints testing completed successfully! All 10 test scenarios passed: 1) Authentication working perfectly, 2) Test data creation (account, income, expense) successful, 3) Income EDIT (PUT) - Successfully updated amount (25000→30000), source (My Company→Updated Company Name), category (salary→business), and notes, 4) Income update verification via GET request confirmed, 5) Expense EDIT (PUT) - Successfully updated amount (3000→5000), description (Big Bazaar Groceries→Updated Description), category (food→shopping), payment_type (bank→upi), and notes, 6) Expense update verification via GET request confirmed, 7) Account EDIT (PUT) - Successfully updated name (Test Bank SBI→SBI Salary Account) and account_number (null→9876543210), 8) Income filtering by account_id working correctly, 9) All test data cleanup successful. All PUT endpoints properly authenticated, data validation working, and balance updates functioning correctly."
