@@ -101,12 +101,22 @@ export default function InvestmentsScreen() {
                   <Text style={[styles.cardName, { color: colors.text }]}>{item.name}</Text>
                   <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>{it.label}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDelete(item)}><Ionicons name="trash-outline" size={18} color={colors.danger} /></TouchableOpacity>
+                <View style={{ width: 18 }} />
               </View>
               <View style={styles.cardBottom}>
                 <View><Text style={[styles.cl, { color: colors.textSecondary }]}>Invested</Text><Text style={[styles.cv, { color: colors.text }]}>{formatINR(item.invested_amount)}</Text></View>
                 <View style={{ alignItems: 'center' }}><Text style={[styles.cl, { color: colors.textSecondary }]}>Current</Text><Text style={[styles.cv, { color: colors.text }]}>{formatINR(item.current_value)}</Text></View>
                 <View style={{ alignItems: 'flex-end' }}><Text style={[styles.cl, { color: colors.textSecondary }]}>Returns</Text><Text style={[styles.cv, { color: ret >= 0 ? '#00E676' : '#FF5252' }]}>{ret >= 0 ? '+' : ''}{retPct.toFixed(1)}%</Text></View>
+              </View>
+              <View style={styles.cardActionsRow}>
+                <TouchableOpacity style={[styles.reminderBtn, { backgroundColor: 'rgba(68,138,255,0.12)' }]} onPress={() => router.push({ pathname: '/reminders', params: { type: 'investment', related_id: item.investment_id, title: `${item.name} Review`, description: `Review investment: ${it.label} - ${item.name}` } } as any)}>
+                  <Ionicons name="notifications-outline" size={14} color="#448AFF" />
+                  <Text style={{ color: '#448AFF', fontSize: 11, fontWeight: '600' }}>Remind</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(item)} style={[styles.reminderBtn, { backgroundColor: 'rgba(255,82,82,0.12)' }]}>
+                  <Ionicons name="trash-outline" size={14} color="#FF5252" />
+                  <Text style={{ color: '#FF5252', fontSize: 11, fontWeight: '600' }}>Delete</Text>
+                </TouchableOpacity>
               </View>
             </View>
           );
@@ -169,6 +179,8 @@ const styles = StyleSheet.create({
   cardName: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
   cardMeta: { fontSize: 12 },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between' },
+  cardActionsRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  reminderBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   cl: { fontSize: 11, marginBottom: 2 },
   cv: { fontSize: 14, fontWeight: 'bold' },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },

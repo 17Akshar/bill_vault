@@ -104,6 +104,9 @@ export default function LendingScreen() {
               </View>
               {item.notes ? <Text style={[styles.notes, { color: colors.textSecondary }]}>{item.notes}</Text> : null}
               <View style={styles.cardActions}>
+                <TouchableOpacity style={[styles.actBtn, { backgroundColor: 'rgba(68,138,255,0.12)' }]} onPress={() => router.push({ pathname: '/reminders', params: { type: 'lending', related_id: item.lending_id, title: `${isLent ? 'Collect from' : 'Pay back'} ${item.person_name}`, description: `${isLent ? 'Money lent to' : 'Money borrowed from'} ${item.person_name}` } } as any)}>
+                  <Ionicons name="notifications-outline" size={16} color="#448AFF" /><Text style={{ color: '#448AFF', fontSize: 12, fontWeight: '600' }}>Remind</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={[styles.actBtn, { backgroundColor: '#00E67620' }]} onPress={() => settle(item)}><Ionicons name="checkmark-circle" size={16} color="#00E676" /><Text style={{ color: '#00E676', fontSize: 12, fontWeight: '600' }}>Settle</Text></TouchableOpacity>
                 <TouchableOpacity style={[styles.actBtn, { backgroundColor: '#FF525220' }]} onPress={() => handleDelete(item)}><Ionicons name="trash" size={16} color="#FF5252" /><Text style={{ color: '#FF5252', fontSize: 12, fontWeight: '600' }}>Delete</Text></TouchableOpacity>
               </View>

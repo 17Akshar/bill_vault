@@ -234,6 +234,24 @@ class InvestmentUpdate(BaseModel):
     maturity_date: Optional[str] = None
     notes: Optional[str] = None
 
+# Reminder Model
+class ReminderCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    reminder_date: str  # ISO date
+    reminder_type: str  # investment, loan_emi, credit_card, lending, bill, custom
+    related_id: Optional[str] = None  # Links to investment_id, loan_id, card_id, lending_id, bill_id
+    is_recurring: bool = False
+    recurrence: Optional[str] = None  # daily, weekly, monthly, yearly
+
+class ReminderUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    reminder_date: Optional[str] = None
+    is_completed: Optional[bool] = None
+    is_recurring: Optional[bool] = None
+    recurrence: Optional[str] = None
+
 class Bill(BaseModel):
     bill_id: str
     user_id: str
@@ -1712,6 +1730,114 @@ async def delete_investment(inv_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Investment not found")
     await db.investments.update_one({"investment_id": inv_id}, {"$set": {"is_active": False}})
     return {"message": "Investment removed"}
+
+# ==================== REMINDERS ENDPOINTS ====================
+
+@api_router.post("/reminders")
+async def create_reminder(data: ReminderCreate, request: Request):
+    user = await get_current_user(request)
+    reminder_id = f"rem_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    reminder = {
+        "reminder_id": reminder_id, "user_id": user.user_id,
+        "title": data.title, "description": data.description,
+        "reminder_date": datetime.fromisoformat(data.reminder_date.replace('Z', '+00:00')),
+        "reminder_type": data.reminder_type,
+        "related_id": data.related_id,
+        "is_recurring": data.is_recurring,
+        "recurrence": data.recurrence,
+        "is_completed": False,
+        "created_at": now, "updated_at": now
+    }
+    await db.reminders.insert_one(reminder)
+    reminder.pop("_id", None)
+    return reminder
+
+@api_router.get("/reminders")
+async def get_reminders(request: Request, reminder_type: Optional[str] = None, is_completed: Optional[bool] = None, upcoming: Optional[bool] = None):
+    user = await get_current_user(request)
+    query: Dict = {"user_id": user.user_id}
+    if reminder_type:
+        query["reminder_type"] = reminder_type
+    if is_completed is not None:
+        query["is_completed"] = is_completed
+    if upcoming:
+        query["reminder_date"] = {"$gte": datetime.now(timezone.utc)}
+        query["is_completed"] = False
+    reminders = await db.reminders.find(query, {"_id": 0}).sort("reminder_date", 1).to_list(1000)
+    # Enrich with related item details
+    for r in reminders:
+        if r.get("related_id"):
+            if r["reminder_type"] == "investment":
+                item = await db.investments.find_one({"investment_id": r["related_id"]}, {"_id": 0, "name": 1, "investment_type": 1, "current_value": 1})
+                r["related_item"] = item
+            elif r["reminder_type"] == "loan_emi":
+                item = await db.loans.find_one({"loan_id": r["related_id"]}, {"_id": 0, "name": 1, "loan_type": 1, "emi_amount": 1})
+                r["related_item"] = item
+            elif r["reminder_type"] == "credit_card":
+                item = await db.credit_cards.find_one({"card_id": r["related_id"]}, {"_id": 0, "name": 1, "current_outstanding": 1})
+                r["related_item"] = item
+            elif r["reminder_type"] == "lending":
+                item = await db.lending.find_one({"lending_id": r["related_id"]}, {"_id": 0, "person_name": 1, "lending_type": 1, "remaining_amount": 1})
+                r["related_item"] = item
+            elif r["reminder_type"] == "bill":
+                item = await db.bills.find_one({"bill_id": r["related_id"]}, {"_id": 0, "name": 1, "amount": 1})
+                r["related_item"] = item
+    return reminders
+
+@api_router.get("/reminders/summary")
+async def get_reminders_summary(request: Request):
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    week_end = today_start + timedelta(days=7)
+    
+    total = await db.reminders.count_documents({"user_id": user.user_id, "is_completed": False})
+    overdue = await db.reminders.count_documents({"user_id": user.user_id, "is_completed": False, "reminder_date": {"$lt": now}})
+    today = await db.reminders.count_documents({"user_id": user.user_id, "is_completed": False, "reminder_date": {"$gte": today_start, "$lt": today_end}})
+    this_week = await db.reminders.count_documents({"user_id": user.user_id, "is_completed": False, "reminder_date": {"$gte": today_start, "$lt": week_end}})
+    
+    upcoming_list = await db.reminders.find(
+        {"user_id": user.user_id, "is_completed": False, "reminder_date": {"$gte": now}},
+        {"_id": 0}
+    ).sort("reminder_date", 1).to_list(5)
+    
+    overdue_list = await db.reminders.find(
+        {"user_id": user.user_id, "is_completed": False, "reminder_date": {"$lt": now}},
+        {"_id": 0}
+    ).sort("reminder_date", -1).to_list(5)
+    
+    return {
+        "total_pending": total,
+        "overdue": overdue,
+        "today": today,
+        "this_week": this_week,
+        "upcoming": upcoming_list,
+        "overdue_list": overdue_list
+    }
+
+@api_router.put("/reminders/{reminder_id}")
+async def update_reminder(reminder_id: str, data: ReminderUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.reminders.find_one({"reminder_id": reminder_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    if "reminder_date" in update_data and isinstance(update_data["reminder_date"], str):
+        update_data["reminder_date"] = datetime.fromisoformat(update_data["reminder_date"].replace('Z', '+00:00'))
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.reminders.update_one({"reminder_id": reminder_id}, {"$set": update_data})
+    updated = await db.reminders.find_one({"reminder_id": reminder_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/reminders/{reminder_id}")
+async def delete_reminder(reminder_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.reminders.delete_one({"reminder_id": reminder_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+    return {"message": "Reminder deleted"}
 
 # ==================== NET WORTH ENDPOINT ====================
 

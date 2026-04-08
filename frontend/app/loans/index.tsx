@@ -98,6 +98,12 @@ export default function LoansScreen() {
               </View>
               <View style={[styles.pBg, { backgroundColor: colors.border }]}><View style={[styles.pFill, { width: `${Math.min(paidPct, 100)}%`, backgroundColor: '#00E676' }]} /></View>
               <Text style={[styles.pText, { color: colors.textSecondary }]}>{paidPct.toFixed(0)}% paid</Text>
+              <View style={styles.cardActionsRow}>
+                <TouchableOpacity style={[styles.reminderBtn, { backgroundColor: 'rgba(68,138,255,0.12)' }]} onPress={() => router.push({ pathname: '/reminders', params: { type: 'loan_emi', related_id: item.loan_id, title: `${item.name} EMI Due`, description: `EMI payment of ${item.emi_amount} for ${item.name}` } } as any)}>
+                  <Ionicons name="notifications-outline" size={14} color="#448AFF" />
+                  <Text style={{ color: '#448AFF', fontSize: 11, fontWeight: '600' }}>Remind</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           );
         }}
@@ -161,6 +167,8 @@ const styles = StyleSheet.create({
   pBg: { height: 6, borderRadius: 3, marginBottom: 4 },
   pFill: { height: 6, borderRadius: 3 },
   pText: { fontSize: 11 },
+  cardActionsRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  reminderBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },

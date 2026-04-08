@@ -25,6 +25,7 @@ export default function RootLayout() {
             <Stack.Screen name="lending/index" />
             <Stack.Screen name="investments/index" />
             <Stack.Screen name="net-worth/index" />
+            <Stack.Screen name="reminders/index" />
           </Stack>
         </AuthProvider>
       </ThemeProvider>

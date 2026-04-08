@@ -94,6 +94,12 @@ export default function CreditCardsScreen() {
                 <View style={[styles.progressFill, { width: `${Math.min(usage, 100)}%`, backgroundColor: usage > 80 ? '#FF5252' : usage > 50 ? '#FFB300' : '#00E676' }]} />
               </View>
               <Text style={[styles.usageText, { color: colors.textSecondary }]}>{usage.toFixed(0)}% used · Due on {item.due_date}th</Text>
+              <View style={styles.cardActionsRow}>
+                <TouchableOpacity style={[styles.reminderBtn, { backgroundColor: 'rgba(68,138,255,0.12)' }]} onPress={() => router.push({ pathname: '/reminders', params: { type: 'credit_card', related_id: item.card_id, title: `${item.name} Payment Due`, description: `Credit card bill payment for ${item.name}` } } as any)}>
+                  <Ionicons name="notifications-outline" size={14} color="#448AFF" />
+                  <Text style={{ color: '#448AFF', fontSize: 11, fontWeight: '600' }}>Remind</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           );
         }}
@@ -148,6 +154,8 @@ const styles = StyleSheet.create({
   progressBg: { height: 6, borderRadius: 3, marginBottom: 6 },
   progressFill: { height: 6, borderRadius: 3 },
   usageText: { fontSize: 11 },
+  cardActionsRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  reminderBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
