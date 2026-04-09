@@ -689,33 +689,101 @@ frontend:
         agent: "testing"
         comment: "✅ Dark theme consistently applied."
 
+  - task: "Reports Hub Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/reports/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Reports & Analytics hub screen with 2 sections: ANALYTICS (Investment Analytics, Cash Flow, Expense Breakdown) and EXPORT DATA (Transactions CSV, Investments CSV, Net Worth CSV). Each card has proper icons, descriptions, and navigation."
+      - working: true
+        agent: "testing"
+        comment: "✅ Reports Hub Screen working perfectly! Both sections present: ANALYTICS section with 3 cards (Investment Analytics - green trending icon, Cash Flow - blue bar-chart icon, Expense Breakdown - red pie-chart icon) and EXPORT DATA section with 3 cards (Transactions CSV - purple, Investments CSV - green, Net Worth CSV - blue). Each analytics card has chevron (>) and each export card has download icon. Navigation working correctly."
+
+  - task: "Investment Analytics Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/reports/investment-analytics.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Investment Analytics screen with hero summary (Invested/Current/Returns/Return %), Portfolio Allocation donut chart with legend, Top/Bottom performers section with CAGR values and rankings."
+      - working: true
+        agent: "testing"
+        comment: "✅ Investment Analytics Screen working perfectly! Hero summary card present with all 4 elements (Invested ₹9,00,000.00, Current ₹9,65,000.00, Returns +₹65,000.00, Return % +7.22%). Portfolio Allocation section with beautiful donut chart showing Mutual Funds (39.5%) and Stocks (60.1%) with proper color coding. Performers section with Top/Bottom toggle tabs (green Top/red Bottom) and performer cards showing rankings #1, #2, #3 with CAGR percentages, returns %, and current values. All data properly formatted with ₹ symbols."
+
+  - task: "Cash Flow Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/reports/cashflow.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Cash Flow screen with hero summary (Total Income/Expense/Savings/Avg Savings Rate), duration selector (3/6/12 months), Income vs Expense bar chart with legend, Monthly Breakdown with progress bars and savings rate chips."
+      - working: true
+        agent: "testing"
+        comment: "✅ Cash Flow Screen working perfectly! Hero summary card showing Total Income ₹50,000.00 (green), Total Expense ₹1,500.00 (red), Total Savings ₹48,500.00, Avg Savings Rate 97%. Duration selector with 3 buttons (3 Months/6 Months/12 Months) with 6 Months highlighted as active. Income vs Expense section with green/red legend dots and SVG bar chart showing monthly data. Monthly Breakdown section with month cards (Nov 2025, Dec 2025) showing Inc/Exp horizontal bars and savings % chips (0% saved). All elements properly styled with CRED dark theme."
+
+  - task: "Expense Breakdown Screen"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/reports/expense-breakdown.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Expense Breakdown screen with Expenses/Income toggle buttons, month selector chips (Jan-Dec), donut chart with category colors and center total, category list with icons, progress bars, amounts and percentages."
+      - working: true
+        agent: "testing"
+        comment: "✅ Expense Breakdown Screen working perfectly! Expenses/Income toggle buttons present with Expenses active by default (red background). Month selector horizontal chips showing 11/12 months (Jan through Dec) with Apr highlighted as active. Beautiful donut chart with red color scheme showing ₹1,500.00 Total Spent in center. Category list showing Food & Dining with icon, progress bar (100%), amount ₹1,500.00 and percentage. Income toggle switch working correctly to switch views. CRED dark theme consistently applied throughout."
+
+  - task: "Dashboard Financial Hub with Reports"
+    implemented: true
+    working: true
+    file: "/app/frontend/app/(tabs)/dashboard.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Added Reports & Analytics card to Financial Hub section with purple bar-chart icon. Total 7 cards: Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders, Reports & Analytics."
+      - working: true
+        agent: "testing"
+        comment: "✅ Dashboard Financial Hub working perfectly! All 7 navigation cards present and functional: Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders, Reports & Analytics. The Reports & Analytics card has the correct purple bar-chart icon (#E040FB) and navigates properly to the reports screen. CRED dark theme consistently applied with proper card styling and hover effects."
+
 metadata:
   created_by: "main_agent"
-  version: "6.0"
-  test_sequence: 6
+  version: "7.0"
+  test_sequence: 7
   run_ui: true
 
 test_plan:
   current_focus:
-    - "Transactions Edit Modal"
-    - "Transactions Account Filter"
-    - "Transactions Category Filter"
-    - "Transactions Action Menu"
-    - "Accounts Edit Modal"
-    - "Accounts Action Menu"
-    - "Reminders Date Time Picker"
-    - "Dashboard Financial Hub with Reminders"
+    - "Reports Hub Screen"
+    - "Investment Analytics Screen"
+    - "Cash Flow Screen"
+    - "Expense Breakdown Screen"
+    - "Dashboard Financial Hub with Reports"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Phase 2 backend APIs are implemented and need testing."
-  - agent: "testing"
-    message: "✅ All 28/28 Phase 2 backend tests passed. Credit Cards, Loans, Lending, Investments, Net Worth APIs all fully functional."
-  - agent: "main"
-    message: "Comprehensive frontend testing needed for edit, filter, and action menu enhancements. App at http://localhost:3000. Use 390x844. Login: Click 'Get Started' → 'Use Without Account'. TEST FLOW: 1) TRANSACTIONS SCREEN: Go to Transactions tab → verify account filter chips (All Accounts, HDFC Bank S..., Cash Wallet) → tap 'HDFC Bank S...' chip to filter → verify only HDFC transactions show → tap 'All Accounts' to reset → tap 'Income' filter tab → verify category filter chips appear (All Categories, Salary, Business, etc.) → tap a specific category → verify filtering works → tap 'Expense' tab → verify expense category filters appear → tap a transaction card (e.g. Groceries) → verify Edit Expense modal opens with amount, description, category chips, payment type chips, notes, and Save Changes button → close modal → long press a transaction → verify Action Menu appears with Edit, Rename, Cut, Delete options → close action menu. 2) ACCOUNTS SCREEN: Go to Accounts tab → tap an account card (e.g. HDFC Bank Savings) → verify Edit Account modal opens with Account Type display, Account Name input, Account Number input, Current Balance display (read-only), Save Changes button → close modal → long press an account → verify Action Menu appears with Edit Account, Rename, Delete options. 3) DASHBOARD: Go to Home tab → scroll down → verify Financial Hub has 6 cards (Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders) → tap Reminders card → verify Reminders screen loads. 4) REMINDERS: On Reminders screen → tap + to add → verify New Reminder modal has: type chips, title, description, quick date chips, manual date DD/MM/YYYY fields, time picker (HH:MM) with quick presets (9AM/12PM/6PM/9PM), date preview line, recurrence options, Set Reminder button. 5) INVESTMENTS with Remind: From Dashboard → tap Investments → verify investment cards have 'Remind' and 'Delete' buttons. 6) CREDIT CARDS with Remind: tap Credit Cards → verify cards have 'Remind' button. 7) LOANS with Remind: tap Loans → verify cards have 'Remind' button. All screens must have dark CRED-style theme."
+    message: "Phase 3 frontend testing needed. App at http://localhost:3000. Use 390x844. Login: Click 'Get Started' → 'Use Without Account'. TEST FLOW: 1) DASHBOARD FINANCIAL HUB: Scroll down on dashboard → verify 7 cards in Financial Hub: Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders, Reports & Analytics (purple icon). 2) REPORTS HUB: Tap 'Reports & Analytics' → verify Reports screen loads with 2 sections: ANALYTICS (Investment Analytics, Cash Flow, Expense Breakdown) and EXPORT DATA (Transactions CSV, Investments CSV, Net Worth CSV). Each card has icon, title, description, and chevron/download icon. 3) INVESTMENT ANALYTICS: Tap 'Investment Analytics' → verify: Hero summary card (Invested/Current/Returns/Return %), Portfolio Allocation section with donut chart (SVG rendered circle segments with colors), legend items showing investment types with percentages and returns, Performers section with Top/Bottom toggle tabs, performer cards ranked #1, #2, etc. with CAGR values. 4) CASH FLOW: Go back to Reports → tap 'Cash Flow' → verify: Hero summary (Total Income/Expense/Savings/Avg Savings Rate), Duration selector buttons (3 Months/6 Months/12 Months - 6 Months should be active), Income vs Expense section with green/red legend and SVG bar chart, Monthly Breakdown section with month cards showing Inc/Exp progress bars and savings rate chips. 5) EXPENSE BREAKDOWN: Go back to Reports → tap 'Expense Breakdown' → verify: Expenses/Income toggle (Expenses active by default with red color), Month selector chips (Jan-Dec, current month active), Donut chart with category colors and center total amount, Category list below with icons, progress bars, amounts and percentages. Tap 'Income' toggle → verify it switches to income view with green color. All screens must have CRED dark theme (#0D0D12 background)."
   - agent: "testing"
     message: "✅ Phase 2 backend API testing completed successfully! All 5 API modules tested and working perfectly: 1) Credit Cards CRUD - All operations (CREATE/READ/UPDATE/DELETE) working with proper data validation, 2) Loans CRUD - All operations working with date handling and loan type validation, 3) Lending CRUD - All operations working with filtering by lending_type and is_settled status, 4) Investments CRUD - All operations working with investment type filtering, 5) Net Worth API - Complete calculation working with proper assets/liabilities breakdown and formatted values. Total: 28/28 tests passed (100% success rate). All endpoints properly authenticated and returning correct data structures. Backend Phase 2 implementation is production-ready."
   - agent: "testing"
@@ -726,3 +794,5 @@ agent_communication:
     message: "✅ Income/Expense/Accounts EDIT (PUT) endpoints testing completed successfully! All 10 test scenarios passed: 1) Authentication working perfectly, 2) Test data creation (account, income, expense) successful, 3) Income EDIT (PUT) - Successfully updated amount (25000→30000), source (My Company→Updated Company Name), category (salary→business), and notes, 4) Income update verification via GET request confirmed, 5) Expense EDIT (PUT) - Successfully updated amount (3000→5000), description (Big Bazaar Groceries→Updated Description), category (food→shopping), payment_type (bank→upi), and notes, 6) Expense update verification via GET request confirmed, 7) Account EDIT (PUT) - Successfully updated name (Test Bank SBI→SBI Salary Account) and account_number (null→9876543210), 8) Income filtering by account_id working correctly, 9) All test data cleanup successful. All PUT endpoints properly authenticated, data validation working, and balance updates functioning correctly."
   - agent: "testing"
     message: "✅ Phase 3 Analytics and Export APIs testing completed successfully! All 7 test scenarios passed with 100% success rate: 1) Investment Analytics - Portfolio allocation by type with percentages, CAGR calculations, top/bottom performers sorted by returns%, summary with total invested/current/returns, 2) Cashflow Analytics - 6 months trend data with income/expense/savings/savings_rate for each month, summary totals, 3) Expense Breakdown - Category-wise breakdown for April 2026 with food/transport categories, amounts and percentages, 4) Income Breakdown - Source-wise breakdown with salary category, amounts and percentages, 5) Transactions CSV Export - Proper headers and test data (groceries, fuel, company income), 6) Investments CSV Export - Complete investment data with HDFC Flexicap and TCS Shares, returns calculations, 7) Net Worth CSV Export - Assets/liabilities breakdown with proper categorization. Fixed timezone issue in CAGR calculation. All endpoints properly authenticated and returning correct data structures. Phase 3 implementation is production-ready."
+  - agent: "testing"
+    message: "✅ Phase 3 Frontend Testing COMPLETED SUCCESSFULLY! Comprehensive testing of all 5 Phase 3 frontend screens at mobile viewport 390x844: 1) DASHBOARD FINANCIAL HUB: All 7 navigation cards present (Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders, Reports & Analytics with purple bar-chart icon), 2) REPORTS HUB SCREEN: Both sections working - ANALYTICS (3 cards with proper icons and chevrons) and EXPORT DATA (3 cards with download icons), 3) INVESTMENT ANALYTICS: Hero summary with 4 elements (₹9L invested, ₹9.65L current, +₹65K returns, +7.22%), Portfolio Allocation donut chart with legend, Performers section with Top/Bottom tabs and ranked cards, 4) CASH FLOW: Hero summary (₹50K income, ₹1.5K expense, ₹48.5K savings, 97% rate), Duration selector (3/6/12 months), Income vs Expense bar chart, Monthly Breakdown with progress bars, 5) EXPENSE BREAKDOWN: Expenses/Income toggle (red/green), Month selector chips (11/12 visible), Donut chart (₹1,500 total), Category list with Food & Dining. All screens use CRED dark theme (#0D0D12), proper ₹ formatting, mobile-responsive design, and seamless navigation. Phase 3 frontend is production-ready!"
