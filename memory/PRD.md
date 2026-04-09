@@ -52,12 +52,15 @@
 - **Reminders Screen**: Summary bar (overdue/today/this week/total), filter tabs (All/Today/Upcoming/Overdue/Completed), add modal with type selection, quick date picker, recurrence options, mark complete/delete actions
 - All screens linked from dashboard, remind buttons on Credit Cards, Loans, Investments, Lending screens
 
-## Phase 3 — FUTURE
-- Advanced Investment Analytics (XIRR, CAGR)
-- Portfolio analysis
-- Advanced cash flow charts
+## Phase 3 — COMPLETED ✅
+- Investment Analytics (CAGR, portfolio allocation donut chart, top/bottom performers)
+- Cash Flow reports (monthly income vs expense bar chart, savings rate tracking, 3/6/12 month views)
+- Expense Breakdown (category-wise donut chart, income/expense toggle, month selector)
+- Income Breakdown (source-wise analysis)
+- CSV Export (transactions, investments, net worth)
+- Custom SVG charts (DonutChart, BarChart) built with react-native-svg
 
-## Phase 4 — BACKLOG
-- Offline-first architecture (local device storage + OneDrive sync)
-- App Store submission prep
-- Reminders & alerts
+## Phase 4 — COMPLETED ✅
+- Budget Goals (CRUD + progress tracking with category-wise spending vs limit, status alerts, unbudgeted spending detection)
+- App Store prep (app.json updated: name, permissions, bundle IDs, splash screen)
+
