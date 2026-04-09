@@ -172,8 +172,11 @@ class CreditCardCreate(BaseModel):
     current_outstanding: float = 0.0
     billing_date: int = 1
     due_date: int = 15
+    due_time: str = "10:00"  # HH:MM
     interest_rate: float = 0.0
     family_member_id: Optional[str] = None
+    # EMI fields
+    emis: Optional[List[Dict]] = []  # [{name, amount, tenure_remaining, total_tenure, start_date}]
 
 class CreditCardUpdate(BaseModel):
     name: Optional[str] = None
@@ -181,7 +184,9 @@ class CreditCardUpdate(BaseModel):
     current_outstanding: Optional[float] = None
     billing_date: Optional[int] = None
     due_date: Optional[int] = None
+    due_time: Optional[str] = None
     interest_rate: Optional[float] = None
+    emis: Optional[List[Dict]] = None
 
 # Loan Model
 class LoanCreate(BaseModel):
@@ -230,6 +235,8 @@ class InvestmentCreate(BaseModel):
     maturity_date: Optional[str] = None
     family_member_id: Optional[str] = None
     notes: Optional[str] = None
+    heading_id: Optional[str] = None
+    sub_category: Optional[str] = None
 
 class InvestmentUpdate(BaseModel):
     name: Optional[str] = None
@@ -254,6 +261,38 @@ class ReminderUpdate(BaseModel):
     is_completed: Optional[bool] = None
     is_recurring: Optional[bool] = None
     recurrence: Optional[str] = None
+
+# Rental Income Models
+class RentalCreate(BaseModel):
+    property_name: str
+    tenant_name: str = ""
+    rent_amount: float
+    due_day: int = 1  # Day of month rent is due
+    address: str = ""
+    notes: str = ""
+
+class RentalUpdate(BaseModel):
+    property_name: Optional[str] = None
+    tenant_name: Optional[str] = None
+    rent_amount: Optional[float] = None
+    due_day: Optional[int] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+class RentalPaymentCreate(BaseModel):
+    rental_id: str
+    amount: float
+    payment_date: str
+    notes: str = ""
+
+# Investment Heading Models
+class InvestmentHeadingCreate(BaseModel):
+    name: str  # e.g., "Shares", "Mutual Funds"
+    icon: str = "trending-up"
+
+class InvestmentHeadingUpdate(BaseModel):
+    name: Optional[str] = None
+    icon: Optional[str] = None
 
 class Bill(BaseModel):
     bill_id: str
@@ -1633,9 +1672,9 @@ async def create_credit_card(data: CreditCardCreate, request: Request):
         "card_id": card_id, "user_id": user.user_id, "name": data.name,
         "card_number_last4": data.card_number_last4, "credit_limit": data.credit_limit,
         "current_outstanding": data.current_outstanding, "billing_date": data.billing_date,
-        "due_date": data.due_date, "interest_rate": data.interest_rate,
-        "family_member_id": data.family_member_id, "is_active": True,
-        "created_at": now, "updated_at": now
+        "due_date": data.due_date, "due_time": data.due_time, "interest_rate": data.interest_rate,
+        "family_member_id": data.family_member_id, "emis": data.emis or [],
+        "is_active": True, "created_at": now, "updated_at": now
     }
     await db.credit_cards.insert_one(card)
     card.pop("_id", None)
@@ -1930,6 +1969,211 @@ async def delete_reminder(reminder_id: str, request: Request):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Reminder not found")
     return {"message": "Reminder deleted"}
+
+# ==================== RENTAL INCOME ENDPOINTS ====================
+
+@api_router.post("/rentals")
+async def create_rental(data: RentalCreate, request: Request):
+    user = await get_current_user(request)
+    rental_id = f"rent_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    rental = {
+        "rental_id": rental_id, "user_id": user.user_id,
+        "property_name": data.property_name, "tenant_name": data.tenant_name,
+        "rent_amount": data.rent_amount, "due_day": data.due_day,
+        "address": data.address, "notes": data.notes,
+        "is_active": True, "payments": [],
+        "created_at": now, "updated_at": now
+    }
+    await db.rentals.insert_one(rental)
+    rental.pop("_id", None)
+    return rental
+
+@api_router.get("/rentals")
+async def get_rentals(request: Request):
+    user = await get_current_user(request)
+    rentals = await db.rentals.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    # Enrich with payment status for current month
+    now = datetime.now(timezone.utc)
+    for r in rentals:
+        payments = r.get("payments", [])
+        current_month_paid = any(
+            p.get("month") == now.month and p.get("year") == now.year for p in payments
+        )
+        r["current_month_paid"] = current_month_paid
+        r["total_collected"] = sum(p.get("amount", 0) for p in payments)
+    return rentals
+
+@api_router.post("/rentals/{rental_id}/payments")
+async def add_rental_payment(rental_id: str, data: RentalPaymentCreate, request: Request):
+    user = await get_current_user(request)
+    rental = await db.rentals.find_one({"rental_id": rental_id, "user_id": user.user_id})
+    if not rental:
+        raise HTTPException(status_code=404, detail="Rental not found")
+    payment_date = datetime.fromisoformat(data.payment_date.replace('Z', '+00:00'))
+    payment = {
+        "payment_id": f"rp_{uuid.uuid4().hex[:8]}",
+        "amount": data.amount, "payment_date": payment_date,
+        "month": payment_date.month, "year": payment_date.year,
+        "notes": data.notes
+    }
+    await db.rentals.update_one({"rental_id": rental_id}, {"$push": {"payments": payment}, "$set": {"updated_at": datetime.now(timezone.utc)}})
+    return payment
+
+@api_router.put("/rentals/{rental_id}")
+async def update_rental(rental_id: str, data: RentalUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.rentals.find_one({"rental_id": rental_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Rental not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.rentals.update_one({"rental_id": rental_id}, {"$set": update_data})
+    updated = await db.rentals.find_one({"rental_id": rental_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/rentals/{rental_id}")
+async def delete_rental(rental_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.rentals.delete_one({"rental_id": rental_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Rental not found")
+    return {"message": "Rental deleted"}
+
+# ==================== INVESTMENT HEADINGS ENDPOINTS ====================
+
+@api_router.post("/investment-headings")
+async def create_heading(data: InvestmentHeadingCreate, request: Request):
+    user = await get_current_user(request)
+    heading_id = f"ih_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    heading = {
+        "heading_id": heading_id, "user_id": user.user_id,
+        "name": data.name, "icon": data.icon,
+        "created_at": now, "updated_at": now
+    }
+    await db.investment_headings.insert_one(heading)
+    heading.pop("_id", None)
+    return heading
+
+@api_router.get("/investment-headings")
+async def get_headings(request: Request):
+    user = await get_current_user(request)
+    headings = await db.investment_headings.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    # Enrich with investments under each heading
+    for h in headings:
+        investments = await db.investments.find({"user_id": user.user_id, "heading_id": h["heading_id"]}, {"_id": 0}).to_list(1000)
+        h["investments"] = investments
+        h["total_invested"] = sum(i.get("invested_amount", 0) for i in investments)
+        h["total_current"] = sum(i.get("current_value", 0) for i in investments)
+        h["count"] = len(investments)
+    return headings
+
+@api_router.put("/investment-headings/{heading_id}")
+async def update_heading(heading_id: str, data: InvestmentHeadingUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.investment_headings.find_one({"heading_id": heading_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Heading not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.investment_headings.update_one({"heading_id": heading_id}, {"$set": update_data})
+    updated = await db.investment_headings.find_one({"heading_id": heading_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/investment-headings/{heading_id}")
+async def delete_heading(heading_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.investment_headings.delete_one({"heading_id": heading_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Heading not found")
+    return {"message": "Heading deleted"}
+
+# ==================== CREDIT CARD REPORTING ====================
+
+@api_router.get("/credit-cards/report")
+async def credit_card_report(request: Request, period: str = "monthly"):
+    """Credit card reporting - day/month/year wise"""
+    user = await get_current_user(request)
+    cards = await db.credit_cards.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    now = datetime.now(timezone.utc)
+
+    total_limit = sum(c.get("credit_limit", 0) for c in cards)
+    total_outstanding = sum(c.get("current_outstanding", 0) for c in cards)
+    total_available = total_limit - total_outstanding
+    total_emi = sum(sum(e.get("amount", 0) for e in c.get("emis", [])) for c in cards)
+
+    # Upcoming due dates
+    upcoming_dues = []
+    for c in cards:
+        due_day = c.get("due_date", 15)
+        due_time = c.get("due_time", "10:00")
+        # Next due date
+        if now.day <= due_day:
+            next_due = now.replace(day=due_day)
+        else:
+            next_month = now.month + 1 if now.month < 12 else 1
+            next_year = now.year if now.month < 12 else now.year + 1
+            next_due = now.replace(year=next_year, month=next_month, day=min(due_day, 28))
+        days_until = (next_due - now).days
+        status = "overdue" if days_until < 0 else "critical" if days_until <= 3 else "warning" if days_until <= 7 else "safe"
+        upcoming_dues.append({
+            "card_id": c["card_id"], "name": c["name"],
+            "outstanding": c.get("current_outstanding", 0),
+            "due_day": due_day, "due_time": due_time,
+            "next_due_date": str(next_due.date()),
+            "days_until": days_until, "status": status,
+        })
+    upcoming_dues.sort(key=lambda x: x["days_until"])
+
+    return {
+        "summary": {
+            "total_cards": len(cards),
+            "total_limit": total_limit,
+            "total_outstanding": total_outstanding,
+            "total_available": total_available,
+            "total_emi": total_emi,
+            "utilization": round(total_outstanding / total_limit * 100, 1) if total_limit > 0 else 0,
+        },
+        "upcoming_dues": upcoming_dues,
+        "cards": cards,
+    }
+
+# ==================== BILLS ENHANCED ====================
+
+@api_router.get("/bills/summary")
+async def bills_summary(request: Request):
+    """Get bills with overdue/upcoming/paid status"""
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+    bills = await db.bills.find({"user_id": user.user_id}, {"_id": 0}).sort("due_date", 1).to_list(1000)
+
+    overdue = []
+    upcoming = []
+    paid = []
+    for b in bills:
+        due = b.get("due_date")
+        if isinstance(due, str):
+            try:
+                due = datetime.fromisoformat(due.replace('Z', '+00:00'))
+            except:
+                due = None
+        status = b.get("status", "pending")
+        if status == "paid":
+            paid.append({**b, "bill_status": "paid"})
+        elif due and due < now:
+            overdue.append({**b, "bill_status": "overdue", "days_overdue": (now - due).days})
+        else:
+            days_until = (due - now).days if due else 999
+            upcoming.append({**b, "bill_status": "upcoming", "days_until": days_until})
+
+    return {
+        "overdue": overdue, "overdue_count": len(overdue),
+        "upcoming": upcoming, "upcoming_count": len(upcoming),
+        "paid": paid, "paid_count": len(paid),
+        "total_overdue_amount": sum(b.get("amount", 0) for b in overdue),
+        "total_upcoming_amount": sum(b.get("amount", 0) for b in upcoming),
+    }
 
 # ==================== NET WORTH ENDPOINT ====================
 
