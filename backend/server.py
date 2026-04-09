@@ -336,6 +336,10 @@ class BudgetCreate(BaseModel):
     category: str
     monthly_limit: float
 
+class BudgetUpdate(BaseModel):
+    monthly_limit: Optional[float] = None
+    category: Optional[str] = None
+
 class Category(BaseModel):
     category_id: str
     user_id: str
@@ -895,6 +899,91 @@ async def get_budgets(request: Request, authorization: Optional[str] = Header(No
     
     budgets = await db.budgets.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
     return [Budget(**budget) for budget in budgets]
+
+@api_router.get("/budgets/progress")
+async def get_budget_progress(request: Request, month: Optional[int] = None, year: Optional[int] = None):
+    """Get budget progress with actual spending per category"""
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+    m = month or now.month
+    y = year or now.year
+
+    budgets = await db.budgets.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+
+    # Get expenses for this month
+    expenses = await db.expenses.find({
+        "user_id": user.user_id,
+        "date": {"$gte": datetime(y, m, 1, tzinfo=timezone.utc),
+                 "$lt": datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1, tzinfo=timezone.utc)}
+    }, {"_id": 0}).to_list(50000)
+
+    # Calculate spending per category
+    spending: Dict = {}
+    for exp in expenses:
+        cat = exp.get("category", "other")
+        spending[cat] = spending.get(cat, 0) + exp.get("amount", 0)
+
+    total_budgeted = 0
+    total_spent = 0
+    progress = []
+    for b in budgets:
+        cat = b["category"]
+        limit = b["monthly_limit"]
+        spent = spending.get(cat, 0)
+        total_budgeted += limit
+        total_spent += spent
+        pct = round((spent / limit * 100), 1) if limit > 0 else 0
+        remaining = limit - spent
+        status = "over_budget" if spent > limit else "warning" if pct > 80 else "on_track"
+        progress.append({
+            "budget_id": b["budget_id"],
+            "category": cat,
+            "monthly_limit": limit,
+            "spent": spent,
+            "remaining": remaining,
+            "percentage": pct,
+            "status": status,
+        })
+
+    progress.sort(key=lambda x: x["percentage"], reverse=True)
+
+    # Unbudgeted spending (categories with expenses but no budget)
+    unbudgeted = []
+    budgeted_cats = {b["category"] for b in budgets}
+    for cat, amount in spending.items():
+        if cat not in budgeted_cats:
+            unbudgeted.append({"category": cat, "spent": amount})
+
+    return {
+        "month": m, "year": y,
+        "total_budgeted": total_budgeted,
+        "total_spent": total_spent,
+        "overall_percentage": round((total_spent / total_budgeted * 100), 1) if total_budgeted > 0 else 0,
+        "budgets": progress,
+        "unbudgeted_spending": sorted(unbudgeted, key=lambda x: x["spent"], reverse=True),
+    }
+
+@api_router.put("/budgets/{budget_id}")
+async def update_budget(budget_id: str, data: BudgetUpdate, request: Request):
+    """Update a budget"""
+    user = await get_current_user(request)
+    existing = await db.budgets.find_one({"budget_id": budget_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.budgets.update_one({"budget_id": budget_id}, {"$set": update_data})
+    updated = await db.budgets.find_one({"budget_id": budget_id}, {"_id": 0})
+    return Budget(**updated)
+
+@api_router.delete("/budgets/{budget_id}")
+async def delete_budget(budget_id: str, request: Request):
+    """Delete a budget"""
+    user = await get_current_user(request)
+    result = await db.budgets.delete_one({"budget_id": budget_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    return {"message": "Budget deleted"}
 
 # ==================== ANALYTICS ENDPOINTS ====================
 

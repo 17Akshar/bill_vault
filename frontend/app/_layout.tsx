@@ -30,6 +30,7 @@ export default function RootLayout() {
             <Stack.Screen name="reports/investment-analytics" />
             <Stack.Screen name="reports/cashflow" />
             <Stack.Screen name="reports/expense-breakdown" />
+            <Stack.Screen name="budgets/index" />
           </Stack>
         </AuthProvider>
       </ThemeProvider>

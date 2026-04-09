@@ -186,6 +186,7 @@ export default function DashboardScreen() {
               { route: '/net-worth', icon: 'diamond', label: 'Net Worth', color: '#448AFF', bg: 'rgba(68,138,255,0.12)' },
               { route: '/reminders', icon: 'notifications', label: 'Reminders', color: '#FFD600', bg: 'rgba(255,214,0,0.12)' },
               { route: '/reports', icon: 'bar-chart', label: 'Reports & Analytics', color: '#E040FB', bg: 'rgba(224,64,251,0.12)' },
+              { route: '/budgets', icon: 'flag', label: 'Budget Goals', color: '#00BCD4', bg: 'rgba(0,188,212,0.12)' },
             ].map((item) => (
               <TouchableOpacity
                 key={item.route}
