@@ -7,12 +7,15 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from io import StringIO
+import csv
 import os
 import logging
 import uuid
 import bcrypt
 import jwt
 import httpx
+import math
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -2025,6 +2028,278 @@ async def get_dashboard(request: Request):
         "month": now.month,
         "year": now.year
     }
+
+# ==================== ANALYTICS ENDPOINTS ====================
+
+@api_router.get("/analytics/investment")
+async def investment_analytics(request: Request):
+    """CAGR, portfolio allocation, top/bottom performers"""
+    user = await get_current_user(request)
+    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
+
+    total_invested = sum(i.get("invested_amount", 0) for i in investments)
+    total_current = sum(i.get("current_value", 0) for i in investments)
+    total_returns = total_current - total_invested
+    total_returns_pct = (total_returns / total_invested * 100) if total_invested > 0 else 0
+
+    # Portfolio allocation by type
+    allocation = {}
+    for inv in investments:
+        t = inv.get("investment_type", "other")
+        if t not in allocation:
+            allocation[t] = {"type": t, "invested": 0, "current": 0, "count": 0}
+        allocation[t]["invested"] += inv.get("invested_amount", 0)
+        allocation[t]["current"] += inv.get("current_value", 0)
+        allocation[t]["count"] += 1
+    for k in allocation:
+        allocation[k]["percentage"] = round(allocation[k]["current"] / total_current * 100, 1) if total_current > 0 else 0
+        allocation[k]["returns"] = allocation[k]["current"] - allocation[k]["invested"]
+        allocation[k]["returns_pct"] = round(allocation[k]["returns"] / allocation[k]["invested"] * 100, 1) if allocation[k]["invested"] > 0 else 0
+
+    # CAGR per investment
+    performers = []
+    now = datetime.now(timezone.utc)
+    for inv in investments:
+        invested = inv.get("invested_amount", 0)
+        current = inv.get("current_value", 0)
+        ret = current - invested
+        ret_pct = (ret / invested * 100) if invested > 0 else 0
+        # CAGR calculation
+        purchase_date = inv.get("purchase_date")
+        cagr = 0
+        if purchase_date and invested > 0 and current > 0:
+            if isinstance(purchase_date, str):
+                try:
+                    purchase_date = datetime.fromisoformat(purchase_date.replace('Z', '+00:00'))
+                except:
+                    purchase_date = None
+            if purchase_date:
+                # Ensure both datetimes have timezone info for comparison
+                if purchase_date.tzinfo is None:
+                    purchase_date = purchase_date.replace(tzinfo=timezone.utc)
+                years = max((now - purchase_date).days / 365.25, 0.01)
+                try:
+                    cagr = round((math.pow(current / invested, 1 / years) - 1) * 100, 2)
+                except:
+                    cagr = 0
+        performers.append({
+            "investment_id": inv.get("investment_id"),
+            "name": inv.get("name"),
+            "type": inv.get("investment_type"),
+            "invested": invested,
+            "current": current,
+            "returns": ret,
+            "returns_pct": round(ret_pct, 2),
+            "cagr": cagr,
+            "purchase_date": str(inv.get("purchase_date", "")),
+        })
+
+    performers.sort(key=lambda x: x["returns_pct"], reverse=True)
+
+    return {
+        "summary": {
+            "total_invested": total_invested,
+            "total_current": total_current,
+            "total_returns": total_returns,
+            "total_returns_pct": round(total_returns_pct, 2),
+            "total_investments": len(investments),
+        },
+        "allocation": list(allocation.values()),
+        "top_performers": performers[:5],
+        "bottom_performers": list(reversed(performers))[:5] if performers else [],
+        "all_performers": performers,
+    }
+
+
+@api_router.get("/analytics/cashflow")
+async def cashflow_analytics(request: Request, months: int = 6):
+    """Monthly income vs expense trend and savings rate"""
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+
+    monthly_data = []
+    for i in range(months - 1, -1, -1):
+        target_date = now - timedelta(days=i * 30)
+        m = target_date.month
+        y = target_date.year
+
+        income_list = await db.income.find({
+            "user_id": user.user_id,
+            "date": {"$gte": datetime(y, m, 1, tzinfo=timezone.utc),
+                     "$lt": datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1, tzinfo=timezone.utc)}
+        }, {"_id": 0}).to_list(10000)
+
+        expense_list = await db.expenses.find({
+            "user_id": user.user_id,
+            "date": {"$gte": datetime(y, m, 1, tzinfo=timezone.utc),
+                     "$lt": datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1, tzinfo=timezone.utc)}
+        }, {"_id": 0}).to_list(10000)
+
+        total_income = sum(item.get("amount", 0) for item in income_list)
+        total_expense = sum(item.get("amount", 0) for item in expense_list)
+        savings = total_income - total_expense
+        savings_rate = round((savings / total_income * 100), 1) if total_income > 0 else 0
+
+        month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        monthly_data.append({
+            "month": m,
+            "year": y,
+            "label": f"{month_names[m - 1]} {y}",
+            "short_label": month_names[m - 1],
+            "income": total_income,
+            "expense": total_expense,
+            "savings": savings,
+            "savings_rate": savings_rate,
+        })
+
+    total_income_all = sum(d["income"] for d in monthly_data)
+    total_expense_all = sum(d["expense"] for d in monthly_data)
+    avg_savings_rate = round((total_income_all - total_expense_all) / total_income_all * 100, 1) if total_income_all > 0 else 0
+
+    return {
+        "monthly": monthly_data,
+        "summary": {
+            "total_income": total_income_all,
+            "total_expense": total_expense_all,
+            "total_savings": total_income_all - total_expense_all,
+            "avg_savings_rate": avg_savings_rate,
+        }
+    }
+
+
+@api_router.get("/analytics/expense-breakdown")
+async def expense_breakdown(request: Request, month: Optional[int] = None, year: Optional[int] = None):
+    """Category-wise expense breakdown"""
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+    m = month or now.month
+    y = year or now.year
+
+    expenses = await db.expenses.find({
+        "user_id": user.user_id,
+        "date": {"$gte": datetime(y, m, 1, tzinfo=timezone.utc),
+                 "$lt": datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1, tzinfo=timezone.utc)}
+    }, {"_id": 0}).to_list(10000)
+
+    categories: Dict = {}
+    total = 0
+    for exp in expenses:
+        cat = exp.get("category", "other")
+        amt = exp.get("amount", 0)
+        total += amt
+        if cat not in categories:
+            categories[cat] = {"category": cat, "amount": 0, "count": 0}
+        categories[cat]["amount"] += amt
+        categories[cat]["count"] += 1
+
+    for k in categories:
+        categories[k]["percentage"] = round(categories[k]["amount"] / total * 100, 1) if total > 0 else 0
+
+    sorted_cats = sorted(categories.values(), key=lambda x: x["amount"], reverse=True)
+
+    return {"total": total, "month": m, "year": y, "categories": sorted_cats}
+
+
+@api_router.get("/analytics/income-breakdown")
+async def income_breakdown(request: Request, month: Optional[int] = None, year: Optional[int] = None):
+    """Source-wise income breakdown"""
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+    m = month or now.month
+    y = year or now.year
+
+    incomes = await db.income.find({
+        "user_id": user.user_id,
+        "date": {"$gte": datetime(y, m, 1, tzinfo=timezone.utc),
+                 "$lt": datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1, tzinfo=timezone.utc)}
+    }, {"_id": 0}).to_list(10000)
+
+    categories: Dict = {}
+    total = 0
+    for inc in incomes:
+        cat = inc.get("category", "other")
+        amt = inc.get("amount", 0)
+        total += amt
+        if cat not in categories:
+            categories[cat] = {"category": cat, "amount": 0, "count": 0}
+        categories[cat]["amount"] += amt
+        categories[cat]["count"] += 1
+
+    for k in categories:
+        categories[k]["percentage"] = round(categories[k]["amount"] / total * 100, 1) if total > 0 else 0
+
+    sorted_cats = sorted(categories.values(), key=lambda x: x["amount"], reverse=True)
+
+    return {"total": total, "month": m, "year": y, "categories": sorted_cats}
+
+
+# ==================== CSV EXPORT ENDPOINTS ====================
+
+@api_router.get("/export/transactions-csv")
+async def export_transactions_csv(request: Request):
+    """Export transactions as CSV"""
+    user = await get_current_user(request)
+    incomes = await db.income.find({"user_id": user.user_id}, {"_id": 0}).sort("date", -1).to_list(50000)
+    expenses = await db.expenses.find({"user_id": user.user_id}, {"_id": 0}).sort("date", -1).to_list(50000)
+    accounts = {a["account_id"]: a["name"] for a in await db.accounts.find({"user_id": user.user_id}, {"_id": 0, "account_id": 1, "name": 1}).to_list(100)}
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Type", "Category", "Description", "Amount", "Account", "Payment Type", "Notes"])
+    for inc in incomes:
+        writer.writerow([str(inc.get("date", "")), "Income", inc.get("category", ""), inc.get("source", ""), inc.get("amount", 0), accounts.get(inc.get("account_id", ""), ""), "", inc.get("notes", "")])
+    for exp in expenses:
+        writer.writerow([str(exp.get("date", "")), "Expense", exp.get("category", ""), exp.get("description", ""), exp.get("amount", 0), accounts.get(exp.get("account_id", ""), ""), exp.get("payment_type", ""), exp.get("notes", "")])
+
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=transactions.csv"})
+
+
+@api_router.get("/export/investments-csv")
+async def export_investments_csv(request: Request):
+    """Export investments as CSV"""
+    user = await get_current_user(request)
+    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(10000)
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Type", "Invested Amount", "Current Value", "Returns", "Returns %", "Purchase Date", "Maturity Date", "Notes"])
+    for inv in investments:
+        invested = inv.get("invested_amount", 0)
+        current = inv.get("current_value", 0)
+        ret = current - invested
+        ret_pct = round(ret / invested * 100, 2) if invested > 0 else 0
+        writer.writerow([inv.get("name", ""), inv.get("investment_type", ""), invested, current, ret, f"{ret_pct}%", str(inv.get("purchase_date", "")), str(inv.get("maturity_date", "")), inv.get("notes", "")])
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=investments.csv"})
+
+
+@api_router.get("/export/networth-csv")
+async def export_networth_csv(request: Request):
+    """Export net worth breakdown as CSV"""
+    user = await get_current_user(request)
+    accounts = await db.accounts.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
+    credit_cards = await db.credit_cards.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    loans = await db.loans.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    lending = await db.lending.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Category", "Item", "Type", "Amount"])
+    for a in accounts:
+        writer.writerow(["Asset - Account", a.get("name", ""), a.get("account_type", ""), a.get("balance", 0)])
+    for i in investments:
+        writer.writerow(["Asset - Investment", i.get("name", ""), i.get("investment_type", ""), i.get("current_value", 0)])
+    for l in lending:
+        if l.get("lending_type") == "lent" and not l.get("is_settled"):
+            writer.writerow(["Asset - Money Lent", l.get("person_name", ""), "lent", l.get("remaining_amount", l.get("amount", 0))])
+    for c in credit_cards:
+        writer.writerow(["Liability - Credit Card", c.get("name", ""), "credit_card", c.get("current_outstanding", 0)])
+    for lo in loans:
+        writer.writerow(["Liability - Loan", lo.get("name", ""), lo.get("loan_type", ""), lo.get("outstanding_amount", 0)])
+    for l in lending:
+        if l.get("lending_type") == "borrowed" and not l.get("is_settled"):
+            writer.writerow(["Liability - Borrowed", l.get("person_name", ""), "borrowed", l.get("remaining_amount", l.get("amount", 0))])
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=networth.csv"})
+
 
 # ==================== EXPORT ENDPOINT ====================
 

@@ -505,6 +505,24 @@ frontend:
         agent: "testing"
         comment: "✅ Reminders CRUD API working perfectly. All operations tested: CREATE (3 reminders with different types), READ (list all, filter by type, filter by completion status, filter upcoming), UPDATE (mark as completed), DELETE, and SUMMARY endpoint. All 11 test scenarios passed including authentication, filtering, date handling, and data validation."
 
+  - task: "Phase 3 Analytics and Export APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 3 - Advanced Analytics: GET /api/analytics/investment (portfolio allocation, CAGR, top performers), GET /api/analytics/cashflow (6-month trend), GET /api/analytics/expense-breakdown, GET /api/analytics/income-breakdown. CSV Export: GET /api/export/transactions-csv, GET /api/export/investments-csv, GET /api/export/networth-csv."
+      - working: false
+        agent: "testing"
+        comment: "❌ Investment Analytics endpoint failing with timezone error: 'TypeError: can't subtract offset-naive and offset-aware datetimes' in CAGR calculation. Other analytics and all CSV export endpoints working correctly."
+      - working: true
+        agent: "testing"
+        comment: "✅ Phase 3 Analytics and Export APIs working perfectly! Fixed timezone issue in investment analytics CAGR calculation. All 7 test scenarios passed: 1) Investment Analytics - portfolio allocation, CAGR values, top performers with returns%, 2) Cashflow Analytics - 6 months data with savings rates, 3) Expense Breakdown - category-wise breakdown with percentages, 4) Income Breakdown - source-wise breakdown, 5) Transactions CSV Export - proper headers and test data, 6) Investments CSV Export - complete investment data with returns, 7) Net Worth CSV Export - assets/liabilities breakdown. All endpoints properly authenticated and returning correct data structures."
+
 frontend:
   - task: "Dashboard Screen - Financial Overview"
     implemented: true
@@ -673,12 +691,20 @@ frontend:
 
 metadata:
   created_by: "main_agent"
-  version: "5.0"
-  test_sequence: 5
-  run_ui: false
+  version: "6.0"
+  test_sequence: 6
+  run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Transactions Edit Modal"
+    - "Transactions Account Filter"
+    - "Transactions Category Filter"
+    - "Transactions Action Menu"
+    - "Accounts Edit Modal"
+    - "Accounts Action Menu"
+    - "Reminders Date Time Picker"
+    - "Dashboard Financial Hub with Reminders"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -689,7 +715,7 @@ agent_communication:
   - agent: "testing"
     message: "✅ All 28/28 Phase 2 backend tests passed. Credit Cards, Loans, Lending, Investments, Net Worth APIs all fully functional."
   - agent: "main"
-    message: "Phase 2 frontend is complete. Please test ALL Phase 2 frontend screens. App is at http://localhost:3000. Use mobile dimensions 390x844. Flow: 1) Load app → Click 'Get Started' → Click 'Use Without Account' to login → Dashboard appears. 2) Scroll down on Dashboard to see 'Financial Hub' section with 5 cards (Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth). 3) Tap 'Credit Cards' → verify Credit Cards screen loads with summary row (Total Limit/Outstanding/Available), empty state message, back button, and + button to add. 4) Tap + to open Add Credit Card modal → verify form fields (Card Name, Last 4 Digits, Credit Limit, Outstanding, Billing Date, Due Date, Interest Rate). 5) Go back to Dashboard → Tap 'Loans & EMI' → verify Loans screen loads with summary (Outstanding/Monthly EMI), empty state, + button. 6) Tap + to open Add Loan modal → verify loan type chips and form fields. 7) Go back → Tap 'Investments' → verify Investments screen with summary (Invested/Current/Returns), empty state. 8) Tap + → verify Add Investment modal with type chips and fields. 9) Go back → Tap 'Lent / Borrowed' → verify Lending screen with summary (You Lent/You Borrowed), filter tabs (All/Lent/Borrowed), + button. 10) Go back → Tap 'Net Worth' → verify Net Worth screen with gradient hero card showing net worth, assets/liabilities breakdown sections. All screens should have dark CRED-style theme and proper ₹ formatting."
+    message: "Comprehensive frontend testing needed for edit, filter, and action menu enhancements. App at http://localhost:3000. Use 390x844. Login: Click 'Get Started' → 'Use Without Account'. TEST FLOW: 1) TRANSACTIONS SCREEN: Go to Transactions tab → verify account filter chips (All Accounts, HDFC Bank S..., Cash Wallet) → tap 'HDFC Bank S...' chip to filter → verify only HDFC transactions show → tap 'All Accounts' to reset → tap 'Income' filter tab → verify category filter chips appear (All Categories, Salary, Business, etc.) → tap a specific category → verify filtering works → tap 'Expense' tab → verify expense category filters appear → tap a transaction card (e.g. Groceries) → verify Edit Expense modal opens with amount, description, category chips, payment type chips, notes, and Save Changes button → close modal → long press a transaction → verify Action Menu appears with Edit, Rename, Cut, Delete options → close action menu. 2) ACCOUNTS SCREEN: Go to Accounts tab → tap an account card (e.g. HDFC Bank Savings) → verify Edit Account modal opens with Account Type display, Account Name input, Account Number input, Current Balance display (read-only), Save Changes button → close modal → long press an account → verify Action Menu appears with Edit Account, Rename, Delete options. 3) DASHBOARD: Go to Home tab → scroll down → verify Financial Hub has 6 cards (Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders) → tap Reminders card → verify Reminders screen loads. 4) REMINDERS: On Reminders screen → tap + to add → verify New Reminder modal has: type chips, title, description, quick date chips, manual date DD/MM/YYYY fields, time picker (HH:MM) with quick presets (9AM/12PM/6PM/9PM), date preview line, recurrence options, Set Reminder button. 5) INVESTMENTS with Remind: From Dashboard → tap Investments → verify investment cards have 'Remind' and 'Delete' buttons. 6) CREDIT CARDS with Remind: tap Credit Cards → verify cards have 'Remind' button. 7) LOANS with Remind: tap Loans → verify cards have 'Remind' button. All screens must have dark CRED-style theme."
   - agent: "testing"
     message: "✅ Phase 2 backend API testing completed successfully! All 5 API modules tested and working perfectly: 1) Credit Cards CRUD - All operations (CREATE/READ/UPDATE/DELETE) working with proper data validation, 2) Loans CRUD - All operations working with date handling and loan type validation, 3) Lending CRUD - All operations working with filtering by lending_type and is_settled status, 4) Investments CRUD - All operations working with investment type filtering, 5) Net Worth API - Complete calculation working with proper assets/liabilities breakdown and formatted values. Total: 28/28 tests passed (100% success rate). All endpoints properly authenticated and returning correct data structures. Backend Phase 2 implementation is production-ready."
   - agent: "testing"
@@ -698,3 +724,5 @@ agent_communication:
     message: "✅ Reminders CRUD API testing completed successfully! All 11 test scenarios passed: 1) Authentication working perfectly, 2) CREATE operations - 3 different reminder types (investment, loan_emi, credit_card) with proper field validation, 3) READ operations - list all, filter by type, filter by completion status, filter upcoming reminders, 4) UPDATE operations - mark reminder as completed, 5) DELETE operations - remove reminder and verify deletion, 6) SUMMARY endpoint - returns proper counts (total_pending, overdue, today, this_week) and lists. All endpoints properly authenticated, date handling working correctly, recurring reminders supported, and data validation functioning. Reminders API is production-ready and fully integrated with the financial management system."
   - agent: "testing"
     message: "✅ Income/Expense/Accounts EDIT (PUT) endpoints testing completed successfully! All 10 test scenarios passed: 1) Authentication working perfectly, 2) Test data creation (account, income, expense) successful, 3) Income EDIT (PUT) - Successfully updated amount (25000→30000), source (My Company→Updated Company Name), category (salary→business), and notes, 4) Income update verification via GET request confirmed, 5) Expense EDIT (PUT) - Successfully updated amount (3000→5000), description (Big Bazaar Groceries→Updated Description), category (food→shopping), payment_type (bank→upi), and notes, 6) Expense update verification via GET request confirmed, 7) Account EDIT (PUT) - Successfully updated name (Test Bank SBI→SBI Salary Account) and account_number (null→9876543210), 8) Income filtering by account_id working correctly, 9) All test data cleanup successful. All PUT endpoints properly authenticated, data validation working, and balance updates functioning correctly."
+  - agent: "testing"
+    message: "✅ Phase 3 Analytics and Export APIs testing completed successfully! All 7 test scenarios passed with 100% success rate: 1) Investment Analytics - Portfolio allocation by type with percentages, CAGR calculations, top/bottom performers sorted by returns%, summary with total invested/current/returns, 2) Cashflow Analytics - 6 months trend data with income/expense/savings/savings_rate for each month, summary totals, 3) Expense Breakdown - Category-wise breakdown for April 2026 with food/transport categories, amounts and percentages, 4) Income Breakdown - Source-wise breakdown with salary category, amounts and percentages, 5) Transactions CSV Export - Proper headers and test data (groceries, fuel, company income), 6) Investments CSV Export - Complete investment data with HDFC Flexicap and TCS Shares, returns calculations, 7) Net Worth CSV Export - Assets/liabilities breakdown with proper categorization. Fixed timezone issue in CAGR calculation. All endpoints properly authenticated and returning correct data structures. Phase 3 implementation is production-ready."
