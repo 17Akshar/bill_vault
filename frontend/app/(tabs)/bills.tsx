@@ -127,11 +127,18 @@ export default function BillsScreen() {
   const renderBillItem = ({ item }: { item: Bill }) => {
     const dueDate = parseISO(item.due_date);
     const isPaid = item.payment_status === 'paid';
-    const isOverdue = !isPaid && dueDate < new Date();
+    const now = new Date();
+    const isOverdue = !isPaid && dueDate < now;
+    const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const isWarning = !isPaid && !isOverdue && diffDays <= 3;
+
+    // Color coding: Red = overdue, Yellow = due soon (<=3 days), Green = paid
+    const statusColor = isPaid ? '#00E676' : isOverdue ? '#FF5252' : isWarning ? '#FFB300' : colors.textSecondary;
+    const statusLabel = isPaid ? 'Paid' : isOverdue ? `${Math.abs(diffDays)}d overdue` : diffDays === 0 ? 'Due today' : diffDays === 1 ? 'Due tomorrow' : `${diffDays}d left`;
 
     return (
       <TouchableOpacity
-        style={[styles.billCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        style={[styles.billCard, { backgroundColor: colors.card, borderColor: 'transparent', borderLeftWidth: 3, borderLeftColor: statusColor }]}
         onPress={() => router.push(`/bills/${item.bill_id}` as any)}
       >
         <View style={styles.billHeader}>
@@ -139,7 +146,7 @@ export default function BillsScreen() {
             style={[
               styles.checkbox,
               { borderColor: colors.border },
-              isPaid && { backgroundColor: colors.success, borderColor: colors.success }
+              isPaid && { backgroundColor: '#00E676', borderColor: '#00E676' }
             ]}
             onPress={() => toggleBillPaid(item.bill_id, item.payment_status)}
           >
@@ -167,17 +174,22 @@ export default function BillsScreen() {
                   </Text>
                 </View>
               )}
+              {/* Status badge */}
+              <View style={[styles.statusBadge, { backgroundColor: statusColor + '18' }]}>
+                <Ionicons name={isPaid ? 'checkmark-circle' : isOverdue ? 'alert-circle' : isWarning ? 'warning' : 'time-outline'} size={12} color={statusColor} />
+                <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+              </View>
             </View>
           </View>
           
           <View style={styles.billRight}>
-            <Text style={[styles.billAmount, { color: colors.text }]}>
+            <Text style={[styles.billAmount, { color: isPaid ? '#00E676' : isOverdue ? '#FF5252' : colors.text }]}>
               {formatINR(item.amount)}
             </Text>
             <Text 
               style={[
                 styles.dueDate,
-                { color: isOverdue ? colors.danger : colors.textSecondary }
+                { color: statusColor }
               ]}
             >
               {format(dueDate, 'MMM d')}
@@ -185,12 +197,22 @@ export default function BillsScreen() {
           </View>
         </View>
         
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteBill(item.bill_id)}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.danger} />
-        </TouchableOpacity>
+        <View style={styles.billActions}>
+          <TouchableOpacity
+            style={[styles.billActBtn, { backgroundColor: 'rgba(68,138,255,0.12)' }]}
+            onPress={() => router.push(`/bills/${item.bill_id}` as any)}
+          >
+            <Ionicons name="create-outline" size={14} color="#448AFF" />
+            <Text style={{ color: '#448AFF', fontSize: 11, fontWeight: '600' }}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.billActBtn, { backgroundColor: 'rgba(255,82,82,0.12)' }]}
+            onPress={() => deleteBill(item.bill_id)}
+          >
+            <Ionicons name="trash-outline" size={14} color="#FF5252" />
+            <Text style={{ color: '#FF5252', fontSize: 11, fontWeight: '600' }}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -236,28 +258,41 @@ export default function BillsScreen() {
 
       {/* Filter */}
       <View style={styles.filterContainer}>
-        {(['all', 'unpaid', 'paid'] as const).map((filterOption) => (
-          <TouchableOpacity
-            key={filterOption}
-            style={[
-              styles.filterButton,
-              { borderColor: colors.border },
-              filter === filterOption && { backgroundColor: colors.primary, borderColor: colors.primary }
-            ]}
-            onPress={() => setFilter(filterOption)}
-          >
-            <Text
+        {(['all', 'unpaid', 'paid'] as const).map((filterOption) => {
+          const overdueCount = filterOption === 'unpaid' ? bills.filter(b => b.payment_status !== 'paid' && parseISO(b.due_date) < new Date()).length : 0;
+          return (
+            <TouchableOpacity
+              key={filterOption}
               style={[
-                styles.filterText,
-                { color: colors.text },
-                filter === filterOption && { color: '#FFFFFF' }
+                styles.filterButton,
+                { borderColor: colors.border },
+                filter === filterOption && { backgroundColor: colors.primary, borderColor: colors.primary }
               ]}
+              onPress={() => setFilter(filterOption)}
             >
-              {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.filterText,
+                  { color: colors.text },
+                  filter === filterOption && { color: '#FFFFFF' }
+                ]}
+              >
+                {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
+
+      {/* Overdue Banner */}
+      {bills.filter(b => b.payment_status !== 'paid' && parseISO(b.due_date) < new Date()).length > 0 && (
+        <View style={styles.overdueBanner}>
+          <Ionicons name="alert-circle" size={18} color="#FF5252" />
+          <Text style={styles.overdueBannerText}>
+            {bills.filter(b => b.payment_status !== 'paid' && parseISO(b.due_date) < new Date()).length} overdue bill(s) - {formatINR(bills.filter(b => b.payment_status !== 'paid' && parseISO(b.due_date) < new Date()).reduce((s, b) => s + b.amount, 0))}
+          </Text>
+        </View>
+      )}
 
       {/* Bills List */}
       <FlatList
@@ -350,6 +385,47 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  overdueBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,82,82,0.12)',
+  },
+  overdueBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF5252',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  billActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    paddingLeft: 36,
+  },
+  billActBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   listContent: {
     paddingHorizontal: 20,

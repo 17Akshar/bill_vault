@@ -784,18 +784,17 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Reports Hub Screen"
-    - "Investment Analytics Screen"
-    - "Cash Flow Screen"
-    - "Expense Breakdown Screen"
-    - "Dashboard Financial Hub with Reports"
+    - "Rental Income CRUD API"
+    - "Investment Headings CRUD API"
+    - "Credit Card Report API"
+    - "Bills Summary API"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Phase 3 frontend testing needed. App at http://localhost:3000. Use 390x844. Login: Click 'Get Started' → 'Use Without Account'. TEST FLOW: 1) DASHBOARD FINANCIAL HUB: Scroll down on dashboard → verify 7 cards in Financial Hub: Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders, Reports & Analytics (purple icon). 2) REPORTS HUB: Tap 'Reports & Analytics' → verify Reports screen loads with 2 sections: ANALYTICS (Investment Analytics, Cash Flow, Expense Breakdown) and EXPORT DATA (Transactions CSV, Investments CSV, Net Worth CSV). Each card has icon, title, description, and chevron/download icon. 3) INVESTMENT ANALYTICS: Tap 'Investment Analytics' → verify: Hero summary card (Invested/Current/Returns/Return %), Portfolio Allocation section with donut chart (SVG rendered circle segments with colors), legend items showing investment types with percentages and returns, Performers section with Top/Bottom toggle tabs, performer cards ranked #1, #2, etc. with CAGR values. 4) CASH FLOW: Go back to Reports → tap 'Cash Flow' → verify: Hero summary (Total Income/Expense/Savings/Avg Savings Rate), Duration selector buttons (3 Months/6 Months/12 Months - 6 Months should be active), Income vs Expense section with green/red legend and SVG bar chart, Monthly Breakdown section with month cards showing Inc/Exp progress bars and savings rate chips. 5) EXPENSE BREAKDOWN: Go back to Reports → tap 'Expense Breakdown' → verify: Expenses/Income toggle (Expenses active by default with red color), Month selector chips (Jan-Dec, current month active), Donut chart with category colors and center total amount, Category list below with icons, progress bars, amounts and percentages. Tap 'Income' toggle → verify it switches to income view with green color. All screens must have CRED dark theme (#0D0D12 background)."
+    message: "Phase 5 backend testing needed. Test these new endpoints: 1) GET /api/rentals, POST /api/rentals, PUT /api/rentals/{id}, DELETE /api/rentals/{id}, POST /api/rentals/{id}/payments, 2) GET /api/investment-headings, POST /api/investment-headings, PUT /api/investment-headings/{id}, DELETE /api/investment-headings/{id}, 3) GET /api/credit-cards/report, 4) GET /api/bills/summary. Auth: POST /api/auth/single-user to get token."
   - agent: "testing"
     message: "✅ Phase 2 backend API testing completed successfully! All 5 API modules tested and working perfectly: 1) Credit Cards CRUD - All operations (CREATE/READ/UPDATE/DELETE) working with proper data validation, 2) Loans CRUD - All operations working with date handling and loan type validation, 3) Lending CRUD - All operations working with filtering by lending_type and is_settled status, 4) Investments CRUD - All operations working with investment type filtering, 5) Net Worth API - Complete calculation working with proper assets/liabilities breakdown and formatted values. Total: 28/28 tests passed (100% success rate). All endpoints properly authenticated and returning correct data structures. Backend Phase 2 implementation is production-ready."
   - agent: "testing"

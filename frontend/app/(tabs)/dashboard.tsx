@@ -185,6 +185,7 @@ export default function DashboardScreen() {
               { route: '/lending', icon: 'people', label: 'Lent / Borrowed', color: '#7C4DFF', bg: 'rgba(124,77,255,0.12)' },
               { route: '/net-worth', icon: 'diamond', label: 'Net Worth', color: '#448AFF', bg: 'rgba(68,138,255,0.12)' },
               { route: '/reminders', icon: 'notifications', label: 'Reminders', color: '#FFD600', bg: 'rgba(255,214,0,0.12)' },
+              { route: '/rentals', icon: 'home', label: 'Rental Income', color: '#26A69A', bg: 'rgba(38,166,154,0.12)' },
               { route: '/reports', icon: 'bar-chart', label: 'Reports & Analytics', color: '#E040FB', bg: 'rgba(224,64,251,0.12)' },
               { route: '/budgets', icon: 'flag', label: 'Budget Goals', color: '#00BCD4', bg: 'rgba(0,188,212,0.12)' },
             ].map((item) => (
