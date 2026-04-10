@@ -107,6 +107,7 @@ class Income(BaseModel):
     account_id: str
     amount: float
     category: str  # salary, rental, business, other
+    sub_category: Optional[str] = None
     source: str
     date: datetime
     notes: Optional[str] = None
@@ -116,6 +117,7 @@ class IncomeCreate(BaseModel):
     account_id: str
     amount: float
     category: str
+    sub_category: Optional[str] = None
     source: str
     date: str
     notes: Optional[str] = None
@@ -125,6 +127,7 @@ class IncomeUpdate(BaseModel):
     account_id: Optional[str] = None
     amount: Optional[float] = None
     category: Optional[str] = None
+    sub_category: Optional[str] = None
     source: Optional[str] = None
     date: Optional[str] = None
     notes: Optional[str] = None
@@ -137,6 +140,7 @@ class Expense(BaseModel):
     account_id: str
     amount: float
     category: str
+    sub_category: Optional[str] = None
     payment_type: str  # cash, bank, credit_card, upi
     description: str
     date: datetime
@@ -147,6 +151,7 @@ class ExpenseCreate(BaseModel):
     account_id: str
     amount: float
     category: str
+    sub_category: Optional[str] = None
     payment_type: str
     description: str
     date: str
@@ -157,6 +162,7 @@ class ExpenseUpdate(BaseModel):
     account_id: Optional[str] = None
     amount: Optional[float] = None
     category: Optional[str] = None
+    sub_category: Optional[str] = None
     payment_type: Optional[str] = None
     description: Optional[str] = None
     date: Optional[str] = None
@@ -764,6 +770,43 @@ async def get_bills(
     bills = await db.bills.find(query, {"_id": 0}).sort("due_date", 1).to_list(1000)
     return [Bill(**bill) for bill in bills]
 
+@api_router.get("/bills/summary")
+async def bills_summary_early(request: Request):
+    """Get bills with overdue/upcoming/paid status"""
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+    all_bills = await db.bills.find({"user_id": user.user_id}, {"_id": 0}).sort("due_date", 1).to_list(1000)
+
+    overdue = []
+    upcoming = []
+    paid_bills = []
+    for b in all_bills:
+        due = b.get("due_date")
+        if isinstance(due, str):
+            try:
+                due = datetime.fromisoformat(due.replace('Z', '+00:00'))
+            except:
+                due = None
+        elif isinstance(due, datetime):
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+        status = b.get("payment_status", b.get("status", "pending"))
+        if status == "paid":
+            paid_bills.append({**b, "bill_status": "paid"})
+        elif due and due < now:
+            overdue.append({**b, "bill_status": "overdue", "days_overdue": (now - due).days})
+        else:
+            days_until = (due - now).days if due else 999
+            upcoming.append({**b, "bill_status": "upcoming", "days_until": days_until})
+
+    return {
+        "overdue": overdue, "overdue_count": len(overdue),
+        "upcoming": upcoming, "upcoming_count": len(upcoming),
+        "paid": paid_bills, "paid_count": len(paid_bills),
+        "total_overdue_amount": sum(b.get("amount", 0) for b in overdue),
+        "total_upcoming_amount": sum(b.get("amount", 0) for b in upcoming),
+    }
+
 @api_router.get("/bills/{bill_id}", response_model=Bill)
 async def get_bill(bill_id: str, request: Request, authorization: Optional[str] = Header(None)):
     """Get specific bill"""
@@ -1334,6 +1377,7 @@ async def create_income(data: IncomeCreate, request: Request):
         "account_id": data.account_id,
         "amount": data.amount,
         "category": data.category,
+        "sub_category": data.sub_category,
         "source": data.source,
         "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
         "notes": data.notes,
@@ -1511,6 +1555,7 @@ async def create_expense(data: ExpenseCreate, request: Request):
         "account_id": data.account_id,
         "amount": data.amount,
         "category": data.category,
+        "sub_category": data.sub_category,
         "payment_type": data.payment_type,
         "description": data.description,
         "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
@@ -2137,42 +2182,6 @@ async def credit_card_report(request: Request, period: str = "monthly"):
         },
         "upcoming_dues": upcoming_dues,
         "cards": cards,
-    }
-
-# ==================== BILLS ENHANCED ====================
-
-@api_router.get("/bills/summary")
-async def bills_summary(request: Request):
-    """Get bills with overdue/upcoming/paid status"""
-    user = await get_current_user(request)
-    now = datetime.now(timezone.utc)
-    bills = await db.bills.find({"user_id": user.user_id}, {"_id": 0}).sort("due_date", 1).to_list(1000)
-
-    overdue = []
-    upcoming = []
-    paid = []
-    for b in bills:
-        due = b.get("due_date")
-        if isinstance(due, str):
-            try:
-                due = datetime.fromisoformat(due.replace('Z', '+00:00'))
-            except:
-                due = None
-        status = b.get("status", "pending")
-        if status == "paid":
-            paid.append({**b, "bill_status": "paid"})
-        elif due and due < now:
-            overdue.append({**b, "bill_status": "overdue", "days_overdue": (now - due).days})
-        else:
-            days_until = (due - now).days if due else 999
-            upcoming.append({**b, "bill_status": "upcoming", "days_until": days_until})
-
-    return {
-        "overdue": overdue, "overdue_count": len(overdue),
-        "upcoming": upcoming, "upcoming_count": len(upcoming),
-        "paid": paid, "paid_count": len(paid),
-        "total_overdue_amount": sum(b.get("amount", 0) for b in overdue),
-        "total_upcoming_amount": sum(b.get("amount", 0) for b in upcoming),
     }
 
 # ==================== NET WORTH ENDPOINT ====================

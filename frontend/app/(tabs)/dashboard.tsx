@@ -128,18 +128,31 @@ export default function DashboardScreen() {
           </View>
         </LinearGradient>
 
-        {/* Monthly Savings */}
-        <View style={[styles.savingsCard, { backgroundColor: colors.card }]}>
-          <View style={styles.savingsLeft}>
-            <Ionicons name="wallet-outline" size={24} color={monthlySavings >= 0 ? '#00E676' : '#FF5252'} />
-            <View style={styles.savingsTextContainer}>
-              <Text style={[styles.savingsLabel, { color: colors.textSecondary }]}>This Month Savings</Text>
-              <Text style={[styles.savingsValue, { color: monthlySavings >= 0 ? '#00E676' : '#FF5252' }]}>
-                {formatINR(monthlySavings)}
-              </Text>
+        {/* Monthly Savings with Color Indicator */}
+        {(() => {
+          const savingsRate = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0;
+          const savingsColor = monthlySavings < 0 ? '#FF5252' : savingsRate < 10 ? '#FFB300' : '#00E676';
+          const savingsIcon = monthlySavings < 0 ? 'trending-down' : savingsRate < 10 ? 'warning-outline' : 'trending-up';
+          const savingsLabel = monthlySavings < 0 ? 'Overspending' : savingsRate < 10 ? 'Low Savings' : 'Healthy Savings';
+          return (
+            <View style={[styles.savingsCard, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: savingsColor }]}>
+              <View style={styles.savingsLeft}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: savingsColor + '20', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={savingsIcon as any} size={22} color={savingsColor} />
+                </View>
+                <View style={styles.savingsTextContainer}>
+                  <Text style={[styles.savingsLabel, { color: colors.textSecondary }]}>This Month Savings</Text>
+                  <Text style={[styles.savingsValue, { color: savingsColor }]}>
+                    {formatINR(monthlySavings)}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ backgroundColor: savingsColor + '18', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}>
+                <Text style={{ color: savingsColor, fontSize: 11, fontWeight: '600' }}>{savingsLabel}</Text>
+              </View>
             </View>
-          </View>
-        </View>
+          );
+        })()}
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>

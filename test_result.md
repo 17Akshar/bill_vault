@@ -782,12 +782,98 @@ metadata:
   test_sequence: 7
   run_ui: true
 
+  - task: "Rental Income CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 5 - POST/GET/PUT/DELETE /api/rentals. Fields: property_name, tenant_name, rent_amount, due_day, address, notes. Includes payment tracking and current month payment status."
+      - working: true
+        agent: "testing"
+        comment: "✅ Rental Income CRUD API working perfectly! All 4 operations tested successfully: 1) POST /api/rentals - Created rental 'Test Flat' with ₹25,000 rent amount and due day 5, 2) GET /api/rentals - Retrieved 2 rentals with proper payment status enrichment, 3) PUT /api/rentals/{rental_id} - Updated rent amount from ₹25,000 to ₹27,000, 4) DELETE /api/rentals/{rental_id} - Successfully deleted rental. All endpoints properly authenticated and returning correct data structures."
+
+  - task: "Investment Headings CRUD API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 5 - POST/GET/PUT/DELETE /api/investment-headings. Fields: name, icon. GET enriches with investments count and totals."
+      - working: true
+        agent: "testing"
+        comment: "✅ Investment Headings CRUD API working perfectly! All 4 operations tested successfully: 1) POST /api/investment-headings - Created heading 'Test Stocks' with 'trending-up' icon, 2) GET /api/investment-headings - Retrieved 2 headings with investment count enrichment, 3) PUT /api/investment-headings/{heading_id} - Updated name from 'Test Stocks' to 'Updated Stocks', 4) DELETE /api/investment-headings/{heading_id} - Successfully deleted heading. All endpoints properly authenticated and returning correct data structures."
+
+  - task: "Credit Card Report API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 5 - GET /api/credit-cards/report. Returns summary (total_cards, total_limit, total_outstanding, utilization), upcoming_dues with status, and cards array."
+      - working: true
+        agent: "testing"
+        comment: "✅ Credit Card Report API working perfectly! GET /api/credit-cards/report returns proper structure with all required fields: summary (Total Cards: 0, Total Limit: ₹0.00, Total Outstanding: ₹0.00, Utilization: 0%), upcoming_dues array (0 items), and cards array. All calculations and date handling working correctly."
+
+  - task: "Bills Summary API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 5 - GET /api/bills/summary. Returns overdue/upcoming/paid bills with counts and total amounts."
+      - working: true
+        agent: "testing"
+        comment: "✅ Bills Summary API working perfectly! GET /api/bills/summary returns proper structure with all required fields: overdue (1 bill, ₹120.00), upcoming (1 bill, ₹125.50), paid (0 bills), with proper counts and total amounts. Date handling and status categorization working correctly."
+
+  - task: "Income with sub_category field"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 5 - Enhanced POST /api/income to include optional sub_category field for better categorization."
+      - working: true
+        agent: "testing"
+        comment: "✅ Income with sub_category working perfectly! POST /api/income successfully created income with sub_category 'Bonus' under category 'salary' (₹15,000). Field verified in both POST response and GET /api/income persistence. Sub-category data properly stored and retrieved from database."
+
+  - task: "Expense with sub_category field"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Phase 5 - Enhanced POST /api/expenses to include optional sub_category field for better categorization."
+      - working: true
+        agent: "testing"
+        comment: "✅ Expense with sub_category working perfectly! POST /api/expenses successfully created expense with sub_category 'Restaurant' under category 'food' (₹2,500). Field verified in both POST response and GET /api/expenses persistence. Sub-category data properly stored and retrieved from database."
+
 test_plan:
-  current_focus:
-    - "Rental Income CRUD API"
-    - "Investment Headings CRUD API"
-    - "Credit Card Report API"
-    - "Bills Summary API"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -809,3 +895,7 @@ agent_communication:
     message: "✅ Phase 3 Frontend Testing COMPLETED SUCCESSFULLY! Comprehensive testing of all 5 Phase 3 frontend screens at mobile viewport 390x844: 1) DASHBOARD FINANCIAL HUB: All 7 navigation cards present (Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders, Reports & Analytics with purple bar-chart icon), 2) REPORTS HUB SCREEN: Both sections working - ANALYTICS (3 cards with proper icons and chevrons) and EXPORT DATA (3 cards with download icons), 3) INVESTMENT ANALYTICS: Hero summary with 4 elements (₹9L invested, ₹9.65L current, +₹65K returns, +7.22%), Portfolio Allocation donut chart with legend, Performers section with Top/Bottom tabs and ranked cards, 4) CASH FLOW: Hero summary (₹50K income, ₹1.5K expense, ₹48.5K savings, 97% rate), Duration selector (3/6/12 months), Income vs Expense bar chart, Monthly Breakdown with progress bars, 5) EXPENSE BREAKDOWN: Expenses/Income toggle (red/green), Month selector chips (11/12 visible), Donut chart (₹1,500 total), Category list with Food & Dining. All screens use CRED dark theme (#0D0D12), proper ₹ formatting, mobile-responsive design, and seamless navigation. Phase 3 frontend is production-ready!"
   - agent: "testing"
     message: "✅ Budget Goals API testing completed successfully! All 8 test scenarios passed with 100% success rate: 1) Authentication working perfectly (single-user mode), 2) Test setup successful - created account (₹100K balance) and 3 test expenses (food ₹4K, transport ₹2K, shopping ₹5K), 3) Budget CRUD CREATE - successfully created 3 budgets (food ₹5K limit, transport ₹3K limit, shopping ₹4K limit), 4) GET /api/budgets - retrieved all 3 budgets correctly with proper categories, 5) GET /api/budgets/progress - comprehensive progress tracking working (Total Budgeted: ₹12K, Total Spent: ₹12.5K, Overall: 104.2%) with accurate status calculations (food: over_budget due to existing expenses ₹5.5K/₹5K, transport: on_track 66.7%, shopping: over_budget 125%), 6) PUT /api/budgets/{budget_id} - successfully updated budget limit from ₹5K to ₹6K, 7) DELETE /api/budgets/{budget_id} - successfully deleted budget and verified count decreased, 8) Complete cleanup successful. All endpoints properly authenticated, calculations accurate, and data validation working correctly. Budget Goals API is production-ready!"
+  - agent: "main"
+    message: "Phase 5 implementation complete. Test the following endpoints: 1) POST /api/rentals - Create rental (property_name, tenant_name, rent_amount, due_day), GET /api/rentals - List all, PUT /api/rentals/{id} - Update, DELETE /api/rentals/{id} - Delete. 2) POST /api/investment-headings - Create heading (name, icon), GET /api/investment-headings - List all, PUT /api/investment-headings/{id} - Update, DELETE /api/investment-headings/{id} - Delete. 3) GET /api/credit-cards/report - Summary with upcoming dues. 4) GET /api/bills/summary - Overdue/upcoming/paid breakdown. 5) POST /api/income with sub_category field. 6) POST /api/expenses with sub_category field. Auth: POST /api/auth/single-user to get token."
+  - agent: "testing"
+    message: "✅ Phase 5 Backend API Testing COMPLETED SUCCESSFULLY! All 6 test scenarios passed with 100% success rate: 1) RENTAL INCOME CRUD - All 4 operations working (POST: created 'Test Flat' ₹25K rent, GET: retrieved 2 rentals with payment status, PUT: updated rent ₹25K→₹27K, DELETE: successfully removed), 2) INVESTMENT HEADINGS CRUD - All 4 operations working (POST: created 'Test Stocks' heading, GET: retrieved 2 headings with investment counts, PUT: updated name to 'Updated Stocks', DELETE: successfully removed), 3) CREDIT CARDS REPORT - GET /api/credit-cards/report returns proper structure (summary with totals/utilization, upcoming_dues array, cards array), 4) BILLS SUMMARY - GET /api/bills/summary returns proper breakdown (1 overdue ₹120, 1 upcoming ₹125.50, 0 paid), 5) INCOME WITH SUB_CATEGORY - POST /api/income successfully created with sub_category 'Bonus' under 'salary' category, verified persistence in database, 6) EXPENSE WITH SUB_CATEGORY - POST /api/expenses successfully created with sub_category 'Restaurant' under 'food' category, verified persistence in database. All endpoints properly authenticated, data validation working, and cleanup successful. Phase 5 backend implementation is production-ready!"

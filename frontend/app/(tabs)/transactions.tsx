@@ -21,6 +21,7 @@ interface Transaction {
   type: 'income' | 'expense';
   amount: number;
   category: string;
+  sub_category?: string;
   description: string;
   date: string;
   account_id: string;
@@ -256,7 +257,7 @@ export default function TransactionsScreen() {
         <View style={styles.txInfo}>
           <Text style={[styles.txDesc, { color: colors.text }]} numberOfLines={1}>{item.description}</Text>
           <Text style={[styles.txMeta, { color: colors.textSecondary }]}>
-            {item.category} · {item.date ? format(parseISO(item.date), 'dd MMM') : ''}
+            {item.category}{item.sub_category ? ` › ${item.sub_category}` : ''} · {item.date ? format(parseISO(item.date), 'dd MMM') : ''}
             {accName ? ` · ${accName}` : ''}
           </Text>
         </View>

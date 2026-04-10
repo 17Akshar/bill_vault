@@ -46,6 +46,7 @@ export default function AddTransactionScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [subCategory, setSubCategory] = useState('');
 
   useEffect(() => {
     loadAccounts();
@@ -90,6 +91,7 @@ export default function AddTransactionScreen() {
           account_id: selectedAccountId,
           amount: parseFloat(amount),
           category,
+          sub_category: subCategory || null,
           source: description.trim(),
           date: date.toISOString(),
           notes: notes.trim() || null,
@@ -99,6 +101,7 @@ export default function AddTransactionScreen() {
           account_id: selectedAccountId,
           amount: parseFloat(amount),
           category,
+          sub_category: subCategory || null,
           payment_type: paymentType,
           description: description.trim(),
           date: date.toISOString(),
@@ -142,7 +145,7 @@ export default function AddTransactionScreen() {
                 styles.typeBtn,
                 txType === 'income' && { backgroundColor: '#00E676' },
               ]}
-              onPress={() => { setTxType('income'); setCategory(''); }}
+              onPress={() => { setTxType('income'); setCategory(''); setSubCategory(''); }}
             >
               <Ionicons
                 name="arrow-up-circle"
@@ -163,7 +166,7 @@ export default function AddTransactionScreen() {
                 styles.typeBtn,
                 txType === 'expense' && { backgroundColor: '#FF5252' },
               ]}
-              onPress={() => { setTxType('expense'); setCategory(''); }}
+              onPress={() => { setTxType('expense'); setCategory(''); setSubCategory(''); }}
             >
               <Ionicons
                 name="arrow-down-circle"
@@ -226,7 +229,7 @@ export default function AddTransactionScreen() {
                     backgroundColor: txType === 'income' ? 'rgba(0,230,118,0.1)' : 'rgba(255,82,82,0.1)',
                   },
                 ]}
-                onPress={() => setCategory(cat.key)}
+                onPress={() => { setCategory(cat.key); setSubCategory(''); }}
               >
                 <Ionicons
                   name={cat.icon as any}
@@ -245,6 +248,46 @@ export default function AddTransactionScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Sub-Category Picker */}
+          {category && (() => {
+            const selectedCat = categories.find(c => c.key === category);
+            const subs = (selectedCat as any)?.subs || [];
+            if (subs.length === 0) return null;
+            const accentColor = txType === 'income' ? '#00E676' : '#FF5252';
+            return (
+              <>
+                <Text style={[styles.label, { color: colors.text }]}>Sub-Category (Optional)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                  {subs.map((sub: string) => (
+                    <TouchableOpacity
+                      key={sub}
+                      style={[
+                        styles.subCatChip,
+                        { backgroundColor: colors.card, borderColor: colors.border },
+                        subCategory === sub && {
+                          borderColor: accentColor,
+                          borderWidth: 2,
+                          backgroundColor: accentColor + '18',
+                        },
+                      ]}
+                      onPress={() => setSubCategory(subCategory === sub ? '' : sub)}
+                    >
+                      <Text
+                        style={{
+                          color: subCategory === sub ? accentColor : colors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: subCategory === sub ? '600' : '400',
+                        }}
+                      >
+                        {sub}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            );
+          })()}
 
           {/* Account Picker */}
           <Text style={[styles.label, { color: colors.text }]}>Account</Text>
@@ -554,6 +597,13 @@ const styles = StyleSheet.create({
   paymentLabel: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  subCatChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
   },
   saveButton: {
     height: 54,

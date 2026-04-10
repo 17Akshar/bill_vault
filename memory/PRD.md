@@ -64,3 +64,25 @@
 - Budget Goals (CRUD + progress tracking with category-wise spending vs limit, status alerts, unbudgeted spending detection)
 - App Store prep (app.json updated: name, permissions, bundle IDs, splash screen)
 
+## Phase 5 — IN PROGRESS (UI/UX & Feature Overhaul)
+
+### Backend Updates ✅
+- Credit Card Report endpoint with summary, upcoming dues, card data
+- Bills Summary endpoint with overdue/upcoming/paid breakdown + color indicators
+- Rental Income CRUD (property, tenant, rent amount, payments)
+- Investment Headings CRUD (group investments under categories)
+- Sub-category support on Income & Expense models
+
+### Frontend Updates ✅
+- **Investments Screen**: Overhauled with Headings system (e.g., Shares, MF, FD) - create/edit/delete headings, nest investments under them, expandable sections, ungrouped investments section, returns calculation per heading
+- **Bills Screen**: Enhanced with overdue/upcoming color indicators (Red = overdue, Yellow = due soon, Green = paid), status badges, overdue banner, edit/delete action buttons per bill
+- **Dashboard**: Added Rental Income to Financial Hub (9 total modules), Savings card with color-coded health indicator (Green=Healthy, Yellow=Low, Red=Overspending)
+- **Add Transaction**: Category + Sub-category system with hierarchical selection (e.g., Food & Dining → Restaurant/Fast Food/Coffee)
+- **Transactions List**: Shows sub-category in transaction meta (e.g., "food › Restaurant")
+- **Global Back Arrows**: Verified on all non-tab screens
+
+### Remaining Work
+- Credit Cards screen polish (EMI reporting)
+- Rentals screen polish
+- Additional color indicators across all financial summaries
+

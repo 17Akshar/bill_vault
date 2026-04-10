@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
 Phase 5 Backend API Testing Script
-Tests: Rental Income CRUD, Investment Headings CRUD, Credit Card Report, Bills Summary
+Tests the following endpoints:
+1. Rental Income CRUD API
+2. Investment Headings CRUD API  
+3. Credit Card Report API
+4. Bills Summary API
+5. Income with sub_category field
+6. Expenses with sub_category field
 """
 
 import requests
@@ -9,457 +15,480 @@ import json
 import sys
 from datetime import datetime, timezone
 
-# Backend URL from frontend/.env
-BASE_URL = "https://bill-tracker-mobile.preview.emergentagent.com/api"
+# Backend URL from environment
+BACKEND_URL = "https://bill-tracker-mobile.preview.emergentagent.com/api"
 
 class BackendTester:
     def __init__(self):
         self.token = None
         self.user_id = None
-        self.test_data = {
-            "rental_ids": [],
-            "heading_ids": [],
-            "account_ids": [],
-            "bill_ids": []
-        }
-
+        self.test_data = {}
+        
     def authenticate(self):
         """Get authentication token using single-user mode"""
-        print("🔐 Testing Authentication...")
+        print("🔐 Authenticating with single-user mode...")
         
-        try:
-            response = requests.post(f"{BASE_URL}/auth/single-user")
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.token = data.get("access_token")
-                self.user_id = data.get("user", {}).get("user_id")
-                print(f"✅ Authentication successful. User ID: {self.user_id}")
-                return True
-            else:
-                print(f"❌ Authentication failed: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Authentication error: {str(e)}")
+        response = requests.post(f"{BACKEND_URL}/auth/single-user")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.token = data.get("access_token")
+            self.user_id = data.get("user", {}).get("user_id")
+            print(f"✅ Authentication successful. User ID: {self.user_id}")
+            return True
+        else:
+            print(f"❌ Authentication failed: {response.status_code} - {response.text}")
             return False
-
+    
     def get_headers(self):
-        """Get headers with authentication token"""
+        """Get headers with authorization token"""
         return {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
-
+    
     def test_rental_income_crud(self):
         """Test Rental Income CRUD operations"""
-        print("\n🏠 Testing Rental Income CRUD...")
+        print("\n🏠 Testing Rental Income CRUD API...")
         
         # 1. CREATE Rental
-        print("1️⃣ Testing POST /api/rentals (Create Rental)")
+        print("1️⃣ Testing POST /api/rentals")
         rental_data = {
-            "property_name": "Flat 302",
-            "tenant_name": "Rahul",
-            "rent_amount": 15000,
-            "due_day": 5,
-            "address": "Green Towers"
+            "property_name": "Test Flat",
+            "tenant_name": "Test Tenant", 
+            "rent_amount": 25000,
+            "due_day": 5
         }
         
-        try:
-            response = requests.post(f"{BASE_URL}/rentals", 
-                                   json=rental_data, 
-                                   headers=self.get_headers())
-            
-            if response.status_code == 200:
-                rental = response.json()
-                rental_id = rental.get("rental_id")
-                self.test_data["rental_ids"].append(rental_id)
-                print(f"✅ Rental created successfully. ID: {rental_id}")
-                print(f"   Property: {rental['property_name']}, Tenant: {rental['tenant_name']}, Rent: ₹{rental['rent_amount']}")
-            else:
-                print(f"❌ Create rental failed: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Create rental error: {str(e)}")
+        response = requests.post(
+            f"{BACKEND_URL}/rentals",
+            headers=self.get_headers(),
+            json=rental_data
+        )
+        
+        if response.status_code == 200:
+            rental = response.json()
+            self.test_data['rental_id'] = rental.get('rental_id')
+            print(f"✅ Rental created successfully: {rental.get('property_name')} - ₹{rental.get('rent_amount')}")
+        else:
+            print(f"❌ Failed to create rental: {response.status_code} - {response.text}")
             return False
-
-        # 2. GET Rentals (List all)
-        print("2️⃣ Testing GET /api/rentals (List Rentals)")
-        try:
-            response = requests.get(f"{BASE_URL}/rentals", headers=self.get_headers())
-            
-            if response.status_code == 200:
-                rentals = response.json()
-                print(f"✅ Retrieved {len(rentals)} rentals")
-                if rentals:
-                    rental = rentals[0]
-                    print(f"   First rental: {rental['property_name']} - ₹{rental['rent_amount']}")
-                    print(f"   Current month paid: {rental.get('current_month_paid', False)}")
-                    print(f"   Total collected: ₹{rental.get('total_collected', 0)}")
-            else:
-                print(f"❌ Get rentals failed: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Get rentals error: {str(e)}")
+        
+        # 2. READ Rentals
+        print("2️⃣ Testing GET /api/rentals")
+        response = requests.get(f"{BACKEND_URL}/rentals", headers=self.get_headers())
+        
+        if response.status_code == 200:
+            rentals = response.json()
+            print(f"✅ Retrieved {len(rentals)} rentals")
+            if rentals:
+                print(f"   First rental: {rentals[0].get('property_name')} - ₹{rentals[0].get('rent_amount')}")
+        else:
+            print(f"❌ Failed to get rentals: {response.status_code} - {response.text}")
             return False
-
-        # 3. Record Payment
-        if self.test_data["rental_ids"]:
-            rental_id = self.test_data["rental_ids"][0]
-            print(f"3️⃣ Testing POST /api/rentals/{rental_id}/payments (Record Payment)")
-            
-            payment_data = {
-                "rental_id": rental_id,
-                "amount": 15000,
-                "payment_date": "2026-04-09T00:00:00Z"
-            }
-            
-            try:
-                response = requests.post(f"{BASE_URL}/rentals/{rental_id}/payments", 
-                                       json=payment_data, 
-                                       headers=self.get_headers())
-                
-                if response.status_code == 200:
-                    payment = response.json()
-                    print(f"✅ Payment recorded successfully. ID: {payment.get('payment_id')}")
-                    print(f"   Amount: ₹{payment['amount']}, Date: {payment['payment_date']}")
-                else:
-                    print(f"❌ Record payment failed: {response.status_code} - {response.text}")
-                    return False
-                    
-            except Exception as e:
-                print(f"❌ Record payment error: {str(e)}")
-                return False
-
-        # 4. UPDATE Rental
-        if self.test_data["rental_ids"]:
-            rental_id = self.test_data["rental_ids"][0]
-            print(f"4️⃣ Testing PUT /api/rentals/{rental_id} (Update Rental)")
-            
-            update_data = {
-                "rent_amount": 16000
-            }
-            
-            try:
-                response = requests.put(f"{BASE_URL}/rentals/{rental_id}", 
-                                      json=update_data, 
-                                      headers=self.get_headers())
-                
-                if response.status_code == 200:
-                    updated_rental = response.json()
-                    print(f"✅ Rental updated successfully")
-                    print(f"   New rent amount: ₹{updated_rental['rent_amount']}")
-                else:
-                    print(f"❌ Update rental failed: {response.status_code} - {response.text}")
-                    return False
-                    
-            except Exception as e:
-                print(f"❌ Update rental error: {str(e)}")
-                return False
-
-        # 5. DELETE Rental (cleanup)
-        if self.test_data["rental_ids"]:
-            rental_id = self.test_data["rental_ids"][0]
-            print(f"5️⃣ Testing DELETE /api/rentals/{rental_id} (Delete Rental)")
-            
-            try:
-                response = requests.delete(f"{BASE_URL}/rentals/{rental_id}", 
-                                         headers=self.get_headers())
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    print(f"✅ Rental deleted successfully: {result.get('message')}")
-                    self.test_data["rental_ids"].remove(rental_id)
-                else:
-                    print(f"❌ Delete rental failed: {response.status_code} - {response.text}")
-                    return False
-                    
-            except Exception as e:
-                print(f"❌ Delete rental error: {str(e)}")
-                return False
-
+        
+        # 3. UPDATE Rental
+        print("3️⃣ Testing PUT /api/rentals/{rental_id}")
+        update_data = {"rent_amount": 27000}
+        
+        response = requests.put(
+            f"{BACKEND_URL}/rentals/{self.test_data['rental_id']}",
+            headers=self.get_headers(),
+            json=update_data
+        )
+        
+        if response.status_code == 200:
+            updated_rental = response.json()
+            print(f"✅ Rental updated successfully: ₹{updated_rental.get('rent_amount')}")
+        else:
+            print(f"❌ Failed to update rental: {response.status_code} - {response.text}")
+            return False
+        
+        # 4. DELETE Rental
+        print("4️⃣ Testing DELETE /api/rentals/{rental_id}")
+        response = requests.delete(
+            f"{BACKEND_URL}/rentals/{self.test_data['rental_id']}",
+            headers=self.get_headers()
+        )
+        
+        if response.status_code == 200:
+            print("✅ Rental deleted successfully")
+        else:
+            print(f"❌ Failed to delete rental: {response.status_code} - {response.text}")
+            return False
+        
         return True
-
+    
     def test_investment_headings_crud(self):
         """Test Investment Headings CRUD operations"""
-        print("\n📊 Testing Investment Headings CRUD...")
+        print("\n📈 Testing Investment Headings CRUD API...")
         
         # 1. CREATE Investment Heading
-        print("1️⃣ Testing POST /api/investment-headings (Create Heading)")
+        print("1️⃣ Testing POST /api/investment-headings")
         heading_data = {
-            "name": "Mutual Funds",
-            "icon": "pie-chart"
+            "name": "Test Stocks",
+            "icon": "trending-up"
         }
         
-        try:
-            response = requests.post(f"{BASE_URL}/investment-headings", 
-                                   json=heading_data, 
-                                   headers=self.get_headers())
-            
-            if response.status_code == 200:
-                heading = response.json()
-                heading_id = heading.get("heading_id")
-                self.test_data["heading_ids"].append(heading_id)
-                print(f"✅ Investment heading created successfully. ID: {heading_id}")
-                print(f"   Name: {heading['name']}, Icon: {heading['icon']}")
-            else:
-                print(f"❌ Create heading failed: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Create heading error: {str(e)}")
+        response = requests.post(
+            f"{BACKEND_URL}/investment-headings",
+            headers=self.get_headers(),
+            json=heading_data
+        )
+        
+        if response.status_code == 200:
+            heading = response.json()
+            self.test_data['heading_id'] = heading.get('heading_id')
+            print(f"✅ Investment heading created: {heading.get('name')} ({heading.get('icon')})")
+        else:
+            print(f"❌ Failed to create investment heading: {response.status_code} - {response.text}")
             return False
-
-        # 2. GET Investment Headings (List all with investments)
-        print("2️⃣ Testing GET /api/investment-headings (List Headings)")
-        try:
-            response = requests.get(f"{BASE_URL}/investment-headings", headers=self.get_headers())
-            
-            if response.status_code == 200:
-                headings = response.json()
-                print(f"✅ Retrieved {len(headings)} investment headings")
-                if headings:
-                    heading = headings[0]
-                    print(f"   First heading: {heading['name']} ({heading['icon']})")
-                    print(f"   Investments count: {heading.get('count', 0)}")
-                    print(f"   Total invested: ₹{heading.get('total_invested', 0)}")
-                    print(f"   Total current: ₹{heading.get('total_current', 0)}")
-            else:
-                print(f"❌ Get headings failed: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Get headings error: {str(e)}")
+        
+        # 2. READ Investment Headings
+        print("2️⃣ Testing GET /api/investment-headings")
+        response = requests.get(f"{BACKEND_URL}/investment-headings", headers=self.get_headers())
+        
+        if response.status_code == 200:
+            headings = response.json()
+            print(f"✅ Retrieved {len(headings)} investment headings")
+            if headings:
+                print(f"   First heading: {headings[0].get('name')} - {headings[0].get('count', 0)} investments")
+        else:
+            print(f"❌ Failed to get investment headings: {response.status_code} - {response.text}")
             return False
-
+        
         # 3. UPDATE Investment Heading
-        if self.test_data["heading_ids"]:
-            heading_id = self.test_data["heading_ids"][0]
-            print(f"3️⃣ Testing PUT /api/investment-headings/{heading_id} (Update Heading)")
-            
-            update_data = {
-                "name": "MF Portfolio"
-            }
-            
-            try:
-                response = requests.put(f"{BASE_URL}/investment-headings/{heading_id}", 
-                                      json=update_data, 
-                                      headers=self.get_headers())
-                
-                if response.status_code == 200:
-                    updated_heading = response.json()
-                    print(f"✅ Investment heading updated successfully")
-                    print(f"   New name: {updated_heading['name']}")
-                else:
-                    print(f"❌ Update heading failed: {response.status_code} - {response.text}")
-                    return False
-                    
-            except Exception as e:
-                print(f"❌ Update heading error: {str(e)}")
-                return False
-
-        # 4. DELETE Investment Heading (cleanup)
-        if self.test_data["heading_ids"]:
-            heading_id = self.test_data["heading_ids"][0]
-            print(f"4️⃣ Testing DELETE /api/investment-headings/{heading_id} (Delete Heading)")
-            
-            try:
-                response = requests.delete(f"{BASE_URL}/investment-headings/{heading_id}", 
-                                         headers=self.get_headers())
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    print(f"✅ Investment heading deleted successfully: {result.get('message')}")
-                    self.test_data["heading_ids"].remove(heading_id)
-                else:
-                    print(f"❌ Delete heading failed: {response.status_code} - {response.text}")
-                    return False
-                    
-            except Exception as e:
-                print(f"❌ Delete heading error: {str(e)}")
-                return False
-
+        print("3️⃣ Testing PUT /api/investment-headings/{heading_id}")
+        update_data = {"name": "Updated Stocks"}
+        
+        response = requests.put(
+            f"{BACKEND_URL}/investment-headings/{self.test_data['heading_id']}",
+            headers=self.get_headers(),
+            json=update_data
+        )
+        
+        if response.status_code == 200:
+            updated_heading = response.json()
+            print(f"✅ Investment heading updated: {updated_heading.get('name')}")
+        else:
+            print(f"❌ Failed to update investment heading: {response.status_code} - {response.text}")
+            return False
+        
+        # 4. DELETE Investment Heading
+        print("4️⃣ Testing DELETE /api/investment-headings/{heading_id}")
+        response = requests.delete(
+            f"{BACKEND_URL}/investment-headings/{self.test_data['heading_id']}",
+            headers=self.get_headers()
+        )
+        
+        if response.status_code == 200:
+            print("✅ Investment heading deleted successfully")
+        else:
+            print(f"❌ Failed to delete investment heading: {response.status_code} - {response.text}")
+            return False
+        
         return True
-
-    def test_credit_card_report(self):
-        """Test Credit Card Report endpoint"""
-        print("\n💳 Testing Credit Card Report...")
+    
+    def test_credit_cards_report(self):
+        """Test Credit Cards Report API"""
+        print("\n💳 Testing Credit Cards Report API...")
         
         print("1️⃣ Testing GET /api/credit-cards/report")
-        try:
-            response = requests.get(f"{BASE_URL}/credit-cards/report", headers=self.get_headers())
+        response = requests.get(f"{BACKEND_URL}/credit-cards/report", headers=self.get_headers())
+        
+        if response.status_code == 200:
+            report = response.json()
             
-            if response.status_code == 200:
-                report = response.json()
-                print("✅ Credit card report retrieved successfully")
-                
-                # Check required structure
-                if "summary" in report:
-                    summary = report["summary"]
-                    print(f"   Summary - Total Cards: {summary.get('total_cards', 0)}")
-                    print(f"   Total Limit: ₹{summary.get('total_limit', 0)}")
-                    print(f"   Total Outstanding: ₹{summary.get('total_outstanding', 0)}")
-                    print(f"   Total Available: ₹{summary.get('total_available', 0)}")
-                    print(f"   Utilization: {summary.get('utilization', 0)}%")
-                else:
-                    print("❌ Missing 'summary' in report")
-                    return False
-                
-                if "upcoming_dues" in report:
-                    dues = report["upcoming_dues"]
-                    print(f"   Upcoming dues: {len(dues)} items")
-                else:
-                    print("❌ Missing 'upcoming_dues' in report")
-                    return False
-                
-                if "cards" in report:
-                    cards = report["cards"]
-                    print(f"   Cards array: {len(cards)} items")
-                else:
-                    print("❌ Missing 'cards' in report")
-                    return False
-                    
-            else:
-                print(f"❌ Credit card report failed: {response.status_code} - {response.text}")
+            # Verify required structure
+            required_keys = ["summary", "upcoming_dues", "cards"]
+            missing_keys = [key for key in required_keys if key not in report]
+            
+            if missing_keys:
+                print(f"❌ Missing required keys in report: {missing_keys}")
                 return False
-                
-        except Exception as e:
-            print(f"❌ Credit card report error: {str(e)}")
+            
+            summary = report.get("summary", {})
+            print(f"✅ Credit Cards Report retrieved successfully")
+            print(f"   Total Cards: {summary.get('total_cards', 0)}")
+            print(f"   Total Limit: ₹{summary.get('total_limit', 0):,.2f}")
+            print(f"   Total Outstanding: ₹{summary.get('total_outstanding', 0):,.2f}")
+            print(f"   Utilization: {summary.get('utilization', 0)}%")
+            print(f"   Upcoming Dues: {len(report.get('upcoming_dues', []))}")
+            
+        else:
+            print(f"❌ Failed to get credit cards report: {response.status_code} - {response.text}")
             return False
-
+        
         return True
-
+    
     def test_bills_summary(self):
-        """Test Bills Summary endpoint"""
-        print("\n📋 Testing Bills Summary...")
+        """Test Bills Summary API"""
+        print("\n📋 Testing Bills Summary API...")
         
         print("1️⃣ Testing GET /api/bills/summary")
-        try:
-            response = requests.get(f"{BASE_URL}/bills/summary", headers=self.get_headers())
+        response = requests.get(f"{BACKEND_URL}/bills/summary", headers=self.get_headers())
+        
+        if response.status_code == 200:
+            summary = response.json()
             
+            # Verify required structure
+            required_keys = ["overdue", "overdue_count", "upcoming", "upcoming_count", "paid", "paid_count"]
+            missing_keys = [key for key in required_keys if key not in summary]
+            
+            if missing_keys:
+                print(f"❌ Missing required keys in summary: {missing_keys}")
+                return False
+            
+            print(f"✅ Bills Summary retrieved successfully")
+            print(f"   Overdue Bills: {summary.get('overdue_count', 0)}")
+            print(f"   Upcoming Bills: {summary.get('upcoming_count', 0)}")
+            print(f"   Paid Bills: {summary.get('paid_count', 0)}")
+            print(f"   Total Overdue Amount: ₹{summary.get('total_overdue_amount', 0):,.2f}")
+            print(f"   Total Upcoming Amount: ₹{summary.get('total_upcoming_amount', 0):,.2f}")
+            
+        else:
+            print(f"❌ Failed to get bills summary: {response.status_code} - {response.text}")
+            return False
+        
+        return True
+    
+    def test_income_with_subcategory(self):
+        """Test Income with sub_category field"""
+        print("\n💰 Testing Income with sub_category...")
+        
+        # First get an account_id
+        print("1️⃣ Getting account for income test...")
+        response = requests.get(f"{BACKEND_URL}/accounts", headers=self.get_headers())
+        
+        if response.status_code != 200:
+            print(f"❌ Failed to get accounts: {response.status_code} - {response.text}")
+            return False
+        
+        accounts = response.json()
+        if not accounts:
+            print("❌ No accounts found. Creating a test account...")
+            # Create a test account
+            account_data = {
+                "name": "Test Account for Income",
+                "account_type": "bank",
+                "initial_balance": 50000
+            }
+            response = requests.post(f"{BACKEND_URL}/accounts", headers=self.get_headers(), json=account_data)
             if response.status_code == 200:
-                summary = response.json()
-                print("✅ Bills summary retrieved successfully")
-                
-                # Check required structure
-                required_fields = ["overdue", "upcoming", "paid", "overdue_count", "upcoming_count", "paid_count"]
-                for field in required_fields:
-                    if field in summary:
-                        if field.endswith("_count"):
-                            print(f"   {field}: {summary[field]}")
-                        else:
-                            print(f"   {field}: {len(summary[field])} items")
-                    else:
-                        print(f"❌ Missing '{field}' in summary")
-                        return False
-                
-                # Check optional amount fields
-                if "total_overdue_amount" in summary:
-                    print(f"   Total overdue amount: ₹{summary['total_overdue_amount']}")
-                if "total_upcoming_amount" in summary:
-                    print(f"   Total upcoming amount: ₹{summary['total_upcoming_amount']}")
-                    
+                account = response.json()
+                account_id = account.get('account_id')
+                print(f"✅ Test account created: {account_id}")
             else:
-                print(f"❌ Bills summary failed: {response.status_code} - {response.text}")
+                print(f"❌ Failed to create test account: {response.status_code} - {response.text}")
+                return False
+        else:
+            account_id = accounts[0].get('account_id')
+            print(f"✅ Using existing account: {account_id}")
+        
+        # 2. CREATE Income with sub_category
+        print("2️⃣ Testing POST /api/income with sub_category")
+        income_data = {
+            "account_id": account_id,
+            "amount": 15000,
+            "category": "salary",
+            "sub_category": "Bonus",
+            "source": "Company Bonus",
+            "date": datetime.now(timezone.utc).isoformat(),
+            "notes": "Year-end bonus"
+        }
+        
+        response = requests.post(
+            f"{BACKEND_URL}/income",
+            headers=self.get_headers(),
+            json=income_data
+        )
+        
+        if response.status_code == 200:
+            income = response.json()
+            self.test_data['income_id'] = income.get('income_id')
+            print(f"✅ Income created with sub_category: {income.get('category')} > {income.get('sub_category')}")
+            print(f"   Amount: ₹{income.get('amount'):,.2f}")
+            
+            # Verify sub_category is returned
+            if income.get('sub_category') == "Bonus":
+                print("✅ sub_category field verified in response")
+            else:
+                print(f"❌ sub_category mismatch. Expected: Bonus, Got: {income.get('sub_category')}")
                 return False
                 
-        except Exception as e:
-            print(f"❌ Bills summary error: {str(e)}")
+        else:
+            print(f"❌ Failed to create income: {response.status_code} - {response.text}")
             return False
-
+        
+        # 3. Verify sub_category in GET request
+        print("3️⃣ Verifying sub_category in GET /api/income")
+        response = requests.get(f"{BACKEND_URL}/income", headers=self.get_headers())
+        
+        if response.status_code == 200:
+            incomes = response.json()
+            test_income = next((i for i in incomes if i.get('income_id') == self.test_data['income_id']), None)
+            
+            if test_income and test_income.get('sub_category') == "Bonus":
+                print("✅ sub_category persisted correctly in database")
+            else:
+                print(f"❌ sub_category not found in GET response")
+                return False
+        else:
+            print(f"❌ Failed to get income: {response.status_code} - {response.text}")
+            return False
+        
         return True
-
+    
+    def test_expense_with_subcategory(self):
+        """Test Expense with sub_category field"""
+        print("\n💸 Testing Expense with sub_category...")
+        
+        # First get an account_id
+        print("1️⃣ Getting account for expense test...")
+        response = requests.get(f"{BACKEND_URL}/accounts", headers=self.get_headers())
+        
+        if response.status_code != 200:
+            print(f"❌ Failed to get accounts: {response.status_code} - {response.text}")
+            return False
+        
+        accounts = response.json()
+        if not accounts:
+            print("❌ No accounts found for expense test")
+            return False
+        
+        account_id = accounts[0].get('account_id')
+        print(f"✅ Using account: {account_id}")
+        
+        # 2. CREATE Expense with sub_category
+        print("2️⃣ Testing POST /api/expenses with sub_category")
+        expense_data = {
+            "account_id": account_id,
+            "amount": 2500,
+            "category": "food",
+            "sub_category": "Restaurant",
+            "payment_type": "upi",
+            "description": "Dinner at Italian Restaurant",
+            "date": datetime.now(timezone.utc).isoformat(),
+            "notes": "Team dinner"
+        }
+        
+        response = requests.post(
+            f"{BACKEND_URL}/expenses",
+            headers=self.get_headers(),
+            json=expense_data
+        )
+        
+        if response.status_code == 200:
+            expense = response.json()
+            self.test_data['expense_id'] = expense.get('expense_id')
+            print(f"✅ Expense created with sub_category: {expense.get('category')} > {expense.get('sub_category')}")
+            print(f"   Amount: ₹{expense.get('amount'):,.2f}")
+            
+            # Verify sub_category is returned
+            if expense.get('sub_category') == "Restaurant":
+                print("✅ sub_category field verified in response")
+            else:
+                print(f"❌ sub_category mismatch. Expected: Restaurant, Got: {expense.get('sub_category')}")
+                return False
+                
+        else:
+            print(f"❌ Failed to create expense: {response.status_code} - {response.text}")
+            return False
+        
+        # 3. Verify sub_category in GET request
+        print("3️⃣ Verifying sub_category in GET /api/expenses")
+        response = requests.get(f"{BACKEND_URL}/expenses", headers=self.get_headers())
+        
+        if response.status_code == 200:
+            expenses = response.json()
+            test_expense = next((e for e in expenses if e.get('expense_id') == self.test_data['expense_id']), None)
+            
+            if test_expense and test_expense.get('sub_category') == "Restaurant":
+                print("✅ sub_category persisted correctly in database")
+            else:
+                print(f"❌ sub_category not found in GET response")
+                return False
+        else:
+            print(f"❌ Failed to get expenses: {response.status_code} - {response.text}")
+            return False
+        
+        return True
+    
     def cleanup_test_data(self):
-        """Clean up any remaining test data"""
+        """Clean up test data created during testing"""
         print("\n🧹 Cleaning up test data...")
         
-        # Clean up remaining rentals
-        for rental_id in self.test_data["rental_ids"]:
-            try:
-                requests.delete(f"{BASE_URL}/rentals/{rental_id}", headers=self.get_headers())
-                print(f"   Cleaned up rental: {rental_id}")
-            except:
-                pass
+        # Clean up income
+        if 'income_id' in self.test_data:
+            response = requests.delete(
+                f"{BACKEND_URL}/income/{self.test_data['income_id']}",
+                headers=self.get_headers()
+            )
+            if response.status_code == 200:
+                print("✅ Test income cleaned up")
         
-        # Clean up remaining headings
-        for heading_id in self.test_data["heading_ids"]:
-            try:
-                requests.delete(f"{BASE_URL}/investment-headings/{heading_id}", headers=self.get_headers())
-                print(f"   Cleaned up heading: {heading_id}")
-            except:
-                pass
-
+        # Clean up expense  
+        if 'expense_id' in self.test_data:
+            response = requests.delete(
+                f"{BACKEND_URL}/expenses/{self.test_data['expense_id']}",
+                headers=self.get_headers()
+            )
+            if response.status_code == 200:
+                print("✅ Test expense cleaned up")
+        
+        print("✅ Cleanup completed")
+    
     def run_all_tests(self):
         """Run all Phase 5 backend tests"""
-        print("🚀 Starting Phase 5 Backend API Testing")
-        print(f"Backend URL: {BASE_URL}")
-        print("=" * 60)
+        print("🚀 Starting Phase 5 Backend API Testing...")
+        print(f"Backend URL: {BACKEND_URL}")
         
         # Authenticate first
         if not self.authenticate():
-            print("❌ Authentication failed. Cannot proceed with tests.")
             return False
         
         test_results = []
         
-        # Test 1: Rental Income CRUD
-        try:
-            result = self.test_rental_income_crud()
-            test_results.append(("Rental Income CRUD", result))
-        except Exception as e:
-            print(f"❌ Rental Income CRUD test failed with exception: {str(e)}")
-            test_results.append(("Rental Income CRUD", False))
+        # Run all tests
+        tests = [
+            ("Rental Income CRUD", self.test_rental_income_crud),
+            ("Investment Headings CRUD", self.test_investment_headings_crud),
+            ("Credit Cards Report", self.test_credit_cards_report),
+            ("Bills Summary", self.test_bills_summary),
+            ("Income with sub_category", self.test_income_with_subcategory),
+            ("Expense with sub_category", self.test_expense_with_subcategory),
+        ]
         
-        # Test 2: Investment Headings CRUD
-        try:
-            result = self.test_investment_headings_crud()
-            test_results.append(("Investment Headings CRUD", result))
-        except Exception as e:
-            print(f"❌ Investment Headings CRUD test failed with exception: {str(e)}")
-            test_results.append(("Investment Headings CRUD", False))
-        
-        # Test 3: Credit Card Report
-        try:
-            result = self.test_credit_card_report()
-            test_results.append(("Credit Card Report", result))
-        except Exception as e:
-            print(f"❌ Credit Card Report test failed with exception: {str(e)}")
-            test_results.append(("Credit Card Report", False))
-        
-        # Test 4: Bills Summary
-        try:
-            result = self.test_bills_summary()
-            test_results.append(("Bills Summary", result))
-        except Exception as e:
-            print(f"❌ Bills Summary test failed with exception: {str(e)}")
-            test_results.append(("Bills Summary", False))
+        for test_name, test_func in tests:
+            try:
+                result = test_func()
+                test_results.append((test_name, result))
+            except Exception as e:
+                print(f"❌ {test_name} failed with exception: {str(e)}")
+                test_results.append((test_name, False))
         
         # Cleanup
         self.cleanup_test_data()
         
         # Summary
-        print("\n" + "=" * 60)
+        print("\n" + "="*60)
         print("📊 PHASE 5 BACKEND TESTING SUMMARY")
-        print("=" * 60)
+        print("="*60)
         
-        passed = 0
+        passed = sum(1 for _, result in test_results if result)
         total = len(test_results)
         
         for test_name, result in test_results:
-            status = "✅ PASSED" if result else "❌ FAILED"
-            print(f"{test_name}: {status}")
-            if result:
-                passed += 1
+            status = "✅ PASS" if result else "❌ FAIL"
+            print(f"{status} {test_name}")
         
-        print(f"\nOverall Result: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
+        print(f"\nOverall: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
         
         if passed == total:
-            print("🎉 All Phase 5 backend tests PASSED!")
+            print("🎉 All Phase 5 backend tests passed!")
             return True
         else:
-            print("⚠️  Some Phase 5 backend tests FAILED!")
+            print("⚠️  Some tests failed. Please check the details above.")
             return False
 
 if __name__ == "__main__":

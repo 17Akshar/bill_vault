@@ -32,33 +32,33 @@ export const formatINRCompact = (amount: number): string => {
   return `${sign}\u20B9${abs.toFixed(0)}`;
 };
 
-// Category definitions
+// Category definitions with sub-categories
 export const INCOME_CATEGORIES = [
-  { key: 'salary', label: 'Salary', icon: 'briefcase-outline' },
-  { key: 'business', label: 'Business', icon: 'storefront-outline' },
-  { key: 'freelance', label: 'Freelance', icon: 'laptop-outline' },
-  { key: 'rental', label: 'Rental', icon: 'home-outline' },
-  { key: 'investment', label: 'Investment', icon: 'trending-up-outline' },
-  { key: 'gift', label: 'Gift', icon: 'gift-outline' },
-  { key: 'refund', label: 'Refund', icon: 'arrow-undo-outline' },
-  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' },
+  { key: 'salary', label: 'Salary', icon: 'briefcase-outline', subs: ['Base Salary', 'Bonus', 'Overtime', 'Arrears'] },
+  { key: 'business', label: 'Business', icon: 'storefront-outline', subs: ['Revenue', 'Commission', 'Consulting'] },
+  { key: 'freelance', label: 'Freelance', icon: 'laptop-outline', subs: ['Project', 'Retainer', 'Gig'] },
+  { key: 'rental', label: 'Rental', icon: 'home-outline', subs: ['House Rent', 'Shop Rent', 'PG/Hostel'] },
+  { key: 'investment', label: 'Investment', icon: 'trending-up-outline', subs: ['Dividends', 'Interest', 'Capital Gains', 'FD Maturity'] },
+  { key: 'gift', label: 'Gift', icon: 'gift-outline', subs: ['Family', 'Reward', 'Cashback'] },
+  { key: 'refund', label: 'Refund', icon: 'arrow-undo-outline', subs: ['Shopping', 'Service', 'Tax'] },
+  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline', subs: [] },
 ];
 
 export const EXPENSE_CATEGORIES = [
-  { key: 'food', label: 'Food & Dining', icon: 'restaurant-outline' },
-  { key: 'groceries', label: 'Groceries', icon: 'basket-outline' },
-  { key: 'transport', label: 'Transport', icon: 'car-outline' },
-  { key: 'shopping', label: 'Shopping', icon: 'cart-outline' },
-  { key: 'bills', label: 'Bills & Utilities', icon: 'flash-outline' },
-  { key: 'rent', label: 'Rent', icon: 'home-outline' },
-  { key: 'emi', label: 'EMI / Loan', icon: 'card-outline' },
-  { key: 'health', label: 'Health', icon: 'medkit-outline' },
-  { key: 'education', label: 'Education', icon: 'school-outline' },
-  { key: 'entertainment', label: 'Entertainment', icon: 'film-outline' },
-  { key: 'travel', label: 'Travel', icon: 'airplane-outline' },
-  { key: 'personal', label: 'Personal Care', icon: 'person-outline' },
-  { key: 'investment', label: 'Investment', icon: 'trending-up-outline' },
-  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' },
+  { key: 'food', label: 'Food & Dining', icon: 'restaurant-outline', subs: ['Restaurant', 'Fast Food', 'Coffee', 'Delivery', 'Canteen'] },
+  { key: 'groceries', label: 'Groceries', icon: 'basket-outline', subs: ['Vegetables', 'Fruits', 'Dairy', 'Staples', 'Snacks'] },
+  { key: 'transport', label: 'Transport', icon: 'car-outline', subs: ['Fuel', 'Cab/Auto', 'Metro/Bus', 'Parking', 'Toll', 'Maintenance'] },
+  { key: 'shopping', label: 'Shopping', icon: 'cart-outline', subs: ['Clothing', 'Electronics', 'Home Decor', 'Gifts', 'Online'] },
+  { key: 'bills', label: 'Bills & Utilities', icon: 'flash-outline', subs: ['Electricity', 'Water', 'Gas', 'Internet', 'Phone', 'DTH'] },
+  { key: 'rent', label: 'Rent', icon: 'home-outline', subs: ['House', 'Office', 'Storage'] },
+  { key: 'emi', label: 'EMI / Loan', icon: 'card-outline', subs: ['Home Loan', 'Car Loan', 'Personal Loan', 'Education Loan', 'Credit Card'] },
+  { key: 'health', label: 'Health', icon: 'medkit-outline', subs: ['Doctor', 'Medicine', 'Lab Tests', 'Insurance', 'Gym/Fitness'] },
+  { key: 'education', label: 'Education', icon: 'school-outline', subs: ['Tuition', 'Books', 'Courses', 'Coaching', 'Exam Fees'] },
+  { key: 'entertainment', label: 'Entertainment', icon: 'film-outline', subs: ['Movies', 'Streaming', 'Games', 'Events', 'Subscriptions'] },
+  { key: 'travel', label: 'Travel', icon: 'airplane-outline', subs: ['Flights', 'Hotel', 'Train', 'Activities', 'Food'] },
+  { key: 'personal', label: 'Personal Care', icon: 'person-outline', subs: ['Salon', 'Skincare', 'Grooming'] },
+  { key: 'investment', label: 'Investment', icon: 'trending-up-outline', subs: ['SIP', 'Stocks', 'FD', 'Gold', 'Crypto'] },
+  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline', subs: [] },
 ];
 
 export const ACCOUNT_TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
