@@ -188,7 +188,7 @@ export default function AddTransactionScreen() {
           <Text style={[styles.label, { color: colors.text }]}>Amount</Text>
           <View style={[styles.amountWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <Text style={[styles.rupeeSymbol, { color: txType === 'income' ? '#00E676' : '#FF5252' }]}>
-              \u20B9
+              ₹
             </Text>
             <TextInput
               style={[styles.amountInput, { color: colors.text }]}
