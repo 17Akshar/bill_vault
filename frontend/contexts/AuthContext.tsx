@@ -18,7 +18,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (data: { email: string; password: string; name: string; mobile_number: string; security_question: string; security_answer: string }) => Promise<void>;
   loginWithGoogle: (sessionId: string) => Promise<void>;
   useSingleUserMode: () => Promise<void>;
   logout: () => Promise<void>;
@@ -74,12 +74,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (data: { email: string; password: string; name: string; mobile_number: string; security_question: string; security_answer: string }) => {
     try {
       const response = await axios.post(`${BACKEND_URL}/api/auth/register`, {
-        email,
-        password,
-        name
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        mobile_number: data.mobile_number,
+        security_question: data.security_question,
+        security_answer: data.security_answer,
       });
 
       const { user: userData, access_token } = response.data;

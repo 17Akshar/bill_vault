@@ -2,10 +2,16 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL;
+const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL 
+  || process.env.EXPO_PUBLIC_BACKEND_URL;
+
+if (!BACKEND_URL) {
+  console.warn('EXPO_PUBLIC_BACKEND_URL is not configured — using default');
+}
 
 const api = axios.create({
   baseURL: `${BACKEND_URL}/api`,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }

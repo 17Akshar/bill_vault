@@ -4,6 +4,7 @@
  */
 
 export const formatINR = (amount: number, showSymbol = true): string => {
+  if (amount == null || isNaN(amount)) amount = 0;
   const negative = amount < 0;
   const abs = Math.abs(amount);
   const parts = abs.toFixed(2).split('.');
@@ -23,6 +24,7 @@ export const formatINR = (amount: number, showSymbol = true): string => {
 };
 
 export const formatINRCompact = (amount: number): string => {
+  if (amount == null || isNaN(amount)) amount = 0;
   const abs = Math.abs(amount);
   const sign = amount < 0 ? '-' : '';
 

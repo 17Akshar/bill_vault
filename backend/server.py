@@ -7,8 +7,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from io import StringIO
+from io import StringIO, BytesIO
 import csv
+import json
 import os
 import logging
 import uuid
@@ -16,6 +17,14 @@ import bcrypt
 import jwt
 import httpx
 import math
+import calendar
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,8 +34,17 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    # Startup
+    yield
+    # Shutdown
+    client.close()
+
 # Create the main app
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 
 # JWT Configuration
@@ -37,6 +55,7 @@ ALGORITHM = "HS256"
 
 # Import Indian currency utilities
 from indian_currency import format_indian_currency, inr
+from email_service import send_verification_email, send_password_reset_email
 
 class User(BaseModel):
     user_id: str
@@ -403,7 +422,7 @@ class UserSettings(BaseModel):
     dark_mode: bool = False
     notifications_enabled: bool = True
     notification_days_before: int = 3
-    default_currency: str = "USD"
+    default_currency: str = "INR"
     storage_provider: str = "local"  # local, google_drive, onedrive
     updated_at: datetime
 
@@ -426,7 +445,7 @@ def create_access_token(data: dict):
 def verify_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        logger.info(f"Token verified successfully: {payload}")
+        logger.info(f"Token verified successfully for user: {payload.get('user_id', 'unknown')}")
         return payload
     except jwt.ExpiredSignatureError as e:
         logger.error(f"Token expired: {e}")
@@ -502,11 +521,17 @@ async def register(user_data: UserCreate):
     
     # Create user
     user_id = f"user_{uuid.uuid4().hex[:12]}"
+    verification_token = uuid.uuid4().hex
     user = {
         "user_id": user_id,
         "email": user_data.email,
         "name": user_data.name,
+        "mobile_number": user_data.mobile_number,
+        "security_question": user_data.security_question,
+        "security_answer": user_data.security_answer,
         "password_hash": hashed_password.decode('utf-8'),
+        "email_verified": False,
+        "verification_token": verification_token,
         "picture": None,
         "created_at": datetime.now(timezone.utc),
         "use_single_user_mode": False
@@ -514,13 +539,19 @@ async def register(user_data: UserCreate):
     
     await db.users.insert_one(user)
     
+    # Send verification email (non-blocking, don't fail registration if email fails)
+    try:
+        send_verification_email(user_data.email, user_data.name, verification_token)
+    except Exception as e:
+        logger.warning(f"Failed to send verification email to {user_data.email}: {e}")
+    
     # Create default settings
     settings = {
         "user_id": user_id,
         "dark_mode": False,
         "notifications_enabled": True,
         "notification_days_before": 3,
-        "default_currency": "USD",
+        "default_currency": "INR",
         "storage_provider": "local",
         "updated_at": datetime.now(timezone.utc)
     }
@@ -530,7 +561,7 @@ async def register(user_data: UserCreate):
     access_token = create_access_token({"user_id": user_id, "email": user_data.email})
     
     # Return user data without password
-    user.pop("password_hash")
+    user.pop("password_hash", None)
     user.pop("_id", None)
     
     return {
@@ -546,6 +577,10 @@ async def login(credentials: UserLogin):
     if not user_doc:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Google OAuth users don't have a password — reject email/password login
+    if "password_hash" not in user_doc or not user_doc["password_hash"]:
+        raise HTTPException(status_code=401, detail="This account uses Google Sign-In. Please login with Google.")
+    
     # Verify password
     if not bcrypt.checkpw(credentials.password.encode('utf-8'), user_doc["password_hash"].encode('utf-8')):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -554,7 +589,7 @@ async def login(credentials: UserLogin):
     access_token = create_access_token({"user_id": user_doc["user_id"], "email": user_doc["email"]})
     
     # Return user data without password
-    user_doc.pop("password_hash")
+    user_doc.pop("password_hash", None)
     user_doc.pop("_id", None)
     
     return {
@@ -609,6 +644,7 @@ async def google_auth_session(request: Request, response: Response):
             "dark_mode": False,
             "notifications_enabled": True,
             "notification_days_before": 3,
+            "default_currency": "INR",
             "storage_provider": "local",
             "updated_at": datetime.now(timezone.utc)
         }
@@ -664,6 +700,114 @@ async def logout(request: Request, response: Response):
         response.delete_cookie("session_token", path="/")
     return {"message": "Logged out successfully"}
 
+# --- Email Verification ---
+
+@api_router.get("/auth/verify-email")
+async def verify_email(token: str):
+    """Verify email address using the token sent via email"""
+    user_doc = await db.users.find_one({"verification_token": token})
+    if not user_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    if user_doc.get("email_verified"):
+        return {"message": "Email already verified"}
+
+    await db.users.update_one(
+        {"user_id": user_doc["user_id"]},
+        {"$set": {"email_verified": True, "verification_token": None}}
+    )
+    return {"message": "Email verified successfully"}
+
+@api_router.post("/auth/resend-verification")
+async def resend_verification(request: Request):
+    """Resend verification email to the current user"""
+    user = await get_current_user(request)
+    if user.email_verified:
+        return {"message": "Email already verified"}
+
+    new_token = uuid.uuid4().hex
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"verification_token": new_token}}
+    )
+    try:
+        send_verification_email(user.email, user.name, new_token)
+    except Exception as e:
+        logger.warning(f"Failed to resend verification email: {e}")
+    return {"message": "Verification email sent"}
+
+# --- Password Reset ---
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Send password reset email"""
+    user_doc = await db.users.find_one({"email": data.email})
+    # Always return success to prevent email enumeration
+    if not user_doc:
+        return {"message": "If an account exists with that email, a reset link has been sent."}
+
+    # Don't allow reset for Google-only accounts
+    if "password_hash" not in user_doc or not user_doc.get("password_hash"):
+        return {"message": "If an account exists with that email, a reset link has been sent."}
+
+    reset_token = uuid.uuid4().hex
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    await db.password_resets.insert_one({
+        "user_id": user_doc["user_id"],
+        "email": data.email,
+        "reset_token": reset_token,
+        "expires_at": expires_at,
+        "used": False,
+        "created_at": datetime.now(timezone.utc)
+    })
+
+    try:
+        send_password_reset_email(data.email, user_doc.get("name", ""), reset_token)
+    except Exception as e:
+        logger.warning(f"Failed to send password reset email: {e}")
+
+    return {"message": "If an account exists with that email, a reset link has been sent."}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Reset password using token from email"""
+    reset_doc = await db.password_resets.find_one({
+        "reset_token": data.token,
+        "used": False
+    })
+    if not reset_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    expires_at = reset_doc["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    # Hash new password and update user
+    hashed_password = bcrypt.hashpw(data.new_password.encode('utf-8'), bcrypt.gensalt())
+    await db.users.update_one(
+        {"user_id": reset_doc["user_id"]},
+        {"$set": {"password_hash": hashed_password.decode('utf-8')}}
+    )
+
+    # Mark token as used
+    await db.password_resets.update_one(
+        {"reset_token": data.token},
+        {"$set": {"used": True}}
+    )
+
+    return {"message": "Password reset successfully"}
+
 @api_router.post("/auth/single-user")
 async def single_user_mode():
     """Create or get single-user mode user"""
@@ -689,6 +833,7 @@ async def single_user_mode():
             "dark_mode": False,
             "notifications_enabled": True,
             "notification_days_before": 3,
+            "default_currency": "INR",
             "storage_provider": "local",
             "updated_at": datetime.now(timezone.utc)
         }
@@ -716,8 +861,11 @@ async def create_bill(bill_data: BillCreate, request: Request, authorization: Op
     bill = {
         "bill_id": bill_id,
         "user_id": user.user_id,
+        "family_member_id": bill_data.family_member_id,
+        "account_id": bill_data.account_id,
         "name": bill_data.name,
         "amount": bill_data.amount,
+        "currency": bill_data.currency,
         "due_date": datetime.fromisoformat(bill_data.due_date.replace('Z', '+00:00')),
         "category": bill_data.category,
         "vendor": bill_data.vendor,
@@ -785,7 +933,7 @@ async def bills_summary_early(request: Request):
         if isinstance(due, str):
             try:
                 due = datetime.fromisoformat(due.replace('Z', '+00:00'))
-            except:
+            except (ValueError, TypeError):
                 due = None
         elif isinstance(due, datetime):
             if due.tzinfo is None:
@@ -829,7 +977,7 @@ async def update_bill(bill_id: str, bill_data: BillUpdate, request: Request, aut
         raise HTTPException(status_code=404, detail="Bill not found")
     
     # Prepare update data
-    update_data = {k: v for k, v in bill_data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in bill_data.model_dump(exclude_unset=True).items() if v is not None}
     if "due_date" in update_data:
         update_data["due_date"] = datetime.fromisoformat(update_data["due_date"].replace('Z', '+00:00'))
     update_data["updated_at"] = datetime.now(timezone.utc)
@@ -1052,7 +1200,7 @@ async def update_budget(budget_id: str, data: BudgetUpdate, request: Request):
     existing = await db.budgets.find_one({"budget_id": budget_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Budget not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.budgets.update_one({"budget_id": budget_id}, {"$set": update_data})
     updated = await db.budgets.find_one({"budget_id": budget_id}, {"_id": 0})
@@ -1151,6 +1299,7 @@ async def get_settings(request: Request, authorization: Optional[str] = Header(N
             "dark_mode": False,
             "notifications_enabled": True,
             "notification_days_before": 3,
+            "default_currency": "INR",
             "storage_provider": "local",
             "updated_at": datetime.now(timezone.utc)
         }
@@ -1164,7 +1313,7 @@ async def update_settings(settings_data: SettingsUpdate, request: Request, autho
     """Update user settings"""
     user = await get_current_user(request)
     
-    update_data = {k: v for k, v in settings_data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in settings_data.model_dump(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     
     await db.user_settings.update_one(
@@ -1317,7 +1466,7 @@ async def update_account(account_id: str, data: AccountUpdate, request: Request)
     if not existing:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     
     await db.accounts.update_one(
@@ -1458,7 +1607,7 @@ async def update_income(income_id: str, data: IncomeUpdate, request: Request):
     if not existing:
         raise HTTPException(status_code=404, detail="Income entry not found")
     
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     
     # Handle amount change → adjust account balance
     if "amount" in update_data:
@@ -1640,7 +1789,7 @@ async def update_expense(expense_id: str, data: ExpenseUpdate, request: Request)
     if not existing:
         raise HTTPException(status_code=404, detail="Expense entry not found")
     
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     
     # Handle amount change → adjust account balance
     if "amount" in update_data:
@@ -1733,13 +1882,64 @@ async def get_credit_cards(request: Request):
     ).sort("created_at", 1).to_list(100)
     return cards
 
+@api_router.get("/credit-cards/report")
+async def credit_card_report(request: Request, period: str = "monthly"):
+    """Credit card reporting - day/month/year wise"""
+    user = await get_current_user(request)
+    cards = await db.credit_cards.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    now = datetime.now(timezone.utc)
+
+    total_limit = sum(c.get("credit_limit", 0) for c in cards)
+    total_outstanding = sum(c.get("current_outstanding", 0) for c in cards)
+    total_available = total_limit - total_outstanding
+    total_emi = sum(sum(e.get("amount", 0) for e in c.get("emis", [])) for c in cards)
+
+    # Upcoming due dates
+    upcoming_dues = []
+    for c in cards:
+        due_day = c.get("due_date", 15)
+        due_time = c.get("due_time", "10:00")
+        # Next due date — clamp due_day to the last day of the target month
+        _, max_day_this_month = calendar.monthrange(now.year, now.month)
+        clamped_day = min(due_day, max_day_this_month)
+        if now.day <= clamped_day:
+            next_due = now.replace(day=clamped_day)
+        else:
+            next_month = now.month + 1 if now.month < 12 else 1
+            next_year = now.year if now.month < 12 else now.year + 1
+            _, max_day_next_month = calendar.monthrange(next_year, next_month)
+            next_due = now.replace(year=next_year, month=next_month, day=min(due_day, max_day_next_month))
+        days_until = (next_due - now).days
+        status = "overdue" if days_until < 0 else "critical" if days_until <= 3 else "warning" if days_until <= 7 else "safe"
+        upcoming_dues.append({
+            "card_id": c["card_id"], "name": c["name"],
+            "outstanding": c.get("current_outstanding", 0),
+            "due_day": due_day, "due_time": due_time,
+            "next_due_date": str(next_due.date()),
+            "days_until": days_until, "status": status,
+        })
+    upcoming_dues.sort(key=lambda x: x["days_until"])
+
+    return {
+        "summary": {
+            "total_cards": len(cards),
+            "total_limit": total_limit,
+            "total_outstanding": total_outstanding,
+            "total_available": total_available,
+            "total_emi": total_emi,
+            "utilization": round(total_outstanding / total_limit * 100, 1) if total_limit > 0 else 0,
+        },
+        "upcoming_dues": upcoming_dues,
+        "cards": cards,
+    }
+
 @api_router.put("/credit-cards/{card_id}")
 async def update_credit_card(card_id: str, data: CreditCardUpdate, request: Request):
     user = await get_current_user(request)
     existing = await db.credit_cards.find_one({"card_id": card_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Credit card not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.credit_cards.update_one({"card_id": card_id}, {"$set": update_data})
     updated = await db.credit_cards.find_one({"card_id": card_id}, {"_id": 0})
@@ -1789,7 +1989,7 @@ async def update_loan(loan_id: str, data: LoanUpdate, request: Request):
     existing = await db.loans.find_one({"loan_id": loan_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Loan not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     if "next_emi_date" in update_data and isinstance(update_data["next_emi_date"], str):
         update_data["next_emi_date"] = datetime.fromisoformat(update_data["next_emi_date"].replace('Z', '+00:00'))
     update_data["updated_at"] = datetime.now(timezone.utc)
@@ -1842,7 +2042,7 @@ async def update_lending(lending_id: str, data: LendingUpdate, request: Request)
     existing = await db.lending.find_one({"lending_id": lending_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Lending record not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     if "due_date" in update_data and isinstance(update_data["due_date"], str):
         update_data["due_date"] = datetime.fromisoformat(update_data["due_date"].replace('Z', '+00:00'))
     await db.lending.update_one({"lending_id": lending_id}, {"$set": update_data})
@@ -1870,6 +2070,7 @@ async def create_investment(data: InvestmentCreate, request: Request):
         "purchase_date": datetime.fromisoformat(data.purchase_date.replace('Z', '+00:00')),
         "maturity_date": datetime.fromisoformat(data.maturity_date.replace('Z', '+00:00')) if data.maturity_date else None,
         "family_member_id": data.family_member_id, "notes": data.notes,
+        "heading_id": data.heading_id, "sub_category": data.sub_category,
         "is_active": True, "created_at": datetime.now(timezone.utc)
     }
     await db.investments.insert_one(investment)
@@ -1891,7 +2092,7 @@ async def update_investment(inv_id: str, data: InvestmentUpdate, request: Reques
     existing = await db.investments.find_one({"investment_id": inv_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Investment not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     if "maturity_date" in update_data and isinstance(update_data["maturity_date"], str):
         update_data["maturity_date"] = datetime.fromisoformat(update_data["maturity_date"].replace('Z', '+00:00'))
     await db.investments.update_one({"investment_id": inv_id}, {"$set": update_data})
@@ -1999,7 +2200,7 @@ async def update_reminder(reminder_id: str, data: ReminderUpdate, request: Reque
     existing = await db.reminders.find_one({"reminder_id": reminder_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Reminder not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     if "reminder_date" in update_data and isinstance(update_data["reminder_date"], str):
         update_data["reminder_date"] = datetime.fromisoformat(update_data["reminder_date"].replace('Z', '+00:00'))
     update_data["updated_at"] = datetime.now(timezone.utc)
@@ -2071,7 +2272,7 @@ async def update_rental(rental_id: str, data: RentalUpdate, request: Request):
     existing = await db.rentals.find_one({"rental_id": rental_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Rental not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.rentals.update_one({"rental_id": rental_id}, {"$set": update_data})
     updated = await db.rentals.find_one({"rental_id": rental_id}, {"_id": 0})
@@ -2107,7 +2308,7 @@ async def get_headings(request: Request):
     headings = await db.investment_headings.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
     # Enrich with investments under each heading
     for h in headings:
-        investments = await db.investments.find({"user_id": user.user_id, "heading_id": h["heading_id"]}, {"_id": 0}).to_list(1000)
+        investments = await db.investments.find({"user_id": user.user_id, "heading_id": h["heading_id"], "is_active": True}, {"_id": 0}).to_list(1000)
         h["investments"] = investments
         h["total_invested"] = sum(i.get("invested_amount", 0) for i in investments)
         h["total_current"] = sum(i.get("current_value", 0) for i in investments)
@@ -2120,7 +2321,7 @@ async def update_heading(heading_id: str, data: InvestmentHeadingUpdate, request
     existing = await db.investment_headings.find_one({"heading_id": heading_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Heading not found")
-    update_data = {k: v for k, v in data.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.investment_headings.update_one({"heading_id": heading_id}, {"$set": update_data})
     updated = await db.investment_headings.find_one({"heading_id": heading_id}, {"_id": 0})
@@ -2133,56 +2334,6 @@ async def delete_heading(heading_id: str, request: Request):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Heading not found")
     return {"message": "Heading deleted"}
-
-# ==================== CREDIT CARD REPORTING ====================
-
-@api_router.get("/credit-cards/report")
-async def credit_card_report(request: Request, period: str = "monthly"):
-    """Credit card reporting - day/month/year wise"""
-    user = await get_current_user(request)
-    cards = await db.credit_cards.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
-    now = datetime.now(timezone.utc)
-
-    total_limit = sum(c.get("credit_limit", 0) for c in cards)
-    total_outstanding = sum(c.get("current_outstanding", 0) for c in cards)
-    total_available = total_limit - total_outstanding
-    total_emi = sum(sum(e.get("amount", 0) for e in c.get("emis", [])) for c in cards)
-
-    # Upcoming due dates
-    upcoming_dues = []
-    for c in cards:
-        due_day = c.get("due_date", 15)
-        due_time = c.get("due_time", "10:00")
-        # Next due date
-        if now.day <= due_day:
-            next_due = now.replace(day=due_day)
-        else:
-            next_month = now.month + 1 if now.month < 12 else 1
-            next_year = now.year if now.month < 12 else now.year + 1
-            next_due = now.replace(year=next_year, month=next_month, day=min(due_day, 28))
-        days_until = (next_due - now).days
-        status = "overdue" if days_until < 0 else "critical" if days_until <= 3 else "warning" if days_until <= 7 else "safe"
-        upcoming_dues.append({
-            "card_id": c["card_id"], "name": c["name"],
-            "outstanding": c.get("current_outstanding", 0),
-            "due_day": due_day, "due_time": due_time,
-            "next_due_date": str(next_due.date()),
-            "days_until": days_until, "status": status,
-        })
-    upcoming_dues.sort(key=lambda x: x["days_until"])
-
-    return {
-        "summary": {
-            "total_cards": len(cards),
-            "total_limit": total_limit,
-            "total_outstanding": total_outstanding,
-            "total_available": total_available,
-            "total_emi": total_emi,
-            "utilization": round(total_outstanding / total_limit * 100, 1) if total_limit > 0 else 0,
-        },
-        "upcoming_dues": upcoming_dues,
-        "cards": cards,
-    }
 
 # ==================== NET WORTH ENDPOINT ====================
 
@@ -2377,7 +2528,7 @@ async def get_dashboard(request: Request):
 async def investment_analytics(request: Request):
     """CAGR, portfolio allocation, top/bottom performers"""
     user = await get_current_user(request)
-    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
+    investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(1000)
 
     total_invested = sum(i.get("invested_amount", 0) for i in investments)
     total_current = sum(i.get("current_value", 0) for i in investments)
@@ -2413,7 +2564,7 @@ async def investment_analytics(request: Request):
             if isinstance(purchase_date, str):
                 try:
                     purchase_date = datetime.fromisoformat(purchase_date.replace('Z', '+00:00'))
-                except:
+                except (ValueError, TypeError):
                     purchase_date = None
             if purchase_date:
                 # Ensure both datetimes have timezone info for comparison
@@ -2422,7 +2573,7 @@ async def investment_analytics(request: Request):
                 years = max((now - purchase_date).days / 365.25, 0.01)
                 try:
                     cagr = round((math.pow(current / invested, 1 / years) - 1) * 100, 2)
-                except:
+                except (ValueError, ZeroDivisionError, OverflowError):
                     cagr = 0
         performers.append({
             "investment_id": inv.get("investment_id"),
@@ -2461,9 +2612,12 @@ async def cashflow_analytics(request: Request, months: int = 6):
 
     monthly_data = []
     for i in range(months - 1, -1, -1):
-        target_date = now - timedelta(days=i * 30)
-        m = target_date.month
-        y = target_date.year
+        # Calculate exact month by subtracting i months from current month
+        m = now.month - i
+        y = now.year
+        while m <= 0:
+            m += 12
+            y -= 1
 
         income_list = await db.income.find({
             "user_id": user.user_id,
@@ -2600,7 +2754,7 @@ async def export_transactions_csv(request: Request):
 async def export_investments_csv(request: Request):
     """Export investments as CSV"""
     user = await get_current_user(request)
-    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(10000)
+    investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(10000)
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(["Name", "Type", "Invested Amount", "Current Value", "Returns", "Returns %", "Purchase Date", "Maturity Date", "Notes"])
@@ -2618,9 +2772,9 @@ async def export_networth_csv(request: Request):
     """Export net worth breakdown as CSV"""
     user = await get_current_user(request)
     accounts = await db.accounts.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
-    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
-    credit_cards = await db.credit_cards.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
-    loans = await db.loans.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(1000)
+    credit_cards = await db.credit_cards.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    loans = await db.loans.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
     lending = await db.lending.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
 
     output = StringIO()
@@ -2649,7 +2803,7 @@ async def export_networth_csv(request: Request):
 async def export_data(
     request: Request,
     authorization: Optional[str] = Header(None),
-    format: str = "json"
+    export_format: str = "json"
 ):
     """Export all user data"""
     user = await get_current_user(request)
@@ -2665,8 +2819,8 @@ async def export_data(
     family_members = await db.family_members.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
     settings = await db.user_settings.find_one({"user_id": user.user_id}, {"_id": 0})
     
-    export_data = {
-        "user": user.dict(),
+    result = {
+        "user": user.model_dump(),
         "accounts": accounts,
         "income": incomes,
         "expenses": expenses,
@@ -2679,7 +2833,691 @@ async def export_data(
         "exported_at": datetime.now(timezone.utc).isoformat()
     }
     
-    return export_data
+    return result
+
+
+# ==================== EXCEL EXPORT ENDPOINTS ====================
+
+async def _build_transactions_xlsx(user_id: str) -> BytesIO:
+    """Build an Excel workbook with transactions data"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        raise HTTPException(status_code=500, detail="openpyxl not installed. Run: pip install openpyxl")
+
+    incomes = await db.income.find({"user_id": user_id}, {"_id": 0}).sort("date", -1).to_list(50000)
+    expenses = await db.expenses.find({"user_id": user_id}, {"_id": 0}).sort("date", -1).to_list(50000)
+    accounts_list = await db.accounts.find({"user_id": user_id}, {"_id": 0, "account_id": 1, "name": 1}).to_list(100)
+    accounts_map = {a["account_id"]: a["name"] for a in accounts_list}
+
+    wb = openpyxl.Workbook()
+
+    # --- Styles ---
+    header_font = Font(name="Arial", bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="1B4F72", end_color="1B4F72", fill_type="solid")
+    income_fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+    expense_fill = PatternFill(start_color="FFEBEE", end_color="FFEBEE", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin", color="CCCCCC"), right=Side(style="thin", color="CCCCCC"),
+        top=Side(style="thin", color="CCCCCC"), bottom=Side(style="thin", color="CCCCCC")
+    )
+    currency_fmt = '#,##0.00'
+
+    # --- All Transactions sheet ---
+    ws = wb.active
+    ws.title = "All Transactions"
+    headers = ["Date", "Type", "Category", "Sub-Category", "Description", "Amount (INR)", "Account", "Payment Type", "Notes"]
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=col, value=h)
+        c.font = header_font
+        c.fill = header_fill
+        c.alignment = Alignment(horizontal="center")
+        c.border = thin_border
+
+    row = 2
+    for inc in incomes:
+        date_val = inc.get("date", "")
+        if isinstance(date_val, datetime):
+            date_val = date_val.strftime("%Y-%m-%d")
+        ws.cell(row=row, column=1, value=str(date_val)).border = thin_border
+        ws.cell(row=row, column=2, value="Income").border = thin_border
+        ws.cell(row=row, column=3, value=inc.get("category", "")).border = thin_border
+        ws.cell(row=row, column=4, value=inc.get("sub_category", "")).border = thin_border
+        ws.cell(row=row, column=5, value=inc.get("source", "")).border = thin_border
+        amt_cell = ws.cell(row=row, column=6, value=inc.get("amount", 0))
+        amt_cell.number_format = currency_fmt
+        amt_cell.border = thin_border
+        ws.cell(row=row, column=7, value=accounts_map.get(inc.get("account_id", ""), "")).border = thin_border
+        ws.cell(row=row, column=8, value="").border = thin_border
+        ws.cell(row=row, column=9, value=inc.get("notes", "") or "").border = thin_border
+        for col in range(1, 10):
+            ws.cell(row=row, column=col).fill = income_fill
+        row += 1
+
+    for exp in expenses:
+        date_val = exp.get("date", "")
+        if isinstance(date_val, datetime):
+            date_val = date_val.strftime("%Y-%m-%d")
+        ws.cell(row=row, column=1, value=str(date_val)).border = thin_border
+        ws.cell(row=row, column=2, value="Expense").border = thin_border
+        ws.cell(row=row, column=3, value=exp.get("category", "")).border = thin_border
+        ws.cell(row=row, column=4, value=exp.get("sub_category", "")).border = thin_border
+        ws.cell(row=row, column=5, value=exp.get("description", "")).border = thin_border
+        amt_cell = ws.cell(row=row, column=6, value=exp.get("amount", 0))
+        amt_cell.number_format = currency_fmt
+        amt_cell.border = thin_border
+        ws.cell(row=row, column=7, value=accounts_map.get(exp.get("account_id", ""), "")).border = thin_border
+        ws.cell(row=row, column=8, value=exp.get("payment_type", "")).border = thin_border
+        ws.cell(row=row, column=9, value=exp.get("notes", "") or "").border = thin_border
+        for col in range(1, 10):
+            ws.cell(row=row, column=col).fill = expense_fill
+        row += 1
+
+    # Auto-fit column widths
+    for col_cells in ws.columns:
+        max_len = max(len(str(c.value or "")) for c in col_cells)
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max_len + 3, 35)
+
+    # --- Income Summary sheet ---
+    ws2 = wb.create_sheet("Income Summary")
+    ws2.append(["Category", "Total Amount (INR)", "Count"])
+    for c in ws2[1]:
+        c.font = header_font
+        c.fill = header_fill
+        c.border = thin_border
+    income_cats = {}
+    for inc in incomes:
+        cat = inc.get("category", "other")
+        income_cats.setdefault(cat, {"amount": 0, "count": 0})
+        income_cats[cat]["amount"] += inc.get("amount", 0)
+        income_cats[cat]["count"] += 1
+    for cat, data in sorted(income_cats.items(), key=lambda x: x[1]["amount"], reverse=True):
+        r = ws2.append([cat, data["amount"], data["count"]])
+
+    # --- Expense Summary sheet ---
+    ws3 = wb.create_sheet("Expense Summary")
+    ws3.append(["Category", "Total Amount (INR)", "Count"])
+    for c in ws3[1]:
+        c.font = header_font
+        c.fill = header_fill
+        c.border = thin_border
+    expense_cats = {}
+    for exp in expenses:
+        cat = exp.get("category", "other")
+        expense_cats.setdefault(cat, {"amount": 0, "count": 0})
+        expense_cats[cat]["amount"] += exp.get("amount", 0)
+        expense_cats[cat]["count"] += 1
+    for cat, data in sorted(expense_cats.items(), key=lambda x: x[1]["amount"], reverse=True):
+        ws3.append([cat, data["amount"], data["count"]])
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+@api_router.get("/export/transactions-xlsx")
+async def export_transactions_xlsx(request: Request):
+    """Export transactions as Excel workbook with formatted sheets"""
+    user = await get_current_user(request)
+    buf = await _build_transactions_xlsx(user.user_id)
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=transactions.xlsx"}
+    )
+
+
+@api_router.get("/export/investments-xlsx")
+async def export_investments_xlsx(request: Request):
+    """Export investments as Excel workbook"""
+    user = await get_current_user(request)
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        raise HTTPException(status_code=500, detail="openpyxl not installed")
+
+    investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(10000)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Investments"
+
+    header_font = Font(name="Arial", bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="1B4F72", end_color="1B4F72", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin", color="CCCCCC"), right=Side(style="thin", color="CCCCCC"),
+        top=Side(style="thin", color="CCCCCC"), bottom=Side(style="thin", color="CCCCCC")
+    )
+    green_font = Font(name="Arial", color="27AE60")
+    red_font = Font(name="Arial", color="C0392B")
+    currency_fmt = '#,##0.00'
+
+    headers = ["Name", "Type", "Invested (INR)", "Current Value (INR)", "Returns (INR)", "Returns %", "CAGR %", "Purchase Date", "Maturity Date", "Notes"]
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=col, value=h)
+        c.font = header_font
+        c.fill = header_fill
+        c.border = thin_border
+
+    now = datetime.now(timezone.utc)
+    row = 2
+    for inv in investments:
+        invested = inv.get("invested_amount", 0)
+        current = inv.get("current_value", 0)
+        ret = current - invested
+        ret_pct = round(ret / invested * 100, 2) if invested > 0 else 0
+
+        # CAGR
+        purchase_date = inv.get("purchase_date")
+        cagr = 0
+        if purchase_date and invested > 0 and current > 0:
+            if isinstance(purchase_date, str):
+                try:
+                    purchase_date = datetime.fromisoformat(purchase_date.replace('Z', '+00:00'))
+                except (ValueError, TypeError):
+                    purchase_date = None
+            if purchase_date:
+                if isinstance(purchase_date, datetime) and purchase_date.tzinfo is None:
+                    purchase_date = purchase_date.replace(tzinfo=timezone.utc)
+                years = max((now - purchase_date).days / 365.25, 0.01)
+                try:
+                    cagr = round((math.pow(current / invested, 1 / years) - 1) * 100, 2)
+                except (ValueError, ZeroDivisionError, OverflowError):
+                    cagr = 0
+
+        pd_val = inv.get("purchase_date", "")
+        if isinstance(pd_val, datetime):
+            pd_val = pd_val.strftime("%Y-%m-%d")
+        md_val = inv.get("maturity_date", "") or ""
+        if isinstance(md_val, datetime):
+            md_val = md_val.strftime("%Y-%m-%d")
+
+        ws.cell(row=row, column=1, value=inv.get("name", "")).border = thin_border
+        ws.cell(row=row, column=2, value=inv.get("investment_type", "")).border = thin_border
+        c_inv = ws.cell(row=row, column=3, value=invested)
+        c_inv.number_format = currency_fmt
+        c_inv.border = thin_border
+        c_cur = ws.cell(row=row, column=4, value=current)
+        c_cur.number_format = currency_fmt
+        c_cur.border = thin_border
+        c_ret = ws.cell(row=row, column=5, value=ret)
+        c_ret.number_format = currency_fmt
+        c_ret.font = green_font if ret >= 0 else red_font
+        c_ret.border = thin_border
+        c_rp = ws.cell(row=row, column=6, value=ret_pct)
+        c_rp.number_format = '0.00"%"'
+        c_rp.font = green_font if ret_pct >= 0 else red_font
+        c_rp.border = thin_border
+        ws.cell(row=row, column=7, value=cagr).border = thin_border
+        ws.cell(row=row, column=8, value=str(pd_val)).border = thin_border
+        ws.cell(row=row, column=9, value=str(md_val)).border = thin_border
+        ws.cell(row=row, column=10, value=inv.get("notes", "") or "").border = thin_border
+        row += 1
+
+    # Summary row
+    if investments:
+        total_invested = sum(i.get("invested_amount", 0) for i in investments)
+        total_current = sum(i.get("current_value", 0) for i in investments)
+        total_ret = total_current - total_invested
+        ws.cell(row=row + 1, column=1, value="TOTAL").font = Font(name="Arial", bold=True, size=12)
+        ws.cell(row=row + 1, column=3, value=total_invested).number_format = currency_fmt
+        ws.cell(row=row + 1, column=4, value=total_current).number_format = currency_fmt
+        ws.cell(row=row + 1, column=5, value=total_ret).number_format = currency_fmt
+        ws.cell(row=row + 1, column=5).font = Font(name="Arial", bold=True, color="27AE60" if total_ret >= 0 else "C0392B")
+
+    for col_cells in ws.columns:
+        max_len = max(len(str(c.value or "")) for c in col_cells)
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max_len + 3, 35)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=investments.xlsx"}
+    )
+
+
+@api_router.get("/export/networth-xlsx")
+async def export_networth_xlsx(request: Request):
+    """Export net worth breakdown as Excel workbook"""
+    user = await get_current_user(request)
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    except ImportError:
+        raise HTTPException(status_code=500, detail="openpyxl not installed")
+
+    accounts = await db.accounts.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(1000)
+    credit_cards = await db.credit_cards.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    loans = await db.loans.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
+    lending = await db.lending.find({"user_id": user.user_id}, {"_id": 0}).to_list(1000)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Net Worth"
+
+    header_font = Font(name="Arial", bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="1B4F72", end_color="1B4F72", fill_type="solid")
+    asset_fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+    liability_fill = PatternFill(start_color="FFEBEE", end_color="FFEBEE", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin", color="CCCCCC"), right=Side(style="thin", color="CCCCCC"),
+        top=Side(style="thin", color="CCCCCC"), bottom=Side(style="thin", color="CCCCCC")
+    )
+    currency_fmt = '#,##0.00'
+
+    headers = ["Category", "Item", "Type", "Amount (INR)"]
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=col, value=h)
+        c.font = header_font
+        c.fill = header_fill
+        c.border = thin_border
+
+    row = 2
+    # Assets
+    for a in accounts:
+        ws.cell(row=row, column=1, value="Asset - Account").fill = asset_fill
+        ws.cell(row=row, column=2, value=a.get("name", "")).fill = asset_fill
+        ws.cell(row=row, column=3, value=a.get("account_type", "")).fill = asset_fill
+        c = ws.cell(row=row, column=4, value=a.get("balance", 0))
+        c.number_format = currency_fmt
+        c.fill = asset_fill
+        for col in range(1, 5):
+            ws.cell(row=row, column=col).border = thin_border
+        row += 1
+    for i in investments:
+        ws.cell(row=row, column=1, value="Asset - Investment").fill = asset_fill
+        ws.cell(row=row, column=2, value=i.get("name", "")).fill = asset_fill
+        ws.cell(row=row, column=3, value=i.get("investment_type", "")).fill = asset_fill
+        c = ws.cell(row=row, column=4, value=i.get("current_value", 0))
+        c.number_format = currency_fmt
+        c.fill = asset_fill
+        for col in range(1, 5):
+            ws.cell(row=row, column=col).border = thin_border
+        row += 1
+    for l in lending:
+        if l.get("lending_type") == "lent" and not l.get("is_settled"):
+            ws.cell(row=row, column=1, value="Asset - Money Lent").fill = asset_fill
+            ws.cell(row=row, column=2, value=l.get("person_name", "")).fill = asset_fill
+            ws.cell(row=row, column=3, value="lent").fill = asset_fill
+            c = ws.cell(row=row, column=4, value=l.get("remaining_amount", l.get("amount", 0)))
+            c.number_format = currency_fmt
+            c.fill = asset_fill
+            for col in range(1, 5):
+                ws.cell(row=row, column=col).border = thin_border
+            row += 1
+
+    # Liabilities
+    for cc in credit_cards:
+        ws.cell(row=row, column=1, value="Liability - Credit Card").fill = liability_fill
+        ws.cell(row=row, column=2, value=cc.get("name", "")).fill = liability_fill
+        ws.cell(row=row, column=3, value="credit_card").fill = liability_fill
+        c = ws.cell(row=row, column=4, value=cc.get("current_outstanding", 0))
+        c.number_format = currency_fmt
+        c.fill = liability_fill
+        for col in range(1, 5):
+            ws.cell(row=row, column=col).border = thin_border
+        row += 1
+    for lo in loans:
+        ws.cell(row=row, column=1, value="Liability - Loan").fill = liability_fill
+        ws.cell(row=row, column=2, value=lo.get("name", "")).fill = liability_fill
+        ws.cell(row=row, column=3, value=lo.get("loan_type", "")).fill = liability_fill
+        c = ws.cell(row=row, column=4, value=lo.get("outstanding_amount", 0))
+        c.number_format = currency_fmt
+        c.fill = liability_fill
+        for col in range(1, 5):
+            ws.cell(row=row, column=col).border = thin_border
+        row += 1
+    for l in lending:
+        if l.get("lending_type") == "borrowed" and not l.get("is_settled"):
+            ws.cell(row=row, column=1, value="Liability - Borrowed").fill = liability_fill
+            ws.cell(row=row, column=2, value=l.get("person_name", "")).fill = liability_fill
+            ws.cell(row=row, column=3, value="borrowed").fill = liability_fill
+            c = ws.cell(row=row, column=4, value=l.get("remaining_amount", l.get("amount", 0)))
+            c.number_format = currency_fmt
+            c.fill = liability_fill
+            for col in range(1, 5):
+                ws.cell(row=row, column=col).border = thin_border
+            row += 1
+
+    # Net Worth summary
+    total_assets = sum(a.get("balance", 0) for a in accounts) + sum(i.get("current_value", 0) for i in investments) + sum(l.get("remaining_amount", 0) for l in lending if l.get("lending_type") == "lent" and not l.get("is_settled"))
+    total_liabilities = sum(c.get("current_outstanding", 0) for c in credit_cards) + sum(l.get("outstanding_amount", 0) for l in loans) + sum(l.get("remaining_amount", 0) for l in lending if l.get("lending_type") == "borrowed" and not l.get("is_settled"))
+
+    row += 1
+    bold_font = Font(name="Arial", bold=True, size=12)
+    ws.cell(row=row, column=1, value="Total Assets").font = bold_font
+    ws.cell(row=row, column=4, value=total_assets).number_format = currency_fmt
+    ws.cell(row=row, column=4).font = Font(name="Arial", bold=True, color="27AE60", size=12)
+    row += 1
+    ws.cell(row=row, column=1, value="Total Liabilities").font = bold_font
+    ws.cell(row=row, column=4, value=total_liabilities).number_format = currency_fmt
+    ws.cell(row=row, column=4).font = Font(name="Arial", bold=True, color="C0392B", size=12)
+    row += 1
+    ws.cell(row=row, column=1, value="NET WORTH").font = Font(name="Arial", bold=True, size=14)
+    nw = total_assets - total_liabilities
+    ws.cell(row=row, column=4, value=nw).number_format = currency_fmt
+    ws.cell(row=row, column=4).font = Font(name="Arial", bold=True, color="1B4F72", size=14)
+
+    for col_cells in ws.columns:
+        max_len = max(len(str(c.value or "")) for c in col_cells)
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max_len + 3, 35)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=networth.xlsx"}
+    )
+
+
+# ==================== CLOUD DRIVE INTEGRATION ====================
+
+class CloudDriveConnect(BaseModel):
+    provider: str  # google_drive, onedrive, dropbox
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_expiry: Optional[str] = None
+
+class CloudDriveUploadRequest(BaseModel):
+    provider: str  # google_drive, onedrive, dropbox
+    export_type: str  # transactions, investments, networth, full_backup
+    file_format: str = "xlsx"  # xlsx, csv, json
+    folder_path: Optional[str] = None  # target folder in cloud drive
+
+@api_router.post("/cloud-drive/connect")
+async def connect_cloud_drive(data: CloudDriveConnect, request: Request):
+    """Store cloud drive OAuth credentials for the user"""
+    user = await get_current_user(request)
+
+    drive_doc = {
+        "user_id": user.user_id,
+        "provider": data.provider,
+        "access_token": data.access_token,
+        "refresh_token": data.refresh_token,
+        "token_expiry": data.token_expiry,
+        "connected_at": datetime.now(timezone.utc),
+        "is_active": True
+    }
+
+    # Upsert — one connection per provider per user
+    await db.cloud_drives.update_one(
+        {"user_id": user.user_id, "provider": data.provider},
+        {"$set": drive_doc},
+        upsert=True
+    )
+
+    # Update user settings to reflect preferred storage provider
+    await db.user_settings.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"storage_provider": data.provider, "updated_at": datetime.now(timezone.utc)}},
+        upsert=True
+    )
+
+    return {"message": f"{data.provider} connected successfully", "provider": data.provider}
+
+
+@api_router.get("/cloud-drive/status")
+async def cloud_drive_status(request: Request):
+    """Get connected cloud drive status"""
+    user = await get_current_user(request)
+    drives = await db.cloud_drives.find(
+        {"user_id": user.user_id, "is_active": True}, {"_id": 0, "access_token": 0, "refresh_token": 0}
+    ).to_list(10)
+    return {"connected_drives": drives}
+
+
+@api_router.delete("/cloud-drive/{provider}")
+async def disconnect_cloud_drive(provider: str, request: Request):
+    """Disconnect a cloud drive"""
+    user = await get_current_user(request)
+    result = await db.cloud_drives.update_one(
+        {"user_id": user.user_id, "provider": provider},
+        {"$set": {"is_active": False}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Drive connection not found")
+    return {"message": f"{provider} disconnected"}
+
+
+@api_router.post("/cloud-drive/upload")
+async def upload_to_cloud_drive(data: CloudDriveUploadRequest, request: Request):
+    """Export data and upload to connected cloud drive (Google Drive / OneDrive / Dropbox)"""
+    user = await get_current_user(request)
+
+    # 1. Verify cloud drive is connected
+    drive = await db.cloud_drives.find_one(
+        {"user_id": user.user_id, "provider": data.provider, "is_active": True}
+    )
+    if not drive:
+        raise HTTPException(status_code=400, detail=f"{data.provider} is not connected. Connect it first via /api/cloud-drive/connect")
+
+    access_token = drive["access_token"]
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+    # 2. Generate the export file
+    if data.file_format == "xlsx":
+        content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        if data.export_type == "transactions":
+            buf = await _build_transactions_xlsx(user.user_id)
+            filename = f"BillTracker_Transactions_{timestamp}.xlsx"
+        elif data.export_type == "investments":
+            # Re-use the investments xlsx builder inline
+            response = await export_investments_xlsx(request)
+            file_bytes = response.body
+            filename = f"BillTracker_Investments_{timestamp}.xlsx"
+        elif data.export_type == "networth":
+            response = await export_networth_xlsx(request)
+            file_bytes = response.body
+            filename = f"BillTracker_NetWorth_{timestamp}.xlsx"
+        else:
+            raise HTTPException(status_code=400, detail="Invalid export_type for xlsx")
+        file_bytes = buf.getvalue() if data.export_type == "transactions" else file_bytes
+    elif data.file_format == "csv":
+        content_type = "text/csv"
+        if data.export_type == "transactions":
+            response = await export_transactions_csv(request)
+            file_bytes = response.body
+            filename = f"BillTracker_Transactions_{timestamp}.csv"
+        elif data.export_type == "investments":
+            response = await export_investments_csv(request)
+            file_bytes = response.body
+            filename = f"BillTracker_Investments_{timestamp}.csv"
+        elif data.export_type == "networth":
+            response = await export_networth_csv(request)
+            file_bytes = response.body
+            filename = f"BillTracker_NetWorth_{timestamp}.csv"
+        else:
+            raise HTTPException(status_code=400, detail="Invalid export_type for csv")
+    elif data.file_format == "json":
+        content_type = "application/json"
+        response_data = await export_data(request)
+        file_bytes = json.dumps(response_data, default=str, indent=2).encode('utf-8')
+        filename = f"BillTracker_FullBackup_{timestamp}.json"
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file_format. Use: xlsx, csv, json")
+
+    # 3. Upload to the cloud drive
+    upload_result = None
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            if data.provider == "google_drive":
+                # Google Drive Files API — simple upload
+                metadata = {"name": filename}
+                if data.folder_path:
+                    metadata["parents"] = [data.folder_path]
+
+                # Step 1: Create metadata
+                meta_resp = await http_client.post(
+                    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    files={
+                        "metadata": ("metadata", json.dumps(metadata).encode(), "application/json"),
+                        "file": (filename, file_bytes, content_type)
+                    }
+                )
+                if meta_resp.status_code in (200, 201):
+                    upload_result = meta_resp.json()
+                else:
+                    raise HTTPException(status_code=502, detail=f"Google Drive upload failed: {meta_resp.text}")
+
+            elif data.provider == "onedrive":
+                # OneDrive Files API — simple upload
+                folder = data.folder_path or "BillTracker"
+                upload_url = f"https://graph.microsoft.com/v1.0/me/drive/root:/{folder}/{filename}:/content"
+                od_resp = await http_client.put(
+                    upload_url,
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": content_type
+                    },
+                    content=file_bytes
+                )
+                if od_resp.status_code in (200, 201):
+                    upload_result = od_resp.json()
+                else:
+                    raise HTTPException(status_code=502, detail=f"OneDrive upload failed: {od_resp.text}")
+
+            elif data.provider == "dropbox":
+                # Dropbox Files API
+                folder = data.folder_path or "/BillTracker"
+                dropbox_path = f"{folder}/{filename}"
+                db_resp = await http_client.post(
+                    "https://content.dropboxapi.com/2/files/upload",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/octet-stream",
+                        "Dropbox-API-Arg": json.dumps({"path": dropbox_path, "mode": "add", "autorename": True})
+                    },
+                    content=file_bytes
+                )
+                if db_resp.status_code == 200:
+                    upload_result = db_resp.json()
+                else:
+                    raise HTTPException(status_code=502, detail=f"Dropbox upload failed: {db_resp.text}")
+
+            else:
+                raise HTTPException(status_code=400, detail=f"Unsupported provider: {data.provider}")
+
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Network error uploading to {data.provider}: {str(e)}")
+
+    # 4. Log the upload
+    await db.export_logs.insert_one({
+        "user_id": user.user_id,
+        "provider": data.provider,
+        "export_type": data.export_type,
+        "file_format": data.file_format,
+        "filename": filename,
+        "upload_result": upload_result,
+        "created_at": datetime.now(timezone.utc)
+    })
+
+    return {
+        "message": f"File uploaded to {data.provider} successfully",
+        "filename": filename,
+        "provider": data.provider,
+        "details": upload_result
+    }
+
+
+@api_router.get("/export/history")
+async def get_export_history(request: Request):
+    """Get history of cloud drive exports"""
+    user = await get_current_user(request)
+    logs = await db.export_logs.find(
+        {"user_id": user.user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return {"exports": logs}
+
+
+# ==================== DATA BACKUP & RESTORE ====================
+
+@api_router.get("/backup")
+async def create_backup(request: Request):
+    """Create a full data backup as downloadable JSON"""
+    user = await get_current_user(request)
+
+    backup = {
+        "backup_version": "2.0",
+        "app": "Bill Tracker",
+        "user_id": user.user_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "data": {}
+    }
+
+    collections = [
+        ("accounts", {"user_id": user.user_id}),
+        ("income", {"user_id": user.user_id}),
+        ("expenses", {"user_id": user.user_id}),
+        ("bills", {"user_id": user.user_id}),
+        ("payments", {"user_id": user.user_id}),
+        ("categories", {"user_id": user.user_id}),
+        ("budgets", {"user_id": user.user_id}),
+        ("family_members", {"user_id": user.user_id}),
+        ("credit_cards", {"user_id": user.user_id}),
+        ("loans", {"user_id": user.user_id}),
+        ("lending", {"user_id": user.user_id}),
+        ("investments", {"user_id": user.user_id}),
+        ("reminders", {"user_id": user.user_id}),
+        ("rentals", {"user_id": user.user_id}),
+        ("investment_headings", {"user_id": user.user_id}),
+        ("user_settings", {"user_id": user.user_id}),
+    ]
+
+    for coll_name, query in collections:
+        docs = await db[coll_name].find(query, {"_id": 0}).to_list(50000)
+        backup["data"][coll_name] = docs
+
+    backup_json = json.dumps(backup, default=str, indent=2)
+    return Response(
+        content=backup_json,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename=billtracker_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"}
+    )
+
+
+@api_router.post("/backup/restore")
+async def restore_backup(request: Request):
+    """Restore data from a JSON backup file"""
+    user = await get_current_user(request)
+    body = await request.json()
+
+    if body.get("backup_version") not in ("1.0", "2.0"):
+        raise HTTPException(status_code=400, detail="Invalid backup file format")
+
+    backup_data = body.get("data", {})
+    if not backup_data:
+        raise HTTPException(status_code=400, detail="No data found in backup")
+
+    restored = {}
+    for coll_name, docs in backup_data.items():
+        if not isinstance(docs, list):
+            continue
+        # Delete existing data for this user in this collection
+        await db[coll_name].delete_many({"user_id": user.user_id})
+        # Insert backup data
+        if docs:
+            # Ensure all docs have the current user_id
+            for doc in docs:
+                doc["user_id"] = user.user_id
+            await db[coll_name].insert_many(docs)
+        restored[coll_name] = len(docs)
+
+    return {
+        "message": "Backup restored successfully",
+        "collections_restored": restored,
+        "restored_at": datetime.now(timezone.utc).isoformat()
+    }
+
 
 # Include router and add middleware
 app.include_router(api_router)
@@ -2691,14 +3529,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()

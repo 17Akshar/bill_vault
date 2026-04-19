@@ -26,11 +26,14 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword || !mobileNumber || !securityQuestion || !securityAnswer) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -47,7 +50,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register(email, password, name);
+      await register({ email, password, name, mobile_number: mobileNumber, security_question: securityQuestion, security_answer: securityAnswer });
       router.replace('/(tabs)/bills');
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message);
@@ -145,6 +148,50 @@ export default function Register() {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showPassword}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>Mobile Number</Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Ionicons name="call-outline" size={20} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor={colors.textSecondary}
+                  value={mobileNumber}
+                  onChangeText={setMobileNumber}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>Security Question</Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Ionicons name="help-circle-outline" size={20} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="e.g. Your first pet's name?"
+                  placeholderTextColor={colors.textSecondary}
+                  value={securityQuestion}
+                  onChangeText={setSecurityQuestion}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>Security Answer</Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="Your answer"
+                  placeholderTextColor={colors.textSecondary}
+                  value={securityAnswer}
+                  onChangeText={setSecurityAnswer}
                 />
               </View>
             </View>

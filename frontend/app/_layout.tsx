@@ -20,12 +20,14 @@ export default function RootLayout() {
             <Stack.Screen name="profile/budgets" />
             <Stack.Screen name="bills/add" />
             <Stack.Screen name="bills/[id]" />
+            <Stack.Screen name="bills/edit" />
             <Stack.Screen name="credit-cards/index" />
             <Stack.Screen name="loans/index" />
             <Stack.Screen name="lending/index" />
             <Stack.Screen name="investments/index" />
             <Stack.Screen name="net-worth/index" />
             <Stack.Screen name="reminders/index" />
+            <Stack.Screen name="rentals/index" />
             <Stack.Screen name="reports/index" />
             <Stack.Screen name="reports/investment-analytics" />
             <Stack.Screen name="reports/cashflow" />

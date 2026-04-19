@@ -108,7 +108,7 @@ export default function AddAccountScreen() {
           {/* Initial Balance */}
           <Text style={[styles.label, { color: colors.text }]}>Current Balance</Text>
           <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>\u20B9</Text>
+            <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>₹</Text>
             <TextInput
               style={[styles.input, { color: colors.text }]}
               placeholder="0.00"

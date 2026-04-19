@@ -42,10 +42,10 @@ def send_verification_email(to_email: str, name: str, verification_token: str) -
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>📱 Bill Tracker</h1>
+                    <h1>Bill Tracker</h1>
                 </div>
                 <div class="content">
-                    <h2>Welcome, {name}! 👋</h2>
+                    <h2>Welcome, {name}!</h2>
                     <p>Thank you for registering with Bill Tracker. We're excited to help you manage your bills!</p>
                     <p>To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
                     <center>
@@ -59,11 +59,11 @@ def send_verification_email(to_email: str, name: str, verification_token: str) -
                     <p>If you didn't create this account, please ignore this email.</p>
                     <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
                     <p style="font-size: 12px; color: #666;">
-                        🔒 <strong>Security Tip:</strong> Never share your password or verification link with anyone.
+                        <strong>Security Tip:</strong> Never share your password or verification link with anyone.
                     </p>
                 </div>
                 <div class="footer">
-                    <p>© 2026 Bill Tracker. All rights reserved.</p>
+                    <p>&copy; 2026 Bill Tracker. All rights reserved.</p>
                     <p>This is an automated email. Please do not reply.</p>
                 </div>
             </div>
@@ -82,7 +82,7 @@ def send_verification_email(to_email: str, name: str, verification_token: str) -
         
         If you didn't create this account, please ignore this email.
         
-        © 2026 Bill Tracker
+        (c) 2026 Bill Tracker
         """
         
         return send_email(to_email, subject, html_body, text_body)
@@ -116,7 +116,7 @@ def send_password_reset_email(to_email: str, name: str, reset_token: str) -> boo
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🔐 Password Reset</h1>
+                    <h1>Password Reset</h1>
                 </div>
                 <div class="content">
                     <h2>Hello, {name}</h2>
@@ -131,16 +131,16 @@ def send_password_reset_email(to_email: str, name: str, reset_token: str) -> boo
                     </p>
                     <p><strong>This link will expire in 1 hour.</strong></p>
                     <div class="warning">
-                        <strong>⚠️ Didn't request this?</strong><br>
+                        <strong>Didn't request this?</strong><br>
                         If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
                     </div>
                     <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
                     <p style="font-size: 12px; color: #666;">
-                        🔒 <strong>Security Tip:</strong> Bill Tracker will never ask you for your password via email.
+                        <strong>Security Tip:</strong> Bill Tracker will never ask you for your password via email.
                     </p>
                 </div>
                 <div class="footer">
-                    <p>© 2026 Bill Tracker. All rights reserved.</p>
+                    <p>&copy; 2026 Bill Tracker. All rights reserved.</p>
                     <p>This is an automated email. Please do not reply.</p>
                 </div>
             </div>
@@ -159,7 +159,7 @@ def send_password_reset_email(to_email: str, name: str, reset_token: str) -> boo
         
         If you didn't request this, please ignore this email.
         
-        © 2026 Bill Tracker
+        (c) 2026 Bill Tracker
         """
         
         return send_email(to_email, subject, html_body, text_body)
@@ -175,7 +175,7 @@ def send_email(to_email: str, subject: str, html_body: str, text_body: str) -> b
         # For development/demo: Just log the email instead of actually sending
         # In production, uncomment the SMTP code below
         
-        logger.info(f"📧 EMAIL SIMULATION (not actually sent):")
+        logger.info(f"EMAIL SIMULATION (not actually sent):")
         logger.info(f"To: {to_email}")
         logger.info(f"Subject: {subject}")
         logger.info(f"Body preview: {text_body[:200]}...")
