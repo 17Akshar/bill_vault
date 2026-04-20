@@ -70,7 +70,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData);
       setIsAuthenticated(true);
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Login failed');
+      const detail = error.response?.data?.detail;
+      let msg = 'Login failed';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d: any) => typeof d === 'string' ? d : d.msg || d.message || 'Validation error').join('. ');
+      }
+      throw new Error(msg);
     }
   };
 
@@ -94,7 +101,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData);
       setIsAuthenticated(true);
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Registration failed');
+      const detail = error.response?.data?.detail;
+      let msg = 'Registration failed';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d: any) => typeof d === 'string' ? d : d.msg || d.message || 'Validation error').join('. ');
+      }
+      throw new Error(msg);
     }
   };
 

@@ -47,7 +47,7 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = encodeURIComponent('billtracker://auth-callback');
+    const redirectUrl = encodeURIComponent('financetracker://auth-callback');
     const authUrl = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
     
     try {

@@ -33,8 +33,8 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword || !mobileNumber || !securityQuestion || !securityAnswer) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -50,10 +50,21 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register({ email, password, name, mobile_number: mobileNumber, security_question: securityQuestion, security_answer: securityAnswer });
-      router.replace('/(tabs)/bills');
+      await register({ email, password, name, mobile_number: mobileNumber || '', security_question: securityQuestion || '', security_answer: securityAnswer || '' });
+      router.replace('/(tabs)/dashboard');
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message);
+      let msg = 'Something went wrong. Please try again.';
+      if (error?.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'string') {
+          msg = detail;
+        } else if (Array.isArray(detail)) {
+          msg = detail.map((d: any) => typeof d === 'string' ? d : d.msg || d.message || JSON.stringify(d)).join('\n');
+        }
+      } else if (error?.message) {
+        msg = error.message;
+      }
+      Alert.alert('Registration Failed', msg);
     } finally {
       setIsLoading(false);
     }

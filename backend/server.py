@@ -74,9 +74,9 @@ class UserCreate(BaseModel):
     email: str
     password: str
     name: str
-    mobile_number: str
-    security_question: str
-    security_answer: str
+    mobile_number: Optional[str] = None
+    security_question: Optional[str] = None
+    security_answer: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
