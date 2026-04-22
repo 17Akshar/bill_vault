@@ -13,6 +13,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../utils/api';
 import { requestNotificationPermissions } from '../../utils/notifications';
 
@@ -85,35 +86,35 @@ export default function ProfileScreen() {
     }
   };
 
+  const userName = user?.name || 'User';
+  const userInitial = userName.charAt(0).toUpperCase();
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* User Info */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <View style={styles.userInfo}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-              <Text style={styles.avatarText}>
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </Text>
-            </View>
-            <View style={styles.userDetails}>
-              <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'User'}</Text>
-              <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
-            </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Profile Header */}
+        <LinearGradient
+          colors={['#5B2FBF', '#7C5CE7', '#9B7AFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.profileHeader}
+        >
+          <View style={styles.avatarLarge}>
+            <Text style={styles.avatarLargeText}>{userInitial}</Text>
           </View>
-        </View>
+          <Text style={styles.profileName}>{userName}</Text>
+          <Text style={styles.profileEmail}>{user?.email || 'Local Account'}</Text>
+        </LinearGradient>
 
-        {/* Settings */}
+        {/* Preferences */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
           
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <Ionicons name="moon-outline" size={24} color={colors.text} />
+              <View style={[styles.settingIcon, { backgroundColor: '#5B2FBF15' }]}>
+                <Ionicons name="moon-outline" size={20} color="#5B2FBF" />
+              </View>
               <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
             </View>
             <Switch
@@ -124,9 +125,11 @@ export default function ProfileScreen() {
           </View>
 
           {settings && (
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomWidth: 0 }]}>
               <View style={styles.settingInfo}>
-                <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                <View style={[styles.settingIcon, { backgroundColor: '#F59E0B15' }]}>
+                  <Ionicons name="notifications-outline" size={20} color="#F59E0B" />
+                </View>
                 <Text style={[styles.settingLabel, { color: colors.text }]}>Notifications</Text>
               </View>
               <Switch
@@ -138,93 +141,72 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Actions */}
+        {/* Management */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Management</Text>
           
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => router.push('/profile/family' as any)}
-          >
-            <Ionicons name="people-outline" size={24} color={colors.text} />
-            <Text style={[styles.actionLabel, { color: colors.text }]}>Family Members</Text>
-            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => router.push('/(tabs)/analytics' as any)}
-          >
-            <Ionicons name="stats-chart-outline" size={24} color={colors.text} />
-            <Text style={[styles.actionLabel, { color: colors.text }]}>Analytics</Text>
-            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => router.push('/profile/categories' as any)}
-          >
-            <Ionicons name="pricetag-outline" size={24} color={colors.text} />
-            <Text style={[styles.actionLabel, { color: colors.text }]}>Manage Categories</Text>
-            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => router.push('/profile/budgets' as any)}
-          >
-            <Ionicons name="wallet-outline" size={24} color={colors.text} />
-            <Text style={[styles.actionLabel, { color: colors.text }]}>Budget Limits</Text>
-            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={exportData}
-          >
-            <Ionicons name="download-outline" size={24} color={colors.text} />
-            <Text style={[styles.actionLabel, { color: colors.text }]}>Export Data</Text>
-            <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
+          {[
+            { icon: 'people-outline', label: 'Family Members', color: '#3B82F6', route: '/profile/family' },
+            { icon: 'stats-chart-outline', label: 'Analytics', color: '#22C55E', route: '/(tabs)/analytics' },
+            { icon: 'pricetag-outline', label: 'Manage Categories', color: '#EC4899', route: '/profile/categories' },
+            { icon: 'wallet-outline', label: 'Budget Limits', color: '#6366F1', route: '/profile/budgets' },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.actionItem, index === 3 && { borderBottomWidth: 0 }]}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <Text style={[styles.actionLabel, { color: colors.text }]}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {/* Storage Options */}
+        {/* Data & Export */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Storage & Sync</Text>
-          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            Cloud storage integrations coming soon
-          </Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Data & Storage</Text>
           
-          <View style={styles.storageOptions}>
-            <View style={[styles.storageOption, { borderColor: colors.border }]}>
-              <Ionicons name="phone-portrait-outline" size={32} color={colors.primary} />
-              <Text style={[styles.storageLabel, { color: colors.text }]}>Local Storage</Text>
-              <Text style={[styles.storageStatus, { color: colors.success }]}>Active</Text>
+          <TouchableOpacity style={styles.actionItem} onPress={exportData}>
+            <View style={[styles.settingIcon, { backgroundColor: '#14B8A615' }]}>
+              <Ionicons name="download-outline" size={20} color="#14B8A6" />
             </View>
-            <View style={[styles.storageOption, { borderColor: colors.border, opacity: 0.5 }]}>
-              <Ionicons name="logo-google" size={32} color={colors.textSecondary} />
-              <Text style={[styles.storageLabel, { color: colors.textSecondary }]}>Google Drive</Text>
-              <Text style={[styles.storageStatus, { color: colors.textSecondary }]}>Coming Soon</Text>
+            <Text style={[styles.actionLabel, { color: colors.text }]}>Export Data</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <View style={[styles.storageRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.storageChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Ionicons name="phone-portrait-outline" size={22} color="#22C55E" />
+              <Text style={[styles.storageLabel, { color: colors.text }]}>Local</Text>
+              <View style={[styles.statusDot, { backgroundColor: '#22C55E' }]} />
             </View>
-            <View style={[styles.storageOption, { borderColor: colors.border, opacity: 0.5 }]}>
-              <Ionicons name="logo-microsoft" size={32} color={colors.textSecondary} />
+            <View style={[styles.storageChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: 0.5 }]}>
+              <Ionicons name="logo-google" size={22} color={colors.textSecondary} />
+              <Text style={[styles.storageLabel, { color: colors.textSecondary }]}>Drive</Text>
+              <Text style={[styles.soonBadge, { color: colors.textSecondary }]}>Soon</Text>
+            </View>
+            <View style={[styles.storageChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: 0.5 }]}>
+              <Ionicons name="cloud-outline" size={22} color={colors.textSecondary} />
               <Text style={[styles.storageLabel, { color: colors.textSecondary }]}>OneDrive</Text>
-              <Text style={[styles.storageStatus, { color: colors.textSecondary }]}>Coming Soon</Text>
+              <Text style={[styles.soonBadge, { color: colors.textSecondary }]}>Soon</Text>
             </View>
           </View>
         </View>
 
         {/* Logout */}
         <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: colors.danger }]}
+          style={[styles.logoutButton, { borderColor: '#EF4444' }]}
           onPress={handleLogout}
         >
-          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+          <Text style={[styles.logoutText, { color: '#EF4444' }]}>Logout</Text>
         </TouchableOpacity>
 
         <Text style={[styles.version, { color: colors.textSecondary }]}>
-          Version 1.0.0
+          Fintracker v2.0
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -235,59 +217,52 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
   scrollContent: {
-    paddingHorizontal: 20,
     paddingBottom: 32,
   },
-  section: {
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  userInfo: {
-    flexDirection: 'row',
+  profileHeader: {
     alignItems: 'center',
+    paddingTop: 32,
+    paddingBottom: 28,
+    marginBottom: 20,
+    marginHorizontal: 20,
+    borderRadius: 20,
+    marginTop: 16,
   },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  avatarLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginBottom: 12,
   },
-  avatarText: {
+  avatarLargeText: {
     color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
   },
-  userDetails: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  profileName: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
     marginBottom: 4,
   },
-  userEmail: {
+  profileEmail: {
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 14,
+  },
+  section: {
+    marginHorizontal: 20,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
   },
   settingItem: {
     flexDirection: 'row',
@@ -295,15 +270,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(128,128,128,0.1)',
   },
   settingInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
+  settingIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   settingLabel: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '500',
   },
   actionItem: {
     flexDirection: 'row',
@@ -311,40 +294,50 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: 'rgba(128,128,128,0.1)',
   },
   actionLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '500',
   },
-  storageOptions: {
-    gap: 12,
+  storageRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingTop: 12,
   },
-  storageOption: {
+  storageChip: {
+    flex: 1,
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
     borderWidth: 1,
+    gap: 6,
   },
   storageLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  storageStatus: {
     fontSize: 12,
-    marginTop: 4,
+    fontWeight: '600',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  soonBadge: {
+    fontSize: 9,
+    fontWeight: '600',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    borderRadius: 12,
+    marginHorizontal: 20,
+    borderRadius: 14,
     gap: 8,
+    borderWidth: 1.5,
   },
   logoutText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

@@ -1,88 +1,85 @@
-# Product Requirements Document - Personal & Family Financial Management System
+# Fintracker - Product Requirements Document
 
-## Phase 1 — COMPLETED ✅
+## App Overview
+Fintracker is a Production-Ready Personal Finance & Wealth Management OS. It evolved from the Bill Tracker app to provide comprehensive financial tracking, portfolio management, and wealth overview capabilities.
 
-### Backend (47/47 tests passed)
-- **Authentication**: Email/password registration, login, single-user mode, JWT tokens
-- **Family Members CRUD**: POST/GET/PUT/DELETE with roles (self, spouse, child, parent, sibling)
-- **Accounts CRUD**: Bank, Cash, UPI, Credit Card types; soft-delete; filter by type/family member
-- **Income CRUD**: Auto-updates account balance; filters by date/month/category/account/family member
-- **Expenses CRUD**: Auto-updates account balance; filters by date/month/category/account/family member/payment type
-- **Dashboard**: Total balance, monthly income/expenses/savings, account summaries, upcoming/overdue bills, recent transactions, category breakdowns — all with Indian Rupee (₹) formatting
-- **Bills CRUD**: Recurring support, categories, payment status
-- **Analytics**: Category breakdown, budget status
-- **Export**: All user data (accounts, income, expenses, bills, family members)
+## Phase 1: Fintracker Branding & UI Overhaul (COMPLETED)
 
-### Frontend (10/10 screens tested)
-- **Dashboard**: Gradient balance card, monthly summary, quick actions, accounts scroll, recent transactions, overdue alerts
-- **Transactions**: Month selector, All/Income/Expense filters, category icons, long-press delete
-- **Accounts**: Total balance, type filter chips, account cards, FAB to add
-- **Add Account**: Type selector cards (Bank/Cash/UPI/Credit Card), name, balance, account number
-- **Add Transaction**: Income/Expense toggle, ₹ amount input, category chips, account picker modal, date picker, payment type, notes
-- **Family Members**: Add/delete with role selection, color-coded roles
-- **5-Tab Navigation**: Home, Transactions, Accounts, Bills, More
-- **Dark Theme**: CRED-style premium dark UI (background #0D0D12, accent #6C5CE7)
-- **Indian Rupee**: ₹ formatting throughout (₹1,00,000 Indian numbering system)
+### Landing Page (index.tsx)
+- Fintracker logo with gradient background
+- "Your Personal Finance & Wealth OS" tagline
+- Feature cards grid: Net Worth, Investments, Accounts, Reminders
+- Gradient "Get Started" CTA + "Create Account" button
+- Animated fade-in entrance
 
-### Tech Stack
-- Frontend: Expo React Native (expo-router, expo-linear-gradient, react-native-gifted-charts)
-- Backend: FastAPI + Motor (async MongoDB)
-- Database: MongoDB
-- Auth: JWT + bcrypt + Google OAuth
+### Dashboard (dashboard.tsx)
+- User avatar with initials in header
+- Greeting with name
+- Purple gradient Net Worth hero card with sparkline chart
+- Quick actions: Income, Expense, Transfer, Note
+- Income/Expenses/Savings summary row
+- Horizontal scrollable accounts section
+- Investment donut chart with portfolio allocation
+- Recent transactions feed
+- Upcoming reminders
+- Financial Hub quick nav grid
 
----
+### Financial Hub (bills.tsx → Hub tab)
+- Overdue bills alert banner
+- Quick stats: Total, Upcoming, Paid
+- Module grid: Bills, Credit Cards, Loans & EMI, Investments, Rentals, Lent/Borrowed, Budgets, Net Worth, Reports, Reminders
+- Recent bills list
 
-## Phase 2 — COMPLETED ✅
+### Tab Navigation (_layout.tsx)
+- 5 tabs: Home | Transactions | Accounts | Hub | Profile
+- Active tab highlight with background tint
+- Filled/outline icon toggle on selection
 
-### Backend (28/28 Phase 2 tests + 11/11 Reminders tests passed)
-- **Credit Cards CRUD**: POST/GET/PUT/DELETE; fields: name, card_number_last4, credit_limit, current_outstanding, billing_date, due_date, interest_rate, family_member_id
-- **Loans CRUD**: POST/GET/PUT/DELETE; types: home/car/personal/education/gold/other; EMI tracking, tenure, interest rate
-- **Lending CRUD**: POST/GET/PUT/DELETE; types: lent/borrowed; settlement tracking, filter by type/status
-- **Investments CRUD**: POST/GET/PUT/DELETE; types: stocks/mutual_fund/fd/rd/ppf/nps/gold/real_estate/crypto/other; returns calculation
-- **Net Worth API**: GET aggregates assets (accounts + investments + money lent) minus liabilities (credit cards + loans + money borrowed)
-- **Reminders CRUD**: POST/GET/PUT/DELETE; types: investment/loan_emi/credit_card/lending/bill/custom; recurring support; summary endpoint with overdue/today/this_week counts; enriched with related item details
+### Profile (profile.tsx)
+- Purple gradient profile header card with avatar
+- Color-coded preferences with icons
+- Management section: Family, Analytics, Categories, Budgets
+- Data & Storage section with export + sync status
+- Outline logout button
 
-### Frontend (All Phase 2 screens tested)
-- **Dashboard Financial Hub**: 6 navigable cards — Credit Cards, Loans & EMI, Investments, Lent/Borrowed, Net Worth, Reminders
-- **Credit Cards Screen**: Summary (limit/outstanding/available), card list with usage progress bars, add modal, remind button
-- **Loans Screen**: Summary (outstanding/monthly EMI), loan cards with type icons and repayment progress, add modal with type chips, remind button
-- **Investments Screen**: Summary (invested/current/returns %), investment cards with return calculations, add modal with type selector, remind & delete buttons
-- **Lending Screen**: Summary (lent/borrowed totals), All/Lent/Borrowed filter tabs, settle/remind/delete actions, add modal with type toggle
-- **Net Worth Screen**: Gradient hero card with total net worth, assets (accounts/investments/money lent) and liabilities (credit cards/loans/money borrowed) breakdown
-- **Reminders Screen**: Summary bar (overdue/today/this week/total), filter tabs (All/Today/Upcoming/Overdue/Completed), add modal with type selection, quick date picker, recurrence options, mark complete/delete actions
-- All screens linked from dashboard, remind buttons on Credit Cards, Loans, Investments, Lending screens
+### Auth Screens
+- Updated to Fintracker branding (wallet icon, taglines)
+- Login: "Sign in to Fintracker"
+- Register: "Join Fintracker today"
 
-## Phase 3 — COMPLETED ✅
-- Investment Analytics (CAGR, portfolio allocation donut chart, top/bottom performers)
-- Cash Flow reports (monthly income vs expense bar chart, savings rate tracking, 3/6/12 month views)
-- Expense Breakdown (category-wise donut chart, income/expense toggle, month selector)
-- Income Breakdown (source-wise analysis)
-- CSV Export (transactions, investments, net worth)
-- Custom SVG charts (DonutChart, BarChart) built with react-native-svg
+### Theme (ThemeContext.tsx)
+- Primary: #5B2FBF (purple)
+- Dark mode default with rich dark backgrounds
+- Light mode available
 
-## Phase 4 — COMPLETED ✅
-- Budget Goals (CRUD + progress tracking with category-wise spending vs limit, status alerts, unbudgeted spending detection)
-- App Store prep (app.json updated: name, permissions, bundle IDs, splash screen)
+## Phase 2: Unified Accounts System (UPCOMING)
+- Replace "Family Members" with unified `account_id`
+- Support Individual/Joint/Business accounts
+- Banks, Wallets, Credit Cards
 
-## Phase 5 — IN PROGRESS (UI/UX & Feature Overhaul)
+## Phase 3: Offline-First Architecture (UPCOMING)
+- Local storage (SQLite/WatermelonDB)
+- Sync queue layer
+- Google Drive / OneDrive sync
 
-### Backend Updates ✅
-- Credit Card Report endpoint with summary, upcoming dues, card data
-- Bills Summary endpoint with overdue/upcoming/paid breakdown + color indicators
-- Rental Income CRUD (property, tenant, rent amount, payments)
-- Investment Headings CRUD (group investments under categories)
-- Sub-category support on Income & Expense models
+## Phase 4: Enhanced Authentication (UPCOMING)
+- MPIN login
+- Mobile + OTP
 
-### Frontend Updates ✅
-- **Investments Screen**: Overhauled with Headings system (e.g., Shares, MF, FD) - create/edit/delete headings, nest investments under them, expandable sections, ungrouped investments section, returns calculation per heading
-- **Bills Screen**: Enhanced with overdue/upcoming color indicators (Red = overdue, Yellow = due soon, Green = paid), status badges, overdue banner, edit/delete action buttons per bill
-- **Dashboard**: Added Rental Income to Financial Hub (9 total modules), Savings card with color-coded health indicator (Green=Healthy, Yellow=Low, Red=Overspending)
-- **Add Transaction**: Category + Sub-category system with hierarchical selection (e.g., Food & Dining → Restaurant/Fast Food/Coffee)
-- **Transactions List**: Shows sub-category in transaction meta (e.g., "food › Restaurant")
-- **Global Back Arrows**: Verified on all non-tab screens
+## Phase 5: Notes & Reminders Engine (UPCOMING)
+- Subheadings support
+- Link to transactions/investments
+- Offline support
 
-### Remaining Work
-- Credit Cards screen polish (EMI reporting)
-- Rentals screen polish
-- Additional color indicators across all financial summaries
+## Phase 6: Calendar System (UPCOMING)
+- Global monthly view
+- Financial events integration
 
+## Phase 7: Financial Hub Upgrades (UPCOMING)
+- Multi-buy/sell tracking
+- ROI/CAGR/XIRR calculations
+- New asset classes (ESOPs, Real Estate, etc.)
+
+## Phase 8: Backend Modularization (UPCOMING)
+- Break server.py into modular routers
+- /routers/auth.py, /routers/transactions.py, etc.

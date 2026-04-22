@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { View } from 'react-native';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
@@ -28,8 +29,10 @@ export default function TabsLayout() {
         name="dashboard"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? { backgroundColor: color + '15', borderRadius: 10, padding: 4 } : { padding: 4 }}>
+              <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+            </View>
           ),
         }}
       />
@@ -37,8 +40,10 @@ export default function TabsLayout() {
         name="transactions"
         options={{
           title: 'Transactions',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="swap-horizontal" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? { backgroundColor: color + '15', borderRadius: 10, padding: 4 } : { padding: 4 }}>
+              <Ionicons name={focused ? "swap-horizontal" : "swap-horizontal-outline"} size={size} color={color} />
+            </View>
           ),
         }}
       />
@@ -46,26 +51,32 @@ export default function TabsLayout() {
         name="accounts"
         options={{
           title: 'Accounts',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wallet" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? { backgroundColor: color + '15', borderRadius: 10, padding: 4 } : { padding: 4 }}>
+              <Ionicons name={focused ? "wallet" : "wallet-outline"} size={size} color={color} />
+            </View>
           ),
         }}
       />
       <Tabs.Screen
         name="bills"
         options={{
-          title: 'Bills',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
+          title: 'Hub',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? { backgroundColor: color + '15', borderRadius: 10, padding: 4 } : { padding: 4 }}>
+              <Ionicons name={focused ? "apps" : "apps-outline"} size={size} color={color} />
+            </View>
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'More',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid" size={size} color={color} />
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? { backgroundColor: color + '15', borderRadius: 10, padding: 4 } : { padding: 4 }}>
+              <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+            </View>
           ),
         }}
       />

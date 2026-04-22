@@ -88,10 +88,10 @@ export default function Register() {
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <Ionicons name="receipt-outline" size={60} color={colors.primary} />
+            <Ionicons name="wallet" size={60} color={colors.primary} />
             <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Sign up to get started
+              Join Fintracker today
             </Text>
           </View>
 
