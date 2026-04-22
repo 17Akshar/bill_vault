@@ -40,6 +40,7 @@ const HUB_MODULES: HubModule[] = [
   { icon: 'bar-chart-outline', label: 'Reports', color: '#0EA5E9', route: '/reports', desc: 'Financial reports' },
   { icon: 'alarm-outline', label: 'Reminders', color: '#F59E0B', route: '/reminders', desc: 'Due date alerts' },
   { icon: 'calendar-outline', label: 'Calendar', color: '#0EA5E9', route: '/calendar', desc: 'Monthly overview' },
+  { icon: 'document-text-outline', label: 'Notes', color: '#F59E0B', route: '/notes', desc: 'Financial notes' },
 ];
 
 export default function HubScreen() {

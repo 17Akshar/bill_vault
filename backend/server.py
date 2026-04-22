@@ -331,6 +331,28 @@ class InvestmentHeadingUpdate(BaseModel):
     name: Optional[str] = None
     icon: Optional[str] = None
 
+# Notes Model
+class NoteCreate(BaseModel):
+    title: str
+    content: str = ""
+    sections: Optional[list] = None  # [{heading: str, content: str}]
+    tags: Optional[list] = None  # ["investment", "tax"]
+    linked_type: Optional[str] = None  # transaction, investment, bill
+    linked_id: Optional[str] = None
+    priority: str = "normal"  # low, normal, high
+    color: Optional[str] = None
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    sections: Optional[list] = None
+    tags: Optional[list] = None
+    linked_type: Optional[str] = None
+    linked_id: Optional[str] = None
+    priority: Optional[str] = None
+    color: Optional[str] = None
+    is_archived: Optional[bool] = None
+
 class Bill(BaseModel):
     bill_id: str
     user_id: str
@@ -3532,6 +3554,142 @@ async def restore_backup(request: Request):
         "message": "Backup restored successfully",
         "collections_restored": restored,
         "restored_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
+# ==================== NOTES ENDPOINTS ====================
+
+@api_router.post("/notes")
+async def create_note(data: NoteCreate, request: Request):
+    user = await get_current_user(request)
+    note_id = f"note_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    note = {
+        "note_id": note_id, "user_id": user.user_id,
+        "title": data.title, "content": data.content,
+        "sections": data.sections or [],
+        "tags": data.tags or [],
+        "linked_type": data.linked_type, "linked_id": data.linked_id,
+        "priority": data.priority or "normal",
+        "color": data.color,
+        "is_archived": False,
+        "created_at": now, "updated_at": now,
+    }
+    await db.notes.insert_one(note)
+    note.pop("_id", None)
+    return note
+
+@api_router.get("/notes")
+async def get_notes(request: Request, tag: Optional[str] = None, linked_type: Optional[str] = None, is_archived: bool = False):
+    user = await get_current_user(request)
+    query = {"user_id": user.user_id, "is_archived": is_archived}
+    if tag:
+        query["tags"] = tag
+    if linked_type:
+        query["linked_type"] = linked_type
+    notes = await db.notes.find(query, {"_id": 0}).sort("updated_at", -1).to_list(200)
+    return notes
+
+@api_router.get("/notes/{note_id}")
+async def get_note(note_id: str, request: Request):
+    user = await get_current_user(request)
+    note = await db.notes.find_one({"note_id": note_id, "user_id": user.user_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return note
+
+@api_router.put("/notes/{note_id}")
+async def update_note(note_id: str, data: NoteUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.notes.find_one({"note_id": note_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Note not found")
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.notes.update_one({"note_id": note_id}, {"$set": update_data})
+    updated = await db.notes.find_one({"note_id": note_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/notes/{note_id}")
+async def delete_note(note_id: str, request: Request):
+    user = await get_current_user(request)
+    existing = await db.notes.find_one({"note_id": note_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Note not found")
+    await db.notes.delete_one({"note_id": note_id})
+    return {"message": "Note deleted"}
+
+
+# ==================== PORTFOLIO ANALYTICS ENDPOINT ====================
+
+@api_router.get("/portfolio/analytics")
+async def get_portfolio_analytics(request: Request):
+    """Get investment portfolio analytics with ROI and CAGR calculations"""
+    user = await get_current_user(request)
+    investments = await db.investments.find({"user_id": user.user_id}, {"_id": 0}).to_list(500)
+
+    total_invested = sum(i.get("invested_amount", 0) for i in investments)
+    total_current = sum(i.get("current_value", 0) for i in investments)
+    total_gain = total_current - total_invested
+    roi_pct = (total_gain / total_invested * 100) if total_invested > 0 else 0
+
+    # Calculate CAGR for each investment
+    now = datetime.now(timezone.utc)
+    enriched = []
+    for inv in investments:
+        invested = inv.get("invested_amount", 0)
+        current = inv.get("current_value", 0)
+        gain = current - invested
+        inv_roi = (gain / invested * 100) if invested > 0 else 0
+
+        cagr = 0
+        pd_str = inv.get("purchase_date", "")
+        if pd_str and invested > 0 and current > 0:
+            try:
+                pd = datetime.fromisoformat(pd_str.replace("Z", "+00:00"))
+                years = max((now - pd).days / 365.25, 0.01)
+                cagr = ((current / invested) ** (1 / years) - 1) * 100
+            except Exception:
+                pass
+
+        enriched.append({
+            **inv,
+            "gain": round(gain, 2),
+            "roi_pct": round(inv_roi, 2),
+            "cagr_pct": round(cagr, 2),
+        })
+
+    # By type breakdown
+    by_type = {}
+    for inv in enriched:
+        t = inv.get("investment_type", "other")
+        if t not in by_type:
+            by_type[t] = {"invested": 0, "current": 0, "count": 0}
+        by_type[t]["invested"] += inv.get("invested_amount", 0)
+        by_type[t]["current"] += inv.get("current_value", 0)
+        by_type[t]["count"] += 1
+
+    type_breakdown = []
+    for t, v in by_type.items():
+        g = v["current"] - v["invested"]
+        type_breakdown.append({
+            "type": t,
+            "invested": round(v["invested"], 2),
+            "current": round(v["current"], 2),
+            "gain": round(g, 2),
+            "roi_pct": round((g / v["invested"] * 100) if v["invested"] > 0 else 0, 2),
+            "count": v["count"],
+            "allocation_pct": round((v["current"] / total_current * 100) if total_current > 0 else 0, 2),
+        })
+
+    return {
+        "total_invested": round(total_invested, 2),
+        "total_current": round(total_current, 2),
+        "total_gain": round(total_gain, 2),
+        "overall_roi_pct": round(roi_pct, 2),
+        "investment_count": len(investments),
+        "type_breakdown": type_breakdown,
+        "investments": enriched,
     }
 
 

@@ -192,7 +192,7 @@ export default function DashboardScreen() {
             { icon: 'add-circle', label: 'Income', color: '#22C55E', route: '/transactions/add?type=income' },
             { icon: 'remove-circle', label: 'Expense', color: '#EF4444', route: '/transactions/add?type=expense' },
             { icon: 'swap-horizontal-outline', label: 'Transfer', color: '#3B82F6', route: '/transactions/add?type=expense' },
-            { icon: 'document-text-outline', label: 'Note', color: '#F59E0B', route: '/reminders' },
+            { icon: 'document-text-outline', label: 'Note', color: '#F59E0B', route: '/notes' },
           ].map((a, i) => (
             <TouchableOpacity key={i} style={s.qaBtn} onPress={() => router.push(a.route as any)}>
               <View style={[s.qaIcon, { backgroundColor: a.color + '15' }]}>

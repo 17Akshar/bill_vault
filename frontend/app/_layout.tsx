@@ -35,6 +35,7 @@ export default function RootLayout() {
             <Stack.Screen name="budgets/index" />
             <Stack.Screen name="security/mpin" />
             <Stack.Screen name="calendar/index" />
+            <Stack.Screen name="notes/index" />
           </Stack>
         </AuthProvider>
       </ThemeProvider>
