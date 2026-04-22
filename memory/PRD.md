@@ -91,19 +91,21 @@ Fintracker is a Production-Ready Personal Finance & Wealth Management OS. It evo
 - MPIN login
 - Mobile + OTP
 
-## Phase 5: Notes & Reminders Engine (UPCOMING)
-- Subheadings support
-- Link to transactions/investments
-- Offline support
+## Phase 5: Offline-First Architecture (UPCOMING)
+- Local storage (SQLite/WatermelonDB)
+- Sync queue layer
+- Google Drive / OneDrive sync
 
-## Phase 6: Calendar System (UPCOMING)
-- Global monthly view
-- Financial events integration
+## Phase 6: Notes & Reminders Engine (COMPLETED)
+- Backend: Full CRUD for `/api/notes` with sections/subheadings, tags, priority, color, linked entities
+- Frontend: 2-column grid layout with search, sections editor, tag selector, priority & color picker
+- Accessible from Dashboard + Financial Hub
 
-## Phase 7: Financial Hub Upgrades (UPCOMING)
-- Multi-buy/sell tracking
-- ROI/CAGR/XIRR calculations
-- New asset classes (ESOPs, Real Estate, etc.)
+## Phase 7: Financial Hub Upgrades (COMPLETED)
+- Portfolio Analytics API: `/api/portfolio/analytics` with ROI%, CAGR%, type breakdown, allocation %
+- Investment screen enhanced with allocation breakdown chips in summary
+- New asset classes: ESOP, Bonds (12 total investment types)
+- ROI label in portfolio summary
 
 ## Phase 8: Backend Modularization (UPCOMING)
 - Break server.py into modular routers

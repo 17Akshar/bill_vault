@@ -17,6 +17,8 @@ const INV_TYPES = [
   { key: 'gold', label: 'Gold', icon: 'diamond-outline', color: '#FF9100' },
   { key: 'real_estate', label: 'Real Estate', icon: 'home-outline', color: '#8D6E63' },
   { key: 'crypto', label: 'Crypto', icon: 'logo-bitcoin', color: '#F7931A' },
+  { key: 'esop', label: 'ESOP', icon: 'briefcase-outline', color: '#5B2FBF' },
+  { key: 'bonds', label: 'Bonds', icon: 'document-text-outline', color: '#14B8A6' },
   { key: 'other', label: 'Other', icon: 'ellipsis-horizontal', color: '#8E8EA0' },
 ];
 
@@ -40,6 +42,7 @@ export default function InvestmentsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedHeadings, setExpandedHeadings] = useState<Set<string>>(new Set());
+  const [analytics, setAnalytics] = useState<any>(null);
 
   // Modals
   const [showAddInvestment, setShowAddInvestment] = useState(false);
@@ -56,12 +59,14 @@ export default function InvestmentsScreen() {
 
   const load = async () => {
     try {
-      const [hRes, iRes] = await Promise.all([
+      const [hRes, iRes, aRes] = await Promise.all([
         api.get('/investment-headings'),
         api.get('/investments'),
+        api.get('/portfolio/analytics').catch(() => ({ data: null })),
       ]);
       setHeadings(hRes.data);
       setAllInvestments(iRes.data);
+      if (aRes.data) setAnalytics(aRes.data);
       const groupedIds = new Set(iRes.data.filter((i: any) => i.heading_id).map((i: any) => i.heading_id));
       setUngrouped(iRes.data.filter((i: any) => !i.heading_id));
       // Auto-expand all headings on first load
@@ -255,9 +260,22 @@ export default function InvestmentsScreen() {
         <View style={[st.returnsRow, { backgroundColor: totalReturns >= 0 ? 'rgba(0,230,118,0.1)' : 'rgba(255,82,82,0.1)' }]}>
           <Ionicons name={totalReturns >= 0 ? 'trending-up' : 'trending-down'} size={18} color={totalReturns >= 0 ? '#00E676' : '#FF5252'} />
           <Text style={{ color: totalReturns >= 0 ? '#00E676' : '#FF5252', fontSize: 15, fontWeight: '700' }}>
-            {totalReturns >= 0 ? '+' : ''}{formatINR(totalReturns)} ({returnsPct >= 0 ? '+' : ''}{returnsPct.toFixed(1)}%)
+            {totalReturns >= 0 ? '+' : ''}{formatINR(totalReturns)} (ROI: {returnsPct >= 0 ? '+' : ''}{returnsPct.toFixed(1)}%)
           </Text>
         </View>
+        {analytics?.type_breakdown?.length > 0 && (
+          <View style={st.breakdownRow}>
+            {analytics.type_breakdown.slice(0, 4).map((tb: any, i: number) => {
+              const typeInfo = INV_TYPES.find(t => t.key === tb.type) || INV_TYPES[INV_TYPES.length - 1];
+              return (
+                <View key={i} style={[st.breakdownChip, { backgroundColor: typeInfo.color + '15' }]}>
+                  <Text style={[st.breakdownLabel, { color: typeInfo.color }]}>{typeInfo.label}</Text>
+                  <Text style={[st.breakdownPct, { color: typeInfo.color }]}>{tb.allocation_pct}%</Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       {/* Sections */}
@@ -463,6 +481,10 @@ const st = StyleSheet.create({
   sLabel: { fontSize: 12, marginBottom: 4 },
   sVal: { fontSize: 16, fontWeight: 'bold' },
   returnsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, borderRadius: 10 },
+  breakdownRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  breakdownChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  breakdownLabel: { fontSize: 11, fontWeight: '500' },
+  breakdownPct: { fontSize: 11, fontWeight: '700' },
   list: { paddingHorizontal: 20, paddingBottom: 40 },
   // Heading card
   headingCard: { borderRadius: 14, padding: 16, marginBottom: 8 },

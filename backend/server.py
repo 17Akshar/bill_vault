@@ -265,7 +265,7 @@ class LendingUpdate(BaseModel):
 # Investment Model
 class InvestmentCreate(BaseModel):
     name: str
-    investment_type: str  # stocks, mutual_fund, fd, rd, ppf, nps, gold, real_estate, crypto, other
+    investment_type: str  # stocks, mutual_fund, fd, rd, ppf, nps, gold, real_estate, crypto, esop, bonds, other
     invested_amount: float
     current_value: float
     purchase_date: str
