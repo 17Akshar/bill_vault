@@ -23,6 +23,13 @@ const ACCOUNT_TYPES = [
   { key: 'cash', label: 'Cash', icon: 'cash-outline', color: '#00E676' },
   { key: 'upi', label: 'UPI', icon: 'phone-portrait-outline', color: '#7C4DFF' },
   { key: 'credit_card', label: 'Credit Card', icon: 'card-outline', color: '#FF9100' },
+  { key: 'wallet', label: 'Wallet', icon: 'wallet-outline', color: '#F59E0B' },
+];
+
+const OWNERSHIP_TYPES = [
+  { key: 'individual', label: 'Individual', icon: 'person-outline', color: '#5B2FBF' },
+  { key: 'joint', label: 'Joint', icon: 'people-outline', color: '#3B82F6' },
+  { key: 'business', label: 'Business', icon: 'briefcase-outline', color: '#14B8A6' },
 ];
 
 export default function AddAccountScreen() {
@@ -30,6 +37,8 @@ export default function AddAccountScreen() {
   const { colors } = useTheme();
   const [name, setName] = useState('');
   const [accountType, setAccountType] = useState('bank');
+  const [ownershipType, setOwnershipType] = useState('individual');
+  const [institution, setInstitution] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [saving, setSaving] = useState(false);
@@ -45,6 +54,8 @@ export default function AddAccountScreen() {
       await api.post('/accounts', {
         name: name.trim(),
         account_type: accountType,
+        ownership_type: ownershipType,
+        institution: institution.trim() || null,
         initial_balance: parseFloat(initialBalance) || 0,
         account_number: accountNumber.trim() || null,
       });
@@ -93,6 +104,25 @@ export default function AddAccountScreen() {
             ))}
           </View>
 
+          {/* Ownership Type */}
+          <Text style={[styles.label, { color: colors.text }]}>Ownership</Text>
+          <View style={styles.ownershipRow}>
+            {OWNERSHIP_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type.key}
+                style={[
+                  styles.ownershipChip,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  ownershipType === type.key && { borderColor: type.color, borderWidth: 2, backgroundColor: type.color + '10' },
+                ]}
+                onPress={() => setOwnershipType(type.key)}
+              >
+                <Ionicons name={type.icon as any} size={16} color={ownershipType === type.key ? type.color : colors.textSecondary} />
+                <Text style={[styles.ownershipLabel, { color: ownershipType === type.key ? type.color : colors.text }]}>{type.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {/* Account Name */}
           <Text style={[styles.label, { color: colors.text }]}>Account Name</Text>
           <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -130,6 +160,18 @@ export default function AddAccountScreen() {
               onChangeText={setAccountNumber}
               keyboardType="numeric"
               maxLength={20}
+            />
+          </View>
+
+          {/* Institution (Optional) */}
+          <Text style={[styles.label, { color: colors.text }]}>Institution / Provider (Optional)</Text>
+          <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <TextInput
+              style={[styles.input, { color: colors.text }]}
+              placeholder="e.g., HDFC Bank, Paytm"
+              placeholderTextColor={colors.textSecondary}
+              value={institution}
+              onChangeText={setInstitution}
             />
           </View>
 
@@ -201,6 +243,24 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  ownershipRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  ownershipChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  ownershipLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   inputWrapper: {
     flexDirection: 'row',

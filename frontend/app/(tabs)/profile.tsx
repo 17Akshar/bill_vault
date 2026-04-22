@@ -146,6 +146,8 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Management</Text>
           
           {[
+            { icon: 'lock-closed-outline', label: 'MPIN Security', color: '#EF4444', route: '/security/mpin' },
+            { icon: 'calendar-outline', label: 'Calendar', color: '#0EA5E9', route: '/calendar' },
             { icon: 'people-outline', label: 'Family Members', color: '#3B82F6', route: '/profile/family' },
             { icon: 'stats-chart-outline', label: 'Analytics', color: '#22C55E', route: '/(tabs)/analytics' },
             { icon: 'pricetag-outline', label: 'Manage Categories', color: '#EC4899', route: '/profile/categories' },
@@ -153,7 +155,7 @@ export default function ProfileScreen() {
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.actionItem, index === 3 && { borderBottomWidth: 0 }]}
+              style={[styles.actionItem, index === 5 && { borderBottomWidth: 0 }]}
               onPress={() => router.push(item.route as any)}
             >
               <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>

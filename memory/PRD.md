@@ -52,7 +52,32 @@ Fintracker is a Production-Ready Personal Finance & Wealth Management OS. It evo
 - Dark mode default with rich dark backgrounds
 - Light mode available
 
-## Phase 2: Unified Accounts System (UPCOMING)
+## Phase 2: Unified Accounts System (COMPLETED)
+- Added `ownership_type` field: individual, joint, business
+- Added `institution` field for bank name/wallet provider
+- Added `wallet` as new account type
+- Added `color` and `icon` customization fields
+- Updated Add Account screen with ownership selector + institution input
+- Backend models, create, and update endpoints all upgraded
+- Backward compatible with existing accounts
+
+## Phase 3: MPIN Authentication (COMPLETED)
+- Backend: /api/mpin/setup, /api/mpin/verify, /api/mpin/status, /api/mpin/disable
+- Frontend: Full MPIN setup screen with numpad, 4-digit PIN entry + confirmation
+- Status badge showing enabled/disabled
+- Disable MPIN option
+- Accessible from Profile > Management > MPIN Security
+
+## Phase 4: Calendar System (COMPLETED)
+- Backend: /api/calendar/events endpoint aggregating bills, income, expenses, reminders
+- Frontend: Full calendar view with month navigation
+- Color-coded event dots on dates (green=income, yellow=expense, red=bill, purple=reminder)
+- Today highlight and date selection
+- Event details panel showing all events for selected date
+- Legend bar for event types
+- Accessible from Profile + Financial Hub
+
+## Phase 5: Offline-First Architecture (UPCOMING)
 - Replace "Family Members" with unified `account_id`
 - Support Individual/Joint/Business accounts
 - Banks, Wallets, Credit Cards

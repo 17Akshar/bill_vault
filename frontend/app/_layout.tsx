@@ -33,6 +33,8 @@ export default function RootLayout() {
             <Stack.Screen name="reports/cashflow" />
             <Stack.Screen name="reports/expense-breakdown" />
             <Stack.Screen name="budgets/index" />
+            <Stack.Screen name="security/mpin" />
+            <Stack.Screen name="calendar/index" />
           </Stack>
         </AuthProvider>
       </ThemeProvider>

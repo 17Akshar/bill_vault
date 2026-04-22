@@ -101,22 +101,34 @@ class Account(BaseModel):
     user_id: str
     family_member_id: Optional[str] = None
     name: str
-    account_type: str  # bank, cash, upi, credit_card
+    account_type: str  # bank, cash, upi, credit_card, wallet, investment_account
+    ownership_type: str = "individual"  # individual, joint, business
+    institution: Optional[str] = None  # bank name, wallet provider
     balance: float = 0.0
     account_number: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
 class AccountCreate(BaseModel):
     name: str
     account_type: str
+    ownership_type: str = "individual"
+    institution: Optional[str] = None
     initial_balance: float = 0.0
     account_number: Optional[str] = None
     family_member_id: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
 
 class AccountUpdate(BaseModel):
     name: Optional[str] = None
     account_number: Optional[str] = None
+    ownership_type: Optional[str] = None
+    institution: Optional[str] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
 
 # Income Model
 class Income(BaseModel):
@@ -1414,8 +1426,12 @@ async def create_account(data: AccountCreate, request: Request):
         "family_member_id": data.family_member_id,
         "name": data.name,
         "account_type": data.account_type,
+        "ownership_type": data.ownership_type or "individual",
+        "institution": data.institution,
         "balance": data.initial_balance,
         "account_number": data.account_number,
+        "color": data.color,
+        "icon": data.icon,
         "is_active": True,
         "created_at": now,
         "updated_at": now
@@ -3517,6 +3533,144 @@ async def restore_backup(request: Request):
         "collections_restored": restored,
         "restored_at": datetime.now(timezone.utc).isoformat()
     }
+
+
+# ==================== MPIN ENDPOINTS ====================
+
+@api_router.post("/mpin/setup")
+async def setup_mpin(request: Request):
+    """Set up or update MPIN for quick app access"""
+    user = await get_current_user(request)
+    body = await request.json()
+    mpin = body.get("mpin", "")
+
+    if not mpin or len(mpin) < 4 or len(mpin) > 6 or not mpin.isdigit():
+        raise HTTPException(status_code=400, detail="MPIN must be 4-6 digits")
+
+    hashed = bcrypt.hashpw(mpin.encode(), bcrypt.gensalt()).decode()
+    now = datetime.now(timezone.utc)
+
+    await db.user_mpin.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"mpin_hash": hashed, "is_enabled": True, "updated_at": now}},
+        upsert=True
+    )
+    return {"message": "MPIN set successfully", "is_enabled": True}
+
+@api_router.post("/mpin/verify")
+async def verify_mpin(request: Request):
+    """Verify MPIN for app unlock"""
+    user = await get_current_user(request)
+    body = await request.json()
+    mpin = body.get("mpin", "")
+
+    record = await db.user_mpin.find_one({"user_id": user.user_id})
+    if not record or not record.get("is_enabled"):
+        raise HTTPException(status_code=404, detail="MPIN not set up")
+
+    if bcrypt.checkpw(mpin.encode(), record["mpin_hash"].encode()):
+        return {"verified": True}
+    raise HTTPException(status_code=401, detail="Invalid MPIN")
+
+@api_router.get("/mpin/status")
+async def mpin_status(request: Request):
+    """Check if MPIN is enabled for user"""
+    user = await get_current_user(request)
+    record = await db.user_mpin.find_one({"user_id": user.user_id})
+    return {"is_enabled": bool(record and record.get("is_enabled", False))}
+
+@api_router.post("/mpin/disable")
+async def disable_mpin(request: Request):
+    """Disable MPIN"""
+    user = await get_current_user(request)
+    await db.user_mpin.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"is_enabled": False, "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"message": "MPIN disabled", "is_enabled": False}
+
+
+# ==================== CALENDAR ENDPOINTS ====================
+
+@api_router.get("/calendar/events")
+async def get_calendar_events(request: Request, month: int = None, year: int = None):
+    """Get all financial events for a given month for calendar view"""
+    user = await get_current_user(request)
+
+    now = datetime.now(timezone.utc)
+    m = month or now.month
+    y = year or now.year
+
+    start = datetime(y, m, 1, tzinfo=timezone.utc)
+    if m == 12:
+        end = datetime(y + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end = datetime(y, m + 1, 1, tzinfo=timezone.utc)
+
+    events = []
+
+    # Bills
+    bills = await db.bills.find({
+        "user_id": user.user_id,
+        "due_date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+    }, {"_id": 0}).to_list(200)
+    for b in bills:
+        events.append({
+            "id": b.get("bill_id"),
+            "date": b.get("due_date", "")[:10],
+            "title": b.get("name", "Bill"),
+            "type": "bill",
+            "amount": b.get("amount", 0),
+            "status": b.get("payment_status", "unpaid"),
+            "color": "#EF4444",
+        })
+
+    # Income
+    incomes = await db.income.find({
+        "user_id": user.user_id,
+        "date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+    }, {"_id": 0}).to_list(200)
+    for i in incomes:
+        events.append({
+            "id": i.get("income_id"),
+            "date": i.get("date", "")[:10],
+            "title": i.get("source", "Income"),
+            "type": "income",
+            "amount": i.get("amount", 0),
+            "color": "#22C55E",
+        })
+
+    # Expenses
+    expenses = await db.expenses.find({
+        "user_id": user.user_id,
+        "date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+    }, {"_id": 0}).to_list(200)
+    for e in expenses:
+        events.append({
+            "id": e.get("expense_id"),
+            "date": e.get("date", "")[:10],
+            "title": e.get("description", e.get("category", "Expense")),
+            "type": "expense",
+            "amount": e.get("amount", 0),
+            "color": "#F59E0B",
+        })
+
+    # Reminders
+    reminders = await db.reminders.find({
+        "user_id": user.user_id,
+        "due_date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+    }, {"_id": 0}).to_list(200)
+    for r in reminders:
+        events.append({
+            "id": r.get("reminder_id"),
+            "date": r.get("due_date", "")[:10],
+            "title": r.get("title", "Reminder"),
+            "type": "reminder",
+            "amount": r.get("amount", 0),
+            "color": "#8B5CF6",
+        })
+
+    return {"month": m, "year": y, "events": events}
 
 
 # Include router and add middleware
