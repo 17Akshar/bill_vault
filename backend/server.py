@@ -458,6 +458,7 @@ class UserSettings(BaseModel):
     notification_days_before: int = 3
     default_currency: str = "INR"
     storage_provider: str = "local"  # local, google_drive, onedrive
+    dashboard_widgets: Optional[Dict[str, bool]] = None
     updated_at: datetime
 
 class SettingsUpdate(BaseModel):
@@ -466,6 +467,7 @@ class SettingsUpdate(BaseModel):
     notification_days_before: Optional[int] = None
     default_currency: Optional[str] = None
     storage_provider: Optional[str] = None
+    dashboard_widgets: Optional[Dict[str, bool]] = None
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -1335,10 +1337,23 @@ async def get_settings(request: Request, authorization: Optional[str] = Header(N
             "notification_days_before": 3,
             "default_currency": "INR",
             "storage_provider": "local",
+            "dashboard_widgets": {
+                "net_worth": True, "quick_actions": True, "summary": True,
+                "accounts": True, "investments": True, "recent_transactions": True,
+                "reminders": True, "financial_hub": True,
+            },
             "updated_at": datetime.now(timezone.utc)
         }
         await db.user_settings.insert_one(settings)
         settings.pop("_id", None)
+    
+    # Ensure dashboard_widgets has defaults
+    if not settings.get("dashboard_widgets"):
+        settings["dashboard_widgets"] = {
+            "net_worth": True, "quick_actions": True, "summary": True,
+            "accounts": True, "investments": True, "recent_transactions": True,
+            "reminders": True, "financial_hub": True,
+        }
     
     return UserSettings(**settings)
 

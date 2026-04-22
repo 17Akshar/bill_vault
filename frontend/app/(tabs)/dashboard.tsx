@@ -73,6 +73,11 @@ export default function DashboardScreen() {
   const [recentTx, setRecentTx] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [widgetSettings, setWidgetSettings] = useState<Record<string, boolean>>({
+    net_worth: true, quick_actions: true, summary: true,
+    accounts: true, investments: true, recent_transactions: true,
+    reminders: true, financial_hub: true,
+  });
 
   useEffect(() => {
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
@@ -81,16 +86,20 @@ export default function DashboardScreen() {
 
   const loadAll = async () => {
     try {
-      const [dRes, aRes, iRes, rRes] = await Promise.all([
+      const [dRes, aRes, iRes, rRes, sRes] = await Promise.all([
         api.get('/dashboard'),
         api.get('/accounts'),
         api.get('/investments'),
         api.get('/reminders'),
+        api.get('/settings').catch(() => ({ data: {} })),
       ]);
       setDashboard(dRes.data);
       setAccounts(aRes.data);
       setInvestments(iRes.data);
       setReminders(rRes.data);
+      if (sRes.data?.dashboard_widgets) {
+        setWidgetSettings(prev => ({ ...prev, ...sRes.data.dashboard_widgets }));
+      }
       // Get recent income + expenses for feed
       const [incRes, expRes] = await Promise.all([
         api.get(`/income?month=${new Date().getMonth()+1}&year=${new Date().getFullYear()}`),
@@ -140,6 +149,8 @@ export default function DashboardScreen() {
   const acctIcons: Record<string, string> = { bank: 'business-outline', cash: 'cash-outline', upi: 'phone-portrait-outline', credit_card: 'card-outline', wallet: 'wallet-outline' };
   const acctColors: Record<string, string> = { bank: '#3B82F6', cash: '#22C55E', upi: '#8B5CF6', credit_card: '#EC4899', wallet: '#F59E0B' };
 
+  const w = (key: string) => widgetSettings[key] !== false;
+
   return (
     <SafeAreaView style={[s.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
@@ -166,6 +177,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Net Worth Hero Card */}
+        {w('net_worth') && (
         <LinearGradient colors={['#5B2FBF', '#7C5CE7', '#9B7AFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.netWorthCard}>
           <View style={s.nwTop}>
             <View>
@@ -185,8 +197,10 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
         </LinearGradient>
+        )}
 
         {/* Quick Actions */}
+        {w('quick_actions') && (
         <View style={s.quickActions}>
           {[
             { icon: 'add-circle', label: 'Income', color: '#22C55E', route: '/transactions/add?type=income' },
@@ -202,8 +216,10 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        )}
 
         {/* Income / Expenses / Savings */}
+        {w('summary') && (
         <View style={s.summaryRow}>
           <View style={[s.summaryCard, { backgroundColor: colors.card }]}>
             <View style={[s.smIcon, { backgroundColor: '#22C55E15' }]}><Ionicons name="trending-up" size={18} color="#22C55E" /></View>
@@ -221,8 +237,10 @@ export default function DashboardScreen() {
             <Text style={[s.smVal, { color: savings >= 0 ? '#22C55E' : '#EF4444' }]}>{formatINRCompact(savings)}</Text>
           </View>
         </View>
+        )}
 
         {/* Accounts Snapshot */}
+        {w('accounts') && (
         <View style={s.section}>
           <View style={s.sectionHeader}>
             <Text style={[s.sectionTitle, { color: colors.text }]}>Accounts</Text>
@@ -245,9 +263,10 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </ScrollView>
         </View>
+        )}
 
         {/* Investments Overview */}
-        {investments.length > 0 && (
+        {w('investments') && investments.length > 0 && (
           <View style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={[s.sectionTitle, { color: colors.text }]}>Investments Overview</Text>
@@ -273,7 +292,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Recent Transactions */}
-        {recentTx.length > 0 && (
+        {w('recent_transactions') && recentTx.length > 0 && (
           <View style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={[s.sectionTitle, { color: colors.text }]}>Recent Transactions</Text>
@@ -303,7 +322,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Upcoming Reminders */}
-        {reminders.length > 0 && (
+        {w('reminders') && reminders.length > 0 && (
           <View style={s.section}>
             <View style={s.sectionHeader}>
               <Text style={[s.sectionTitle, { color: colors.text }]}>Upcoming Reminders</Text>
@@ -325,6 +344,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Financial Hub Quick Nav */}
+        {w('financial_hub') && (
         <View style={s.section}>
           <Text style={[s.sectionTitle, { color: colors.text, paddingHorizontal: 20 }]}>Financial Hub</Text>
           <View style={s.hubGrid}>
@@ -345,6 +365,7 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
+        )}
 
         <View style={{ height: 30 }} />
       </ScrollView>

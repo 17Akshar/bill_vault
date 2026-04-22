@@ -91,10 +91,12 @@ Fintracker is a Production-Ready Personal Finance & Wealth Management OS. It evo
 - MPIN login
 - Mobile + OTP
 
-## Phase 5: Offline-First Architecture (UPCOMING)
-- Local storage (SQLite/WatermelonDB)
-- Sync queue layer
-- Google Drive / OneDrive sync
+## Phase 5: Offline-First Architecture (COMPLETED)
+- `utils/offlineManager.ts`: AsyncStorage-based cache layer with 30min TTL
+- Sync queue for pending POST/PUT/DELETE operations when offline
+- Network status detection via @react-native-community/netinfo
+- Auto-sync on reconnection with 3-retry logic
+- Smart API wrappers: cachedGet(), smartPost(), smartPut(), smartDelete()
 
 ## Phase 6: Notes & Reminders Engine (COMPLETED)
 - Backend: Full CRUD for `/api/notes` with sections/subheadings, tags, priority, color, linked entities
@@ -107,6 +109,15 @@ Fintracker is a Production-Ready Personal Finance & Wealth Management OS. It evo
 - New asset classes: ESOP, Bonds (12 total investment types)
 - ROI label in portfolio summary
 
-## Phase 8: Backend Modularization (UPCOMING)
-- Break server.py into modular routers
-- /routers/auth.py, /routers/transactions.py, etc.
+## Phase 8: Backend Modularization (COMPLETED - Partial)
+- Created modular router files: `routers/notes.py`, `routers/calendar.py`, `routers/mpin.py`, `routers/portfolio.py`
+- Shared deps module: `routers/deps.py`
+- Pattern established; server.py still serves all endpoints for stability
+- Full migration deferred to avoid regression risk
+
+## Phase 9: Dashboard Widget Toggle (COMPLETED)
+- Backend: `dashboard_widgets` field in UserSettings with 8 toggleable widgets
+- Frontend: `profile/dashboard-settings.tsx` with color-coded toggle cards
+- Dashboard reads widget config and conditionally renders: Net Worth, Quick Actions, Summary, Accounts, Investments, Recent Transactions, Reminders, Financial Hub
+- Instant toggle with auto-save to backend
+- Reset button to enable all widgets
