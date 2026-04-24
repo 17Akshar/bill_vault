@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CrossPlatformPicker from '../../components/CrossPlatformPicker';
+import { FamilyMemberPicker } from '../../components/FamilyMemberSelector';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../utils/api';
 import { format } from 'date-fns';
@@ -55,6 +56,7 @@ export default function AddBillScreen() {
   const [category, setCategory] = useState('Utilities');
   const [vendor, setVendor] = useState('');
   const [notes, setNotes] = useState('');
+  const [familyMemberId, setFamilyMemberId] = useState<string | null>(null);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('monthly');
@@ -105,6 +107,7 @@ export default function AddBillScreen() {
         is_recurring: isRecurring,
         recurrence_type: isRecurring ? recurrenceType : null,
         recurrence_interval: 1,
+        family_member_id: familyMemberId,
       });
 
       Alert.alert('Success', 'Bill added successfully');
@@ -216,6 +219,14 @@ export default function AddBillScreen() {
               ))}
             </ScrollView>
           </View>
+
+          {/* For Whom */}
+          <FamilyMemberPicker
+            selectedId={familyMemberId}
+            onSelect={(id) => setFamilyMemberId(id)}
+            colors={colors}
+            label="For whom?"
+          />
 
           {/* Vendor */}
           <View style={styles.inputContainer}>

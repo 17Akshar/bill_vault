@@ -2454,7 +2454,7 @@ async def get_net_worth(request: Request):
 # ==================== DASHBOARD ENDPOINT ====================
 
 @api_router.get("/dashboard")
-async def get_dashboard(request: Request):
+async def get_dashboard(request: Request, family_member_id: Optional[str] = None):
     """Get financial dashboard summary"""
     user = await get_current_user(request)
     
@@ -2465,24 +2465,26 @@ async def get_dashboard(request: Request):
     else:
         month_end = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
     
+    # Build base query with optional family member filter
+    base_q = {"user_id": user.user_id}
+    if family_member_id:
+        base_q["family_member_id"] = family_member_id
+    
     # Total balance across all active accounts
-    accounts = await db.accounts.find(
-        {"user_id": user.user_id, "is_active": True}, {"_id": 0}
-    ).to_list(100)
+    acct_q = {"user_id": user.user_id, "is_active": True}
+    if family_member_id:
+        acct_q["family_member_id"] = family_member_id
+    accounts = await db.accounts.find(acct_q, {"_id": 0}).to_list(100)
     total_balance = sum(a.get("balance", 0) for a in accounts)
     
     # Monthly income
-    monthly_incomes = await db.income.find(
-        {"user_id": user.user_id, "date": {"$gte": month_start, "$lt": month_end}},
-        {"_id": 0}
-    ).to_list(1000)
+    inc_q = {**base_q, "date": {"$gte": month_start, "$lt": month_end}}
+    monthly_incomes = await db.income.find(inc_q, {"_id": 0}).to_list(1000)
     total_monthly_income = sum(i["amount"] for i in monthly_incomes)
     
     # Monthly expenses
-    monthly_expenses = await db.expenses.find(
-        {"user_id": user.user_id, "date": {"$gte": month_start, "$lt": month_end}},
-        {"_id": 0}
-    ).to_list(1000)
+    exp_q = {**base_q, "date": {"$gte": month_start, "$lt": month_end}}
+    monthly_expenses = await db.expenses.find(exp_q, {"_id": 0}).to_list(1000)
     total_monthly_expenses = sum(e["amount"] for e in monthly_expenses)
     
     # Upcoming bills (unpaid, due within 30 days)

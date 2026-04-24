@@ -27,6 +27,7 @@ import {
 } from '../../utils/formatINR';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CrossPlatformPicker from '../../components/CrossPlatformPicker';
+import { FamilyMemberPicker } from '../../components/FamilyMemberSelector';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function AddTransactionScreen() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
+  const [familyMemberId, setFamilyMemberId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [paymentType, setPaymentType] = useState('bank');
   const [date, setDate] = useState(new Date());
@@ -96,6 +98,7 @@ export default function AddTransactionScreen() {
           source: description.trim(),
           date: date.toISOString(),
           notes: notes.trim() || null,
+          family_member_id: familyMemberId,
         });
       } else {
         await api.post('/expenses', {
@@ -107,6 +110,7 @@ export default function AddTransactionScreen() {
           description: description.trim(),
           date: date.toISOString(),
           notes: notes.trim() || null,
+          family_member_id: familyMemberId,
         });
       }
       router.back();
@@ -340,6 +344,14 @@ export default function AddTransactionScreen() {
               </View>
             </>
           )}
+
+          {/* For Whom */}
+          <FamilyMemberPicker
+            selectedId={familyMemberId}
+            onSelect={(id) => setFamilyMemberId(id)}
+            colors={colors}
+            label="For whom?"
+          />
 
           {/* Date */}
           <Text style={[styles.label, { color: colors.text }]}>Date</Text>

@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import { formatINR, formatINRCompact } from '../../utils/formatINR';
 import { format, parseISO } from 'date-fns';
+import { FamilyMemberFilter } from '../../components/FamilyMemberSelector';
 import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 
 const { width: SW } = Dimensions.get('window');
@@ -78,18 +79,22 @@ export default function DashboardScreen() {
     accounts: true, investments: true, recent_transactions: true,
     reminders: true, financial_hub: true,
   });
+  const [familyFilter, setFamilyFilter] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadAll();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, familyFilter]);
 
   const loadAll = async () => {
     try {
+      const fParam = familyFilter ? `&family_member_id=${familyFilter}` : '';
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
       const [dRes, aRes, iRes, rRes, sRes] = await Promise.all([
-        api.get('/dashboard'),
-        api.get('/accounts'),
-        api.get('/investments'),
+        api.get(`/dashboard?${fParam ? `family_member_id=${familyFilter}` : ''}`),
+        api.get(`/accounts${fParam ? `?family_member_id=${familyFilter}` : ''}`),
+        api.get(`/investments${fParam ? `?family_member_id=${familyFilter}` : ''}`),
         api.get('/reminders'),
         api.get('/settings').catch(() => ({ data: {} })),
       ]);
@@ -175,6 +180,14 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Family Member Filter */}
+        <FamilyMemberFilter
+          selectedId={familyFilter}
+          onSelect={(id) => setFamilyFilter(id)}
+          showAll={true}
+          colors={colors}
+        />
 
         {/* Net Worth Hero Card */}
         {w('net_worth') && (
