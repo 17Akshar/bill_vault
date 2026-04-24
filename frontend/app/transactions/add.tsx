@@ -26,6 +26,7 @@ import {
   formatINR,
 } from '../../utils/formatINR';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import CrossPlatformPicker from '../../components/CrossPlatformPicker';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
@@ -342,29 +343,13 @@ export default function AddTransactionScreen() {
 
           {/* Date */}
           <Text style={[styles.label, { color: colors.text }]}>Date</Text>
-          <TouchableOpacity
-            style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <View style={styles.pickerContent}>
-              <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
-              <Text style={[styles.pickerText, { color: colors.text }]}>{formatDate(date)}</Text>
-            </View>
-            <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event: any, selectedDate?: Date) => {
-                setShowDatePicker(Platform.OS === 'ios');
-                if (selectedDate) setDate(selectedDate);
-              }}
-              themeVariant={isDark ? 'dark' : 'light'}
-            />
-          )}
+          <CrossPlatformPicker
+            value={date}
+            onChange={(d) => setDate(d)}
+            mode="date"
+            label="Select Date"
+            colors={colors}
+          />
 
           {/* Notes */}
           <Text style={[styles.label, { color: colors.text }]}>Notes (Optional)</Text>

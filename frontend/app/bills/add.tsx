@@ -18,6 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import CrossPlatformPicker from '../../components/CrossPlatformPicker';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../utils/api';
 import { format } from 'date-fns';
@@ -180,26 +181,13 @@ export default function AddBillScreen() {
           {/* Due Date */}
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: colors.text }]}>Due Date</Text>
-            <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color={colors.text} />
-              <Text style={[styles.dateText, { color: colors.text }]}>
-                {format(dueDate, 'MMM d, yyyy')}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={dueDate}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) setDueDate(selectedDate);
-                }}
-              />
-            )}
+            <CrossPlatformPicker
+              value={dueDate}
+              onChange={(d) => setDueDate(d)}
+              mode="date"
+              label="Select Due Date"
+              colors={colors}
+            />
           </View>
 
           {/* Category */}

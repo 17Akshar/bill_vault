@@ -11,6 +11,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import api from '../../utils/api';
 import { formatINR } from '../../utils/formatINR';
 import { format, parseISO, isAfter, isBefore, isToday, addDays } from 'date-fns';
+import CrossPlatformPicker from '../../components/CrossPlatformPicker';
 
 const REMINDER_TYPES = [
   { key: 'investment', label: 'Investment', icon: 'trending-up', color: '#00E676' },
@@ -347,42 +348,28 @@ export default function RemindersScreen() {
               </ScrollView>
 
               {/* Manual Date: Day / Month / Year */}
-              <Text style={[styles.fl, { color: colors.text }]}>Or set exact date</Text>
-              <View style={styles.dateRow}>
-                <View style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <TextInput style={[styles.dateFieldText, { color: colors.text }]} placeholder="DD" placeholderTextColor={colors.textSecondary} value={dateComponents.day} onChangeText={v => { const val = v.replace(/[^0-9]/g, '').slice(0, 2); setDateComponents(p => ({ ...p, day: val })); if (val.length === 2 && dateComponents.month && dateComponents.year.length === 4) setForm(p => ({ ...p, reminder_date: `${dateComponents.year}-${dateComponents.month.padStart(2, '0')}-${val.padStart(2, '0')}` })); }} keyboardType="number-pad" maxLength={2} />
-                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Day</Text>
-                </View>
-                <View style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <TextInput style={[styles.dateFieldText, { color: colors.text }]} placeholder="MM" placeholderTextColor={colors.textSecondary} value={dateComponents.month} onChangeText={v => { const val = v.replace(/[^0-9]/g, '').slice(0, 2); setDateComponents(p => ({ ...p, month: val })); if (val.length === 2 && dateComponents.day && dateComponents.year.length === 4) setForm(p => ({ ...p, reminder_date: `${dateComponents.year}-${val.padStart(2, '0')}-${dateComponents.day.padStart(2, '0')}` })); }} keyboardType="number-pad" maxLength={2} />
-                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Month</Text>
-                </View>
-                <View style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.background, flex: 1.5 }]}>
-                  <TextInput style={[styles.dateFieldText, { color: colors.text }]} placeholder="YYYY" placeholderTextColor={colors.textSecondary} value={dateComponents.year} onChangeText={v => { const val = v.replace(/[^0-9]/g, '').slice(0, 4); setDateComponents(p => ({ ...p, year: val })); if (val.length === 4 && dateComponents.day && dateComponents.month) setForm(p => ({ ...p, reminder_date: `${val}-${dateComponents.month.padStart(2, '0')}-${dateComponents.day.padStart(2, '0')}` })); }} keyboardType="number-pad" maxLength={4} />
-                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Year</Text>
-                </View>
-              </View>
-
-              {/* Time Selection */}
-              <Text style={[styles.fl, { color: colors.text, marginTop: 12 }]}>Time</Text>
-              <View style={styles.timeRow}>
-                <View style={[styles.timeField, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <TextInput style={[styles.timeFieldText, { color: colors.text }]} placeholder="HH" placeholderTextColor={colors.textSecondary} value={timeForm.hour} onChangeText={v => setTimeForm(p => ({ ...p, hour: v.replace(/[^0-9]/g, '').slice(0, 2) }))} keyboardType="number-pad" maxLength={2} />
-                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Hour</Text>
-                </View>
-                <Text style={[styles.timeSep, { color: colors.text }]}>:</Text>
-                <View style={[styles.timeField, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <TextInput style={[styles.timeFieldText, { color: colors.text }]} placeholder="MM" placeholderTextColor={colors.textSecondary} value={timeForm.minute} onChangeText={v => setTimeForm(p => ({ ...p, minute: v.replace(/[^0-9]/g, '').slice(0, 2) }))} keyboardType="number-pad" maxLength={2} />
-                  <Text style={[styles.dateFieldLabel, { color: colors.textSecondary }]}>Min</Text>
-                </View>
-                <View style={styles.timeQuick}>
-                  {[{ l: '9 AM', h: '09', m: '00' }, { l: '12 PM', h: '12', m: '00' }, { l: '6 PM', h: '18', m: '00' }, { l: '9 PM', h: '21', m: '00' }].map(t => (
-                    <TouchableOpacity key={t.l} style={[styles.timeQuickBtn, { borderColor: colors.border }, timeForm.hour === t.h && timeForm.minute === t.m && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setTimeForm({ hour: t.h, minute: t.m })}>
-                      <Text style={[styles.timeQuickText, { color: timeForm.hour === t.h && timeForm.minute === t.m ? '#FFF' : colors.text }]}>{t.l}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+              <Text style={[styles.fl, { color: colors.text }]}>Or set exact date & time</Text>
+              <CrossPlatformPicker
+                value={(() => {
+                  try {
+                    if (form.reminder_date) {
+                      const d = new Date(form.reminder_date);
+                      d.setHours(parseInt(timeForm.hour) || 9, parseInt(timeForm.minute) || 0);
+                      return d;
+                    }
+                    return new Date();
+                  } catch { return new Date(); }
+                })()}
+                onChange={(d) => {
+                  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  setForm(p => ({ ...p, reminder_date: dateStr }));
+                  setDateComponents({ day: String(d.getDate()), month: String(d.getMonth() + 1), year: String(d.getFullYear()) });
+                  setTimeForm({ hour: String(d.getHours()).padStart(2, '0'), minute: String(d.getMinutes()).padStart(2, '0') });
+                }}
+                mode="datetime"
+                label="Select Date & Time"
+                colors={colors}
+              />
 
               {form.reminder_date ? (
                 <View style={[styles.datePreview, { backgroundColor: colors.background }]}>
