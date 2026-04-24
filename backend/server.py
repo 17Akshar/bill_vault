@@ -332,9 +332,20 @@ class InvestmentHeadingUpdate(BaseModel):
     icon: Optional[str] = None
 
 # Notes Model
+class NoteHeadingCreate(BaseModel):
+    name: str
+    icon: str = "folder-outline"
+    color: str = "#5B2FBF"
+
+class NoteHeadingUpdate(BaseModel):
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+
 class NoteCreate(BaseModel):
     title: str
     content: str = ""
+    heading_id: Optional[str] = None
     sections: Optional[list] = None  # [{heading: str, content: str}]
     tags: Optional[list] = None  # ["investment", "tax"]
     linked_type: Optional[str] = None  # transaction, investment, bill
@@ -345,6 +356,7 @@ class NoteCreate(BaseModel):
 class NoteUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
+    heading_id: Optional[str] = None
     sections: Optional[list] = None
     tags: Optional[list] = None
     linked_type: Optional[str] = None
@@ -3582,6 +3594,7 @@ async def create_note(data: NoteCreate, request: Request):
     note = {
         "note_id": note_id, "user_id": user.user_id,
         "title": data.title, "content": data.content,
+        "heading_id": data.heading_id,
         "sections": data.sections or [],
         "tags": data.tags or [],
         "linked_type": data.linked_type, "linked_id": data.linked_id,
@@ -3633,6 +3646,53 @@ async def delete_note(note_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Note not found")
     await db.notes.delete_one({"note_id": note_id})
     return {"message": "Note deleted"}
+
+
+# ==================== NOTE HEADING ENDPOINTS ====================
+
+@api_router.post("/note-headings")
+async def create_note_heading(data: NoteHeadingCreate, request: Request):
+    user = await get_current_user(request)
+    heading_id = f"nh_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    heading = {
+        "heading_id": heading_id, "user_id": user.user_id,
+        "name": data.name, "icon": data.icon or "folder-outline",
+        "color": data.color or "#5B2FBF",
+        "created_at": now, "updated_at": now,
+    }
+    await db.note_headings.insert_one(heading)
+    heading.pop("_id", None)
+    return heading
+
+@api_router.get("/note-headings")
+async def get_note_headings(request: Request):
+    user = await get_current_user(request)
+    headings = await db.note_headings.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    return headings
+
+@api_router.put("/note-headings/{heading_id}")
+async def update_note_heading(heading_id: str, data: NoteHeadingUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.note_headings.find_one({"heading_id": heading_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Heading not found")
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.note_headings.update_one({"heading_id": heading_id}, {"$set": update_data})
+    updated = await db.note_headings.find_one({"heading_id": heading_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/note-headings/{heading_id}")
+async def delete_note_heading(heading_id: str, request: Request):
+    user = await get_current_user(request)
+    existing = await db.note_headings.find_one({"heading_id": heading_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Heading not found")
+    # Unassign notes from this heading
+    await db.notes.update_many({"heading_id": heading_id, "user_id": user.user_id}, {"$set": {"heading_id": None}})
+    await db.note_headings.delete_one({"heading_id": heading_id})
+    return {"message": "Heading deleted"}
 
 
 # ==================== PORTFOLIO ANALYTICS ENDPOINT ====================
