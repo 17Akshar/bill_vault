@@ -32,11 +32,18 @@ const OWNERSHIP_TYPES = [
   { key: 'business', label: 'Business', icon: 'briefcase-outline', color: '#14B8A6' },
 ];
 
+const BANK_SUB_TYPES = [
+  { key: 'savings', label: 'Savings', icon: 'shield-checkmark-outline', color: '#22C55E' },
+  { key: 'current', label: 'Current', icon: 'business-outline', color: '#3B82F6' },
+  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline', color: '#8E8EA0' },
+];
+
 export default function AddAccountScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const [name, setName] = useState('');
   const [accountType, setAccountType] = useState('bank');
+  const [bankSubType, setBankSubType] = useState('savings');
   const [ownershipType, setOwnershipType] = useState('individual');
   const [institution, setInstitution] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
@@ -54,6 +61,7 @@ export default function AddAccountScreen() {
       await api.post('/accounts', {
         name: name.trim(),
         account_type: accountType,
+        sub_type: accountType === 'bank' ? bankSubType : null,
         ownership_type: ownershipType,
         institution: institution.trim() || null,
         initial_balance: parseFloat(initialBalance) || 0,
@@ -103,6 +111,29 @@ export default function AddAccountScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Bank Sub-Type (only for Bank accounts) */}
+          {accountType === 'bank' && (
+            <>
+              <Text style={[styles.label, { color: colors.text }]}>Bank Account Type</Text>
+              <View style={styles.ownershipRow}>
+                {BANK_SUB_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type.key}
+                    style={[
+                      styles.ownershipChip,
+                      { backgroundColor: colors.card, borderColor: colors.border },
+                      bankSubType === type.key && { borderColor: type.color, borderWidth: 2, backgroundColor: type.color + '10' },
+                    ]}
+                    onPress={() => setBankSubType(type.key)}
+                  >
+                    <Ionicons name={type.icon as any} size={16} color={bankSubType === type.key ? type.color : colors.textSecondary} />
+                    <Text style={[styles.ownershipLabel, { color: bankSubType === type.key ? type.color : colors.text }]}>{type.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
           {/* Ownership Type */}
           <Text style={[styles.label, { color: colors.text }]}>Ownership</Text>

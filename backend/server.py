@@ -114,6 +114,7 @@ class Account(BaseModel):
 class AccountCreate(BaseModel):
     name: str
     account_type: str
+    sub_type: Optional[str] = None  # savings, current, other (for bank accounts)
     ownership_type: str = "individual"
     institution: Optional[str] = None
     initial_balance: float = 0.0
@@ -1475,6 +1476,7 @@ async def create_account(data: AccountCreate, request: Request):
         "family_member_id": data.family_member_id,
         "name": data.name,
         "account_type": data.account_type,
+        "sub_type": data.sub_type,
         "ownership_type": data.ownership_type or "individual",
         "institution": data.institution,
         "balance": data.initial_balance,
