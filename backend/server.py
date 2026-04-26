@@ -2,7 +2,6 @@ from fastapi import FastAPI, APIRouter, HTTPException, Header, Response, Request
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
@@ -29,10 +28,8 @@ logger = logging.getLogger(__name__)
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# ==================== FIREBASE / FIRESTORE ====================
+from firebase_config import db, verify_firebase_token, create_firebase_user
 
 from contextlib import asynccontextmanager
 
@@ -40,14 +37,13 @@ from contextlib import asynccontextmanager
 async def lifespan(app):
     # Startup
     yield
-    # Shutdown
-    client.close()
+    # Shutdown (no client to close for Firestore)
 
 # Create the main app
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 
-# JWT Configuration
+# JWT Configuration (kept for backward compat, Firebase tokens used primarily)
 SECRET_KEY = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 ALGORITHM = "HS256"
 
