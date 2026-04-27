@@ -89,6 +89,97 @@ def delete_firebase_user(uid: str):
 
 # ==================== FIRESTORE MONGODB-COMPATIBLE WRAPPER ====================
 
+def _split_filters(filters: List[Dict]):
+    """Split filters into (firestore_filter, client_side_filters).
+
+    To completely side-step Firestore composite-index requirements, we push ONLY
+    a single equality filter to Firestore (preferring `user_id`) and evaluate all
+    other filters client-side in Python. This is acceptable for per-user personal-
+    finance data where each user's record count is bounded.
+    """
+    if not filters:
+        return None, []
+    # Prefer user_id equality
+    primary = None
+    rest = []
+    for f in filters:
+        if primary is None and f["op"] == "==" and f["field"] == "user_id":
+            primary = f
+        else:
+            rest.append(f)
+    # If no user_id, use the first equality filter
+    if primary is None:
+        for i, f in enumerate(rest):
+            if f["op"] == "==":
+                primary = f
+                rest = rest[:i] + rest[i+1:]
+                break
+    return primary, rest
+
+
+def _matches_filters(doc: Dict, filters: List[Dict]) -> bool:
+    """Evaluate a list of MongoDB-style filters against a document client-side."""
+    for f in filters:
+        field = f["field"]
+        op = f["op"]
+        target = f["value"]
+        actual = doc.get(field)
+        # Normalize datetime comparisons (target might be datetime, actual might be ISO string)
+        if isinstance(target, datetime) and isinstance(actual, str):
+            try:
+                actual = datetime.fromisoformat(actual.replace("Z", "+00:00"))
+            except ValueError:
+                pass
+        try:
+            if op == "==":
+                if actual != target:
+                    return False
+            elif op == "!=":
+                if actual == target:
+                    return False
+            elif op == ">":
+                if actual is None or not (actual > target):
+                    return False
+            elif op == ">=":
+                if actual is None or not (actual >= target):
+                    return False
+            elif op == "<":
+                if actual is None or not (actual < target):
+                    return False
+            elif op == "<=":
+                if actual is None or not (actual <= target):
+                    return False
+            elif op == "in":
+                if actual not in (target or []):
+                    return False
+        except TypeError:
+            return False
+    return True
+
+
+def _doc_to_dict(doc) -> Optional[Dict]:
+    d = doc.to_dict()
+    if d is None:
+        return None
+    for k, v in list(d.items()):
+        if isinstance(v, datetime):
+            d[k] = v.isoformat()
+    return d
+
+
+class _Result:
+    """MongoDB-compatible result object for write operations."""
+    def __init__(self, matched_count: int = 0, modified_count: int = 0,
+                 deleted_count: int = 0, inserted_id: str = None,
+                 upserted_id: str = None, acknowledged: bool = True):
+        self.matched_count = matched_count
+        self.modified_count = modified_count
+        self.deleted_count = deleted_count
+        self.inserted_id = inserted_id
+        self.upserted_id = upserted_id
+        self.acknowledged = acknowledged
+
+
 class FirestoreQuery:
     """Mimics MongoDB cursor with chaining"""
 
@@ -111,28 +202,38 @@ class FirestoreQuery:
         return self
 
     async def to_list(self, max_count: int = 1000) -> List[Dict]:
-        """Execute query and return list of docs"""
+        """Execute query, with client-side filter+sort+limit to avoid composite indexes."""
         def _execute():
+            primary, rest = _split_filters(self._filters)
             query = self._ref
-            for f in self._filters:
-                query = query.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            if self._sort_field:
-                query = query.order_by(self._sort_field, direction=self._sort_dir or firestore.Query.ASCENDING)
-            limit = self._limit_val or max_count
-            query = query.limit(limit)
+            if primary is not None:
+                query = query.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
             docs = query.stream()
             results = []
             for doc in docs:
-                d = doc.to_dict()
-                if d and self._projection:
-                    if "_id" in self._projection and self._projection["_id"] == 0:
-                        d.pop("_id", None)
-                # Convert datetime objects to ISO strings for JSON serialization
-                for k, v in list(d.items()):
-                    if isinstance(v, datetime):
-                        d[k] = v.isoformat()
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if not _matches_filters(d, rest):
+                    continue
+                if self._projection and "_id" in self._projection and self._projection["_id"] == 0:
+                    d.pop("_id", None)
                 results.append(d)
-            return results
+
+            # Client-side sort
+            if self._sort_field:
+                reverse = self._sort_dir == firestore.Query.DESCENDING
+                try:
+                    results.sort(
+                        key=lambda x: x.get(self._sort_field) if x.get(self._sort_field) is not None else "",
+                        reverse=reverse,
+                    )
+                except TypeError:
+                    results.sort(key=lambda x: str(x.get(self._sort_field) or ""), reverse=reverse)
+
+            # Client-side limit
+            limit = self._limit_val or max_count
+            return results[:limit]
         return await asyncio.to_thread(_execute)
 
 
@@ -154,19 +255,19 @@ class FirestoreCollection:
     async def find_one(self, query: Dict, projection: Dict = None) -> Optional[Dict]:
         """Find a single document matching query"""
         def _execute():
-            q = self._col
             filters = _mongo_query_to_firestore(query)
-            for f in filters:
-                q = q.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            q = q.limit(1)
-            docs = list(q.stream())
-            if docs:
-                d = docs[0].to_dict()
-                if d and projection and "_id" in projection and projection["_id"] == 0:
+            primary, rest = _split_filters(filters)
+            q = self._col
+            if primary is not None:
+                q = q.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
+            for doc in q.stream():
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if not _matches_filters(d, rest):
+                    continue
+                if projection and "_id" in projection and projection["_id"] == 0:
                     d.pop("_id", None)
-                for k, v in list(d.items()):
-                    if isinstance(v, datetime):
-                        d[k] = v.isoformat()
                 return d
             return None
         return await asyncio.to_thread(_execute)
@@ -187,33 +288,42 @@ class FirestoreCollection:
             if doc_id:
                 self._col.document(doc_id).set(doc)
             else:
-                self._col.add(doc)
+                _, ref = self._col.add(doc)
+                doc_id = ref.id if ref else None
+            return _Result(inserted_id=doc_id, acknowledged=True)
         return await asyncio.to_thread(_execute)
 
     async def update_one(self, query: Dict, update: Dict, upsert: bool = False):
         """Update a single document"""
         def _execute():
-            # Find the document first
-            q = self._col
             filters = _mongo_query_to_firestore(query)
-            for f in filters:
-                q = q.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            q = q.limit(1)
-            docs = list(q.stream())
+            primary, rest = _split_filters(filters)
+            q = self._col
+            if primary is not None:
+                q = q.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
+            target_doc = None
+            for doc in q.stream():
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if _matches_filters(d, rest):
+                    target_doc = doc
+                    break
 
             update_data = {}
             if "$set" in update:
                 update_data = _serialize_doc(update["$set"])
             elif "$inc" in update:
-                if docs:
-                    existing = docs[0].to_dict()
+                if target_doc:
+                    existing = target_doc.to_dict() or {}
                     for k, v in update["$inc"].items():
                         update_data[k] = existing.get(k, 0) + v
             else:
                 update_data = _serialize_doc(update)
 
-            if docs:
-                docs[0].reference.update(update_data)
+            if target_doc:
+                target_doc.reference.update(update_data)
+                return _Result(matched_count=1, modified_count=1)
             elif upsert:
                 merged = {}
                 for f in filters:
@@ -228,17 +338,27 @@ class FirestoreCollection:
                 if doc_id:
                     self._col.document(doc_id).set(merged)
                 else:
-                    self._col.add(merged)
+                    _, ref = self._col.add(merged)
+                    doc_id = ref.id if ref else None
+                return _Result(matched_count=0, modified_count=0, upserted_id=doc_id)
+            return _Result(matched_count=0, modified_count=0)
         return await asyncio.to_thread(_execute)
 
     async def update_many(self, query: Dict, update: Dict):
         """Update all matching documents"""
         def _execute():
-            q = self._col
             filters = _mongo_query_to_firestore(query)
-            for f in filters:
-                q = q.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            docs = list(q.stream())
+            primary, rest = _split_filters(filters)
+            q = self._col
+            if primary is not None:
+                q = q.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
+            matches = []
+            for doc in q.stream():
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if _matches_filters(d, rest):
+                    matches.append(doc)
 
             update_data = {}
             if "$set" in update:
@@ -247,46 +367,68 @@ class FirestoreCollection:
                 update_data = _serialize_doc(update)
 
             batch = get_firestore_client().batch()
-            for doc in docs:
+            for doc in matches:
                 batch.update(doc.reference, update_data)
             batch.commit()
+            return _Result(matched_count=len(matches), modified_count=len(matches))
         return await asyncio.to_thread(_execute)
 
     async def delete_one(self, query: Dict):
         """Delete a single document"""
         def _execute():
-            q = self._col
             filters = _mongo_query_to_firestore(query)
-            for f in filters:
-                q = q.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            q = q.limit(1)
-            docs = list(q.stream())
-            if docs:
-                docs[0].reference.delete()
+            primary, rest = _split_filters(filters)
+            q = self._col
+            if primary is not None:
+                q = q.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
+            for doc in q.stream():
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if _matches_filters(d, rest):
+                    doc.reference.delete()
+                    return _Result(deleted_count=1)
+            return _Result(deleted_count=0)
         return await asyncio.to_thread(_execute)
 
     async def delete_many(self, query: Dict):
         """Delete all matching documents"""
         def _execute():
-            q = self._col
             filters = _mongo_query_to_firestore(query)
-            for f in filters:
-                q = q.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            docs = list(q.stream())
+            primary, rest = _split_filters(filters)
+            q = self._col
+            if primary is not None:
+                q = q.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
+            matches = []
+            for doc in q.stream():
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if _matches_filters(d, rest):
+                    matches.append(doc)
             batch = get_firestore_client().batch()
-            for doc in docs:
+            for doc in matches:
                 batch.delete(doc.reference)
             batch.commit()
+            return _Result(deleted_count=len(matches))
         return await asyncio.to_thread(_execute)
 
     async def count_documents(self, query: Dict) -> int:
         """Count matching documents"""
         def _execute():
-            q = self._col
             filters = _mongo_query_to_firestore(query)
-            for f in filters:
-                q = q.where(filter=FieldFilter(f["field"], f["op"], f["value"]))
-            return len(list(q.stream()))
+            primary, rest = _split_filters(filters)
+            q = self._col
+            if primary is not None:
+                q = q.where(filter=FieldFilter(primary["field"], primary["op"], primary["value"]))
+            count = 0
+            for doc in q.stream():
+                d = _doc_to_dict(doc)
+                if d is None:
+                    continue
+                if _matches_filters(d, rest):
+                    count += 1
+            return count
         return await asyncio.to_thread(_execute)
 
 
