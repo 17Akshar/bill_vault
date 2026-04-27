@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timezone
 
 # Configuration
-BASE_URL = "https://bill-tracker-mobile.preview.emergentagent.com/api"
+BASE_URL = "https://finance-sync-50.preview.emergentagent.com/api"
 HEADERS = {"Content-Type": "application/json"}
 
 class Phase3Tester:
