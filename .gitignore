@@ -160,3 +160,17 @@ credentials.json
 *.pem
 *.key
 .credentials
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
+
+
+# ALLOW .env.example files to be tracked (templates without secrets)
+!.env.example
+!**/.env.example
