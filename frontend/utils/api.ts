@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL 
   || process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -9,12 +10,22 @@ if (!BACKEND_URL) {
   console.warn('EXPO_PUBLIC_BACKEND_URL is not configured — using default');
 }
 
+// Globally force axios to use the `fetch` adapter on web (browser + SSR).
+// Without this, axios falls back to its Node.js `http` adapter which pulls in
+// `follow-redirects` and Node-only modules (`http`, `https`, `stream`, etc.) —
+// these crash with `Cannot read properties of undefined (reading 'prototype')`
+// in any web bundle (browser or expo-router SSR).
+if (Platform.OS === 'web') {
+  axios.defaults.adapter = 'fetch';
+}
+
 const api = axios.create({
   baseURL: `${BACKEND_URL}/api`,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  ...(Platform.OS === 'web' ? { adapter: 'fetch' as const } : {}),
 });
 
 // Add auth token to requests
