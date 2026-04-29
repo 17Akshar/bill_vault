@@ -2,6 +2,16 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+// Force axios to use the `fetch` adapter on web (browser + expo-router SSR).
+// Without this, axios falls back to its Node-only `http` adapter which pulls in
+// `follow-redirects` + Node core modules and crashes the bundle with:
+//   "Cannot read properties of undefined (reading 'prototype')"
+// Set at module-init time so it applies before any HTTP call below.
+if (Platform.OS === 'web') {
+  axios.defaults.adapter = 'fetch';
+}
 
 const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL;
 
