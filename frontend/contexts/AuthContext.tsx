@@ -29,7 +29,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; name: string; mobile_number: string; security_question: string; security_answer: string }) => Promise<void>;
-  loginWithGoogle: (sessionId: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   useSingleUserMode: () => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -122,7 +122,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const loginWithGoogle = async (sessionId: string) => {
+  const loginWithGoogle = async () => {
+    // Lazy import so the firebase JS SDK only loads when this method is called
+    // (and only on web — on native it throws a friendly error message).
+    const { signInWithGooglePopup } = await import('../utils/firebase');
+    let idToken: string;
+    try {
+      const result = await signInWithGooglePopup();
+      idToken = result.idToken;
+    } catch (err: any) {
+      // User closed popup, blocked popups, or unauthorized domain
+      const code = err?.code || '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        throw new Error('Google sign-in was cancelled');
+      }
+      if (code === 'auth/popup-blocked') {
+        throw new Error('Popup blocked. Please allow popups for this site and try again.');
+      }
+      if (code === 'auth/unauthorized-domain') {
+        throw new Error('This domain is not authorized for Google Sign-In. Add it in Firebase Console → Authentication → Settings → Authorized domains.');
+      }
+      throw new Error(err?.message || 'Google sign-in failed');
+    }
+
+    // Exchange Firebase ID token for our app JWT
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/google/firebase`, { id_token: idToken });
+      const { user: userData, access_token } = response.data;
+
+      await AsyncStorage.setItem('auth_token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+
+      setToken(access_token);
+      setUser(userData);
+      setIsAuthenticated(true);
+    } catch (error: any) {
+      const detail = error.response?.data?.detail;
+      throw new Error(typeof detail === 'string' ? detail : 'Google login failed on backend');
+    }
+  };
+
+  // Legacy (Emergent OAuth) — kept for backwards compat but no longer wired in UI.
+  const loginWithGoogleSession = async (sessionId: string) => {
     try {
       const response = await axios.post(`${BACKEND_URL}/api/auth/google/session`, {
         session_id: sessionId

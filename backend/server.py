@@ -730,6 +730,102 @@ async def google_auth_session(request: Request, response: Response):
     
     return {"user": user_doc, "session_token": session_token}
 
+
+@api_router.post("/auth/google/firebase")
+async def google_auth_firebase(request: Request):
+    """Sign-in with Google via Firebase Auth.
+
+    Frontend obtains a Firebase ID token (e.g. via signInWithPopup on web)
+    and POSTs it here. Backend verifies the token using Firebase Admin SDK,
+    creates/updates the user in Firestore, and returns a JWT compatible with
+    the rest of the app's auth.
+    """
+    try:
+        from firebase_admin import auth as firebase_auth
+        # Ensure Firebase Admin SDK is initialized (lazy init in firebase_config.py)
+        from firebase_config import get_firestore_client
+        get_firestore_client()
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Firebase Admin SDK not installed on server")
+
+    data = await request.json()
+    id_token = data.get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=400, detail="id_token required")
+
+    # Verify the ID token
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Firebase ID token: {str(e)}")
+
+    email = decoded.get("email")
+    name = decoded.get("name") or (email.split("@")[0] if email else "User")
+    picture = decoded.get("picture")
+    firebase_uid = decoded.get("uid")
+    email_verified = decoded.get("email_verified", False)
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not present in Firebase token")
+
+    # Get or create user (find by email, store firebase_uid for future use)
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    if not user_doc:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        new_user = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "firebase_uid": firebase_uid,
+            "email_verified": email_verified,
+            "auth_provider": "google",
+            "created_at": datetime.now(timezone.utc),
+            "use_single_user_mode": False,
+        }
+        await db.users.insert_one(new_user)
+
+        # Create default settings
+        settings = {
+            "user_id": user_id,
+            "dark_mode": False,
+            "notifications_enabled": True,
+            "notification_days_before": 3,
+            "default_currency": "INR",
+            "storage_provider": "local",
+            "updated_at": datetime.now(timezone.utc),
+        }
+        await db.user_settings.insert_one(settings)
+
+        new_user.pop("password_hash", None)
+        user_doc = new_user
+    else:
+        # Update fields that may have changed
+        update_payload = {
+            "name": name or user_doc.get("name"),
+            "firebase_uid": firebase_uid,
+            "email_verified": email_verified,
+        }
+        if picture:
+            update_payload["picture"] = picture
+        if not user_doc.get("auth_provider"):
+            update_payload["auth_provider"] = "google"
+        await db.users.update_one({"user_id": user_doc["user_id"]}, {"$set": update_payload})
+        user_doc.update(update_payload)
+
+    # Create JWT (matches the rest of the app's auth flow)
+    access_token = create_access_token({"user_id": user_doc["user_id"], "email": email})
+
+    # Strip non-serializable fields just in case
+    user_doc.pop("password_hash", None)
+
+    return {
+        "user": user_doc,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
+
+
 @api_router.get("/auth/me")
 async def get_me(request: Request):
     """Get current authenticated user"""

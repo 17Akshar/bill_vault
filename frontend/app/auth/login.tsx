@@ -10,7 +10,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,13 +19,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Login() {
   const router = useRouter();
-  const { login, useSingleUserMode } = useAuth();
+  const { login, useSingleUserMode, loginWithGoogle } = useAuth();
   const { colors } = useTheme();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -46,19 +46,21 @@ export default function Login() {
   };
 
   const handleGoogleLogin = async () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = encodeURIComponent('financetracker://auth-callback');
-    const authUrl = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
-    
+    if (Platform.OS !== 'web') {
+      Alert.alert(
+        'Use Web for Now',
+        'Google Sign-In via Firebase is currently available on the web build. Please use email/password on mobile, or open Fintracker in your browser.'
+      );
+      return;
+    }
+    setIsGoogleLoading(true);
     try {
-      const supported = await Linking.canOpenURL(authUrl);
-      if (supported) {
-        await Linking.openURL(authUrl);
-      } else {
-        Alert.alert('Error', 'Cannot open authentication page');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to open Google login');
+      await loginWithGoogle();
+      router.replace('/(tabs)/dashboard');
+    } catch (error: any) {
+      Alert.alert('Google Sign-In Failed', error.message || 'Could not sign in with Google');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -157,12 +159,17 @@ export default function Login() {
             </View>
 
             <TouchableOpacity
-              style={[styles.googleButton, { borderColor: colors.border }]}
+              style={[styles.googleButton, { borderColor: colors.border, opacity: isGoogleLoading ? 0.6 : 1 }]}
               onPress={handleGoogleLogin}
+              disabled={isGoogleLoading}
             >
-              <Ionicons name="logo-google" size={20} color={colors.text} />
+              {isGoogleLoading ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <Ionicons name="logo-google" size={20} color={colors.text} />
+              )}
               <Text style={[styles.googleButtonText, { color: colors.text }]}>
-                Continue with Google
+                {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
               </Text>
             </TouchableOpacity>
 
