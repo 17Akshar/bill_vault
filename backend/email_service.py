@@ -17,7 +17,7 @@ SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
 SMTP_USERNAME = os.environ.get('SMTP_USERNAME', 'billtracker@example.com')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 FROM_EMAIL = os.environ.get('FROM_EMAIL', 'Bill Tracker <noreply@billtracker.com>')
-APP_URL = os.environ.get('APP_URL', 'https://finance-sync-50.preview.emergentagent.com')
+APP_URL = os.environ.get('APP_URL', 'https://account-central-15.preview.emergentagent.com')
 
 def send_verification_email(to_email: str, name: str, verification_token: str) -> bool:
     """Send email verification link"""

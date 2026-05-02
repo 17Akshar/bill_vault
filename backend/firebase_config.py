@@ -311,14 +311,18 @@ class FirestoreCollection:
                     break
 
             update_data = {}
+            has_operator = "$set" in update or "$inc" in update
             if "$set" in update:
-                update_data = _serialize_doc(update["$set"])
-            elif "$inc" in update:
+                update_data.update(_serialize_doc(update["$set"]))
+            if "$inc" in update:
                 if target_doc:
                     existing = target_doc.to_dict() or {}
                     for k, v in update["$inc"].items():
                         update_data[k] = existing.get(k, 0) + v
-            else:
+                elif upsert:
+                    for k, v in update["$inc"].items():
+                        update_data[k] = v
+            if not has_operator:
                 update_data = _serialize_doc(update)
 
             if target_doc:
