@@ -105,3 +105,44 @@ Transition the fully-built "Bill Tracker" app into a Production-Ready Personal F
 - `/app/frontend/components/CrossPlatformPicker.tsx` — unified date/time picker
 - `/app/frontend/components/FamilyMemberSelector.tsx` — family filter + picker
 - `/app/memory/test_credentials.md` — test users + Firebase project info
+
+## Session 2 Update (2026-05-02)
+
+### Account Recovery System Implemented
+Secure, rate-limited recovery flows using Firebase Auth + Firestore.
+
+**Backend** (`/app/backend/recovery.py` — 418 lines):
+- `POST /api/recovery/status` — rate-limit status for an identifier
+- `POST /api/recovery/password/email` — rate-limited email password reset (no-enumeration)
+- `POST /api/recovery/password/phone/verify` — reset password after Firebase Phone OTP
+- `POST /api/recovery/email/reveal` — reveal masked emails after Phone OTP verification
+- Rate limiting: Firestore `recovery_attempts` — 5 attempts / 15-min window → 30-min block
+- Audit logging: Firestore `recovery_logs` (identifier hash only, first-char preview)
+- Password strength: min 8 chars + 1 uppercase + 1 digit
+- Email masking: `j***n@gmail.com` / `a***@x.com` for short locals
+- Firebase Auth password sync for users with `firebase_uid`
+
+**Frontend** (Expo):
+- `/app/frontend/app/auth/forgot-password.tsx` — Email/Phone toggle with 3-step flow
+- `/app/frontend/app/auth/forgot-email.tsx` — Phone → masked email reveal
+- `/app/frontend/app/auth/login.tsx` — Forgot password/email links added
+- `/app/frontend/utils/firebasePhoneAuth.ts` — RecaptchaVerifier + signInWithPhoneNumber helper
+- `/app/frontend/utils/firebase.ts` — sendPasswordResetEmail export
+- Invisible reCAPTCHA v2 on web for Phone OTP
+
+**Security** (`/app/firestore.rules`):
+- Deploy-ready rules — ALL client access denied; backend Admin SDK only
+- Especially locks down `users`, `recovery_attempts`, `recovery_logs`
+
+### Testing
+- 17 new recovery tests + 21 regression = 38/38 backend pass
+- Frontend UI verified via screenshot: login links visible, Reset Password page renders, Email/Phone toggle works
+- Balance update regression: still passing (income +5000 → 15000, expense -2000 → 13000)
+
+### Known Limitations
+- Phone OTP recovery works on **web only** (Firebase JS SDK requires reCAPTCHA + DOM). Mobile Expo requires native Firebase module (future work).
+- Frontend dual-call pattern: email forgot password calls BOTH `/api/recovery/password/email` (rate-limit + log) AND Firebase Web SDK `sendPasswordResetEmail` (actual email delivery via Firebase).
+
+### Firestore Rules Deployment
+User must run `firebase deploy --only firestore:rules` from project root after first-time setup. Not deployed automatically.
+

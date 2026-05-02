@@ -121,7 +121,7 @@ async def _log_attempt(
             "log_id": f"rlog_{uuid.uuid4().hex[:16]}",
             "type": attempt_type,
             "identifier_hash": _hash_identifier(identifier),
-            "identifier_preview": identifier[:3] + "***",
+            "identifier_preview": (identifier[:1] + "***") if identifier else "***",
             "ip": ip,
             "success": success,
             "reason": reason,
@@ -343,8 +343,9 @@ async def reset_password_with_phone(data: PhonePasswordResetRequest, request: Re
         user_doc = await db.users.find_one({"mobile_number": phone.lstrip("+")})
     if not user_doc:
         await _log_attempt("password_phone", phone, ip, False, "no_user_for_phone")
-        raise HTTPException(status_code=404,
-                            detail="No account found for this phone number")
+        # No-enumeration: return generic 401 matching invalid-token response
+        raise HTTPException(status_code=401,
+                            detail="Verification failed. Please try again or create a new account.")
 
     # Hash and update
     hashed = bcrypt.hashpw(data.new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
