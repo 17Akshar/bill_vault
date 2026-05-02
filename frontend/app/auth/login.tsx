@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { routeAfterLogin } from '../../utils/postLoginRoute';
 
 export default function Login() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(email, password);
-      router.replace('/(tabs)/dashboard');
+      await routeAfterLogin(router.replace);
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {
@@ -56,7 +57,7 @@ export default function Login() {
     setIsGoogleLoading(true);
     try {
       await loginWithGoogle();
-      router.replace('/(tabs)/dashboard');
+      await routeAfterLogin(router.replace);
     } catch (error: any) {
       Alert.alert('Google Sign-In Failed', error.message || 'Could not sign in with Google');
     } finally {
@@ -68,7 +69,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await useSingleUserMode();
-      router.replace('/(tabs)/dashboard');
+      await routeAfterLogin(router.replace, { isSingleUser: true });
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {

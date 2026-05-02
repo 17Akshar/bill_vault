@@ -3866,47 +3866,185 @@ async def get_portfolio_analytics(request: Request):
 
 # ==================== MPIN ENDPOINTS ====================
 
+def _is_weak_mpin(mpin: str) -> Optional[str]:
+    """
+    Reject obviously weak MPINs.
+    Returns error message if weak, else None.
+    """
+    # Repeating digits: 1111, 0000, 222222
+    if len(set(mpin)) == 1:
+        return "MPIN cannot be all the same digit (e.g., 1111)"
+
+    # Simple ascending sequence: 1234, 12345, 123456, 0123, 01234, 012345
+    digits = [int(c) for c in mpin]
+    if all(digits[i + 1] - digits[i] == 1 for i in range(len(digits) - 1)):
+        return "MPIN cannot be a simple sequence (e.g., 1234)"
+
+    # Simple descending sequence: 4321, 9876, 54321
+    if all(digits[i] - digits[i + 1] == 1 for i in range(len(digits) - 1)):
+        return "MPIN cannot be a simple descending sequence (e.g., 4321)"
+
+    # Repeating pair: 1212, 121212, 4545, 454545
+    if len(mpin) % 2 == 0 and mpin[:2] * (len(mpin) // 2) == mpin:
+        return "MPIN cannot be a repeating pattern (e.g., 1212)"
+
+    # Known-common PINs
+    COMMON_WEAK = {
+        "1234", "0000", "1111", "2222", "3333", "4444", "5555", "6666",
+        "7777", "8888", "9999", "1212", "1004", "2000", "6969", "4321",
+        "0007", "1122", "1313", "7777",
+        "123456", "654321", "111111", "000000", "112233", "121212",
+        "123123", "111222", "112211", "147258", "159357", "987654",
+    }
+    if mpin in COMMON_WEAK:
+        return "This MPIN is too common. Please choose a harder-to-guess one."
+
+    return None
+
+
+# MPIN brute-force rate limiting
+MPIN_MAX_ATTEMPTS = 5
+MPIN_BLOCK_MINUTES = 15
+
+
+async def _mpin_rate_limit_check_and_increment(user_id: str) -> dict:
+    """Rate-limit MPIN verify attempts per user. Returns {allowed, remaining, blocked_until}."""
+    key = f"mpin_{user_id}"
+    now = datetime.now(timezone.utc)
+    doc = await db.recovery_attempts.find_one({"attempt_id": key})
+
+    if doc:
+        blocked_until = doc.get("blocked_until")
+        if isinstance(blocked_until, str):
+            try:
+                blocked_until = datetime.fromisoformat(blocked_until.replace("Z", "+00:00"))
+            except ValueError:
+                blocked_until = None
+        if blocked_until and blocked_until.tzinfo is None:
+            blocked_until = blocked_until.replace(tzinfo=timezone.utc)
+        if blocked_until and blocked_until > now:
+            return {"allowed": False, "remaining": 0,
+                    "blocked_until": blocked_until.isoformat()}
+
+        count = (doc.get("count") or 0) + 1
+        block_until = None
+        if count > MPIN_MAX_ATTEMPTS:
+            block_until = now + timedelta(minutes=MPIN_BLOCK_MINUTES)
+
+        await db.recovery_attempts.update_one(
+            {"attempt_id": key},
+            {"$set": {"attempt_id": key, "count": count,
+                      "last_attempt_at": now, "blocked_until": block_until,
+                      "window_start": doc.get("window_start") or now}},
+            upsert=True,
+        )
+        if block_until:
+            return {"allowed": False, "remaining": 0,
+                    "blocked_until": block_until.isoformat()}
+        return {"allowed": True,
+                "remaining": max(0, MPIN_MAX_ATTEMPTS - count),
+                "blocked_until": None}
+
+    await db.recovery_attempts.update_one(
+        {"attempt_id": key},
+        {"$set": {"attempt_id": key, "count": 1,
+                  "window_start": now, "last_attempt_at": now,
+                  "blocked_until": None}},
+        upsert=True,
+    )
+    return {"allowed": True, "remaining": MPIN_MAX_ATTEMPTS - 1, "blocked_until": None}
+
+
+async def _mpin_rate_limit_reset(user_id: str):
+    """Clear MPIN brute-force counter after a successful verify."""
+    key = f"mpin_{user_id}"
+    await db.recovery_attempts.update_one(
+        {"attempt_id": key},
+        {"$set": {"attempt_id": key, "count": 0, "blocked_until": None,
+                  "last_attempt_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+
+
 @api_router.post("/mpin/setup")
 async def setup_mpin(request: Request):
     """Set up or update MPIN for quick app access"""
     user = await get_current_user(request)
     body = await request.json()
-    mpin = body.get("mpin", "")
+    mpin = (body.get("mpin") or "").strip()
 
     if not mpin or len(mpin) < 4 or len(mpin) > 6 or not mpin.isdigit():
         raise HTTPException(status_code=400, detail="MPIN must be 4-6 digits")
+
+    weak_reason = _is_weak_mpin(mpin)
+    if weak_reason:
+        raise HTTPException(status_code=400, detail=weak_reason)
 
     hashed = bcrypt.hashpw(mpin.encode(), bcrypt.gensalt()).decode()
     now = datetime.now(timezone.utc)
 
     await db.user_mpin.update_one(
         {"user_id": user.user_id},
-        {"$set": {"mpin_hash": hashed, "is_enabled": True, "updated_at": now}},
+        {"$set": {"mpin_hash": hashed, "pin_length": len(mpin),
+                  "is_enabled": True, "updated_at": now}},
         upsert=True
     )
-    return {"message": "MPIN set successfully", "is_enabled": True}
+    # Clear any previous rate-limit block
+    await _mpin_rate_limit_reset(user.user_id)
+    return {"message": "MPIN set successfully", "is_enabled": True,
+            "pin_length": len(mpin)}
 
 @api_router.post("/mpin/verify")
 async def verify_mpin(request: Request):
     """Verify MPIN for app unlock"""
     user = await get_current_user(request)
     body = await request.json()
-    mpin = body.get("mpin", "")
+    mpin = (body.get("mpin") or "").strip()
+
+    # Rate-limit check FIRST (even before we look up record)
+    rl = await _mpin_rate_limit_check_and_increment(user.user_id)
+    if not rl["allowed"]:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many incorrect attempts. Locked out until {rl['blocked_until']}."
+        )
 
     record = await db.user_mpin.find_one({"user_id": user.user_id})
     if not record or not record.get("is_enabled"):
         raise HTTPException(status_code=404, detail="MPIN not set up")
 
     if bcrypt.checkpw(mpin.encode(), record["mpin_hash"].encode()):
-        return {"verified": True}
-    raise HTTPException(status_code=401, detail="Invalid MPIN")
+        await _mpin_rate_limit_reset(user.user_id)
+        return {"verified": True, "remaining_attempts": MPIN_MAX_ATTEMPTS}
+    raise HTTPException(
+        status_code=401,
+        detail=f"Invalid MPIN. {rl['remaining']} attempts remaining."
+    )
 
 @api_router.get("/mpin/status")
 async def mpin_status(request: Request):
     """Check if MPIN is enabled for user"""
     user = await get_current_user(request)
     record = await db.user_mpin.find_one({"user_id": user.user_id})
-    return {"is_enabled": bool(record and record.get("is_enabled", False))}
+    # Check if user has dismissed the post-login prompt
+    settings = await db.user_settings.find_one({"user_id": user.user_id}) or {}
+    return {
+        "is_enabled": bool(record and record.get("is_enabled", False)),
+        "pin_length": record.get("pin_length", 4) if record else 4,
+        "prompt_dismissed": bool(settings.get("mpin_prompt_dismissed", False)),
+    }
+
+@api_router.post("/mpin/dismiss-prompt")
+async def dismiss_mpin_prompt(request: Request):
+    """Mark MPIN setup prompt as dismissed ('Don't ask again')."""
+    user = await get_current_user(request)
+    await db.user_settings.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"mpin_prompt_dismissed": True,
+                  "updated_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    return {"message": "MPIN prompt dismissed"}
 
 @api_router.post("/mpin/disable")
 async def disable_mpin(request: Request):

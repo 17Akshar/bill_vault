@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { routeAfterLogin } from '../../utils/postLoginRoute';
 
 export default function Register() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function Register() {
     setIsLoading(true);
     try {
       await register({ email, password, name, mobile_number: mobileNumber || '', security_question: securityQuestion || '', security_answer: securityAnswer || '' });
-      router.replace('/(tabs)/dashboard');
+      await routeAfterLogin(router.replace);
     } catch (error: any) {
       let msg = 'Something went wrong. Please try again.';
       if (error?.response?.data?.detail) {

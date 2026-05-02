@@ -1,0 +1,52 @@
+{
+  "summary": "Backend-only test of enhanced MPIN setup/verify/status/dismiss-prompt/disable endpoints + regression on Fintracker (21) + Recovery (17). Wrote new pytest file /app/backend/tests/test_mpin_api.py (30 tests) covering: weak-MPIN rejection with exact error phrases (1111/0000/2222 -> 'all the same digit'; 1234/123456 -> 'simple sequence'; 4321/9876/654321 -> 'simple descending sequence'; 1212/4545 -> 'repeating pattern'; 6969 -> common/repeating); format validation (non-digit, too short, too long, empty); strong 4-digit (7391) and 6-digit (739142) success returns {message,is_enabled:true,pin_length}; bcrypt hash stored in Firestore (verified hash starts with $2b$ and plain MPIN never appears); /verify happy path returns {verified:true}; wrong MPIN returns 401 with 'remaining' in message; brute-force lockout (5x 401 then 6th -> 429 'Too many incorrect attempts. Locked out until <ts>.', and even correct MPIN returns 429 during lockout window); successful setup resets the rate-limit counter; /status returns {is_enabled, pin_length, prompt_dismissed}; /dismiss-prompt persists mpin_prompt_dismissed=true (verified via /status); /disable flips is_enabled to false; auth required on /setup and /verify. ALL 30 MPIN tests + 21 fintracker + 17 recovery = 68/68 PASS, 100% success.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/mpin/setup", "issue": "COMMON_WEAK list has duplicate '7777' entry (lines 3893-3895 of server.py). Cosmetic only, set lookup unaffected."},
+      {"endpoint": "POST /api/mpin/verify", "issue": "Rate-limit increment happens BEFORE the user_mpin record is checked. If MPIN is not set up, the user gets a 404 but their attempt counter is incremented, which is wasteful. Not user-impacting since enabled-MPIN flow is the only realistic verify caller, but consider checking record existence first."},
+      {"endpoint": "POST /api/mpin/verify", "issue": "Lockout duration is 15 minutes (MPIN_BLOCK_MINUTES=15) which is correct per the spec. The error message uses ISO timestamp 'Locked out until 2026-01-XXTHH:MM:SS+00:00' which is computer-readable but not human-friendly. Frontend should format this for display."},
+      {"endpoint": "POST /api/mpin/setup", "issue": "On the 6th wrong verify attempt, count becomes 6 and block_until is set; the response is 429 (correct). However the underlying recovery_attempts doc keeps count at 6 - subsequent attempts don't increment further but always re-evaluate the same blocked_until window. Behaviour is correct, just noting the counter doesn't accumulate beyond 6."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_mpin_api.py",
+    "/app/backend/tests/test_fintracker_api.py",
+    "/app/backend/tests/test_recovery_api.py",
+    "/app/test_reports/pytest/mpin_results.xml",
+    "/app/test_reports/pytest/regression_results.xml"
+  ],
+  "action_items": [
+    "(Cosmetic) De-duplicate '7777' in COMMON_WEAK set in server.py line ~3895.",
+    "(Optional hardening) In /api/mpin/verify, check that user_mpin record exists BEFORE incrementing rate-limit counter, so users without MPIN setup are not penalized with attempts.",
+    "(Frontend, out of scope) Format the ISO 'Locked out until <ts>' timestamp for human-friendly display in the lockout banner."
+  ],
+  "critical_code_review_comments": [
+    "_is_weak_mpin is concise and correctly implements all four rules: all-same-digit, ascending sequence (diff=+1), descending sequence (diff=-1), repeating pair (mpin[:2]*n == mpin), plus a COMMON_WEAK set fallback. Verified via 11 parametrized cases.",
+    "Bcrypt is correctly used: bcrypt.hashpw(mpin.encode(), bcrypt.gensalt()).decode() and bcrypt.checkpw(mpin.encode(), record['mpin_hash'].encode()). Stored hash starts with $2b$ - confirmed via direct Firestore read.",
+    "_mpin_rate_limit_check_and_increment shares the recovery_attempts Firestore collection with the recovery module, namespaced via attempt_id='mpin_'+user_id. No collision risk because recovery uses email/phone hash as attempt_id.",
+    "Successful /setup AND successful /verify both call _mpin_rate_limit_reset, so the brute-force counter is correctly cleared on legitimate use - verified by test_setup_resets_rate_limit.",
+    "/mpin/status correctly merges user_mpin and user_settings docs to return {is_enabled, pin_length, prompt_dismissed} in a single call - good UX for the post-login prompt logic.",
+    "/mpin/dismiss-prompt is idempotent (upsert=True) and only writes the single mpin_prompt_dismissed flag plus updated_at - clean implementation.",
+    "Minor: in /mpin/verify, the rate-limit increment fires even before checking that record exists (404 'MPIN not set up'). A user without an MPIN can be locked out by attacking /verify - but they have nothing to verify so this is largely academic. Suggest reordering or skipping increment when record is missing.",
+    "Server.py is now 4157 lines, well over the 700-line guideline. MPIN logic (~200 lines) is a candidate for extraction into mpin.py module similar to recovery.py."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_mpin_api.py (new, 30 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (68/68: 30 MPIN + 21 fintracker + 17 recovery)",
+    "frontend": "not tested (request was backend-only; frontend already verified by main agent via screenshot per agent_to_agent_context_note)"
+  },
+  "test_credentials": "POST /api/auth/single-user (no creds). Backend uses Firestore (not local MongoDB despite env vars present). user_id retrieved from /api/auth/me.",
+  "seed_data_creation": "Tests use single-user mode (deterministic user_id). user_mpin, user_settings, recovery_attempts/mpin_<uid> docs touched in Firestore. Final state: MPIN '7391' enabled (4 digits), prompt_dismissed=false, rate-limit counter reset to 0. No external test users created.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All MPIN endpoints work per spec. Storage is Firestore (not Mongo) accessed via Mongo-style wrapper in firebase_config.db. To verify hash directly, use: from firebase_config import db; await db.user_mpin.find_one({'user_id': uid}). Rate-limit shares recovery_attempts collection keyed by attempt_id='mpin_<user_id>'. Successful setup or verify resets the counter via _mpin_rate_limit_reset. The 6th wrong attempt triggers 15-min lockout; even correct MPIN returns 429 during the window. Tests are idempotent because each test calls _ensure_clean_mpin which re-runs setup (which clears the counter). To extend, add tests for very-long MPINs (>6) per family-member or alternate-user scenarios if multi-user mode comes online.",
+  "rca of the issue": "No bugs found. Implementation matches all 12 features in the review request. Three minor non-blocking observations documented (duplicate '7777' in COMMON_WEAK set, rate-limit increment fires before record-existence check, ISO timestamp not human-formatted) - all are optional polish, not defects."
+}

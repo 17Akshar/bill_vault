@@ -22,6 +22,7 @@ export default function RootLayout() {
             <Stack.Screen name="auth/register" />
             <Stack.Screen name="auth/forgot-password" />
             <Stack.Screen name="auth/forgot-email" />
+            <Stack.Screen name="auth/mpin-setup-prompt" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="accounts/add" />
             <Stack.Screen name="transactions/add" />
