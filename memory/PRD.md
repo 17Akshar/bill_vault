@@ -1,123 +1,107 @@
-# Fintracker - Product Requirements Document
+# Fintracker – Personal Finance & Wealth Management Application
 
-## App Overview
-Fintracker is a Production-Ready Personal Finance & Wealth Management OS. It evolved from the Bill Tracker app to provide comprehensive financial tracking, portfolio management, and wealth overview capabilities.
+## Original Problem Statement
+Transition the fully-built "Bill Tracker" app into a Production-Ready Personal Finance & Wealth Management Application named **Fintracker**, featuring offline-first + cloud-sync architecture, customizable dashboard, unified accounts (individual/joint/business), financial hub with auto-calculated ROI/CAGR/XIRR, notes with subheadings, global calendar, and enhanced auth (MPIN, Mobile+OTP, Gmail OAuth).
 
-## Phase 1: Fintracker Branding & UI Overhaul (COMPLETED)
+## Tech Stack
+- **Frontend**: Expo (React Native web + mobile), expo-router, TypeScript
+- **Backend**: FastAPI (Python), monolithic `server.py`
+- **Database**: Google Firebase Firestore (via custom MongoDB-compatible wrapper in `firebase_config.py`)
+- **Auth**: JWT + Firebase Auth (email/password, phone, Google OAuth)
 
-### Landing Page (index.tsx)
-- Fintracker logo with gradient background
-- "Your Personal Finance & Wealth OS" tagline
-- Feature cards grid: Net Worth, Investments, Accounts, Reminders
-- Gradient "Get Started" CTA + "Create Account" button
-- Animated fade-in entrance
+## Architecture Tasks Done
+- MongoDB → Firebase Firestore migration via MongoDB-compatible wrapper (`firebase_config.py`) — preserves all existing endpoints without rewrites
+- Custom CrossPlatformPicker for date/time selection across web/iOS/Android
+- Family Member system for multi-person household finances
+- Dashboard widget toggle settings persisted in `/api/settings`
+- Note categorization via headings (`/api/note-headings` + `/api/notes`)
 
-### Dashboard (dashboard.tsx)
-- User avatar with initials in header
-- Greeting with name
-- Purple gradient Net Worth hero card with sparkline chart
-- Quick actions: Income, Expense, Transfer, Note
-- Income/Expenses/Savings summary row
-- Horizontal scrollable accounts section
-- Investment donut chart with portfolio allocation
-- Recent transactions feed
-- Upcoming reminders
-- Financial Hub quick nav grid
+## User Personas
+1. **Solo user** — single-user-mode, no auth, all data on one device
+2. **Family manager** — tracks transactions for self + spouse + children via Family Member picker
+3. **Investor** — tracks stocks/MFs/FDs/gold/crypto with ROI/CAGR calculations
+4. **Credit tracker** — manages credit cards, EMIs, loans, lending
 
-### Financial Hub (bills.tsx → Hub tab)
-- Overdue bills alert banner
-- Quick stats: Total, Upcoming, Paid
-- Module grid: Bills, Credit Cards, Loans & EMI, Investments, Rentals, Lent/Borrowed, Budgets, Net Worth, Reports, Reminders
-- Recent bills list
+## Core Requirements (Static)
+- Offline-first local DB with cloud sync
+- Unified accounts: Bank (Saving/Current/Other), Cash, UPI, Credit Card with Individual/Joint/Business ownership
+- Transactions with category + sub-category + family member + payment type
+- Bills with recurring support + summary (overdue/upcoming/paid)
+- Investment portfolio with ROI/CAGR/XIRR
+- Credit cards with limit tracking + outstanding report
+- Loans + Lending + Rentals
+- Budgets with progress tracking
+- Reminders + Global Calendar
+- Notes with heading-based folders
+- Customizable dashboard widgets
+- MPIN + Mobile OTP + Gmail OAuth
 
-### Tab Navigation (_layout.tsx)
-- 5 tabs: Home | Transactions | Accounts | Hub | Profile
-- Active tab highlight with background tint
-- Filled/outline icon toggle on selection
+## What's Been Implemented
+- **Phase 1 UI Overhaul** (Landing, Profile, Hub, Dashboard) — DONE
+- **Unified Accounts** (ownership type, institution, bank sub-types) — DONE
+- **MPIN Authentication** (backend + UI) — DONE
+- **Calendar System** module — DONE
+- **Notes Engine** with heading-based categorization — DONE
+- **Portfolio Analytics** (ROI/CAGR) — DONE
+- **Dashboard Widget Toggle** settings — DONE
+- **CrossPlatformPicker** for dates/times — DONE
+- **Family Member** integration (filter chips + "For whom?" picker) — DONE
+- **MongoDB → Firebase Firestore** migration (via wrapper) — DONE
 
-### Profile (profile.tsx)
-- Purple gradient profile header card with avatar
-- Color-coded preferences with icons
-- Management section: Family, Analytics, Categories, Budgets
-- Data & Storage section with export + sync status
-- Outline logout button
+## Work Done This Session (2026-05-02)
+### Critical Bug Fixes
+1. **Firestore wrapper `$inc` + `$set` operator fix** (`/app/backend/firebase_config.py`)
+   - Root cause: `elif` branch silently dropped `$inc` when both operators were sent together
+   - Impact: ALL balance updates on income/expense create/update/delete silently failed
+   - Fix: Independent `if` blocks so `$set` and `$inc` both apply cumulatively
+   - Verified: Income +5000 → balance 15000 ✅ | Expense -2000 → balance 13000 ✅
+   - Backend regression: 21/21 tests pass
 
-### Auth Screens
-- Updated to Fintracker branding (wallet icon, taglines)
-- Login: "Sign in to Fintracker"
-- Register: "Join Fintracker today"
+2. **Frontend focus-refresh bug** (`/app/frontend/app/(tabs)/*.tsx`)
+   - Root cause: Dashboard/Accounts/Transactions/Bills tabs never re-fetched data on focus return → backend updates never reflected in UI
+   - Fix: Added `useFocusEffect(useCallback(loadAll))` to all 4 tab screens + analytics
+   - Also added `useRootNavigationState()?.key` guard to prevent pre-mount `router.replace()` race
 
-### Theme (ThemeContext.tsx)
-- Primary: #5B2FBF (purple)
-- Dark mode default with rich dark backgrounds
-- Light mode available
+3. **router.back() fallback** in transactions/add.tsx and accounts/add.tsx
+   - Uses `router.canGoBack()` → `router.back()` else `router.replace('/(tabs)/...')`
 
-## Phase 2: Unified Accounts System (COMPLETED)
-- Added `ownership_type` field: individual, joint, business
-- Added `institution` field for bank name/wallet provider
-- Added `wallet` as new account type
-- Added `color` and `icon` customization fields
-- Updated Add Account screen with ownership selector + institution input
-- Backend models, create, and update endpoints all upgraded
-- Backward compatible with existing accounts
+4. **Runtime page title** — set via `document.title` in `_layout.tsx` useEffect (web)
 
-## Phase 3: MPIN Authentication (COMPLETED)
-- Backend: /api/mpin/setup, /api/mpin/verify, /api/mpin/status, /api/mpin/disable
-- Frontend: Full MPIN setup screen with numpad, 4-digit PIN entry + confirmation
-- Status badge showing enabled/disabled
-- Disable MPIN option
-- Accessible from Profile > Management > MPIN Security
+### Testing
+- Backend: 21/21 pytest pass (`/app/backend/tests/test_fintracker_api.py`)
+- Frontend: Critical refresh bug verified fixed (iteration 3 report)
 
-## Phase 4: Calendar System (COMPLETED)
-- Backend: /api/calendar/events endpoint aggregating bills, income, expenses, reminders
-- Frontend: Full calendar view with month navigation
-- Color-coded event dots on dates (green=income, yellow=expense, red=bill, purple=reminder)
-- Today highlight and date selection
-- Event details panel showing all events for selected date
-- Legend bar for event types
-- Accessible from Profile + Financial Hub
+## Prioritized Backlog
+### P0 (Critical, not yet done)
+- **Offline-First Architecture**: Integrate local SQLite/WatermelonDB + sync queue layer
+- **Mobile + OTP Auth**: Enable Firebase Phone Auth flow in UI
+- **Gmail OAuth**: Wire Google sign-in via Firebase Auth
 
-## Phase 5: Offline-First Architecture (UPCOMING)
-- Replace "Family Members" with unified `account_id`
-- Support Individual/Joint/Business accounts
-- Banks, Wallets, Credit Cards
+### P1 (Important)
+- **Backend Modularization**: Safely move endpoints from 4000-line `server.py` to `/app/backend/routers/*.py` (files exist, dormant)
+- **Cloud Sync**: Google Drive + OneDrive manual/auto-sync toggles
+- **XIRR calculation** (currently only ROI/CAGR)
 
-## Phase 3: Offline-First Architecture (UPCOMING)
-- Local storage (SQLite/WatermelonDB)
-- Sync queue layer
-- Google Drive / OneDrive sync
+### P2 (Nice to have)
+- Data-testid on all chips/buttons for automation
+- Fix stray `.` text-node React warning in transactions/add.tsx
+- Rename "Home" tab to "Dashboard" in `(tabs)/_layout.tsx`
+- Empty-state "Add a family member" hint in FamilyMemberPicker
 
-## Phase 4: Enhanced Authentication (UPCOMING)
-- MPIN login
-- Mobile + OTP
+## Next Tasks (in priority order)
+1. P0: Offline-first (SQLite + sync queue) OR Mobile+OTP + Gmail OAuth (user's choice)
+2. P1: Backend modularization (move monolith endpoints into routers/)
+3. P2: Cosmetic polish items above
 
-## Phase 5: Offline-First Architecture (COMPLETED)
-- `utils/offlineManager.ts`: AsyncStorage-based cache layer with 30min TTL
-- Sync queue for pending POST/PUT/DELETE operations when offline
-- Network status detection via @react-native-community/netinfo
-- Auto-sync on reconnection with 3-retry logic
-- Smart API wrappers: cachedGet(), smartPost(), smartPut(), smartDelete()
+## Known Issues / Mocked Integrations
+- None mocked. Live Firebase Firestore connected (project: `bill-vault-a24ad`).
+- Firestore wrapper uses client-side filtering to avoid composite index requirements — acceptable for per-user personal finance data volumes but not web-scale.
 
-## Phase 6: Notes & Reminders Engine (COMPLETED)
-- Backend: Full CRUD for `/api/notes` with sections/subheadings, tags, priority, color, linked entities
-- Frontend: 2-column grid layout with search, sections editor, tag selector, priority & color picker
-- Accessible from Dashboard + Financial Hub
-
-## Phase 7: Financial Hub Upgrades (COMPLETED)
-- Portfolio Analytics API: `/api/portfolio/analytics` with ROI%, CAGR%, type breakdown, allocation %
-- Investment screen enhanced with allocation breakdown chips in summary
-- New asset classes: ESOP, Bonds (12 total investment types)
-- ROI label in portfolio summary
-
-## Phase 8: Backend Modularization (COMPLETED - Partial)
-- Created modular router files: `routers/notes.py`, `routers/calendar.py`, `routers/mpin.py`, `routers/portfolio.py`
-- Shared deps module: `routers/deps.py`
-- Pattern established; server.py still serves all endpoints for stability
-- Full migration deferred to avoid regression risk
-
-## Phase 9: Dashboard Widget Toggle (COMPLETED)
-- Backend: `dashboard_widgets` field in UserSettings with 8 toggleable widgets
-- Frontend: `profile/dashboard-settings.tsx` with color-coded toggle cards
-- Dashboard reads widget config and conditionally renders: Net Worth, Quick Actions, Summary, Accounts, Investments, Recent Transactions, Reminders, Financial Hub
-- Instant toggle with auto-save to backend
-- Reset button to enable all widgets
+## Files of Reference
+- `/app/backend/firebase_config.py` — MongoDB-compatible Firestore wrapper (✅ `$inc`+`$set` fix applied)
+- `/app/backend/server.py` — 4000-line FastAPI monolith (to be modularized)
+- `/app/backend/routers/` — dormant router modules (not wired yet)
+- `/app/frontend/app/(tabs)/*.tsx` — all tabs now use useFocusEffect + navState guard
+- `/app/frontend/components/CrossPlatformPicker.tsx` — unified date/time picker
+- `/app/frontend/components/FamilyMemberSelector.tsx` — family filter + picker
+- `/app/memory/test_credentials.md` — test users + Firebase project info
