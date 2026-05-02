@@ -124,7 +124,7 @@ const ListRow = ({ leftIcon, leftIconBg, leftIconColor, title, subtitle, rightTo
 // =============================================================================
 export default function DashboardScreen() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   // colors from ThemeContext intentionally NOT used — dashboard uses spec tokens
   const { } = useTheme();
 
@@ -144,14 +144,15 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (!navState?.key) return;
+    if (authLoading) return;            // wait until auth context is ready
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadAll();
-  }, [isAuthenticated, familyFilter, navState?.key]);
+  }, [isAuthenticated, authLoading, familyFilter, navState?.key]);
 
   useFocusEffect(
     useCallback(() => {
-      if (isAuthenticated) loadAll();
-    }, [isAuthenticated, familyFilter])
+      if (isAuthenticated && !authLoading) loadAll();
+    }, [isAuthenticated, authLoading, familyFilter])
   );
 
   const loadAll = async () => {

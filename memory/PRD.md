@@ -176,3 +176,40 @@ Post-login MPIN setup prompt, weak-MPIN rejection, 4/6-digit choice, brute-force
 - Frontend UI verified via screenshot — post-login prompt + 6-digit keypad + length picker all render correctly
 - Manual rate-limit verification: 5 wrong attempts → 6th gets 429 block
 
+
+## Session 4 Update (2026-05-02)
+
+### Dashboard Pixel-Perfect Redesign
+Refactored existing dashboard screen to spec-exact dark finance UI without changing navigation or app structure.
+
+**Spec theme tokens applied** (hard-coded, not from ThemeContext):
+- bg `#08082A`, card `#12123A`, primary `#6C47FF`, gradient `#4B2FBF→#7B4FEF`
+- success `#00C48C`, danger `#FF4D67`, info `#4D9EFF`
+- text `#FFFFFF`, dim `#A0A3BD`
+- 16px card radius, 50px pill radius
+
+**Modified files**:
+- `/app/frontend/app/(tabs)/dashboard.tsx` — fully rewritten with reusable atomic components: `MiniChart` (SVG sparkline), `SectionHeader`, `FilterPill`, `StatPill`, `QuickActionBtn`, `ListRow`. All 8 spec sections implemented:
+  1. Header (avatar + name + greeting + bell + cog)
+  2. Filter row (2 pill dropdowns)
+  3. Net Worth gradient hero (label + info icon + amount + delta % + delta abs + sparkline + 3 inline stat pills)
+  4. Quick Actions card (3 circular buttons)
+  5. Accounts horizontal FlatList grouped into Bank/Cash & Wallets/UPI/Overdraft buckets
+  6. Upcoming Reminders list with icon/title/due/amount/chevron
+  7. Recent Transactions list with icon/title/sub/amount/date
+  8. Financial Hub 6-tile grid
+- `/app/frontend/app/(tabs)/_layout.tsx` — bottom tab bar restyled: dark `#12123A`, active purple `#6C47FF` pill, labels updated to **Dashboard / Transactions / Wealth / Insights / More**
+
+**Data wiring preserved**:
+- `loadAll()`, `useFocusEffect`, `useRootNavigationState` guard all retained
+- `authLoading` guard added to prevent pre-mount `router.replace` race when navigating directly to `/(tabs)/dashboard` URL
+- Widget-toggle gating preserved (`w('net_worth')`, `w('quick_actions')`, etc.)
+- Family member filter still functional (now revealed as a chip strip when "All Members" pill is tapped)
+- `useTheme()` import retained but not used in dashboard — file is intentionally hard-themed per design brief
+
+**Iconography**: switched from Ionicons to MaterialCommunityIcons in dashboard per spec ("react-native-vector-icons/MaterialCommunityIcons" — available in this Expo project via `@expo/vector-icons/MaterialCommunityIcons`).
+
+### Regression
+- Backend: `balance_fix_test.py` still passes (income +5000 → 15000, expense -2000 → 13000, net-worth 13000)
+- Frontend: dashboard renders end-to-end after single-user-mode login; all sections visible; bottom tab bar correctly styled
+
