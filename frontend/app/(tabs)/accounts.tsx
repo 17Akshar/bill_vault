@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect, useRootNavigationState } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -46,11 +46,20 @@ export default function AccountsScreen() {
 
   // Action menu
   const [actionItem, setActionItem] = useState<Account | null>(null);
+  const navState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navState?.key) return;
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadAccounts();
-  }, [isAuthenticated, filterType]);
+  }, [isAuthenticated, filterType, navState?.key]);
+
+  // Refresh accounts whenever the tab regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) { loadAccounts(); }
+    }, [isAuthenticated, filterType])
+  );
 
   const loadAccounts = async () => {
     try {

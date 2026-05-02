@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import api from '../../utils/api';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -25,6 +26,12 @@ export default function AnalyticsScreen() {
   useEffect(() => {
     loadAnalytics();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAnalytics();
+    }, [])
+  );
 
   const loadAnalytics = async () => {
     try {

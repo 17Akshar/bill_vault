@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect, useRootNavigationState } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -67,13 +67,25 @@ export default function TransactionsScreen() {
 
   // Clipboard for cut/paste
   const [clipboard, setClipboard] = useState<Transaction | null>(null);
+  const navState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navState?.key) return;
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadAccounts();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navState?.key]);
 
   useEffect(() => { loadTransactions(); }, [filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter]);
+
+  // Refresh transactions + accounts when tab regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        loadAccounts();
+        loadTransactions();
+      }
+    }, [isAuthenticated, filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter])
+  );
 
   const loadAccounts = async () => {
     try {

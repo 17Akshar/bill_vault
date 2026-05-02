@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, A
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect, useRootNavigationState } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -80,11 +80,20 @@ export default function DashboardScreen() {
     reminders: true, financial_hub: true,
   });
   const [familyFilter, setFamilyFilter] = useState<string | null>(null);
+  const navState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navState?.key) return; // wait until root layout is mounted
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadAll();
-  }, [isAuthenticated, familyFilter]);
+  }, [isAuthenticated, familyFilter, navState?.key]);
+
+  // Refresh data whenever this tab regains focus (e.g., after adding income/expense)
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) { loadAll(); }
+    }, [isAuthenticated, familyFilter])
+  );
 
   const loadAll = async () => {
     try {

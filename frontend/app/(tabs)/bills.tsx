@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect, useRootNavigationState } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -51,11 +51,19 @@ export default function HubScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [bills, setBills] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalBills: 0, overdue: 0, upcoming: 0, overdueAmount: 0 });
+  const navState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navState?.key) return;
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navState?.key]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) { loadData(); }
+    }, [isAuthenticated])
+  );
 
   const loadData = async () => {
     try {

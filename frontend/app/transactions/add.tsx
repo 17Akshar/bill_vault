@@ -113,7 +113,11 @@ export default function AddTransactionScreen() {
           family_member_id: familyMemberId,
         });
       }
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/dashboard');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.detail || 'Failed to save transaction');
     } finally {

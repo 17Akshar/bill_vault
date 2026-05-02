@@ -67,7 +67,11 @@ export default function AddAccountScreen() {
         initial_balance: parseFloat(initialBalance) || 0,
         account_number: accountNumber.trim() || null,
       });
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/accounts');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.detail || 'Failed to create account');
     } finally {
