@@ -1,0 +1,71 @@
+rules_version = '2';
+
+// =============================================================================
+// Fintracker — Firestore Security Rules
+// Deploy: firebase deploy --only firestore:rules
+// =============================================================================
+//
+// Philosophy:
+//   - Clients are UNAUTHENTICATED for most flows (app uses custom JWT from
+//     FastAPI backend, NOT Firebase Auth sessions). Therefore, direct client
+//     writes are DENIED by default. All data operations go through backend.
+//   - Exception: collections used by Firebase Auth flows (Phone OTP, Email
+//     link) are implicitly handled by Firebase Auth service, not Firestore.
+//
+// The ONLY allowed client access is for Firebase Admin SDK (server-side),
+// which bypasses these rules. These rules exist to prevent an attacker who
+// obtains the Firebase Web API key from reading/writing user data directly
+// using the Firestore REST API.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Account recovery attempt counters ----
+    // Never readable/writable by clients. Only backend (Admin SDK).
+    match /recovery_attempts/{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---- Account recovery audit log ----
+    // Never readable/writable by clients.
+    match /recovery_logs/{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---- Core user data ----
+    // Never readable/writable by clients directly. Backend only.
+    // Especially important: email <-> mobile_number mapping must NOT leak.
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    // ---- Financial data ----
+    match /accounts/{document=**}          { allow read, write: if false; }
+    match /transactions/{document=**}      { allow read, write: if false; }
+    match /income/{document=**}            { allow read, write: if false; }
+    match /expenses/{document=**}          { allow read, write: if false; }
+    match /bills/{document=**}             { allow read, write: if false; }
+    match /credit_cards/{document=**}      { allow read, write: if false; }
+    match /loans/{document=**}             { allow read, write: if false; }
+    match /lending/{document=**}           { allow read, write: if false; }
+    match /investments/{document=**}       { allow read, write: if false; }
+    match /investment_headings/{document=**} { allow read, write: if false; }
+    match /rentals/{document=**}           { allow read, write: if false; }
+    match /rental_incomes/{document=**}    { allow read, write: if false; }
+    match /budgets/{document=**}           { allow read, write: if false; }
+    match /reminders/{document=**}         { allow read, write: if false; }
+    match /notes/{document=**}             { allow read, write: if false; }
+    match /note_headings/{document=**}     { allow read, write: if false; }
+    match /family_members/{document=**}    { allow read, write: if false; }
+    match /user_settings/{document=**}     { allow read, write: if false; }
+    match /password_resets/{document=**}   { allow read, write: if false; }
+    match /categories/{document=**}        { allow read, write: if false; }
+    match /payments/{document=**}          { allow read, write: if false; }
+
+    // ---- Default deny everything else ----
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

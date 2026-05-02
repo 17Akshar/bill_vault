@@ -4005,6 +4005,10 @@ async def get_calendar_events(request: Request, month: int = None, year: int = N
 # Include router and add middleware
 app.include_router(api_router)
 
+# Account Recovery module (Firebase Phone OTP + rate-limited email reset)
+from recovery import recovery_router
+app.include_router(recovery_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

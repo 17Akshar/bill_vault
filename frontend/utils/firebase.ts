@@ -17,6 +17,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  sendPasswordResetEmail as fbSendPasswordResetEmail,
   type Auth,
   type UserCredential,
 } from 'firebase/auth';
@@ -79,4 +80,29 @@ export async function signInWithGooglePopup(): Promise<{ idToken: string; email:
 export async function signOutFirebase(): Promise<void> {
   const auth = getFirebaseAuth();
   if (auth) await signOut(auth);
+}
+
+/**
+ * Send a Firebase-hosted password-reset email. Fails silently if Firebase
+ * does not know this email — we never reveal account existence to the caller.
+ */
+export async function sendPasswordResetEmail(email: string): Promise<void> {
+  const auth = getFirebaseAuth();
+  if (!auth) {
+    // On non-web, the backend will not use Firebase for password reset —
+    // the existing /api/auth/forgot-password custom-token flow handles it.
+    return;
+  }
+  try {
+    await fbSendPasswordResetEmail(auth, email);
+  } catch (err: any) {
+    // auth/user-not-found -> swallow to prevent enumeration
+    // auth/too-many-requests -> swallow (backend enforces its own rate limit)
+    const c = err?.code || '';
+    if (c.includes('user-not-found') || c.includes('too-many-requests')
+        || c.includes('invalid-email')) {
+      return;
+    }
+    throw err;
+  }
 }

@@ -1,0 +1,50 @@
+{
+  "summary": "Backend-only test of new account-recovery module (/api/recovery/*) plus regression on existing Fintracker APIs and balance fix. Wrote new pytest file /app/backend/tests/test_recovery_api.py (17 tests) covering all four endpoints, rate-limit window/block behavior, no-enumeration guarantees, password policy edges, invalid Firebase token rejection, masked-email format, and backward-compat /api/auth/forgot-password & /api/auth/reset-password. All 17 recovery tests + 21 regression tests = 38/38 passed, 100% success.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/recovery/password/email", "issue": "Rate-limit counter persists across test runs in Firestore (recovery_attempts collection). Each rate-limit test uses a unique uuid email to avoid collision, but recovery_attempts docs are NOT cleaned up at end of run. Long-term Firestore storage growth — consider TTL or scheduled cleanup."},
+      {"endpoint": "/api/recovery/password/email", "issue": "Endpoint always returns 200 even when account does NOT exist. By design (no-enumeration), but means that ONLY the rate-limit attempt counter is visibly updated. Frontend should still be expected to ALSO trigger Firebase Web SDK sendPasswordResetEmail since this backend endpoint does NOT actually send an email — confirm this dual-call pattern is wired in /app/frontend/app/auth/forgot-password.tsx (not tested here, frontend out of scope)."},
+      {"endpoint": "/api/recovery/password/phone/verify", "issue": "Returns 404 'No account found for this phone number' when phone has no user — this leaks phone-existence info. Compare with /email/reveal which returns empty list for the same case. Consider returning a generic 'Verification failed. Try again or sign up' to remove the enumeration vector. Currently a minor disclosure since phone OTP is already required (attacker must own the SIM)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_recovery_api.py",
+    "/app/backend/tests/test_fintracker_api.py",
+    "/app/test_reports/pytest/recovery_results.xml",
+    "/app/test_reports/pytest/regression_results.xml"
+  ],
+  "action_items": [
+    "(Minor, optional) Make /api/recovery/password/phone/verify return a generic error (or 401) when no user exists for the phone number, to align with no-enumeration policy already followed by /email/reveal and /password/email.",
+    "(Minor, optional) Add a Firestore TTL field or background cleanup for recovery_attempts and recovery_logs to bound storage growth. Currently no expiry is set on these documents.",
+    "(Frontend, out of scope here) Confirm that /app/frontend/app/auth/forgot-password.tsx invokes BOTH the backend /api/recovery/password/email AND firebase.sendPasswordResetEmail, since the backend alone never delivers an email — only logs + rate-limits."
+  ],
+  "critical_code_review_comments": [
+    "recovery.py is a clean, well-documented 418-line module — under the 700-line guideline. Good separation of helpers (_hash_identifier, _mask_email, _validate_password_strength, _verify_phone_id_token, _check_and_increment_rate_limit) from endpoints.",
+    "Rate-limit logic is correct: exactly 5 attempts within a rolling 15-min window are allowed; the 6th sets blocked_until = now + 30min and returns 429 with 'Too many attempts. Blocked for 30 minutes.' Verified end-to-end via test_rate_limit_5_attempts_then_429.",
+    "_mask_email implementation is robust across edge cases (empty, no @, single-char local, 2-3 char local, 4+ char local, multi-dot domain). Verified via direct unit test.",
+    "_verify_phone_id_token correctly distinguishes provider != 'phone' from missing phone_number claim and rejects both with 401. Invalid tokens caught via firebase_auth.verify_id_token raising — wrapped in try/except returning 401.",
+    "Password policy: pydantic min_length=8 catches <8 chars at 422, then PASSWORD_REGEX (?=.*[A-Z])(?=.*\\d).{8,} catches missing uppercase OR digit at 400 with the exact spec'd message 'Password must contain at least one uppercase letter and one number'. Both branches verified.",
+    "_log_attempt wraps Firestore insert in try/except so logging failure cannot break the recovery flow — good defensive coding.",
+    "Audit log identifier_preview is 'identifier[:3] + ***' — for email this leaks first 3 chars (e.g., 'joh***'); consider truncating to first char or storing only the hash. Minor.",
+    "Bcrypt password hashing is used + Firebase Auth password sync via firebase_auth.update_user — good dual-write pattern."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_recovery_api.py (new file, 17 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (38/38 tests pass: 17 new recovery tests + 21 fintracker regression tests)",
+    "frontend": "not tested (request was backend-only; frontend recovery flow requires real SMS + reCAPTCHA, deferred to manual user testing)"
+  },
+  "test_credentials": "POST /api/auth/single-user (no creds). Multi-user: fulltest@test.com / FullTest123! exists in Firestore (verified — endpoint returned no-enumeration response).",
+  "seed_data_creation": "Each rate-limit test creates a unique uuid email (e.g., ratelimit_<8hex>@test.com). recovery_attempts docs persist in Firestore for these emails (5-6 docs per test run). Balance smoke test creates+deletes TEST_RecBal account, one income, one expense — fully cleaned up.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All four /api/recovery/* endpoints work as spec'd. Rate-limit (5 attempts / 15 min -> 429 for 30 min), password policy (8+ chars + uppercase + digit), no-enumeration on email recovery, masked-email format (j***n@gmail.com / a***@x.com for short locals), invalid-token rejection (401) all verified. Backward-compat for legacy /api/auth/forgot-password and /api/auth/reset-password preserved. Balance regression smoke test (income +5000 -> 15000, expense -2000 -> 13000) still passes. The only happy path NOT testable from this environment is the actual Phone OTP -> reset-password flow because it requires a real SMS-delivered Firebase ID token; user should manually verify this end-to-end on a real device.",
+  "rca of the issue": "No issues found. All recovery endpoints behave per the review request specification. Two minor observations are documented in backend_issues.minor (optional hardening suggestions, not bugs)."
+}

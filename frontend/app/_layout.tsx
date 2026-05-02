@@ -20,6 +20,8 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="auth/login" />
             <Stack.Screen name="auth/register" />
+            <Stack.Screen name="auth/forgot-password" />
+            <Stack.Screen name="auth/forgot-email" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="accounts/add" />
             <Stack.Screen name="transactions/add" />

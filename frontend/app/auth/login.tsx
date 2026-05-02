@@ -152,6 +152,26 @@ export default function Login() {
               )}
             </TouchableOpacity>
 
+            <View style={styles.forgotRow}>
+              <TouchableOpacity
+                onPress={() => router.push('/auth/forgot-password')}
+                testID="login-forgot-password-link"
+              >
+                <Text style={[styles.forgotText, { color: colors.primary }]}>
+                  Forgot password?
+                </Text>
+              </TouchableOpacity>
+              <Text style={[styles.forgotSep, { color: colors.textSecondary }]}> · </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/auth/forgot-email')}
+                testID="login-forgot-email-link"
+              >
+                <Text style={[styles.forgotText, { color: colors.primary }]}>
+                  Forgot email?
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
               <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
@@ -304,5 +324,19 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 14,
+  },
+  forgotRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  forgotText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  forgotSep: {
+    fontSize: 13,
   },
 });
