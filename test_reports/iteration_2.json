@@ -1,0 +1,47 @@
+{
+  "summary": "Frontend e2e UI testing of Fintracker (Expo web). Verified: app loads at preview URL after fixing supervisor port mismatch (expo started on 8081 but ingress routes to 3000 -> changed start script to 'expo start --port 3000'). Welcome -> Login -> 'Use Without Account' (single-user mode) flow works. Add Account form renders correctly with new fields (Account Type, Bank Account Type Saving/Current/Other, Ownership Individual/Joint/Business, Institution). Account creation via UI succeeds (POST /api/accounts 200), TEST_HDFC ₹10,000 visible on dashboard + Accounts tab. Income form opens via dashboard 'Income' button, has Amount + Source + Category chips + Account picker + Date + Notes. POST /api/income succeeds (200). HOWEVER: critical UI refresh bug -- after income POST 200, dashboard Total Net Worth and TEST_HDFC account card both still show ₹10,000 instead of ₹15,000, and Income widget shows ₹0 instead of ₹5,000. Backend balance fix is verified working (backend iteration_1 21/21 passes), so the failure is frontend not re-fetching/refreshing on focus return. Sub_category and 'For whom (family member)' picker called out in spec are MISSING from the Add Income/Expense form.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "(tabs)/dashboard.tsx", "issue": "After POST /api/income returns 200, Total Net Worth and account balance on dashboard remain stale (₹10,000 instead of ₹15,000). loadAll() only fires on mount/familyFilter change; needs useFocusEffect to refresh on tab return.", "selector": "Total Net Worth widget + Accounts row card", "priority": "CRITICAL"},
+      {"component": "(tabs)/dashboard.tsx", "issue": "Monthly Income widget shows ₹0 even after creating an income for current month", "selector": "Income/Expenses/Savings cards", "priority": "HIGH"},
+      {"component": "(tabs)/accounts.tsx", "issue": "Same focus refresh issue likely - account total balance card not retested in current cycle but expected to share the same bug", "selector": "Total Balance card", "priority": "HIGH"},
+      {"component": "transactions/add.tsx (Income)", "issue": "Spec calls for sub_category picker and 'For whom (family member)' picker - both are MISSING from the form. Only Category chips visible.", "selector": "Add Transaction form", "priority": "HIGH"},
+      {"component": "(tabs)/dashboard.tsx & (tabs)/accounts.tsx", "issue": "On direct page load/refresh, useEffect's router.replace('/auth/login') fires before Root Layout mounts -> red error overlay 'Attempted to navigate before mounting the Root Layout component'. Wrap in setTimeout/useFocusEffect or guard via useRootNavigationState.", "selector": "useEffect hooks at dashboard.tsx:85, accounts.tsx:51", "priority": "HIGH"},
+      {"component": "transactions/add.tsx", "issue": "Two console errors 'Unexpected text node: . A text node cannot be a child of a <View>.' - stray whitespace/dot rendered inside a View.", "selector": "Add Transaction screen", "priority": "LOW"},
+      {"component": "accounts/add.tsx", "issue": "On successful account create, router.back() is invoked but stack may be empty -> 'GO_BACK was not handled' warning. Should use router.replace('/(tabs)/accounts') as fallback.", "selector": "Add Account submit handler", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Add Income -> Dashboard balance refresh", "issue": "Backend $inc+$set fix works (verified) and POST /api/income returns 200 with correct response, but frontend dashboard never re-fetches /api/dashboard or /api/accounts on tab focus -> user sees stale balance. This nullifies the backend fix from a UX perspective.", "affected_selectors": ["Dashboard Total Net Worth", "Accounts list card", "Income widget"]}
+    ],
+    "design_issues": [
+      {"screen": "Add Account", "issues": ["Two 'Add Account' texts (header + submit button) cause selector ambiguity; consider renaming submit button to 'Save Account'"]},
+      {"screen": "Welcome", "issues": ["Tab title is empty (browser tab shows blank). Add a default <title>Fintracker</title> in app/+html.tsx."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_1.json"],
+  "action_items": [
+    "FIX CRITICAL: Add useFocusEffect (expo-router) to dashboard.tsx and accounts.tsx so loadAll()/loadAccounts() re-runs when user navigates back. This will surface the balance update from the backend $inc+$set fix to the UI.",
+    "FIX HIGH: Add sub_category picker and 'For whom (family member)' picker to /app/frontend/app/transactions/add.tsx (Income & Expense). Spec explicitly requires them.",
+    "FIX HIGH: Guard useEffect router.replace() in (tabs)/dashboard.tsx:85 and (tabs)/accounts.tsx:51 against pre-mount navigation. Use useRootNavigationState() to check ?.key before calling router.replace, OR wrap in InteractionManager.runAfterInteractions.",
+    "FIX MEDIUM: After Add Account / Add Income success, replace router.back() with router.replace fallback to a known route to avoid 'GO_BACK not handled'.",
+    "FIX LOW: Remove stray text-node child causing 'A text node cannot be a child of a <View>' warning in transactions/add.tsx.",
+    "ADD data-testid / testID props to all interactive elements (buttons, inputs, FAB, tab nav) for robust automated testing - currently zero testIDs in screens.",
+    "ADD page <title> via app/+html.tsx for SEO and a11y.",
+    "REVERT or formalize: package.json start script was changed from 'expo start' to 'expo start --port 3000' so that the supervisor's PORT=3000/ingress mapping works. Otherwise the public preview URL returns 502."
+  ],
+  "critical_code_review_comments": [
+    "Dashboard/accounts useEffect dependency on isAuthenticated alone means data only loads on mount; combined with no useFocusEffect this guarantees stale UI after every mutation flow.",
+    "Auth guard pattern of redirecting via router.replace inside a useEffect that runs on first render is racing with Root Layout mount. Should rely on a Stack/Slot guard or useProtectedRoute hook.",
+    "Form submit handlers calling router.back() without checking canGoBack() will spam console with GO_BACK errors when entered directly.",
+    "Forms have no data-testid - violates project standard for automation."
+  ],
+  "updated_files": ["/app/frontend/package.json (changed start script to 'expo start --port 3000' so public preview URL serves the app on port 3000)"],
+  "success_rate": {"backend": "100% (per iteration_1)", "frontend": "~50% - core CRUD writes hit backend but UI does not reflect updates"},
+  "test_credentials": "Single-user mode used (POST /api/auth/single-user). Seeded TEST_HDFC account with ₹10,000 in Firestore single-user user.",
+  "seed_data_creation": "Created in live Firestore (project bill-vault-a24ad) under single-user user: 1 account TEST_HDFC ₹10,000, 1 income TEST_Salary_May ₹5,000 (Salary). Should be cleaned up by main agent or next iteration.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Public URL: https://account-central-15.preview.emergentagent.com/. Frontend now starts on port 3000 via 'expo start --port 3000'. Single-user mode entry: Welcome -> Get Started -> 'Use Without Account'. Backend is green; focus next iteration on (1) re-verifying balance refresh after main agent adds useFocusEffect, (2) testing sub_category + family-member picker in Income/Expense after main agent adds them, (3) testing Bills/Credit Cards/Investments/Loans/Lending/Rentals/Budgets/Reminders/Notes/Calendar - none of which were tested in this iteration due to time and the discovered critical bug. Use page.get_by_text() since no data-testid exists. Avoid page.goto() to /(tabs)/* directly - it triggers the pre-mount navigation error; always go via the in-app flow.",
+  "rca of the issue": "RCA - balance not reflecting in UI: backend POST /api/income correctly performs $inc on accounts.balance + $set updated_at (the iteration_1 fix verified end-to-end). Frontend transactions/add.tsx submits, gets 200, then router.back()'s to dashboard. Dashboard is already mounted in the (tabs) stack so its useEffect [isAuthenticated, familyFilter] does not re-run, and there is no useFocusEffect or revalidation hook -> getDashboard()/getAccounts() are never re-called -> stale ₹10,000 displayed. Mitigation: import { useFocusEffect } from 'expo-router' (or @react-navigation/native) in dashboard.tsx and accounts.tsx and call loadAll/loadAccounts inside useFocusEffect(useCallback(...)). Same pattern needed for any screen that displays totals."
+}
