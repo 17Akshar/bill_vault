@@ -3892,7 +3892,7 @@ def _is_weak_mpin(mpin: str) -> Optional[str]:
     COMMON_WEAK = {
         "1234", "0000", "1111", "2222", "3333", "4444", "5555", "6666",
         "7777", "8888", "9999", "1212", "1004", "2000", "6969", "4321",
-        "0007", "1122", "1313", "7777",
+        "0007", "1122", "1313",
         "123456", "654321", "111111", "000000", "112233", "121212",
         "123123", "111222", "112211", "147258", "159357", "987654",
     }
@@ -4001,17 +4001,19 @@ async def verify_mpin(request: Request):
     body = await request.json()
     mpin = (body.get("mpin") or "").strip()
 
-    # Rate-limit check FIRST (even before we look up record)
+    # Check existence FIRST so users who haven't set up MPIN aren't penalized
+    # with brute-force attempts for an endpoint they can't succeed at.
+    record = await db.user_mpin.find_one({"user_id": user.user_id})
+    if not record or not record.get("is_enabled"):
+        raise HTTPException(status_code=404, detail="MPIN not set up")
+
+    # Now increment the rate-limit counter and check if blocked
     rl = await _mpin_rate_limit_check_and_increment(user.user_id)
     if not rl["allowed"]:
         raise HTTPException(
             status_code=429,
             detail=f"Too many incorrect attempts. Locked out until {rl['blocked_until']}."
         )
-
-    record = await db.user_mpin.find_one({"user_id": user.user_id})
-    if not record or not record.get("is_enabled"):
-        raise HTTPException(status_code=404, detail="MPIN not set up")
 
     if bcrypt.checkpw(mpin.encode(), record["mpin_hash"].encode()):
         await _mpin_rate_limit_reset(user.user_id)

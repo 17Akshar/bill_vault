@@ -146,3 +146,33 @@ Secure, rate-limited recovery flows using Firebase Auth + Firestore.
 ### Firestore Rules Deployment
 User must run `firebase deploy --only firestore:rules` from project root after first-time setup. Not deployed automatically.
 
+
+## Session 3 Update (2026-05-02)
+
+### MPIN Quick-Login System Enhanced
+Post-login MPIN setup prompt, weak-MPIN rejection, 4/6-digit choice, brute-force protection.
+
+**Backend** (`/app/backend/server.py`):
+- `POST /api/mpin/setup` — now rejects weak MPINs (1111/1234/4321/1212/common list) and persists `pin_length`
+- `POST /api/mpin/verify` — bcrypt check + 5-attempt brute-force counter → 15-min lockout (429)
+- `POST /api/mpin/dismiss-prompt` — persists "don't ask again" in user_settings
+- `GET /api/mpin/status` — returns `{is_enabled, pin_length, prompt_dismissed}`
+- `POST /api/mpin/disable` — unchanged
+- `_is_weak_mpin()` helper rejects: all-same-digit, ascending/descending sequences, repeating pairs, and a COMMON_WEAK set
+- Rate limiter shares Firestore `recovery_attempts` collection via `mpin_<user_id>` key
+
+**Frontend**:
+- `/app/frontend/app/auth/mpin-setup-prompt.tsx` — NEW post-login prompt with Set-up/Skip/Don't-ask-again
+- `/app/frontend/app/security/mpin.tsx` — REWRITTEN with length picker (4/6), client-side weak check, step machine, disable flow
+- `/app/frontend/utils/mpinPolicy.ts` — NEW client-side `isWeakMpin()` (mirrors backend)
+- `/app/frontend/utils/postLoginRoute.ts` — NEW `routeAfterLogin()` helper that decides MPIN prompt vs dashboard
+- `/app/frontend/app/auth/login.tsx` + `register.tsx` — use `routeAfterLogin()` instead of hardcoded dashboard redirect
+- `/app/frontend/app/_layout.tsx` — registered new route
+
+**Fixed side-effect**: Updated `/app/frontend/metro.config.js` with `resolver.blockList` to exclude `node_modules/*/android|ios|windows|macos` from Metro's file watcher — resolved a persistent ENOSPC inotify crash at startup.
+
+### Testing
+- 30 new MPIN pytest + 21 fintracker + 17 recovery = **68/68 backend pass**
+- Frontend UI verified via screenshot — post-login prompt + 6-digit keypad + length picker all render correctly
+- Manual rate-limit verification: 5 wrong attempts → 6th gets 429 block
+
