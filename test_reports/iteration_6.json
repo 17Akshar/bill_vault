@@ -1,0 +1,40 @@
+{
+  "summary": "Backend-only regression test for the CRITICAL latent bug fix in firebase_config.insert_one() (user_id-as-doc_id was overwriting all multi-record collections to keep only 1 doc per user) AND the new /api/dashboard cross-month delta fields. Wrote new pytest file /app/backend/tests/test_multirecord_and_deltas.py (14 tests) using a FRESH registered user per session (multirec+<ts>@test.com / deltacheck+<ts>@test.com / edgea+/edgeb+) to avoid stale Firestore data. Verified: (a) creating 3 incomes, 3 expenses, and 2 each of bills/credit-cards/loans/investments/reminders/notes/family-members all persist and list correctly (pre-fix, only the LAST doc would have remained); (b) /api/dashboard now exposes 8 new keys — net_worth_delta_pct, net_worth_delta_abs, income_delta_pct, expense_delta_pct, savings_delta_pct, prev_month_income, prev_month_expenses, prev_month_savings — with exact math: this-month income=5000, expense=2000, savings=3000; last-month income=4000, expense=1000, savings=3000; income_delta_pct=25.0, expense_delta_pct=100.0, savings_delta_pct=0.0, net_worth_delta_abs=3000; (c) edge cases: prev=0 & curr>0 -> 100.0; both=0 -> 0.0; (d) regression: single-user mode still returns same user_id, /settings still upserts a single doc per user (user_settings is in SINGLE_USER_DOC_COLLECTIONS allowlist). Then ran the existing 68-test regression suite (test_fintracker_api.py + test_recovery_api.py + test_mpin_api.py): all 68 PASS. TOTAL: 82/82 (100%).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/dashboard", "issue": "net_worth_delta_pct is computed against an inferred prev_total_balance = current_total_balance - this_month_net_flow; this is an APPROXIMATION because backend doesn't store historical net-worth snapshots. Documented in code comment. Frontend should be aware that this delta does not reflect investment/loan value changes — only income/expense flow."},
+      {"endpoint": "/api/dashboard", "issue": "_pct_delta returns 100.0 when previous=0 AND current!=0, regardless of whether current is positive or negative. A negative jump from 0 should arguably be -100 (or some 'newly negative' indicator), but the spec explicitly defines this as 100.0 ('treat as new'), so test_prev_zero_curr_positive_returns_100 passes. Worth noting for future refinement."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_multirecord_and_deltas.py",
+    "/app/backend/tests/test_fintracker_api.py",
+    "/app/backend/tests/test_recovery_api.py",
+    "/app/backend/tests/test_mpin_api.py",
+    "/app/test_reports/pytest/multirecord_results.xml",
+    "/app/test_reports/pytest/regression_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "firebase_config.insert_one() fix is correct: per-record IDs (income_id, expense_id, bill_id, etc.) are tried first; user_id is the LAST fallback and is explicitly skipped if the collection is NOT in SINGLE_USER_DOC_COLLECTIONS={'users','user_settings','user_mpin'}. Verified by creating 3 incomes / 3 expenses / 2 each of 7 other collections — all coexist correctly per user. Pre-fix, only the LAST doc per (collection, user_id) would have survived.",
+    "SINGLE_USER_DOC_COLLECTIONS allowlist is conservative and correct. Considered adding 'user_sessions' but that collection uses session_token as the natural key and shouldn't be in the allowlist (would silently overwrite multi-device sessions). Current code correctly auto-generates Firestore IDs for sessions because no per-record id field is in the doc — wait, this needs checking: if a session doc only carries user_id and session_token, the loop will find user_id last in the preference list, then since user_sessions is NOT in allowlist, doc_id becomes None → Firestore auto-generates ID. ✓ Correct.",
+    "/api/dashboard _pct_delta helper is concise and correct: handles previous=0 (returns 100 if current!=0 else 0), and uses abs(previous) in the denominator so negative-previous bases compute the right sign. Returns rounded to 1 decimal as expected.",
+    "Cross-month window calculation correctly handles January (prev_month = December of prior year). Uses tz-aware UTC datetimes throughout — matches storage format.",
+    "Net-worth delta is admittedly approximate (uses current_total_balance - this_month_net_flow as prev_total_balance proxy). Comment in code is clear. Long-term, consider a daily/monthly net_worth_snapshot collection for accurate historical deltas.",
+    "server.py is 4211 lines — well over the 700-line guideline. Recommend extracting income/expense/account modules and dashboard-aggregator into separate files. Not blocking.",
+    "No regression in any of the 68 existing tests — 21 fintracker + 17 recovery + 30 MPIN all pass. Combined with the 14 new tests = 82/82 (100%)."
+  ],
+  "updated_files": ["/app/backend/tests/test_multirecord_and_deltas.py (new, 14 tests)"],
+  "success_rate": {
+    "backend": "100% (82/82: 14 multirec+deltas + 21 fintracker + 17 recovery + 30 MPIN)",
+    "frontend": "not tested (request was backend-only; per agent_to_agent_context_note frontend is already verified)"
+  },
+  "test_credentials": "Each test uses a freshly registered user (multirec+<ts>@test.com, deltacheck+<ts>@test.com, edgea+<ts>@test.com, edgeb+<ts>@test.com) all with password starting with the test prefix and security_question='Q?'. Single-user mode tests use POST /api/auth/single-user (no creds needed).",
+  "seed_data_creation": "4 fresh users registered in Firestore on every run (timestamp-suffixed emails ensure no collisions). Each populated with 1-3 records across 9 collections. user_settings on the single-user shared user is toggled dark_mode True→False and restored. No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The latent doc_id-overwrite bug is FIXED and now has explicit regression coverage in /app/backend/tests/test_multirecord_and_deltas.py::TestMultiRecordPersistence (9 tests covering income, expense, bills, credit-cards, loans, investments, reminders, notes, family-members). If you add new top-level resource collections (e.g., 'goals', 'subscriptions'), please ADD them to the test_multirecord_and_deltas.py suite and ensure they have a per-record unique ID field that comes BEFORE 'user_id' in firebase_config.insert_one()'s preference list. Only collections that legitimately store one doc per user should be added to SINGLE_USER_DOC_COLLECTIONS. Also note: dashboard delta tests use newly-registered users so prev/curr month math is deterministic. fulltest@test.com may have stale pre-fix data and is intentionally avoided. Backend URL: https://account-central-15.preview.emergentagent.com.",
+  "rca of the issue": "Original RCA (already fixed by main agent): firebase_config.insert_one() set the Firestore doc_id by checking dict keys in a fixed preference order, with user_id appearing EARLIER than per-record IDs. For collections like income/expense/bills/etc. — which all carry both user_id (FK) AND a unique per-record ID (income_id, expense_id, bill_id) — the function picked user_id, calling self._col.document(user_id).set(doc) which OVERWRITES the existing doc at that ID. Net effect: every collection silently kept only the LAST inserted record per user. Fix reorders the preference list so per-record unique IDs win, with user_id as a last fallback that's only honored for collections in SINGLE_USER_DOC_COLLECTIONS={'users','user_settings','user_mpin'}. For all other collections, if only user_id is present, doc_id is reset to None and Firestore auto-generates a unique ID via self._col.add(doc). Verified by creating 3 incomes back-to-back and listing them — pre-fix would return 1, post-fix returns 3. ✓"
+}

@@ -2662,7 +2662,50 @@ async def get_dashboard(request: Request, family_member_id: Optional[str] = None
     family_members = await db.family_members.find(
         {"user_id": user.user_id}, {"_id": 0}
     ).to_list(50)
-    
+
+    # ==================== CROSS-MONTH DELTA CALCULATIONS ====================
+    # Compute last month window
+    if now.month == 1:
+        prev_month_start = datetime(now.year - 1, 12, 1, tzinfo=timezone.utc)
+        prev_month_end   = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+    else:
+        prev_month_start = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc)
+        prev_month_end   = month_start
+
+    prev_inc_q = {**base_q, "date": {"$gte": prev_month_start, "$lt": prev_month_end}}
+    prev_exp_q = {**base_q, "date": {"$gte": prev_month_start, "$lt": prev_month_end}}
+    prev_incomes  = await db.income.find(prev_inc_q,  {"_id": 0}).to_list(5000)
+    prev_expenses = await db.expenses.find(prev_exp_q, {"_id": 0}).to_list(5000)
+    prev_total_income   = sum(i["amount"] for i in prev_incomes)
+    prev_total_expenses = sum(e["amount"] for e in prev_expenses)
+    prev_savings        = prev_total_income - prev_total_expenses
+    this_savings        = total_monthly_income - total_monthly_expenses
+
+    def _pct_delta(current: float, previous: float) -> float:
+        """
+        Percentage change vs previous. Rules:
+          - If both current & previous are zero -> 0
+          - If previous is zero but current is not -> 100 (treat as 'new')
+          - Rounded to 1 decimal place
+        """
+        if previous == 0:
+            return 0.0 if current == 0 else 100.0
+        return round(((current - previous) / abs(previous)) * 100, 1)
+
+    income_delta_pct  = _pct_delta(total_monthly_income,  prev_total_income)
+    expense_delta_pct = _pct_delta(total_monthly_expenses, prev_total_expenses)
+    savings_delta_pct = _pct_delta(this_savings,           prev_savings)
+
+    # Net worth delta:
+    # Backend doesn't store historical balance snapshots; approximate last-month
+    # closing net worth as (current_total_balance - this_month_net_flow),
+    # where net flow = income - expenses for the current month. This captures
+    # real month-over-month movement without requiring snapshot infra.
+    net_flow_this_month  = total_monthly_income - total_monthly_expenses
+    prev_total_balance   = total_balance - net_flow_this_month
+    net_worth_delta_abs  = net_flow_this_month
+    net_worth_delta_pct  = _pct_delta(total_balance, prev_total_balance)
+
     return {
         "total_balance": total_balance,
         "total_balance_formatted": format_indian_currency(total_balance),
@@ -2670,8 +2713,17 @@ async def get_dashboard(request: Request, family_member_id: Optional[str] = None
         "monthly_income_formatted": format_indian_currency(total_monthly_income),
         "monthly_expenses": total_monthly_expenses,
         "monthly_expenses_formatted": format_indian_currency(total_monthly_expenses),
-        "monthly_savings": total_monthly_income - total_monthly_expenses,
-        "monthly_savings_formatted": format_indian_currency(total_monthly_income - total_monthly_expenses),
+        "monthly_savings": this_savings,
+        "monthly_savings_formatted": format_indian_currency(this_savings),
+        # Cross-month deltas consumed by the iOS dashboard stat pills
+        "net_worth_delta_pct":  net_worth_delta_pct,
+        "net_worth_delta_abs":  net_worth_delta_abs,
+        "income_delta_pct":     income_delta_pct,
+        "expense_delta_pct":    expense_delta_pct,
+        "savings_delta_pct":    savings_delta_pct,
+        "prev_month_income":    prev_total_income,
+        "prev_month_expenses":  prev_total_expenses,
+        "prev_month_savings":   prev_savings,
         "accounts": account_summary,
         "upcoming_bills": upcoming_bills,
         "overdue_bills": overdue_bills,

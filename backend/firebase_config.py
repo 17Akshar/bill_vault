@@ -276,15 +276,27 @@ class FirestoreCollection:
         """Insert a document"""
         def _execute():
             doc = _serialize_doc(document)
-            # Use a unique ID field if present, otherwise auto-generate
+            # Resolve doc_id. Prefer per-record unique IDs (income_id, expense_id, etc.)
+            # over `user_id` which is SHARED across many records for a single user —
+            # using user_id as doc_id would cause inserts to silently overwrite each other.
             doc_id = None
-            for key in ["user_id", "account_id", "bill_id", "income_id", "expense_id",
-                        "investment_id", "heading_id", "reminder_id", "note_id",
-                        "family_member_id", "card_id", "loan_id", "lending_id",
-                        "rental_id", "payment_id", "note_id"]:
+            for key in ["income_id", "expense_id", "bill_id", "investment_id",
+                        "heading_id", "reminder_id", "note_id", "family_member_id",
+                        "card_id", "loan_id", "lending_id", "rental_id",
+                        "payment_id", "account_id", "attempt_id", "log_id",
+                        "user_id"]:
                 if key in doc:
                     doc_id = doc[key]
                     break
+            # Collections that legitimately use user_id as the primary key
+            # (one document per user). For all other collections, if only
+            # user_id is present, Firestore will auto-generate a document ID.
+            SINGLE_USER_DOC_COLLECTIONS = {
+                "users", "user_settings", "user_mpin",
+            }
+            if doc_id and doc_id == doc.get("user_id") \
+               and self._name not in SINGLE_USER_DOC_COLLECTIONS:
+                doc_id = None
             if doc_id:
                 self._col.document(doc_id).set(doc)
             else:

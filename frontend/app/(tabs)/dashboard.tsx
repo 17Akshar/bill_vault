@@ -108,13 +108,13 @@ const FilterPill = ({ icon, label, onPress, testID }: any) => (
   </PressScale>
 );
 
-const StatPill = ({ color, value, delta, deltaUp }: any) => (
+const StatPill = ({ color, value, delta, arrow = '▲', deltaColor }: any) => (
   <View style={s.statPill}>
     <View style={[s.statDot, { backgroundColor: color }]} />
     <View style={{ flex: 1 }}>
       <Text style={s.statValue}>{value}</Text>
-      <Text style={[s.statDelta, { color: deltaUp ? T.success : T.danger }]}>
-        {deltaUp ? '▲' : '▼'} {delta}
+      <Text style={[s.statDelta, { color: deltaColor || T.success }]}>
+        {arrow} {delta}
       </Text>
     </View>
   </View>
@@ -241,12 +241,20 @@ export default function DashboardScreen() {
   const monthlyExpenses = d.monthly_expenses || 0;
   const savings         = monthlyIncome - monthlyExpenses;
 
-  // Mock month-over-month deltas (backend doesn't yet expose this — fall back to safe defaults)
-  const nwDeltaPct  = d.net_worth_delta_pct  ?? 12.5;
-  const nwDeltaAbs  = d.net_worth_delta_abs  ?? 25000;
-  const incDeltaPct = d.income_delta_pct     ?? 10;
-  const expDeltaPct = d.expense_delta_pct    ?? 8;
-  const savDeltaPct = d.savings_delta_pct    ?? 12;
+  // Cross-month deltas from backend (/api/dashboard returns these). Fallback
+  // to 0 if the endpoint hasn't been deployed yet (older cached builds).
+  const nwDeltaPct  = d.net_worth_delta_pct  ?? 0;
+  const nwDeltaAbs  = d.net_worth_delta_abs  ?? 0;
+  const incDeltaPct = d.income_delta_pct     ?? 0;
+  const expDeltaPct = d.expense_delta_pct    ?? 0;
+  const savDeltaPct = d.savings_delta_pct    ?? 0;
+
+  // Sign helpers for delta pills
+  const nwUp  = nwDeltaPct  >= 0;
+  const incUp = incDeltaPct >= 0;
+  // For expense, LOWER is better — show ▼ in green when expense fell, red when it rose
+  const expUp = expDeltaPct >  0;           // true = expense increased (BAD)
+  const savUp = savDeltaPct >= 0;
 
   // Greeting
   const hour = new Date().getHours();
@@ -374,9 +382,13 @@ export default function DashboardScreen() {
                   {formatINR(totalBalance)}
                 </Text>
                 <View style={s.nwDeltaRow}>
-                  <Text style={s.nwDelta}>▲ {nwDeltaPct}% vs last month</Text>
+                  <Text style={[s.nwDelta, { color: nwUp ? '#9DFFD9' : '#FFB4BE' }]}>
+                    {nwUp ? '▲' : '▼'} {Math.abs(nwDeltaPct)}% vs last month
+                  </Text>
                 </View>
-                <Text style={s.nwDeltaAbs}>▲ +{formatINR(nwDeltaAbs)} this month</Text>
+                <Text style={[s.nwDeltaAbs, { color: nwUp ? '#9DFFD9' : '#FFB4BE' }]}>
+                  {nwUp ? '▲ +' : '▼ '}{formatINR(Math.abs(nwDeltaAbs))} this month
+                </Text>
               </View>
               <MiniChart
                 data={[
@@ -394,20 +406,23 @@ export default function DashboardScreen() {
               <StatPill
                 color={T.success}
                 value={formatINRCompact(monthlyIncome)}
-                delta={`${incDeltaPct}%`}
-                deltaUp
+                delta={`${Math.abs(incDeltaPct)}%`}
+                arrow={incUp ? '▲' : '▼'}
+                deltaColor={incUp ? T.success : T.danger}
               />
               <StatPill
                 color={T.danger}
                 value={formatINRCompact(monthlyExpenses)}
-                delta={`${expDeltaPct}%`}
-                deltaUp={false}
+                delta={`${Math.abs(expDeltaPct)}%`}
+                arrow={expUp ? '▲' : '▼'}
+                deltaColor={expUp ? T.danger : T.success}
               />
               <StatPill
                 color={T.info}
                 value={formatINRCompact(savings)}
-                delta={`${savDeltaPct}%`}
-                deltaUp={savings >= 0}
+                delta={`${Math.abs(savDeltaPct)}%`}
+                arrow={savUp ? '▲' : '▼'}
+                deltaColor={savUp ? T.success : T.danger}
               />
             </View>
           </LinearGradient>
