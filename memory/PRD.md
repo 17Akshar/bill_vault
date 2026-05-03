@@ -253,3 +253,49 @@ Refactored existing dashboard screen to spec-exact dark finance UI without chang
   2. Be added to the test_multirecord_and_deltas.py suite
   3. NOT be added to SINGLE_USER_DOC_COLLECTIONS unless it legitimately stores one doc per user
 
+
+## Session 6 Update (2026-05-03)
+
+### Deploy-Verify (user-requested action)
+Built `/app/deploy_verify_multirecord.py` — a live-backend smoke test that registers a fresh user on the **real Firebase project (bill-vault-a24ad)** and asserts 3 records persist correctly in each of `income`, `expenses`, `bills`, `reminders`, `family_members`. **Result: PASS.** The multi-record overwrite bug fix is confirmed working in the deployed Firebase environment.
+
+### Net-Worth Snapshots System (NEW)
+Long-term accurate delta tracking via point-in-time captures, not just flow approximation.
+
+**Module** (`/app/backend/snapshots.py`, ~270 lines):
+- `_compute_networth(user_id)`: aggregates assets (positive-balance accounts + investment current_value) and liabilities (|negative balances| + loan outstanding + CC outstanding)
+- `_save_snapshot(user_id, type)`: persists to `net_worth_snapshots` collection
+- `get_prev_month_snapshot(user_id, reference)`: returns most recent snapshot captured BEFORE the 1st of reference month
+- Background scheduler (`asyncio.Task`, no new deps) starts in FastAPI lifespan — stagger 60s, tick hourly, captures missing daily + monthly snapshots per user
+
+**Endpoints**:
+- `POST /api/snapshots/capture` — manual fresh capture
+- `GET /api/snapshots?type=daily|monthly|manual` — list (newest first)
+- `GET /api/snapshots/last-month` — most recent prior-month snapshot
+
+**Dashboard integration**:
+- `/api/dashboard` now calls `get_prev_month_snapshot()` first. If one exists, uses real `net_worth - snapshot.net_worth` for `net_worth_delta_abs` and `basis='snapshot'`
+- Falls back to flow-approximation (`net_flow = income - expenses`) when no snapshot history yet
+- New response field: `net_worth_delta_basis: 'snapshot' | 'flow_approx'`
+
+**Frontend** (`/app/frontend/app/(tabs)/dashboard.tsx`):
+- Shows subtle `~est` pill next to the net-worth delta when basis is `flow_approx` so users know the first month's delta is estimated
+
+**Hardening**:
+- Added `snapshot_id` to `firebase_config.insert_one()` doc-id preference list for symmetry with other per-record IDs
+
+### Testing
+- **95/95 backend tests pass** (13 new snapshot + 14 multi-record + 21 fintracker + 30 MPIN + 17 recovery)
+- Both smoke scripts pass: `balance_fix_test.py`, `deploy_verify_multirecord.py`
+- Manual E2E verified snapshot-backed delta (injected prior-month snapshot of 50000 → dashboard returned delta_abs=-50000 / basis='snapshot')
+
+### Next Action Items
+- After ~31 days of scheduler running, every active user will have snapshot-backed deltas automatically. New users see `~est` for the first month, `snapshot` thereafter.
+- **User should still test on physical iOS** for haptics + SF Pro font confirmation.
+
+### Future / Backlog (unchanged)
+- (P0) Offline-first SQLite + sync queue
+- (P0) Mobile+OTP primary sign-in, Gmail OAuth polish
+- (P1) MPIN unlock screen, backend modularization (`server.py` is 4232 lines), component extraction
+- (P2) Pagination signals on list endpoints, snapshot chart UI, XIRR
+

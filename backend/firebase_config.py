@@ -284,6 +284,7 @@ class FirestoreCollection:
                         "heading_id", "reminder_id", "note_id", "family_member_id",
                         "card_id", "loan_id", "lending_id", "rental_id",
                         "payment_id", "account_id", "attempt_id", "log_id",
+                        "snapshot_id",
                         "user_id"]:
                 if key in doc:
                     doc_id = doc[key]
