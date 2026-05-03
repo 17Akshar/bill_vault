@@ -213,3 +213,43 @@ Refactored existing dashboard screen to spec-exact dark finance UI without chang
 - Backend: `balance_fix_test.py` still passes (income +5000 → 15000, expense -2000 → 13000, net-worth 13000)
 - Frontend: dashboard renders end-to-end after single-user-mode login; all sections visible; bottom tab bar correctly styled
 
+
+## Session 5 Update (2026-05-03)
+
+### CRITICAL Latent Bug Fixed — Multi-Record Overwrite
+**Root cause**: `firebase_config.py insert_one()` used `user_id` as the Firestore doc-id for collections that carry both `user_id` (foreign key) AND a per-record unique id (`income_id`, `expense_id`, `bill_id`, etc.). Every new insert overwrote the previous record for the same user.
+
+**Impact (pre-fix)**: Income, expenses, bills, credit cards, loans, lending, investments, rentals, reminders, notes, family_members, recovery_attempts, recovery_logs — each collection silently kept **only the last record per user**. Previous test iterations passed by coincidence (tests create 1 record at a time).
+
+**Fix** (`/app/backend/firebase_config.py`):
+- Reordered doc-id preference list — per-record unique IDs first (`income_id`, `expense_id`, `bill_id`, `attempt_id`, `log_id`, …) and `user_id` last
+- Added `SINGLE_USER_DOC_COLLECTIONS = {'users', 'user_settings', 'user_mpin'}` allowlist — for any other collection, if only `user_id` is present, doc-id is set to `None` so Firestore auto-generates a unique ID
+
+### Dashboard Cross-Month Deltas
+**Backend** (`/app/backend/server.py` /api/dashboard):
+- Added prev-month window calculation (wraps Dec→Jan correctly)
+- `_pct_delta()` helper handles edge cases (prev=0 → 100% if curr!=0 else 0; rounds to 1 decimal)
+- 8 new response fields: `net_worth_delta_pct`, `net_worth_delta_abs`, `income_delta_pct`, `expense_delta_pct`, `savings_delta_pct`, `prev_month_income`, `prev_month_expenses`, `prev_month_savings`
+- Net-worth delta is an APPROXIMATION (uses `current_balance - this_month_net_flow`) — accurate for flow-driven changes, ignores investment value changes. Documented in code comment.
+
+**Frontend** (`/app/frontend/app/(tabs)/dashboard.tsx`):
+- Consumes real deltas (fallback to 0 if API doesn't supply)
+- Sign-aware arrow+color for Net Worth card + 3 stat pills:
+  - Income: ▲ green when up, ▼ red when down
+  - Expense: ▲ red when up (BAD), ▼ green when down (GOOD)
+  - Savings: ▲ green when up, ▼ red when down
+  - Net Worth: full-color deltas on both the % and absolute sub-texts
+
+### Testing
+- 14 new pytest in `/app/backend/tests/test_multirecord_and_deltas.py`
+- Total: **82/82 backend tests pass** (14 new + 21 fintracker + 17 recovery + 30 MPIN)
+- `balance_fix_test.py` still green
+- Frontend dashboard screenshots verified
+
+### New regression guardrails
+- test_multirecord_and_deltas.py::TestMultiRecordPersistence asserts multiple records per user in 9 collections
+- Any NEW top-level resource collection added in future MUST:
+  1. Have a per-record unique ID field placed BEFORE `user_id` in `firebase_config.insert_one()`'s key preference list
+  2. Be added to the test_multirecord_and_deltas.py suite
+  3. NOT be added to SINGLE_USER_DOC_COLLECTIONS unless it legitimately stores one doc per user
+
