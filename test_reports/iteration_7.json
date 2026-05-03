@@ -1,0 +1,48 @@
+{
+  "summary": "Backend-only regression+feature tests for the new net_worth_snapshots collection, scheduler, and snapshot-aware /api/dashboard delta logic. Wrote /app/backend/tests/test_snapshots_api.py (13 tests) covering: (a) auth gating on POST /api/snapshots/capture, GET /api/snapshots, GET /api/snapshots/last-month (all return 401/403 anonymous); (b) capture returns full schema {snapshot_id starts with 'snap_', user_id, captured_at ISO, snapshot_type='manual', total_balance, total_assets, total_liabilities, net_worth, investment_value} and net_worth==assets-liabilities; (c) multi-record: 3 back-to-back captures all persist (verifies firebase_config.insert_one's auto-id path works for new collection — net_worth_snapshots has no per-record key in the preference list except user_id, but is correctly NOT in SINGLE_USER_DOC_COLLECTIONS so Firestore auto-generates IDs); (d) net-worth math: +10000 account balance => total_balance>=10000, liabilities=0; (e) GET /api/snapshots returns {count, snapshots[]} sorted captured_at desc; (f) ?type=manual filter returns only manual; ?type=daily safely returns 200 with possibly-empty list; (g) /last-month returns 404 for fresh user; (h) injecting a prior-month snapshot (net_worth=50000) directly via firebase_config.db.net_worth_snapshots.insert_one() makes /last-month return that record AND switches /api/dashboard to net_worth_delta_basis='snapshot' with delta_abs = current_total_balance - 50000; (i) brand-new user (no snapshots) gets net_worth_delta_basis='flow_approx'. Then ran the FULL regression suite (95 tests across 5 files): test_fintracker_api(21) + test_mpin_api(30) + test_recovery_api(17) + test_multirecord_and_deltas(14) + test_snapshots_api(13) = 95/95 PASS in 292s. Also ran legacy smoke scripts /app/balance_fix_test.py (PASS) and /app/deploy_verify_multirecord.py (PASS, 3-records-per-collection across 5 collections on live Firebase). Total: 95/95 pytest + 2/2 smoke scripts = 100% green.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/snapshots/capture", "issue": "snapshot_id is NOT in firebase_config.insert_one()'s per-record-id preference list (income_id, expense_id, bill_id, ...). It currently works because 'user_id' is the last fallback AND 'net_worth_snapshots' is correctly NOT in SINGLE_USER_DOC_COLLECTIONS, so the doc_id is reset to None and Firestore auto-generates IDs. This is functionally correct but the snap_<uuid> values stored in the document are NOT the Firestore document IDs — they are application-level IDs. If any code path later does db.net_worth_snapshots.find_one({'snapshot_id': X}) it will work via the where-filter, but a delete-by-doc-id using snapshot_id would fail. Recommend adding 'snapshot_id' to the preference list in firebase_config.py for symmetry with other collections."},
+      {"endpoint": "/api/snapshots", "issue": "list endpoint hard-caps at min(limit, 365). For users requesting limit>365 there is no pagination signal in the response (no 'next_cursor' or 'has_more'). Acceptable for now; flag for future."},
+      {"endpoint": "/api/dashboard", "issue": "When prev_snapshot.net_worth is exactly 0 (possible for a brand-new user who explicitly captured a zero snapshot last month), _pct_delta returns 100.0/0.0 sentinel — same edge-case behavior as flow_approx path. Not a bug per current spec, just worth noting."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_snapshots_api.py",
+    "/app/backend/tests/test_multirecord_and_deltas.py",
+    "/app/backend/tests/test_fintracker_api.py",
+    "/app/backend/tests/test_recovery_api.py",
+    "/app/backend/tests/test_mpin_api.py",
+    "/app/test_reports/pytest/snapshots_results.xml",
+    "/app/test_reports/pytest/full_results.xml"
+  ],
+  "action_items": [
+    "(Optional, non-blocking) Add 'snapshot_id' to the per-record-id preference list in firebase_config.insert_one() so the Firestore doc_id matches the application snapshot_id (symmetry with income_id, expense_id, etc.). Currently auto-generated Firestore IDs work fine because of the SINGLE_USER_DOC_COLLECTIONS allowlist."
+  ],
+  "critical_code_review_comments": [
+    "snapshots.py is well-scoped (~270 lines) and cleanly separated from server.py. Good module boundary.",
+    "_compute_networth correctly aggregates: positive account balances + investment current_value (falls back to amount_invested) for assets; abs(negative balances) + loan outstanding_amount/principal + cc outstanding_amount for liabilities. Matches the spec.",
+    "get_prev_month_snapshot uses captured_at < first-day-of-this-month UTC, sorted desc, limit 1 — correctly returns the most recent prior-period snapshot regardless of whether it was daily/monthly/manual. This means even a 'manual' snapshot taken last month will satisfy the dashboard delta path. Spec says 'previous month' — consider whether snapshot_type filter is desirable, but current behavior is more useful (any historical reference).",
+    "_scheduler_loop staggers first run by 60s, sleeps 1h between ticks, gracefully exits on _scheduler_stop event. Idempotent start_scheduler. Wrapped in try/except per tick so one user's failure doesn't kill the loop. Solid.",
+    "FastAPI startup/shutdown handlers correctly start/stop the scheduler. Verified scheduler does not block test runs.",
+    "Late-import of get_current_user inside _get_user_from_request avoids the circular import nicely.",
+    "/api/dashboard now exposes net_worth_delta_basis='snapshot' | 'flow_approx' as documented. Verified both paths via tests.",
+    "Minor: snapshot_id not in firebase_config preference list (see action item). Not a blocker because auto-id fallback works.",
+    "server.py is now 4232 lines — recommend extracting the dashboard aggregator + the income/expense/account routers, but not in scope for this iteration."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_snapshots_api.py (NEW — 13 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (95/95 pytest + 2/2 smoke scripts)",
+    "frontend": "not tested (request was backend-only; main agent will visually verify ~est badge per agent_to_agent_context_note)"
+  },
+  "test_credentials": "Each test registers a fresh user (snap+<ts>@test.com / flowapprox+<ts>@test.com). Single-user mode tests use POST /api/auth/single-user (no creds needed).",
+  "seed_data_creation": "2 fresh users registered per snapshot test session (snap+<ts>@test.com creates 1 account + 4-7 manual snapshots; flowapprox+<ts>@test.com is bare). One direct Firestore insert into net_worth_snapshots with captured_at=15th of last month, net_worth=50000, snapshot_type='monthly' for the snapshot-basis dashboard test. Other test files reuse their own fresh users. No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Snapshots feature is fully covered by /app/backend/tests/test_snapshots_api.py. To inject a historical snapshot in tests use: `import asyncio; from firebase_config import db; asyncio.run(db.net_worth_snapshots.insert_one({...}))`. The dashboard's snapshot-vs-flow_approx switch is keyed on whether ANY snapshot exists with captured_at < first-of-this-month UTC. New collections added in future MUST add their per-record id field (e.g., 'snapshot_id', 'goal_id') to the preference list in firebase_config.insert_one() to ensure the Firestore doc_id matches the application id. Backend URL: https://account-central-15.preview.emergentagent.com/api.",
+  "rca of the issue": "N/A — this iteration tested a feature addition (net_worth_snapshots collection + scheduler + dashboard basis flag), not a bug fix. All requested behaviors verified via 13 new tests; full 95-test regression suite stays green; both legacy smoke scripts (balance_fix_test.py, deploy_verify_multirecord.py) still pass on live Firebase backend."
+}

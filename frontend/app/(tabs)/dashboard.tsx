@@ -245,6 +245,8 @@ export default function DashboardScreen() {
   // to 0 if the endpoint hasn't been deployed yet (older cached builds).
   const nwDeltaPct  = d.net_worth_delta_pct  ?? 0;
   const nwDeltaAbs  = d.net_worth_delta_abs  ?? 0;
+  const nwDeltaBasis: 'snapshot' | 'flow_approx' =
+    (d.net_worth_delta_basis as any) ?? 'flow_approx';
   const incDeltaPct = d.income_delta_pct     ?? 0;
   const expDeltaPct = d.expense_delta_pct    ?? 0;
   const savDeltaPct = d.savings_delta_pct    ?? 0;
@@ -385,6 +387,9 @@ export default function DashboardScreen() {
                   <Text style={[s.nwDelta, { color: nwUp ? '#9DFFD9' : '#FFB4BE' }]}>
                     {nwUp ? '▲' : '▼'} {Math.abs(nwDeltaPct)}% vs last month
                   </Text>
+                  {nwDeltaBasis === 'flow_approx' && (
+                    <Text style={s.nwApproxBadge}>~est</Text>
+                  )}
                 </View>
                 <Text style={[s.nwDeltaAbs, { color: nwUp ? '#9DFFD9' : '#FFB4BE' }]}>
                   {nwUp ? '▲ +' : '▼ '}{formatINR(Math.abs(nwDeltaAbs))} this month
@@ -680,6 +685,12 @@ const s = StyleSheet.create({
   nwAmount: { color: '#FFF', fontSize: 30, fontWeight: '800', marginTop: 6, marginBottom: 8, fontFamily: FONT },
   nwDeltaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   nwDelta: { color: '#9DFFD9', fontSize: 12, fontWeight: '600', fontFamily: FONT },
+  nwApproxBadge: {
+    color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600',
+    marginLeft: 6, backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6,
+    fontFamily: FONT, overflow: 'hidden',
+  },
   nwDeltaAbs: { color: '#9DFFD9', fontSize: 12, fontWeight: '600', marginTop: 2, fontFamily: FONT },
   nwStatsRow: {
     flexDirection: 'row', gap: 8, marginTop: 18,

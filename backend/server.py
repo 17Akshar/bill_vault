@@ -2697,14 +2697,22 @@ async def get_dashboard(request: Request, family_member_id: Optional[str] = None
     savings_delta_pct = _pct_delta(this_savings,           prev_savings)
 
     # Net worth delta:
-    # Backend doesn't store historical balance snapshots; approximate last-month
-    # closing net worth as (current_total_balance - this_month_net_flow),
-    # where net flow = income - expenses for the current month. This captures
-    # real month-over-month movement without requiring snapshot infra.
-    net_flow_this_month  = total_monthly_income - total_monthly_expenses
-    prev_total_balance   = total_balance - net_flow_this_month
-    net_worth_delta_abs  = net_flow_this_month
-    net_worth_delta_pct  = _pct_delta(total_balance, prev_total_balance)
+    # Prefer a real prior-month snapshot (exact historical net-worth) when one
+    # exists — that captures investment-value changes as well. Fall back to
+    # flow-based approximation for users who don't have snapshot history yet.
+    prev_snapshot = await get_prev_month_snapshot(user.user_id, now)
+    net_flow_this_month = total_monthly_income - total_monthly_expenses
+    if prev_snapshot:
+        prev_total_balance  = prev_snapshot.get("net_worth") \
+                              or prev_snapshot.get("total_balance") or 0
+        net_worth_delta_abs = total_balance - prev_total_balance
+        snapshot_basis      = True
+    else:
+        # Approximation: assume balance only moved by income/expense flow
+        prev_total_balance  = total_balance - net_flow_this_month
+        net_worth_delta_abs = net_flow_this_month
+        snapshot_basis      = False
+    net_worth_delta_pct = _pct_delta(total_balance, prev_total_balance)
 
     return {
         "total_balance": total_balance,
@@ -2718,6 +2726,7 @@ async def get_dashboard(request: Request, family_member_id: Optional[str] = None
         # Cross-month deltas consumed by the iOS dashboard stat pills
         "net_worth_delta_pct":  net_worth_delta_pct,
         "net_worth_delta_abs":  net_worth_delta_abs,
+        "net_worth_delta_basis": "snapshot" if snapshot_basis else "flow_approx",
         "income_delta_pct":     income_delta_pct,
         "expense_delta_pct":    expense_delta_pct,
         "savings_delta_pct":    savings_delta_pct,
@@ -4200,6 +4209,18 @@ app.include_router(api_router)
 # Account Recovery module (Firebase Phone OTP + rate-limited email reset)
 from recovery import recovery_router
 app.include_router(recovery_router)
+
+# Net-Worth Snapshots module (daily + monthly snapshot capture + scheduler)
+from snapshots import snapshots_router, start_scheduler, stop_scheduler, get_prev_month_snapshot
+app.include_router(snapshots_router)
+
+@app.on_event("startup")
+async def _start_snapshot_scheduler():
+    start_scheduler()
+
+@app.on_event("shutdown")
+async def _stop_snapshot_scheduler():
+    await stop_scheduler()
 
 app.add_middleware(
     CORSMiddleware,
