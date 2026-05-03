@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
-  ActivityIndicator, Dimensions, FlatList, StatusBar,
+  ActivityIndicator, Dimensions, FlatList, StatusBar, Animated, Platform, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,6 +14,7 @@ import { formatINR, formatINRCompact } from '../../utils/formatINR';
 import { format, parseISO } from 'date-fns';
 import { FamilyMemberFilter } from '../../components/FamilyMemberSelector';
 import Svg, { Path, Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -34,6 +35,32 @@ const T = {
   text:     '#FFFFFF',
   textDim:  '#A0A3BD',
   border:   'rgba(255,255,255,0.06)',
+};
+
+// Haptic feedback — no-op on web
+const tap = (style: 'light' | 'medium' = 'light') => {
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    try {
+      Haptics.impactAsync(
+        style === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
+      );
+    } catch { /* ignore */ }
+  }
+};
+
+// Press-scale wrapper — shrinks to 0.96 on press-in, bounces back on release
+const PressScale = ({ children, onPress, testID, style, hapticStyle = 'light' as any }: any) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  return (
+    <Pressable
+      onPressIn={() => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 6 }).start()}
+      onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 6 }).start()}
+      onPress={() => { tap(hapticStyle); onPress?.(); }}
+      testID={testID}
+    >
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </Pressable>
+  );
 };
 
 // =============================================================================
@@ -74,11 +101,11 @@ const SectionHeader = ({ title, onViewAll, viewAllLabel = 'View All' }: any) => 
 );
 
 const FilterPill = ({ icon, label, onPress, testID }: any) => (
-  <TouchableOpacity style={s.filterPill} onPress={onPress} activeOpacity={0.75} testID={testID}>
+  <PressScale onPress={onPress} testID={testID} style={s.filterPill}>
     <Text style={s.filterPillIcon}>{icon}</Text>
     <Text style={s.filterPillText}>{label}</Text>
     <Ionicons name="chevron-down" size={14} color={T.textDim} />
-  </TouchableOpacity>
+  </PressScale>
 );
 
 const StatPill = ({ color, value, delta, deltaUp }: any) => (
@@ -141,13 +168,25 @@ export default function DashboardScreen() {
     accounts: true, recent_transactions: true, reminders: true, financial_hub: true,
   });
   const navState = useRootNavigationState();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!navState?.key) return;
-    if (authLoading) return;            // wait until auth context is ready
-    if (!isAuthenticated) { router.replace('/auth/login'); return; }
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      // Defer the redirect one frame so the Root Layout / navigator is fully mounted
+      const t = setTimeout(() => router.replace('/auth/login'), 0);
+      return () => clearTimeout(t);
+    }
     loadAll();
   }, [isAuthenticated, authLoading, familyFilter, navState?.key]);
+
+  // Fade-in on first content render
+  useEffect(() => {
+    if (!loading) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 380, useNativeDriver: true }).start();
+    }
+  }, [loading]);
 
   useFocusEffect(
     useCallback(() => {
@@ -241,6 +280,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: T.bg }]} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={T.bg} />
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
@@ -252,30 +292,37 @@ export default function DashboardScreen() {
         {/* ======================== HEADER ======================== */}
         <View style={s.header} testID="dashboard-header">
           <TouchableOpacity style={s.headerLeft} onPress={() => router.push('/(tabs)/profile' as any)}
-                            activeOpacity={0.8} testID="dashboard-avatar">
+                            activeOpacity={0.85} testID="dashboard-avatar">
             <View style={s.avatar}>
               <Text style={s.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
             </View>
-            <View style={{ marginLeft: 12 }}>
-              <Text style={s.userName}>{userName} <Text style={{ fontSize: 18 }}>👋</Text></Text>
-              <Text style={s.greeting}>{greeting}</Text>
+            <View style={{ marginLeft: 12, flexShrink: 1 }}>
+              <Text style={s.headerTitle} numberOfLines={1}>Dashboard</Text>
+              <Text style={s.headerSubtitle} numberOfLines={1}>
+                {greeting}, {userName}! <Text style={{ fontSize: 13 }}>👋</Text>
+              </Text>
             </View>
           </TouchableOpacity>
           <View style={s.headerRight}>
-            <TouchableOpacity style={s.headerBtn} onPress={() => router.push('/reminders')}
-                              testID="dashboard-bell-btn">
+            <PressScale
+              onPress={() => router.push('/reminders')}
+              testID="dashboard-bell-btn"
+              style={s.headerBtn}
+            >
               <MaterialCommunityIcons name="bell-outline" size={22} color={T.text} />
               {reminders.length > 0 && (
                 <View style={s.badge}>
                   <Text style={s.badgeText}>{reminders.length > 9 ? '9+' : reminders.length}</Text>
                 </View>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity style={s.headerBtn}
-                              onPress={() => router.push('/profile/dashboard-settings' as any)}
-                              testID="dashboard-settings-btn">
+            </PressScale>
+            <PressScale
+              onPress={() => router.push('/profile/dashboard-settings' as any)}
+              testID="dashboard-settings-btn"
+              style={s.headerBtn}
+            >
               <MaterialCommunityIcons name="cog-outline" size={22} color={T.text} />
-            </TouchableOpacity>
+            </PressScale>
           </View>
         </View>
 
@@ -368,28 +415,25 @@ export default function DashboardScreen() {
 
         {/* ======================== QUICK ACTIONS ======================== */}
         {w('quick_actions') && (
-          <View style={s.quickCard} testID="dashboard-quick-actions">
-            <QuickActionBtn
-              icon="plus"
-              label="Income"
-              color={T.success}
-              onPress={() => router.push('/transactions/add?type=income' as any)}
-              testID="quick-action-income"
-            />
-            <QuickActionBtn
-              icon="minus"
-              label="Expense"
-              color={T.danger}
-              onPress={() => router.push('/transactions/add?type=expense' as any)}
-              testID="quick-action-expense"
-            />
-            <QuickActionBtn
-              icon="swap-horizontal"
-              label="Transfer"
-              color={T.info}
-              onPress={() => router.push('/transactions/add?type=expense' as any)}
-              testID="quick-action-transfer"
-            />
+          <View style={s.quickRow} testID="dashboard-quick-actions">
+            {[
+              { icon: 'plus', label: 'Income',   color: T.success, route: '/transactions/add?type=income',  testID: 'quick-action-income' },
+              { icon: 'minus', label: 'Expense',  color: T.danger,  route: '/transactions/add?type=expense', testID: 'quick-action-expense' },
+              { icon: 'swap-horizontal', label: 'Transfer', color: T.info, route: '/transactions/add?type=expense', testID: 'quick-action-transfer' },
+            ].map((a) => (
+              <PressScale
+                key={a.label}
+                onPress={() => router.push(a.route as any)}
+                testID={a.testID}
+                style={s.qaCard}
+                hapticStyle="medium"
+              >
+                <View style={[s.qaIcon, { backgroundColor: a.color }]}>
+                  <MaterialCommunityIcons name={a.icon as any} size={26} color="#FFF" />
+                </View>
+                <Text style={s.qaLabel}>{a.label}</Text>
+              </PressScale>
+            ))}
           </View>
         )}
 
@@ -557,6 +601,7 @@ export default function DashboardScreen() {
 
         <View style={{ height: 16 }} />
       </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -581,8 +626,8 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { color: '#FFF', fontSize: 18, fontWeight: '700', fontFamily: FONT },
-  userName: { color: T.text, fontSize: 17, fontWeight: '700', fontFamily: FONT },
-  greeting: { color: T.textDim, fontSize: 12, marginTop: 2, fontFamily: FONT },
+  headerTitle: { color: T.text, fontSize: 22, fontWeight: '800', fontFamily: FONT, letterSpacing: -0.3 },
+  headerSubtitle: { color: T.textDim, fontSize: 13, marginTop: 3, fontFamily: FONT },
   headerRight: { flexDirection: 'row', gap: 10 },
   headerBtn: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: T.card,
@@ -633,16 +678,22 @@ const s = StyleSheet.create({
   statValue: { color: '#FFF', fontSize: 13, fontWeight: '700', fontFamily: FONT },
   statDelta: { fontSize: 10, fontWeight: '600', marginTop: 1, fontFamily: FONT },
 
-  // -------- Quick actions --------
-  quickCard: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    backgroundColor: T.card, marginHorizontal: 20, marginBottom: 22,
-    borderRadius: 16, paddingVertical: 18, paddingHorizontal: 12,
+  // -------- Quick actions (3 separate cards per reference image) --------
+  quickRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: 20, marginBottom: 22, gap: 10,
   },
-  qaBtn: { alignItems: 'center', flex: 1 },
+  qaCard: {
+    flex: 1, backgroundColor: T.card, borderRadius: 16,
+    paddingVertical: 18, paddingHorizontal: 12, alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
   qaIcon: {
-    width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center',
-    marginBottom: 8,
+    width: 52, height: 52, borderRadius: 26,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   qaLabel: { color: T.text, fontSize: 12, fontWeight: '600', fontFamily: FONT },
 
@@ -661,7 +712,7 @@ const s = StyleSheet.create({
     width: 160, backgroundColor: T.card, borderRadius: 16, padding: 16,
   },
   acctIcon: {
-    width: 38, height: 38, borderRadius: 12,
+    width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
   acctTitle: { color: T.text, fontSize: 13, fontWeight: '600', marginBottom: 6, fontFamily: FONT },
@@ -681,7 +732,7 @@ const s = StyleSheet.create({
   listDivider: { borderBottomWidth: 1, borderBottomColor: T.border },
   listRow: { flexDirection: 'row', alignItems: 'center', padding: 14 },
   listIcon: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   listTitle: { color: T.text, fontSize: 14, fontWeight: '600', fontFamily: FONT },
