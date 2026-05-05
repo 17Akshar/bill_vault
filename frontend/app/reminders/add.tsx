@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../utils/api';
 import CrossPlatformPicker from '../../components/CrossPlatformPicker';
+import { scheduleReminderNotifications } from '../../utils/reminderNotifications';
 
 type Recurrence = 'none' | 'daily' | 'monthly' | 'quarterly' | 'yearly';
 type EndType = 'never' | 'on' | 'after';
@@ -105,7 +106,7 @@ export default function AddReminderScreen() {
     }
     setSaving(true);
     try {
-      await api.post('/reminders', {
+      const res = await api.post('/reminders', {
         title: title.trim(),
         description: notes.trim() || null,
         reminder_date: dateTime.toISOString(),
@@ -118,6 +119,8 @@ export default function AddReminderScreen() {
         end_date: endType === 'on' ? endDate.toISOString() : null,
         max_occurrences: endType === 'after' ? occurrences : null,
       });
+      // Best-effort schedule of local OS notifications
+      scheduleReminderNotifications(res?.data).catch(() => {});
       if (router.canGoBack()) router.back();
       else router.replace('/reminders/all' as any);
     } catch (err: any) {

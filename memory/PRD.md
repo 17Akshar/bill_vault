@@ -374,6 +374,69 @@ Shipped 5 features in one round per user's spec.
 ## Session 10 Update (2026-05-05) — Reminder Advanced Rule + Complete/Snooze + Backend Regression
 
 ### Structured Pydantic Schema for Reminders
+Replaced the legacy `[rule]…[/rule]` markup hack with first-class fields on `Reminder*` models: `url`, `end_type` ('never'|'on'|'after'), `end_date`, `max_occurrences`, `completion_count` (server-managed), `snooze_until` (write-only — moves `reminder_date` forward). POST/GET/PUT all support them natively.
+
+### Smart Complete on Recurring Reminders
+`PUT /reminders/{id} {is_completed: true}` on a recurring reminder advances `reminder_date` (via `dateutil.relativedelta` for monthly/quarterly/yearly) and increments `completion_count` instead of marking done. Auto-finalises when `max_occurrences` reached or past `end_date`.
+
+### Frontend Quick Actions
+`reminders/all.tsx` rows show trailing Snooze (1h/1d/1w presets via `snooze_until`) + Complete (green check) buttons with optimistic UI.
+
+### Testing — `test_reminder_advanced.py` 4/4 PASS
+- structured-rule round-trip, complete-advances-date, snooze postpones, max_occurrences caps cycle
+
+## Session 11 Update (2026-05-05)
+
+### Dashboard: Financial Hub → Enriched Upcoming Reminders
+Per user's latest spec image, the Financial Hub grid has been **removed** and the **Upcoming Reminders** card now shows:
+- Type-specific coloured icons (bill = orange calendar, loan_emi = purple home, credit_card = red card, investment = amber trending-up, lending = green people)
+- Amount + status sub-line (`Due in 2 days`, `Overdue`, `Due today`, `Due in 5 days`)
+- Status colour matches urgency (red ≤ 0 days, amber ≤ 2 days, grey beyond)
+- Shows up to 4 rows
+- Tap → `/reminders/all`
+
+The `ListRow` helper now accepts a separate `rightBottomColor` prop so the recent-transactions date stays muted while reminder-due text flashes urgency colours.
+
+### expo-notifications Wiring
+Local OS notifications now schedule automatically at every reminder's `reminder_date`, matching the full recurrence rule.
+
+New file: `/app/frontend/utils/reminderNotifications.ts`
+- `ensureNotificationPermissions()` — asks once, cached per OS
+- `scheduleReminderNotifications(reminder)` — computes next 12 occurrences using Daily/Weekly/Monthly/Quarterly/Yearly stepping, schedules each via `Notifications.SchedulableTriggerInputTypes.DATE`
+- `syncRemindersToNotifications(reminders)` — boot-time/refresh sync; cancels stale tag-managed schedules then re-schedules open reminders
+- `cancelReminderNotifications(reminderId)` — used when a reminder is permanently completed
+
+Hooked in:
+- `reminders/all.tsx` — `load()` triggers a full sync after fetching
+- `reminders/add.tsx` — after a successful create, schedules the new reminder
+- `reminders/all.tsx` — `completeReminder()` reschedules (for recurring auto-advance) or cancels (for permanent completion); `doSnooze()` reschedules with new date
+- Foreground notification handler set to show banner + sound even when the app is in foreground
+
+**Web platform**: all notification calls are no-ops on web (expected — web doesn't support native local notifications via this flow). Mobile builds (iOS/Android) will fire banners.
+
+### Backend Modularisation — Reminders Slice Extracted
+Started decomposing the 4490-line `server.py` monolith. First slice: **reminders** (5 endpoints + helper).
+
+New file: `/app/backend/reminders.py` (~240 lines)
+- Models `ReminderCreate`, `ReminderUpdate`
+- Helpers `_get_user()` (lazy-imports `get_current_user` to avoid circular dependency), `_next_occurrence()`
+- Endpoints: `POST /api/reminders`, `GET /api/reminders`, `GET /api/reminders/summary`, `PUT /api/reminders/{id}`, `DELETE /api/reminders/{id}`
+- Enrichment helper restructured into a declarative `type_to_lookup` map (cleaner than the original if/elif chain)
+- Registered in server.py via `from reminders import reminders_router; app.include_router(reminders_router)`
+
+`server.py` shrunk: **4490 → 4348 lines (−142)**. All 4 reminder advanced tests pass against the new router (confirmed post-split).
+
+### Testing
+- `test_reminder_advanced.py` — **4/4 PASS** against the new `reminders.py` router
+- Backend starts cleanly, supervisor log shows `Application startup complete`
+- Frontend lint clean for new modules (`uploadAttachment.ts`, `LabelsInput.tsx`, `AttachmentPicker.tsx`, `reminderNotifications.ts`)
+
+### Known Limitations
+- `/api/auth/single-user` occasionally returns 500 because of Firestore daily-read quota in this preview env — not a code bug; tests still pass within quota windows
+- Web preview can't validate local notifications (expected — native-only). Mobile build required for visual confirmation.
+- Backend modularisation is just the first slice (reminders). Next slices (accounts, investments, bills) follow the same recipe but each needs care because many have cross-collection side-effects.
+
+### Structured Pydantic Schema for Reminders
 Replaced the legacy `[rule]…[/rule]` markup hack with first-class fields on `Reminder*` models:
 - `url` (string)
 - `end_type` ('never' | 'on' | 'after')

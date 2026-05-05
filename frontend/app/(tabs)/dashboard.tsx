@@ -129,7 +129,7 @@ const QuickActionBtn = ({ icon, label, color, onPress, testID }: any) => (
   </TouchableOpacity>
 );
 
-const ListRow = ({ leftIcon, leftIconBg, leftIconColor, title, subtitle, rightTop, rightBottom, rightColor, showChevron, onPress, testID }: any) => (
+const ListRow = ({ leftIcon, leftIconBg, leftIconColor, title, subtitle, rightTop, rightBottom, rightColor, rightBottomColor, showChevron, onPress, testID }: any) => (
   <TouchableOpacity style={s.listRow} onPress={onPress} activeOpacity={0.7} testID={testID}>
     <View style={[s.listIcon, { backgroundColor: leftIconBg }]}>
       <MaterialCommunityIcons name={leftIcon} size={22} color={leftIconColor} />
@@ -140,7 +140,7 @@ const ListRow = ({ leftIcon, leftIconBg, leftIconColor, title, subtitle, rightTo
     </View>
     <View style={s.listRight}>
       {!!rightTop && <Text style={[s.listAmount, { color: rightColor || T.text }]}>{rightTop}</Text>}
-      {!!rightBottom && <Text style={s.listDate}>{rightBottom}</Text>}
+      {!!rightBottom && <Text style={[s.listDate, rightBottomColor && { color: rightBottomColor }]}>{rightBottom}</Text>}
     </View>
     {showChevron && <Ionicons name="chevron-forward" size={18} color={T.textDim} style={{ marginLeft: 6 }} />}
   </TouchableOpacity>
@@ -526,29 +526,53 @@ export default function DashboardScreen() {
               onViewAll={() => router.push('/reminders/all' as any)}
             />
             <View style={s.listCard}>
-              {reminders.slice(0, 3).map((rem: any, i: number) => {
-                const dueDate = rem.due_date ? parseISO(rem.due_date) : null;
-                const daysAway = dueDate
-                  ? Math.ceil((dueDate.getTime() - Date.now()) / 86400000)
-                  : null;
-                const dueLabel = daysAway !== null
-                  ? daysAway <= 0 ? 'Overdue' :
-                    daysAway === 1 ? 'Due tomorrow' :
-                    `Due in ${daysAway} days`
-                  : '';
+              {reminders.slice(0, 4).map((rem: any, i: number) => {
+                // Pick icon + colour from reminder_type per spec
+                const typeMeta: Record<string, { icon: string; color: string }> = {
+                  bill:        { icon: 'calendar', color: '#FFB300' },     // orange — Electricity
+                  loan_emi:    { icon: 'home',     color: '#7C4DFF' },     // purple — Home Loan
+                  credit_card: { icon: 'credit-card', color: '#EF4444' },  // red    — Credit card
+                  investment:  { icon: 'trending-up', color: '#FFB300' },  // amber  — SIP
+                  lending:     { icon: 'account-multiple', color: '#22C55E' },
+                  custom:      { icon: 'bell',     color: T.primary },
+                };
+                const m = typeMeta[rem.reminder_type] || typeMeta.custom;
+                const due = rem.reminder_date ? parseISO(rem.reminder_date)
+                          : rem.due_date ? parseISO(rem.due_date) : null;
+                const days = due ? Math.ceil((due.getTime() - Date.now()) / 86400000) : null;
+                const dueLabel =
+                  days === null ? '' :
+                  days < 0  ? `${Math.abs(days)} day${Math.abs(days) > 1 ? 's' : ''} overdue` :
+                  days === 0 ? 'Due today' :
+                  days === 1 ? 'Due in 1 day'  :
+                              `Due in ${days} days`;
+                const dueColor =
+                  days === null ? T.textSecondary :
+                  days <= 0 ? T.danger :
+                  days <= 2 ? '#FFB300' :
+                              T.textSecondary;
+                const amount = rem.amount
+                  ?? rem.related_item?.amount
+                  ?? rem.related_item?.emi_amount
+                  ?? rem.related_item?.current_outstanding
+                  ?? rem.related_item?.remaining_amount
+                  ?? 0;
+                const subtitle = rem.description || rem.related_item?.name || dueLabel;
                 return (
                   <View key={rem.reminder_id || i}
-                        style={[s.listRowWrap, i < Math.min(reminders.length, 3) - 1 && s.listDivider]}>
+                        style={[s.listRowWrap, i < Math.min(reminders.length, 4) - 1 && s.listDivider]}>
                     <ListRow
-                      leftIcon="lightning-bolt"
-                      leftIconBg={T.success + '22'}
-                      leftIconColor={T.success}
+                      leftIcon={m.icon as any}
+                      leftIconBg={m.color}
+                      leftIconColor="#FFFFFF"
                       title={rem.title}
-                      subtitle={dueLabel}
-                      rightTop={rem.amount ? formatINR(rem.amount) : ''}
+                      subtitle={subtitle}
+                      rightTop={amount > 0 ? formatINR(amount) : ''}
+                      rightBottom={dueLabel}
                       rightColor={T.text}
+                      rightBottomColor={dueColor}
                       showChevron
-                      onPress={() => router.push('/reminders')}
+                      onPress={() => router.push({ pathname: '/reminders/all' as any })}
                       testID={`reminder-row-${i}`}
                     />
                   </View>
@@ -612,31 +636,7 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* ======================== FINANCIAL HUB GRID ======================== */}
-        {w('financial_hub') && (
-          <View style={s.section}>
-            <SectionHeader title="Financial Hub" onViewAll={() => router.push('/(tabs)/bills' as any)} viewAllLabel="View All" />
-            <View style={s.hubGrid}>
-              {[
-                { icon: 'credit-card-outline',     label: 'Credit Cards',  color: '#EC4899', route: '/credit-cards' },
-                { icon: 'office-building-outline', label: 'Loans & EMI',   color: T.info,    route: '/loans' },
-                { icon: 'home-city-outline',       label: 'Rentals',       color: '#14B8A6', route: '/rentals' },
-                { icon: 'account-multiple-outline',label: 'Lent/Borrowed', color: '#F97316', route: '/lending' },
-                { icon: 'flag-outline',            label: 'Budgets',       color: '#6366F1', route: '/budgets' },
-                { icon: 'receipt',                 label: 'Bills',         color: T.danger,  route: '/(tabs)/bills' },
-              ].map((h, i) => (
-                <TouchableOpacity key={i} style={s.hubItem}
-                                  onPress={() => router.push(h.route as any)}
-                                  testID={`hub-${h.label.toLowerCase().replace(/\s|\&/g, '-')}`}>
-                  <View style={[s.hubIcon, { backgroundColor: h.color + '22' }]}>
-                    <MaterialCommunityIcons name={h.icon as any} size={22} color={h.color} />
-                  </View>
-                  <Text style={s.hubLabel}>{h.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
+        {/* Financial Hub removed per user spec — replaced by enriched Upcoming Reminders above */}
 
         <View style={{ height: 16 }} />
       </ScrollView>

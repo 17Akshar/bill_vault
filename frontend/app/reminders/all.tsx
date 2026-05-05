@@ -28,6 +28,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../../utils/api';
 import { formatINR } from '../../utils/formatINR';
+import {
+  syncRemindersToNotifications,
+  scheduleReminderNotifications,
+  cancelReminderNotifications,
+} from '../../utils/reminderNotifications';
 
 type TabKey = 'upcoming' | 'calendar' | 'all' | 'completed';
 type Reminder = {
@@ -110,7 +115,11 @@ export default function RemindersAllScreen() {
   const load = async () => {
     try {
       const res = await api.get('/reminders');
-      setItems(res.data || []);
+      const data = res.data || [];
+      setItems(data);
+      // Schedule local OS notifications for all open reminders (best-effort).
+      // Runs in the background; errors are non-fatal.
+      syncRemindersToNotifications(data).catch(() => {});
     } catch (err: any) {
       // Ignore 401 (parent will redirect to login); other errors leave items empty
       if (err?.response?.status !== 401) {
@@ -132,7 +141,14 @@ export default function RemindersAllScreen() {
     setItems(items.map((it) => (it.reminder_id === r.reminder_id
       ? { ...it, is_completed: true } : it)));
     try {
-      await api.put(`/reminders/${r.reminder_id}`, { is_completed: true });
+      const res = await api.put(`/reminders/${r.reminder_id}`, { is_completed: true });
+      // Reschedule based on server's authoritative state (advanced or completed)
+      const updated = res?.data;
+      if (updated?.is_completed) {
+        cancelReminderNotifications(r.reminder_id).catch(() => {});
+      } else if (updated) {
+        scheduleReminderNotifications(updated).catch(() => {});
+      }
       load();
     } catch (e) {
       setItems(prev);
@@ -167,9 +183,10 @@ export default function RemindersAllScreen() {
       ),
     );
     try {
-      await api.put(`/reminders/${r.reminder_id}`, {
+      const res = await api.put(`/reminders/${r.reminder_id}`, {
         snooze_until: target.toISOString(),
       });
+      if (res?.data) scheduleReminderNotifications(res.data).catch(() => {});
       load();
     } catch (e) {
       setItems(prev);
