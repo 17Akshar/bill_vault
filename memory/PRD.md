@@ -293,9 +293,47 @@ Long-term accurate delta tracking via point-in-time captures, not just flow appr
 - After ~31 days of scheduler running, every active user will have snapshot-backed deltas automatically. New users see `~est` for the first month, `snapshot` thereafter.
 - **User should still test on physical iOS** for haptics + SF Pro font confirmation.
 
-### Future / Backlog (unchanged)
-- (P0) Offline-first SQLite + sync queue
-- (P0) Mobile+OTP primary sign-in, Gmail OAuth polish
-- (P1) MPIN unlock screen, backend modularization (`server.py` is 4232 lines), component extraction
-- (P2) Pagination signals on list endpoints, snapshot chart UI, XIRR
+## Session 7 Update (2026-05-05)
+
+### Income / Expense / Transfer Optional Fields + Attachments (Phase 1 Complete)
+Wired the design-spec optional fields onto all 3 transaction forms with image attachment support.
+
+**Backend** (NEW):
+- `/app/backend/uploads.py` (~145 lines):
+  - `POST /api/uploads/attachment` — multipart file upload, allowlist (jpeg/png/webp/heic/heif), 10 MB cap. Tries Firebase Storage first; on failure falls back to local disk under `/app/backend/uploads_data/` and returns a relative `/api/uploads/files/<path>` URL.
+  - `GET /api/uploads/files/{path}` — serves locally-stored files with directory-traversal guard.
+  - `GET /api/labels` — distinct labels previously used by the user across `income`+`expenses`+`transfers` (chip-suggestion source).
+- `firebase_config.py` — initializes Firebase with `storageBucket` env var; new `get_storage_bucket()` helper.
+
+**Storage Status**: Firebase Storage bucket `bill-vault-a24ad.firebasestorage.app` is **not yet provisioned** by user. Local-disk fallback is active and verified working end-to-end (upload → URL → image renders). When user enables Storage in Firebase Console, code switches to `storage='firebase'` automatically — no code change needed.
+
+**Frontend** (NEW components + wiring):
+- `/app/frontend/components/LabelsInput.tsx` — chip input: type + Enter/comma/space adds chip, X removes, suggestion row pulled from `/api/labels`. Cap 12 labels × 24 chars.
+- `/app/frontend/components/AttachmentPicker.tsx` — Camera/Gallery picker buttons; on success shows 56×56 thumb + remove button.
+- `/app/frontend/utils/uploadAttachment.ts` — `pickImageFromGallery|Camera()` + `uploadAttachment(asset)` (handles RN vs web FormData), plus `absolutizeUrl()` for the relative-URL fallback.
+- `/app/frontend/app/transactions/add.tsx` — added Payee (expense+transfer), Labels (all), Location (all), Attachment (all). Payment Type now also shown for transfer per spec.
+- All fields piped into create payloads for `/api/income`, `/api/expenses`, `/api/transfers`.
+
+### Testing
+- 9 new pytest in `/app/backend/tests/test_uploads_and_labels.py` — **9/9 PASS** in 59s
+  - Upload happy path + local-served bytes round-trip
+  - Reject non-image (400), empty (400), >10MB (413)
+  - `/api/labels` reflects recent labels
+  - Transfer with all 5 optional fields round-trips + balance side-effects preserved
+  - 3 backward-compat tests (income/expense/transfer without new fields)
+- Frontend smoke verified via screenshot: payee+labels+location+attachment fields render on the correct transaction types
+- Curl E2E verified: upload PNG → expense saved with `attachment_url` → `/api/labels` returns the new labels
+
+### Known Limitations
+- Firebase Storage bucket not provisioned → using local-disk fallback (ephemeral on container restart). Recommend user enables Firebase Storage at https://console.firebase.google.com/project/bill-vault-a24ad/storage
+- Full 118-test regression hit Firestore daily-read quota (`RESOURCE_EXHAUSTED`) — environment limit, not code regression. New tests pass in isolation.
+
+### Outstanding from User's Latest Spec (Phase 2 — NOT YET IMPLEMENTED)
+User provided 5 UI screens for **Add Account** redesign covering Bank / Cash / UPI / Overdraft account types, plus a new **Accounts overview** screen with Total Balance / In Accounts / In Liabilities. This is the next big block of work. Account model needs new fields:
+- Bank: `account_holder_name`, `account_number`, `ifsc_code`, `bank_name`, `branch_name`, `account_type` (sub-type), `opening_balance`, `account_color`
+- Cash: `name`, `currency`, `initial_balance`, `cash_location`, `include_in_net_worth`, `notes`
+- UPI: `name`, `account_type`, `bank_name`, `upi_id`, `linked_app`, `upi_status`, `is_primary`, `vpa`
+- Overdraft: `name`, `account_type`, `bank_name`, `overdraft_limit`, `interest_rate`, `currently_used`, `available_overdraft` (DERIVED), `start_date`, `end_date`, `charges`
+
+Net-worth math must treat overdraft `currently_used` as a liability.
 
