@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 
 import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth, firestore
+from firebase_admin import credentials, auth as firebase_auth, firestore, storage as firebase_storage
 from google.cloud.firestore_v1 import FieldFilter
 
 load_dotenv()
@@ -48,8 +48,17 @@ def init_firebase():
     """Initialize Firebase Admin SDK"""
     if not firebase_admin._apps:
         cred = _get_firebase_credentials()
-        firebase_admin.initialize_app(cred)
+        project_id = os.getenv("FIREBASE_PROJECT_ID")
+        bucket_name = os.getenv("FIREBASE_STORAGE_BUCKET") or f"{project_id}.appspot.com"
+        firebase_admin.initialize_app(cred, {"storageBucket": bucket_name})
     return firestore.client()
+
+
+def get_storage_bucket():
+    """Return the Firebase Storage default bucket. Initializes Firebase if needed."""
+    if not firebase_admin._apps:
+        init_firebase()
+    return firebase_storage.bucket()
 
 
 # Global Firestore client

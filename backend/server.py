@@ -4243,6 +4243,10 @@ app.include_router(snapshots_router)
 from transfers import transfers_router
 app.include_router(transfers_router)
 
+# Uploads module (Firebase Storage for transaction attachments + labels)
+from uploads import uploads_router
+app.include_router(uploads_router)
+
 @app.on_event("startup")
 async def _start_snapshot_scheduler():
     start_scheduler()
