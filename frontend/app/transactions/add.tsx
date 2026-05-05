@@ -34,8 +34,8 @@ export default function AddTransactionScreen() {
   const params = useLocalSearchParams<{ type?: string }>();
   const { colors, isDark } = useTheme();
 
-  const [txType, setTxType] = useState<'income' | 'expense'>(
-    (params.type as 'income' | 'expense') || 'expense'
+  const [txType, setTxType] = useState<'income' | 'expense' | 'transfer'>(
+    (params.type as 'income' | 'expense' | 'transfer') || 'expense'
   );
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
@@ -43,6 +43,9 @@ export default function AddTransactionScreen() {
   const [notes, setNotes] = useState('');
   const [familyMemberId, setFamilyMemberId] = useState<string | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  // Transfer-only: destination account
+  const [toAccountId, setToAccountId] = useState('');
+  const [showToAccountPicker, setShowToAccountPicker] = useState(false);
   const [paymentType, setPaymentType] = useState('bank');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -74,17 +77,33 @@ export default function AddTransactionScreen() {
       Alert.alert('Required', 'Please enter a valid amount');
       return;
     }
-    if (!category) {
-      Alert.alert('Required', 'Please select a category');
-      return;
-    }
-    if (!selectedAccountId) {
-      Alert.alert('Required', 'Please select an account. Create one first if you haven\'t.');
-      return;
-    }
-    if (!description.trim()) {
-      Alert.alert('Required', 'Please enter a description');
-      return;
+    // Transfer has its own validation set
+    if (txType === 'transfer') {
+      if (!selectedAccountId) {
+        Alert.alert('Required', 'Please select a From Account');
+        return;
+      }
+      if (!toAccountId) {
+        Alert.alert('Required', 'Please select a To Account');
+        return;
+      }
+      if (selectedAccountId === toAccountId) {
+        Alert.alert('Invalid Transfer', 'From Account and To Account must be different');
+        return;
+      }
+    } else {
+      if (!category) {
+        Alert.alert('Required', 'Please select a category');
+        return;
+      }
+      if (!selectedAccountId) {
+        Alert.alert('Required', 'Please select an account. Create one first if you haven\'t.');
+        return;
+      }
+      if (!description.trim()) {
+        Alert.alert('Required', 'Please enter a description');
+        return;
+      }
     }
 
     setSaving(true);
@@ -100,7 +119,7 @@ export default function AddTransactionScreen() {
           notes: notes.trim() || null,
           family_member_id: familyMemberId,
         });
-      } else {
+      } else if (txType === 'expense') {
         await api.post('/expenses', {
           account_id: selectedAccountId,
           amount: parseFloat(amount),
@@ -108,6 +127,16 @@ export default function AddTransactionScreen() {
           sub_category: subCategory || null,
           payment_type: paymentType,
           description: description.trim(),
+          date: date.toISOString(),
+          notes: notes.trim() || null,
+          family_member_id: familyMemberId,
+        });
+      } else {
+        // Transfer
+        await api.post('/transfers', {
+          amount: parseFloat(amount),
+          from_account_id: selectedAccountId,
+          to_account_id: toAccountId,
           date: date.toISOString(),
           notes: notes.trim() || null,
           family_member_id: familyMemberId,
@@ -143,7 +172,9 @@ export default function AddTransactionScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Add Transaction</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              {txType === 'income' ? 'Add Income' : txType === 'expense' ? 'Add Expense' : 'New Transfer'}
+            </Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -191,6 +222,28 @@ export default function AddTransactionScreen() {
                 Expense
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              testID="tx-type-transfer"
+              style={[
+                styles.typeBtn,
+                txType === 'transfer' && { backgroundColor: '#4D9EFF' },
+              ]}
+              onPress={() => { setTxType('transfer'); setCategory(''); setSubCategory(''); }}
+            >
+              <Ionicons
+                name="swap-horizontal"
+                size={20}
+                color={txType === 'transfer' ? '#FFF' : colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.typeText,
+                  { color: txType === 'transfer' ? '#FFF' : colors.textSecondary },
+                ]}
+              >
+                Transfer
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Amount */}
@@ -210,96 +263,103 @@ export default function AddTransactionScreen() {
           </View>
 
           {/* Description / Source */}
-          <Text style={[styles.label, { color: colors.text }]}>
-            {txType === 'income' ? 'Source' : 'Description'}
-          </Text>
-          <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder={txType === 'income' ? 'e.g., Company Ltd' : 'e.g., Groceries at BigBazar'}
-              placeholderTextColor={colors.textSecondary}
-              value={description}
-              onChangeText={setDescription}
-            />
-          </View>
-
-          {/* Category */}
-          <Text style={[styles.label, { color: colors.text }]}>Category</Text>
-          <View style={styles.categoryGrid}>
-            {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat.key}
-                style={[
-                  styles.categoryChip,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                  category === cat.key && {
-                    borderColor: txType === 'income' ? '#00E676' : '#FF5252',
-                    borderWidth: 2,
-                    backgroundColor: txType === 'income' ? 'rgba(0,230,118,0.1)' : 'rgba(255,82,82,0.1)',
-                  },
-                ]}
-                onPress={() => { setCategory(cat.key); setSubCategory(''); }}
-              >
-                <Ionicons
-                  name={cat.icon as any}
-                  size={18}
-                  color={category === cat.key ? (txType === 'income' ? '#00E676' : '#FF5252') : colors.textSecondary}
+          {/* Source / Description / Category / SubCategory — NOT shown in Transfer mode */}
+          {txType !== 'transfer' && (
+            <>
+              <Text style={[styles.label, { color: colors.text }]}>
+                {txType === 'income' ? 'Source' : 'Description'}
+              </Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={txType === 'income' ? 'e.g., Company Ltd' : 'e.g., Groceries at BigBazar'}
+                  placeholderTextColor={colors.textSecondary}
+                  value={description}
+                  onChangeText={setDescription}
                 />
-                <Text
-                  style={[
-                    styles.categoryLabel,
-                    { color: category === cat.key ? colors.text : colors.textSecondary },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+              </View>
 
-          {/* Sub-Category Picker */}
-          {category && (() => {
-            const selectedCat = categories.find(c => c.key === category);
-            const subs = (selectedCat as any)?.subs || [];
-            if (subs.length === 0) return null;
-            const accentColor = txType === 'income' ? '#00E676' : '#FF5252';
-            return (
-              <>
-                <Text style={[styles.label, { color: colors.text }]}>Sub-Category (Optional)</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-                  {subs.map((sub: string) => (
-                    <TouchableOpacity
-                      key={sub}
+              {/* Category */}
+              <Text style={[styles.label, { color: colors.text }]}>Category</Text>
+              <View style={styles.categoryGrid}>
+                {categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.key}
+                    style={[
+                      styles.categoryChip,
+                      { backgroundColor: colors.card, borderColor: colors.border },
+                      category === cat.key && {
+                        borderColor: txType === 'income' ? '#00E676' : '#FF5252',
+                        borderWidth: 2,
+                        backgroundColor: txType === 'income' ? 'rgba(0,230,118,0.1)' : 'rgba(255,82,82,0.1)',
+                      },
+                    ]}
+                    onPress={() => { setCategory(cat.key); setSubCategory(''); }}
+                  >
+                    <Ionicons
+                      name={cat.icon as any}
+                      size={18}
+                      color={category === cat.key ? (txType === 'income' ? '#00E676' : '#FF5252') : colors.textSecondary}
+                    />
+                    <Text
                       style={[
-                        styles.subCatChip,
-                        { backgroundColor: colors.card, borderColor: colors.border },
-                        subCategory === sub && {
-                          borderColor: accentColor,
-                          borderWidth: 2,
-                          backgroundColor: accentColor + '18',
-                        },
+                        styles.categoryLabel,
+                        { color: category === cat.key ? colors.text : colors.textSecondary },
                       ]}
-                      onPress={() => setSubCategory(subCategory === sub ? '' : sub)}
+                      numberOfLines={1}
                     >
-                      <Text
-                        style={{
-                          color: subCategory === sub ? accentColor : colors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: subCategory === sub ? '600' : '400',
-                        }}
-                      >
-                        {sub}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </>
-            );
-          })()}
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-          {/* Account Picker */}
-          <Text style={[styles.label, { color: colors.text }]}>Account</Text>
+              {/* Sub-Category Picker */}
+              {category && (() => {
+                const selectedCat = categories.find(c => c.key === category);
+                const subs = (selectedCat as any)?.subs || [];
+                if (subs.length === 0) return null;
+                const accentColor = txType === 'income' ? '#00E676' : '#FF5252';
+                return (
+                  <>
+                    <Text style={[styles.label, { color: colors.text }]}>Sub-Category (Optional)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                      {subs.map((sub: string) => (
+                        <TouchableOpacity
+                          key={sub}
+                          style={[
+                            styles.subCatChip,
+                            { backgroundColor: colors.card, borderColor: colors.border },
+                            subCategory === sub && {
+                              borderColor: accentColor,
+                              borderWidth: 2,
+                              backgroundColor: accentColor + '18',
+                            },
+                          ]}
+                          onPress={() => setSubCategory(subCategory === sub ? '' : sub)}
+                        >
+                          <Text
+                            style={{
+                              color: subCategory === sub ? accentColor : colors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: subCategory === sub ? '600' : '400',
+                            }}
+                          >
+                            {sub}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {/* Account Picker — labeled "From Account" in Transfer mode */}
+          <Text style={[styles.label, { color: colors.text }]}>
+            {txType === 'transfer' ? 'From Account' : 'Account'}
+          </Text>
           <TouchableOpacity
             style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
             onPress={() => setShowAccountPicker(true)}
@@ -323,6 +383,45 @@ export default function AddTransactionScreen() {
             )}
             <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
+
+          {/* To Account picker — Transfer mode only */}
+          {txType === 'transfer' && (() => {
+            const toAccount = accounts.find(a => a.account_id === toAccountId);
+            return (
+              <>
+                <Text style={[styles.label, { color: colors.text }]}>To Account</Text>
+                <TouchableOpacity
+                  testID="tx-to-account-picker"
+                  style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+                  onPress={() => setShowToAccountPicker(true)}
+                >
+                  {toAccount ? (
+                    <View style={styles.pickerContent}>
+                      <Ionicons
+                        name={(ACCOUNT_TYPE_META[toAccount.account_type]?.icon || 'business-outline') as any}
+                        size={20}
+                        color={ACCOUNT_TYPE_META[toAccount.account_type]?.color || colors.text}
+                      />
+                      <Text style={[styles.pickerText, { color: colors.text }]}>
+                        {toAccount.name}
+                      </Text>
+                      <Text style={[styles.pickerBalance, { color: colors.textSecondary }]}>
+                        {formatINR(toAccount.balance)}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={[styles.pickerText, { color: colors.textSecondary }]}>Select destination account</Text>
+                  )}
+                  <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+                {selectedAccountId && toAccountId && selectedAccountId === toAccountId && (
+                  <Text style={{ color: '#FF5252', fontSize: 12, marginTop: -4, marginBottom: 8 }}>
+                    From and To accounts must be different
+                  </Text>
+                )}
+              </>
+            );
+          })()}
 
           {/* Payment Type (Expense only) */}
           {txType === 'expense' && (
@@ -394,7 +493,8 @@ export default function AddTransactionScreen() {
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={[styles.saveButtonText, { color: txType === 'income' ? '#000' : '#FFF' }]}>
-                {txType === 'income' ? 'Add Income' : 'Add Expense'}
+                {txType === 'income' ? 'Add Income' :
+                 txType === 'expense' ? 'Add Expense' : 'Save Transfer'}
               </Text>
             )}
           </TouchableOpacity>
@@ -459,6 +559,61 @@ export default function AddTransactionScreen() {
                 }}
               />
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* To Account picker modal — Transfer mode */}
+      <Modal visible={showToAccountPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Destination Account</Text>
+              <TouchableOpacity onPress={() => setShowToAccountPicker(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={accounts.filter(a => a.account_id !== selectedAccountId)}
+              keyExtractor={(item) => item.account_id}
+              ListEmptyComponent={
+                <View style={styles.modalEmpty}>
+                  <Text style={[styles.modalEmptyText, { color: colors.textSecondary }]}>
+                    {accounts.length < 2
+                      ? 'You need at least 2 accounts to transfer. Create another one first.'
+                      : 'Pick a different From Account first.'}
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => {
+                const meta = ACCOUNT_TYPE_META[item.account_type] || ACCOUNT_TYPE_META.bank;
+                return (
+                  <TouchableOpacity
+                    testID={`to-account-item-${item.account_id}`}
+                    style={[
+                      styles.modalItem,
+                      { borderBottomColor: colors.border },
+                      toAccountId === item.account_id && { backgroundColor: colors.primary + '15' },
+                    ]}
+                    onPress={() => {
+                      setToAccountId(item.account_id);
+                      setShowToAccountPicker(false);
+                    }}
+                  >
+                    <View style={[styles.modalItemIcon, { backgroundColor: meta.color + '20' }]}>
+                      <Ionicons name={meta.icon as any} size={20} color={meta.color} />
+                    </View>
+                    <View style={styles.modalItemInfo}>
+                      <Text style={[styles.modalItemName, { color: colors.text }]}>{item.name}</Text>
+                      <Text style={[styles.modalItemType, { color: colors.textSecondary }]}>{meta.label}</Text>
+                    </View>
+                    <Text style={[styles.modalItemBalance, { color: colors.text }]}>
+                      {formatINR(item.balance)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
           </View>
         </View>
       </Modal>

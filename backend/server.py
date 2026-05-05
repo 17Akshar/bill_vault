@@ -150,6 +150,10 @@ class IncomeCreate(BaseModel):
     date: str
     notes: Optional[str] = None
     family_member_id: Optional[str] = None
+    # Per-UI optional fields
+    labels: Optional[List[str]] = None
+    location: Optional[str] = None
+    attachment_url: Optional[str] = None
 
 class IncomeUpdate(BaseModel):
     account_id: Optional[str] = None
@@ -159,6 +163,10 @@ class IncomeUpdate(BaseModel):
     source: Optional[str] = None
     date: Optional[str] = None
     notes: Optional[str] = None
+    family_member_id: Optional[str] = None
+    labels: Optional[List[str]] = None
+    location: Optional[str] = None
+    attachment_url: Optional[str] = None
 
 # Expense Model
 class Expense(BaseModel):
@@ -185,6 +193,11 @@ class ExpenseCreate(BaseModel):
     date: str
     notes: Optional[str] = None
     family_member_id: Optional[str] = None
+    # Per-UI optional fields
+    labels: Optional[List[str]] = None
+    payee: Optional[str] = None
+    location: Optional[str] = None
+    attachment_url: Optional[str] = None
 
 class ExpenseUpdate(BaseModel):
     account_id: Optional[str] = None
@@ -195,6 +208,11 @@ class ExpenseUpdate(BaseModel):
     description: Optional[str] = None
     date: Optional[str] = None
     notes: Optional[str] = None
+    family_member_id: Optional[str] = None
+    labels: Optional[List[str]] = None
+    payee: Optional[str] = None
+    location: Optional[str] = None
+    attachment_url: Optional[str] = None
 
 # ==================== PHASE 2 MODELS ====================
 
@@ -1689,6 +1707,9 @@ async def create_income(data: IncomeCreate, request: Request):
         "source": data.source,
         "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
         "notes": data.notes,
+        "labels": data.labels or [],
+        "location": data.location,
+        "attachment_url": data.attachment_url,
         "created_at": datetime.now(timezone.utc)
     }
     
@@ -1868,6 +1889,10 @@ async def create_expense(data: ExpenseCreate, request: Request):
         "description": data.description,
         "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
         "notes": data.notes,
+        "labels": data.labels or [],
+        "payee": data.payee,
+        "location": data.location,
+        "attachment_url": data.attachment_url,
         "created_at": datetime.now(timezone.utc)
     }
     
@@ -4213,6 +4238,10 @@ app.include_router(recovery_router)
 # Net-Worth Snapshots module (daily + monthly snapshot capture + scheduler)
 from snapshots import snapshots_router, start_scheduler, stop_scheduler, get_prev_month_snapshot
 app.include_router(snapshots_router)
+
+# Transfers module (third transaction type — moves money between accounts)
+from transfers import transfers_router
+app.include_router(transfers_router)
 
 @app.on_event("startup")
 async def _start_snapshot_scheduler():

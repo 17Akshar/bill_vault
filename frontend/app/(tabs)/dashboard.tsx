@@ -211,13 +211,15 @@ export default function DashboardScreen() {
       if (sRes.data?.dashboard_widgets) {
         setWidgetSettings(prev => ({ ...prev, ...sRes.data.dashboard_widgets }));
       }
-      const [incRes, expRes] = await Promise.all([
+      const [incRes, expRes, txfrRes] = await Promise.all([
         api.get(`/income?month=${month}&year=${year}`),
         api.get(`/expenses?month=${month}&year=${year}`),
+        api.get('/transfers').catch(() => ({ data: [] })),
       ]);
       const all = [
         ...incRes.data.map((i: any) => ({ ...i, _type: 'income' })),
         ...expRes.data.map((e: any) => ({ ...e, _type: 'expense' })),
+        ...txfrRes.data.map((t: any) => ({ ...t, _type: 'transfer' })),
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
       setRecentTx(all);
     } catch (e) { console.error(e); }
@@ -439,7 +441,7 @@ export default function DashboardScreen() {
             {[
               { icon: 'plus', label: 'Income',   color: T.success, route: '/transactions/add?type=income',  testID: 'quick-action-income' },
               { icon: 'minus', label: 'Expense',  color: T.danger,  route: '/transactions/add?type=expense', testID: 'quick-action-expense' },
-              { icon: 'swap-horizontal', label: 'Transfer', color: T.info, route: '/transactions/add?type=expense', testID: 'quick-action-transfer' },
+              { icon: 'swap-horizontal', label: 'Transfer', color: T.info, route: '/transactions/add?type=transfer', testID: 'quick-action-transfer' },
             ].map((a) => (
               <PressScale
                 key={a.label}
@@ -565,24 +567,41 @@ export default function DashboardScreen() {
             />
             <View style={s.listCard}>
               {recentTx.map((tx: any, i: number) => {
-                const isIncome = tx._type === 'income';
-                const acct = accounts.find((a: any) => a.account_id === tx.account_id);
-                const titleLeft = tx.source || tx.description || tx.category || 'Transaction';
-                const subtitleLeft = `${acct?.name || tx.category || ''}${tx.sub_category ? ' · ' + tx.sub_category : ''}`;
+                const isIncome   = tx._type === 'income';
+                const isTransfer = tx._type === 'transfer';
+                const acct = accounts.find((a: any) => a.account_id ===
+                  (isTransfer ? tx.from_account_id : tx.account_id));
+                const toAcct = isTransfer
+                  ? accounts.find((a: any) => a.account_id === tx.to_account_id)
+                  : null;
+                const titleLeft = isTransfer
+                  ? `Transfer to ${toAcct?.name || '—'}`
+                  : (tx.source || tx.description || tx.category || 'Transaction');
+                const subtitleLeft = isTransfer
+                  ? `From ${acct?.name || '—'}`
+                  : `${acct?.name || tx.category || ''}${tx.sub_category ? ' · ' + tx.sub_category : ''}`;
                 const dateStr = tx.date ? format(parseISO(tx.date), 'dd MMM') : '';
-                const amount = `${isIncome ? '+' : '-'}${formatINR(tx.amount || 0)}`;
+                const amount = isTransfer
+                  ? formatINR(tx.amount || 0)
+                  : `${isIncome ? '+' : '-'}${formatINR(tx.amount || 0)}`;
+                const iconName = isTransfer
+                  ? 'swap-horizontal-circle'
+                  : (isIncome ? 'arrow-down-bold-circle' : 'arrow-up-bold-circle');
+                const iconColor = isTransfer
+                  ? T.info
+                  : (isIncome ? T.success : T.danger);
                 return (
-                  <View key={tx.income_id || tx.expense_id || i}
+                  <View key={tx.income_id || tx.expense_id || tx.transfer_id || i}
                         style={[s.listRowWrap, i < recentTx.length - 1 && s.listDivider]}>
                     <ListRow
-                      leftIcon={isIncome ? 'arrow-down-bold-circle' : 'arrow-up-bold-circle'}
-                      leftIconBg={(isIncome ? T.success : T.danger) + '22'}
-                      leftIconColor={isIncome ? T.success : T.danger}
+                      leftIcon={iconName}
+                      leftIconBg={iconColor + '22'}
+                      leftIconColor={iconColor}
                       title={titleLeft}
                       subtitle={subtitleLeft}
                       rightTop={amount}
                       rightBottom={dateStr}
-                      rightColor={isIncome ? T.success : T.danger}
+                      rightColor={iconColor}
                       onPress={() => router.push('/(tabs)/transactions' as any)}
                       testID={`recent-tx-row-${i}`}
                     />
