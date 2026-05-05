@@ -488,6 +488,34 @@ function ChipPicker({
 /* ---------------------------- Bank ---------------------------- */
 function BankForm(props: any) {
   const { colors, accent } = props;
+  const [ifscLookupBusy, setIfscLookupBusy] = React.useState(false);
+  const [ifscError, setIfscError] = React.useState<string | null>(null);
+
+  const findIfsc = async (code?: string) => {
+    const ifsc = (code || props.ifscCode || '').trim().toUpperCase();
+    setIfscError(null);
+    if (ifsc.length !== 11) {
+      setIfscError('IFSC must be 11 characters');
+      return;
+    }
+    setIfscLookupBusy(true);
+    try {
+      const res = await fetch(`https://ifsc.razorpay.com/${encodeURIComponent(ifsc)}`);
+      if (!res.ok) {
+        setIfscError('IFSC not found');
+        return;
+      }
+      const data = await res.json();
+      // Auto-populate Bank Name + Branch
+      if (data?.BANK) props.setBankName(String(data.BANK));
+      if (data?.BRANCH) props.setBranchName(String(data.BRANCH));
+    } catch {
+      setIfscError('Lookup failed — check your connection');
+    } finally {
+      setIfscLookupBusy(false);
+    }
+  };
+
   return (
     <>
       <Section title="ACCOUNT DETAILS">
@@ -519,17 +547,57 @@ function BankForm(props: any) {
             keyboardType="number-pad"
           />
         </Row>
-        <Row colors={colors} icon="business-outline" label="IFSC code" required>
-          <PlainInput
-            colors={colors}
-            testID="bank-ifsc"
-            value={props.ifscCode}
-            onChangeText={(v: string) => props.setIfscCode(v.toUpperCase())}
-            placeholder="HDFC0000123"
-            autoCapitalize="characters"
-            maxLength={11}
-          />
-        </Row>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            marginBottom: 10,
+            gap: 12,
+          }}
+        >
+          <Ionicons name="business-outline" size={20} color={colors.textSecondary} />
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginBottom: 2 }}
+            >
+              IFSC code <Text style={{ color: '#EF4444' }}>*</Text>
+            </Text>
+            <PlainInput
+              colors={colors}
+              testID="bank-ifsc"
+              value={props.ifscCode}
+              onChangeText={(v: string) => {
+                const up = v.toUpperCase();
+                props.setIfscCode(up);
+                setIfscError(null);
+                if (up.length === 11) findIfsc(up);
+              }}
+              placeholder="HDFC0000123"
+              autoCapitalize="characters"
+              maxLength={11}
+            />
+            {ifscError && (
+              <Text style={{ color: '#EF4444', fontSize: 11, marginTop: 4 }}>{ifscError}</Text>
+            )}
+          </View>
+          <TouchableOpacity
+            testID="bank-find-ifsc"
+            disabled={ifscLookupBusy}
+            onPress={() => findIfsc()}
+          >
+            {ifscLookupBusy ? (
+              <ActivityIndicator size="small" color={accent} />
+            ) : (
+              <Text style={{ color: accent, fontWeight: '600', fontSize: 13 }}>Find IFSC</Text>
+            )}
+          </TouchableOpacity>
+        </View>
         <Row colors={colors} icon="business-outline" label="Bank name" required>
           <PlainInput
             colors={colors}

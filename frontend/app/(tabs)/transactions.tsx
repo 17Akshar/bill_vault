@@ -57,6 +57,11 @@ export default function TransactionsScreen() {
   // Category filter (for expenses)
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
 
+  // Family member filter
+  const [familyMembers, setFamilyMembers] = useState<{ family_member_id: string; name: string }[]>([]);
+  const [selectedMemberFilter, setSelectedMemberFilter] = useState<string | null>(null);
+  const [showMemberFilter, setShowMemberFilter] = useState(false);
+
   // Edit modal
   const [editItem, setEditItem] = useState<Transaction | null>(null);
   const [editForm, setEditForm] = useState({ amount: '', description: '', category: '', notes: '', payment_type: 'bank' });
@@ -75,7 +80,7 @@ export default function TransactionsScreen() {
     loadAccounts();
   }, [isAuthenticated, navState?.key]);
 
-  useEffect(() => { loadTransactions(); }, [filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter]);
+  useEffect(() => { loadTransactions(); }, [filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter, selectedMemberFilter]);
 
   // Refresh transactions + accounts when tab regains focus
   useFocusEffect(
@@ -84,13 +89,18 @@ export default function TransactionsScreen() {
         loadAccounts();
         loadTransactions();
       }
-    }, [isAuthenticated, filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter])
+    }, [isAuthenticated, filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter, selectedMemberFilter])
   );
 
   const loadAccounts = async () => {
     try {
       const res = await api.get('/accounts');
       setAccounts(res.data);
+      // Load family members alongside (kept lightweight)
+      try {
+        const fm = await api.get('/family-members');
+        setFamilyMembers(fm.data || []);
+      } catch { /* non-fatal — family-members may not be enabled for single-user mode */ }
     } catch (e) { console.error(e); }
   };
 
@@ -110,7 +120,8 @@ export default function TransactionsScreen() {
             id: item.income_id, type: 'income', amount: item.amount, category: item.category,
             description: item.source || item.category, date: item.date,
             account_id: item.account_id, source: item.source, notes: item.notes,
-          });
+            family_member_id: item.family_member_id,
+          } as any);
         });
       }
 
@@ -121,16 +132,20 @@ export default function TransactionsScreen() {
             id: item.expense_id, type: 'expense', amount: item.amount, category: item.category,
             description: item.description || item.category, date: item.date,
             account_id: item.account_id, notes: item.notes, payment_type: item.payment_type,
-          });
+            family_member_id: item.family_member_id,
+          } as any);
         });
       }
 
       combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      // Apply category filter client-side
-      const filtered = selectedCategoryFilter
+      // Apply category filter + family-member filter client-side
+      let filtered = selectedCategoryFilter
         ? combined.filter(t => t.category === selectedCategoryFilter)
         : combined;
+      if (selectedMemberFilter) {
+        filtered = filtered.filter((t: any) => t.family_member_id === selectedMemberFilter);
+      }
 
       setTransactions(filtered);
       setTotalIncome(combined.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
@@ -374,6 +389,39 @@ export default function TransactionsScreen() {
               >
                 <Ionicons name={cat.icon as any} size={12} color={isActive ? (filter === 'income' ? '#000' : '#FFF') : colors.textSecondary} />
                 <Text style={[styles.catChipText, { color: isActive ? (filter === 'income' ? '#000' : '#FFF') : colors.text }]}>{cat.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Family Member Filter (only when family members exist) */}
+      {familyMembers.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.catFilterScroll}
+          contentContainerStyle={styles.accountFilterContent}
+        >
+          <TouchableOpacity
+            testID="member-filter-all"
+            style={[styles.catChip, { borderColor: colors.border }, !selectedMemberFilter && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            onPress={() => setSelectedMemberFilter(null)}
+          >
+            <Ionicons name="people" size={12} color={!selectedMemberFilter ? '#FFF' : colors.textSecondary} />
+            <Text style={[styles.catChipText, { color: !selectedMemberFilter ? '#FFF' : colors.text }]}>All Members</Text>
+          </TouchableOpacity>
+          {familyMembers.map((m) => {
+            const isActive = selectedMemberFilter === m.family_member_id;
+            return (
+              <TouchableOpacity
+                key={m.family_member_id}
+                testID={`member-filter-${m.family_member_id}`}
+                style={[styles.catChip, { borderColor: colors.border }, isActive && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                onPress={() => setSelectedMemberFilter(isActive ? null : m.family_member_id)}
+              >
+                <Ionicons name="person" size={12} color={isActive ? '#FFF' : colors.textSecondary} />
+                <Text style={[styles.catChipText, { color: isActive ? '#FFF' : colors.text }]} numberOfLines={1}>{m.name}</Text>
               </TouchableOpacity>
             );
           })}

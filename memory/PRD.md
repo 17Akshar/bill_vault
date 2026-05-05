@@ -328,15 +328,53 @@ Wired the design-spec optional fields onto all 3 transaction forms with image at
 - Firebase Storage bucket not provisioned → using local-disk fallback (ephemeral on container restart). Recommend user enables Firebase Storage at https://console.firebase.google.com/project/bill-vault-a24ad/storage
 - Full 118-test regression hit Firestore daily-read quota (`RESOURCE_EXHAUSTED`) — environment limit, not code regression. New tests pass in isolation.
 
-### Outstanding from User's Latest Spec (Phase 2 — Add Account DONE; remaining still pending)
+## Session 9 Update (2026-05-05) — Phase 2B Complete
 
-**✅ Add Account redesign — DONE (Session 8)**
+### Accounts Overview + Reminders View All + Add Reminder + IFSC Autofill + Member Filter
+Shipped 5 features in one round per user's spec.
 
-**🔴 Still pending**:
-- Accounts overview list screen with Total Balance / In Accounts / In Liabilities and Bank/Overdraft/UPI/Cash buckets — **`/api/accounts/summary` backend endpoint built and ready**, frontend list screen still uses old layout
-- Reminders View All screen with Upcoming / Calendar / All / Completed tabs (per 4 UI screens user shared)
-- View All Transactions screen with Date / Category / Member filters
-- (Optional) Reminders Add screen redesign per the new UI showing Recurring + End conditions + Preview
+**Backend** (`/app/backend/server.py`): No new endpoints (the existing `/api/accounts/summary` from Session 8 plus the existing reminders endpoints suffice).
+
+**Frontend — NEW screens**:
+1. `/app/frontend/app/(tabs)/accounts.tsx` — **complete rewrite** to the spec dark UI:
+   - Top header "Accounts" + "+ Add Account" pill button
+   - Summary card with **Total Balance / In Accounts / In Liabilities** (computed client-side from `/api/accounts` to avoid quota issues with `/api/accounts/summary`)
+   - 4 group rows (Bank / Overdraft / UPI / Cash) with icon + count + total + chevron
+   - Tap row → drills into `/accounts/list?type=<bucket>`
+   - Bottom security card: "Your account details are secure"
+2. `/app/frontend/app/accounts/list.tsx` — drill-down list view per type with edit/delete + "Add Account" CTA on empty state.
+3. `/app/frontend/app/reminders/all.tsx` — **4-tab View All Reminders** screen:
+   - **Upcoming**: 4 stat tiles (Due Today/Week/Month/Completed) + grouped sections (Today / Tomorrow / Next 7 Days / Later)
+   - **Calendar**: month grid with day-dots showing reminder type colour, prev/next month nav, tap day → reminders below
+   - **All**: search + 6 category chips + flat list
+   - **Completed**: same UX as All, filtered to completed reminders only
+4. `/app/frontend/app/reminders/add.tsx` — **redesigned Add Reminder** matching spec:
+   - Reminder Name, Notes (optional), URL (optional)
+   - Date & Time pickers (CrossPlatformPicker x2)
+   - Recurring chips: Daily / Monthly / Quarterly / Yearly / One-time
+   - Ends radio: No end date / End on (date) / After N occurrences (with stepper)
+   - **Reminder Preview** card with humanised "Monthly on 5th at 09:00 PM" + "Next reminder: …" line
+   - Advanced rule (URL, end-type, end-date, max-occurrences) round-tripped via `description` JSON markup so the backend doesn't need a schema change
+
+**Frontend — modifications**:
+- `/app/frontend/app/accounts/add.tsx` — added **IFSC autofill** via Razorpay's free public IFSC API (`https://ifsc.razorpay.com/{IFSC}`). Auto-triggers when 11 chars typed; "Find IFSC" button on the right. Populates Bank Name + Branch Name. Inline error handling.
+- `/app/frontend/app/(tabs)/transactions.tsx` — added **Family Member filter chip row** (only shown when family_members exist). Wires `selectedMemberFilter` into the loadTransactions filter chain alongside existing Date/Category/Account filters.
+- `/app/frontend/app/(tabs)/dashboard.tsx` — Reminders "View All" now navigates to the new `/reminders/all` screen instead of the legacy index.
+
+### Testing
+- Backend: `/api/accounts` returns 5 accounts in single-user mode. `/api/accounts/summary` works when within quota; the FE now computes summary client-side as a robust fallback.
+- Frontend smoke (web preview, screenshots): Add Reminder renders **pixel-perfect** to the spec (Reminder Name, Notes, URL, Date & Time, Recurring chips, Ends radios with date picker, Preview card). Reminders View All renders 4 stat tiles + tab bar + empty-state correctly. Accounts overview header + footer card render; group rows populate after auth bootstrap (verified via real /accounts API call which returns 5 accounts).
+- Add Account 4 forms (Bank/Cash/UPI/Overdraft) verified pixel-correct in Session 8.
+
+### Known Limitations
+- **Firestore daily quota** is exhausted in this environment — the `/api/accounts/summary` endpoint returns 500. The FE workaround computes the same data from the working `/api/accounts` endpoint, so the user-facing flow is unaffected. Quota resets in ~24h.
+- Add Reminder advanced rule (URL, end-type, end-date) is encoded into `description` as `[rule]{...}[/rule]` markup. To fully UI-display these on existing reminders we'll need a small parser — out of scope for this round.
+- Accounts overview uses static dark colour tokens (`#08082A` / `#12123A`) per the user's UI screenshots rather than the theme tokens. Light-mode users would see this dark — leaving as-is per the strict UI-match requirement.
+
+### Outstanding (Phase 3)
+- Wire the Add Reminder advanced rule (`url`, `end_type`, `end_date`, `max_occurrences`) into a structured Pydantic field on `Reminder` so older reminders parse correctly without the markup hack
+- "View All" link from existing transaction tab for non-family-member users (current behaviour: Date filter via month picker already works)
+- Reminders "Complete" / "Snooze" actions on rows (currently tap navigates to legacy edit)
 
 ## Session 8 Update (2026-05-05)
 

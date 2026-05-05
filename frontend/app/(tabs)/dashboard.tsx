@@ -523,7 +523,7 @@ export default function DashboardScreen() {
           <View style={s.section}>
             <SectionHeader
               title="Upcoming Reminders"
-              onViewAll={() => router.push('/reminders')}
+              onViewAll={() => router.push('/reminders/all' as any)}
             />
             <View style={s.listCard}>
               {reminders.slice(0, 3).map((rem: any, i: number) => {
