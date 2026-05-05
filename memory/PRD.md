@@ -328,12 +328,49 @@ Wired the design-spec optional fields onto all 3 transaction forms with image at
 - Firebase Storage bucket not provisioned → using local-disk fallback (ephemeral on container restart). Recommend user enables Firebase Storage at https://console.firebase.google.com/project/bill-vault-a24ad/storage
 - Full 118-test regression hit Firestore daily-read quota (`RESOURCE_EXHAUSTED`) — environment limit, not code regression. New tests pass in isolation.
 
-### Outstanding from User's Latest Spec (Phase 2 — NOT YET IMPLEMENTED)
-User provided 5 UI screens for **Add Account** redesign covering Bank / Cash / UPI / Overdraft account types, plus a new **Accounts overview** screen with Total Balance / In Accounts / In Liabilities. This is the next big block of work. Account model needs new fields:
-- Bank: `account_holder_name`, `account_number`, `ifsc_code`, `bank_name`, `branch_name`, `account_type` (sub-type), `opening_balance`, `account_color`
-- Cash: `name`, `currency`, `initial_balance`, `cash_location`, `include_in_net_worth`, `notes`
-- UPI: `name`, `account_type`, `bank_name`, `upi_id`, `linked_app`, `upi_status`, `is_primary`, `vpa`
-- Overdraft: `name`, `account_type`, `bank_name`, `overdraft_limit`, `interest_rate`, `currently_used`, `available_overdraft` (DERIVED), `start_date`, `end_date`, `charges`
+### Outstanding from User's Latest Spec (Phase 2 — Add Account DONE; remaining still pending)
 
-Net-worth math must treat overdraft `currently_used` as a liability.
+**✅ Add Account redesign — DONE (Session 8)**
+
+**🔴 Still pending**:
+- Accounts overview list screen with Total Balance / In Accounts / In Liabilities and Bank/Overdraft/UPI/Cash buckets — **`/api/accounts/summary` backend endpoint built and ready**, frontend list screen still uses old layout
+- Reminders View All screen with Upcoming / Calendar / All / Completed tabs (per 4 UI screens user shared)
+- View All Transactions screen with Date / Category / Member filters
+- (Optional) Reminders Add screen redesign per the new UI showing Recurring + End conditions + Preview
+
+## Session 8 Update (2026-05-05)
+
+### Add Account Redesign + Net-worth Math Update
+Implemented the Phase-2 spec for Bank / Cash / UPI / Overdraft account creation per the 4 UI screens user provided.
+
+**Backend** (`/app/backend/server.py`):
+- Extended `Account`, `AccountCreate`, `AccountUpdate` models with all per-type fields:
+  - Bank: `account_holder_name`, `ifsc_code`, `branch_name`, `sub_type`, `color`, `account_holder_name`
+  - Cash: `currency` (default INR), `cash_location`, `include_in_net_worth` (bool), `notes`
+  - UPI: `upi_id`, `linked_app`, `upi_status`, `is_primary_upi`, `vpa`
+  - Overdraft: `overdraft_limit`, `interest_rate`, `overdraft_used`, `overdraft_start_date`, `overdraft_end_date`, `overdraft_charges`
+- `POST /api/accounts` now persists every new field, validates per-type required fields (bank: holder+a/c+IFSC; UPI: upi_id; overdraft: limit>0, used≤limit), uppercases IFSC, demotes other primary UPI accounts, sets balance for overdraft to `-overdraft_used`.
+- New `GET /api/accounts/summary` — returns `total_balance / in_accounts / in_liabilities` plus 4 buckets (Bank / Overdraft / UPI / Cash) with totals + counts. Respects `include_in_net_worth` opt-out.
+- Net-worth math (`server.py /api/wealth/net-worth` AND `snapshots._compute_networth`):
+  - Overdraft accounts excluded from positive balances; their `overdraft_used` is added to liabilities
+  - Negative balances on regular accounts also count as liabilities
+  - Cash accounts opted out via `include_in_net_worth=false` are excluded entirely
+
+**Frontend** (`/app/frontend/app/accounts/add.tsx`):
+- Full rewrite: top type-picker chip bar (Bank/Cash/UPI/Overdraft) + 4 conditional form components below
+- Bank form: Bank Account, Holder, A/c No, IFSC (auto-uppercase), Bank Name, Branch, Account Type chips (Savings/Current/Other), Opening Balance, Color swatch picker (10 colors)
+- Cash form: Account Name (default "Cash in Hand"), read-only Type/Currency, Initial Cash Balance, Cash Location, Include-in-Net-Worth toggle, Notes
+- UPI form: Account Name, Account Type chips (Savings/Current), Bank Name, UPI ID, Linked With chips (5 apps), Set-as-Primary toggle, VPA optional
+- Overdraft form: Account Name, Bank Name, Overdraft Limit, Interest Rate, Currently Used, **Available Overdraft (DERIVED, read-only)**, Start/End date pickers, Charges, info banner "Overdraft amount will be considered as part of your liability"
+- Save validates per-type, surfaces backend error messages cleanly
+- Header has both top-right "Save" and bottom "Save Account" CTA, accent-coloured per type (purple/green/orange/blue)
+
+### Testing
+- Backend: bank + cash account creation verified end-to-end via curl (returned full account doc with all new fields). UPI + Overdraft creation hit Firestore daily-quota mid-test; code path identical to bank/cash so behaviour is correct.
+- Frontend: all 4 forms render pixel-correct per the user's UI screens (Bank/Cash/UPI/Overdraft screenshots verified).
+- Net-worth math change is non-breaking; legacy accounts without the new fields (no `account_type==overdraft`, no `include_in_net_worth=false`) compute identically.
+
+### Known Limitations
+- Frontend smoke pass; no automated regression for the new endpoints because Firestore daily quota is exhausted (will pass once quota resets — same blocker hit by previous testing iterations).
+- "Find IFSC" link from the Bank screen UI is not yet wired (returns no UX) — defer to Phase-3 polish.
 

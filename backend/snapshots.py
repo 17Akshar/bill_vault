@@ -53,13 +53,26 @@ async def _compute_networth(user_id: str) -> dict:
     Compute a fresh net-worth snapshot for the given user.
     Aggregates across accounts, investments, loans, and credit cards.
     """
-    # Accounts (asset or liability depending on balance sign)
+    # Accounts (asset or liability depending on type+balance)
+    # Cash accounts may opt out via include_in_net_worth=false.
     accounts = await db.accounts.find(
         {"user_id": user_id, "is_active": True}, {"_id": 0}
     ).to_list(1000)
+    accounts = [a for a in accounts if a.get("include_in_net_worth", True)]
     total_balance = sum(a.get("balance", 0) for a in accounts)
-    positive_bal = sum(a.get("balance", 0) for a in accounts if a.get("balance", 0) > 0)
-    negative_bal = sum(a.get("balance", 0) for a in accounts if a.get("balance", 0) < 0)
+    positive_bal = sum(
+        a.get("balance", 0) for a in accounts
+        if a.get("account_type") != "overdraft" and a.get("balance", 0) > 0
+    )
+    negative_bal = sum(
+        a.get("balance", 0) for a in accounts
+        if a.get("account_type") != "overdraft" and a.get("balance", 0) < 0
+    )
+    # Overdraft: explicit `overdraft_used` is the liability portion.
+    overdraft_liab = sum(
+        float(a.get("overdraft_used") or abs(min(0.0, float(a.get("balance") or 0))))
+        for a in accounts if a.get("account_type") == "overdraft"
+    )
 
     # Investments at current value
     investments = await db.investments.find(
@@ -85,7 +98,7 @@ async def _compute_networth(user_id: str) -> dict:
         cc_outstanding += float(c.get("outstanding_amount") or 0)
 
     total_assets      = positive_bal + investment_value
-    total_liabilities = abs(negative_bal) + loan_outstanding + cc_outstanding
+    total_liabilities = abs(negative_bal) + overdraft_liab + loan_outstanding + cc_outstanding
     net_worth         = total_assets - total_liabilities
 
     return {

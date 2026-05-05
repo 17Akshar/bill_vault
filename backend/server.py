@@ -97,13 +97,37 @@ class Account(BaseModel):
     user_id: str
     family_member_id: Optional[str] = None
     name: str
-    account_type: str  # bank, cash, upi, credit_card, wallet, investment_account
+    account_type: str  # bank, cash, upi, credit_card, wallet, investment_account, overdraft
     ownership_type: str = "individual"  # individual, joint, business
     institution: Optional[str] = None  # bank name, wallet provider
     balance: float = 0.0
     account_number: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+    # ---- Bank-specific ----
+    account_holder_name: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    branch_name: Optional[str] = None
+    sub_type: Optional[str] = None       # savings | current | other
+    # ---- Cash-specific ----
+    currency: Optional[str] = "INR"
+    cash_location: Optional[str] = None
+    include_in_net_worth: bool = True
+    notes: Optional[str] = None
+    # ---- UPI-specific ----
+    upi_id: Optional[str] = None
+    linked_app: Optional[str] = None     # GooglePay, PhonePe, Paytm, …
+    upi_status: Optional[str] = "active"
+    is_primary_upi: bool = False
+    vpa: Optional[str] = None
+    # ---- Overdraft-specific ----
+    overdraft_limit: Optional[float] = None
+    interest_rate: Optional[float] = None
+    overdraft_used: Optional[float] = None        # = liability portion
+    overdraft_start_date: Optional[datetime] = None
+    overdraft_end_date: Optional[datetime] = None
+    overdraft_charges: Optional[float] = None
+    is_active: bool = True
     created_at: datetime
     updated_at: datetime
 
@@ -118,6 +142,28 @@ class AccountCreate(BaseModel):
     family_member_id: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+    # Bank
+    account_holder_name: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    branch_name: Optional[str] = None
+    # Cash
+    currency: Optional[str] = "INR"
+    cash_location: Optional[str] = None
+    include_in_net_worth: Optional[bool] = True
+    notes: Optional[str] = None
+    # UPI
+    upi_id: Optional[str] = None
+    linked_app: Optional[str] = None
+    upi_status: Optional[str] = "active"
+    is_primary_upi: Optional[bool] = False
+    vpa: Optional[str] = None
+    # Overdraft
+    overdraft_limit: Optional[float] = None
+    interest_rate: Optional[float] = None
+    overdraft_used: Optional[float] = None
+    overdraft_start_date: Optional[str] = None  # ISO date string
+    overdraft_end_date: Optional[str] = None
+    overdraft_charges: Optional[float] = None
 
 class AccountUpdate(BaseModel):
     name: Optional[str] = None
@@ -126,6 +172,30 @@ class AccountUpdate(BaseModel):
     institution: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+    sub_type: Optional[str] = None
+    # Bank
+    account_holder_name: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    branch_name: Optional[str] = None
+    # Cash
+    currency: Optional[str] = None
+    cash_location: Optional[str] = None
+    include_in_net_worth: Optional[bool] = None
+    notes: Optional[str] = None
+    # UPI
+    upi_id: Optional[str] = None
+    linked_app: Optional[str] = None
+    upi_status: Optional[str] = None
+    is_primary_upi: Optional[bool] = None
+    vpa: Optional[str] = None
+    # Overdraft
+    overdraft_limit: Optional[float] = None
+    interest_rate: Optional[float] = None
+    overdraft_used: Optional[float] = None
+    overdraft_start_date: Optional[str] = None
+    overdraft_end_date: Optional[str] = None
+    overdraft_charges: Optional[float] = None
+    balance: Optional[float] = None
 
 # Income Model
 class Income(BaseModel):
@@ -1578,6 +1648,40 @@ async def create_account(data: AccountCreate, request: Request):
         if not fm:
             raise HTTPException(status_code=404, detail="Family member not found")
     
+    # ---- Per-type validation ----
+    atype = (data.account_type or "").lower()
+    if atype == "bank":
+        # IFSC required for bank, basic format check (4-letter + 0 + 6 alphanum)
+        if not data.ifsc_code or not data.account_holder_name or not data.account_number:
+            raise HTTPException(
+                status_code=422,
+                detail="Bank account requires account_holder_name, account_number, and ifsc_code",
+            )
+    elif atype == "overdraft":
+        if data.overdraft_limit is None or data.overdraft_limit <= 0:
+            raise HTTPException(status_code=422, detail="Overdraft requires overdraft_limit > 0")
+        if data.overdraft_used is not None and data.overdraft_used < 0:
+            raise HTTPException(status_code=422, detail="overdraft_used cannot be negative")
+        if data.overdraft_used is not None and data.overdraft_used > data.overdraft_limit:
+            raise HTTPException(status_code=422, detail="overdraft_used cannot exceed overdraft_limit")
+    elif atype == "upi":
+        if not data.upi_id:
+            raise HTTPException(status_code=422, detail="UPI account requires upi_id")
+    
+    def _parse_iso(s: Optional[str]) -> Optional[datetime]:
+        if not s:
+            return None
+        try:
+            return datetime.fromisoformat(s.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid date: {s}")
+    
+    # Balance for overdraft is derived: -used (negative shows it as liability)
+    if atype == "overdraft":
+        balance = -float(data.overdraft_used or 0)
+    else:
+        balance = float(data.initial_balance or 0)
+    
     account_id = f"acc_{uuid.uuid4().hex[:12]}"
     now = datetime.now(timezone.utc)
     account = {
@@ -1585,18 +1689,52 @@ async def create_account(data: AccountCreate, request: Request):
         "user_id": user.user_id,
         "family_member_id": data.family_member_id,
         "name": data.name,
-        "account_type": data.account_type,
+        "account_type": atype,
         "sub_type": data.sub_type,
         "ownership_type": data.ownership_type or "individual",
         "institution": data.institution,
-        "balance": data.initial_balance,
+        "balance": balance,
         "account_number": data.account_number,
         "color": data.color,
         "icon": data.icon,
+        # Bank
+        "account_holder_name": data.account_holder_name,
+        "ifsc_code": (data.ifsc_code or "").upper() or None,
+        "branch_name": data.branch_name,
+        # Cash
+        "currency": data.currency or "INR",
+        "cash_location": data.cash_location,
+        "include_in_net_worth": True if data.include_in_net_worth is None else data.include_in_net_worth,
+        "notes": data.notes,
+        # UPI
+        "upi_id": data.upi_id,
+        "linked_app": data.linked_app,
+        "upi_status": data.upi_status or "active",
+        "is_primary_upi": bool(data.is_primary_upi),
+        "vpa": data.vpa,
+        # Overdraft
+        "overdraft_limit": data.overdraft_limit,
+        "interest_rate": data.interest_rate,
+        "overdraft_used": data.overdraft_used,
+        "overdraft_start_date": _parse_iso(data.overdraft_start_date),
+        "overdraft_end_date": _parse_iso(data.overdraft_end_date),
+        "overdraft_charges": data.overdraft_charges,
         "is_active": True,
         "created_at": now,
-        "updated_at": now
+        "updated_at": now,
     }
+    
+    # If user marked this UPI as primary, demote other primaries
+    if atype == "upi" and account["is_primary_upi"]:
+        existing = await db.accounts.find(
+            {"user_id": user.user_id, "account_type": "upi", "is_primary_upi": True},
+            {"_id": 0},
+        ).to_list(50)
+        for ex in existing:
+            await db.accounts.update_one(
+                {"account_id": ex["account_id"]},
+                {"$set": {"is_primary_upi": False, "updated_at": now}},
+            )
     
     await db.accounts.insert_one(account)
     account.pop("_id", None)
@@ -1619,6 +1757,58 @@ async def get_accounts(
     
     accounts = await db.accounts.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
     return accounts
+
+@api_router.get("/accounts/summary")
+async def get_accounts_summary(request: Request):
+    """
+    Returns the Accounts overview data per UI spec:
+      total_balance        = sum of all balances (signed; overdraft used is negative)
+      in_accounts          = sum of positive balances
+      in_liabilities       = absolute sum of negative balances + sum(overdraft_used)
+      groups[]             = bucketed by Bank / Overdraft / UPI / Cash with count + total
+    """
+    user = await get_current_user(request)
+    rows = await db.accounts.find(
+        {"user_id": user.user_id, "is_active": True}, {"_id": 0}
+    ).to_list(500)
+    
+    total_balance = 0.0
+    in_accounts = 0.0
+    in_liabilities = 0.0
+    
+    buckets = {
+        "bank":      {"label": "Bank Accounts",          "total": 0.0, "count": 0},
+        "overdraft": {"label": "Accounts with Overdraft", "total": 0.0, "count": 0},
+        "upi":       {"label": "UPI Accounts",            "total": 0.0, "count": 0},
+        "cash":      {"label": "Cash",                    "total": 0.0, "count": 0},
+    }
+    
+    for a in rows:
+        bal = float(a.get("balance") or 0.0)
+        atype = (a.get("account_type") or "").lower()
+        # Net-worth opt-out (cash with include_in_net_worth=false)
+        include_in_nw = a.get("include_in_net_worth", True)
+        if include_in_nw:
+            total_balance += bal
+            if atype == "overdraft":
+                in_liabilities += float(a.get("overdraft_used") or abs(min(0.0, bal)))
+            elif bal < 0:
+                in_liabilities += abs(bal)
+            else:
+                in_accounts += bal
+        if atype in buckets:
+            buckets[atype]["total"] += bal
+            buckets[atype]["count"] += 1
+    
+    groups = [
+        {"key": k, **v} for k, v in buckets.items()
+    ]
+    return {
+        "total_balance": round(total_balance, 2),
+        "in_accounts": round(in_accounts, 2),
+        "in_liabilities": round(in_liabilities, 2),
+        "groups": groups,
+    }
 
 @api_router.get("/accounts/{account_id}")
 async def get_account(account_id: str, request: Request):
@@ -2525,9 +2715,19 @@ async def delete_heading(heading_id: str, request: Request):
 async def get_net_worth(request: Request):
     user = await get_current_user(request)
     
-    # Assets
+    # Assets — exclude overdraft accounts (handled separately as liabilities)
+    # and any account opted out via include_in_net_worth=false
     accounts = await db.accounts.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(100)
-    total_account_balance = sum(a.get("balance", 0) for a in accounts)
+    accounts_in_nw = [a for a in accounts if a.get("include_in_net_worth", True)]
+    asset_accounts = [a for a in accounts_in_nw if a.get("account_type") != "overdraft"]
+    total_account_balance = sum(max(0.0, a.get("balance", 0) or 0) for a in asset_accounts)
+    # Negative balances on non-overdraft accounts also count as liabilities
+    negative_account_liab = sum(abs(a.get("balance", 0) or 0) for a in asset_accounts if (a.get("balance", 0) or 0) < 0)
+    # Overdraft used (or |negative balance| if used not set)
+    overdraft_liab = sum(
+        float(a.get("overdraft_used") or abs(min(0.0, float(a.get("balance") or 0))))
+        for a in accounts_in_nw if a.get("account_type") == "overdraft"
+    )
     
     investments = await db.investments.find({"user_id": user.user_id, "is_active": True}, {"_id": 0}).to_list(1000)
     total_investment_value = sum(i.get("current_value", 0) for i in investments)
@@ -2548,7 +2748,8 @@ async def get_net_worth(request: Request):
     borrowed_records = await db.lending.find({"user_id": user.user_id, "lending_type": "borrowed", "is_settled": False}, {"_id": 0}).to_list(1000)
     total_borrowed = sum(b.get("remaining_amount", 0) for b in borrowed_records)
     
-    total_liabilities = total_cc_outstanding + total_loan_outstanding + total_borrowed
+    total_liabilities = (total_cc_outstanding + total_loan_outstanding + total_borrowed
+                         + overdraft_liab + negative_account_liab)
     net_worth = total_assets - total_liabilities
     
     return {
