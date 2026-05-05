@@ -374,7 +374,12 @@ class ReminderCreate(BaseModel):
     reminder_type: str  # investment, loan_emi, credit_card, lending, bill, custom
     related_id: Optional[str] = None  # Links to investment_id, loan_id, card_id, lending_id, bill_id
     is_recurring: bool = False
-    recurrence: Optional[str] = None  # daily, weekly, monthly, yearly
+    recurrence: Optional[str] = None  # daily, weekly, monthly, quarterly, yearly
+    # Advanced rule (per Add Reminder spec)
+    url: Optional[str] = None
+    end_type: Optional[str] = "never"      # 'never' | 'on' | 'after'
+    end_date: Optional[str] = None         # ISO date when end_type='on'
+    max_occurrences: Optional[int] = None  # when end_type='after'
 
 class ReminderUpdate(BaseModel):
     title: Optional[str] = None
@@ -383,6 +388,13 @@ class ReminderUpdate(BaseModel):
     is_completed: Optional[bool] = None
     is_recurring: Optional[bool] = None
     recurrence: Optional[str] = None
+    # Advanced rule
+    url: Optional[str] = None
+    end_type: Optional[str] = None
+    end_date: Optional[str] = None
+    max_occurrences: Optional[int] = None
+    # Convenience
+    snooze_until: Optional[str] = None     # ISO datetime — moves reminder_date forward
 
 # Rental Income Models
 class RentalCreate(BaseModel):
@@ -2497,6 +2509,15 @@ async def create_reminder(data: ReminderCreate, request: Request):
         "related_id": data.related_id,
         "is_recurring": data.is_recurring,
         "recurrence": data.recurrence,
+        # Advanced rule
+        "url": data.url,
+        "end_type": data.end_type or "never",
+        "end_date": (
+            datetime.fromisoformat(data.end_date.replace('Z', '+00:00'))
+            if data.end_date else None
+        ),
+        "max_occurrences": data.max_occurrences,
+        "completion_count": 0,
         "is_completed": False,
         "created_at": now, "updated_at": now
     }
@@ -2568,15 +2589,91 @@ async def get_reminders_summary(request: Request):
         "overdue_list": overdue_list
     }
 
+def _next_occurrence(current: datetime, recurrence: Optional[str]) -> Optional[datetime]:
+    """Compute the next firing time for a recurring reminder."""
+    if not recurrence or recurrence == "none":
+        return None
+    if recurrence == "daily":
+        return current + timedelta(days=1)
+    if recurrence == "weekly":
+        return current + timedelta(days=7)
+    if recurrence == "monthly":
+        # Naive: add 30 days. Good enough for non-financial-precision UX.
+        # For pixel-precise month-day rollover use dateutil.relativedelta.
+        try:
+            from dateutil.relativedelta import relativedelta
+            return current + relativedelta(months=1)
+        except Exception:
+            return current + timedelta(days=30)
+    if recurrence == "quarterly":
+        try:
+            from dateutil.relativedelta import relativedelta
+            return current + relativedelta(months=3)
+        except Exception:
+            return current + timedelta(days=91)
+    if recurrence == "yearly":
+        try:
+            from dateutil.relativedelta import relativedelta
+            return current + relativedelta(years=1)
+        except Exception:
+            return current + timedelta(days=365)
+    return None
+
+
 @api_router.put("/reminders/{reminder_id}")
 async def update_reminder(reminder_id: str, data: ReminderUpdate, request: Request):
     user = await get_current_user(request)
     existing = await db.reminders.find_one({"reminder_id": reminder_id, "user_id": user.user_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Reminder not found")
-    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
-    if "reminder_date" in update_data and isinstance(update_data["reminder_date"], str):
-        update_data["reminder_date"] = datetime.fromisoformat(update_data["reminder_date"].replace('Z', '+00:00'))
+    payload = data.model_dump(exclude_unset=True)
+    update_data: Dict = {k: v for k, v in payload.items() if v is not None}
+    
+    # Snooze: forward reminder_date by the given timestamp
+    if "snooze_until" in update_data:
+        snooze_iso = update_data.pop("snooze_until")
+        try:
+            update_data["reminder_date"] = datetime.fromisoformat(
+                str(snooze_iso).replace('Z', '+00:00')
+            )
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid snooze_until date")
+    
+    # ISO date -> datetime conversions
+    for fld in ("reminder_date", "end_date"):
+        if fld in update_data and isinstance(update_data[fld], str):
+            update_data[fld] = datetime.fromisoformat(update_data[fld].replace('Z', '+00:00'))
+    
+    # Completing a recurring reminder advances to next occurrence rather than
+    # marking it permanently complete (unless max_occurrences was reached).
+    if update_data.get("is_completed") is True and existing.get("is_recurring"):
+        next_dt = _next_occurrence(
+            existing.get("reminder_date") or datetime.now(timezone.utc),
+            existing.get("recurrence"),
+        )
+        completion_count = int(existing.get("completion_count") or 0) + 1
+        max_occ = existing.get("max_occurrences")
+        end_type = existing.get("end_type") or "never"
+        end_date = existing.get("end_date")
+        
+        # Reached max occurrences → mark fully complete
+        reached_max = (
+            end_type == "after" and max_occ and completion_count >= max_occ
+        )
+        # Past end_date → mark fully complete
+        past_end = (
+            end_type == "on" and end_date and next_dt and next_dt > end_date
+        )
+        
+        if next_dt and not reached_max and not past_end:
+            update_data["is_completed"] = False
+            update_data["reminder_date"] = next_dt
+            update_data["completion_count"] = completion_count
+        else:
+            # Permanently complete
+            update_data["is_completed"] = True
+            update_data["completion_count"] = completion_count
+    
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.reminders.update_one({"reminder_id": reminder_id}, {"$set": update_data})
     updated = await db.reminders.find_one({"reminder_id": reminder_id}, {"_id": 0})

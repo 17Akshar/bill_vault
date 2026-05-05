@@ -105,23 +105,18 @@ export default function AddReminderScreen() {
     }
     setSaving(true);
     try {
-      // Encode advanced rule in description for round-tripping
-      const advanced = {
-        url: url.trim() || null,
-        end_type: endType,
-        end_date: endType === 'on' ? endDate.toISOString() : null,
-        max_occurrences: endType === 'after' ? occurrences : null,
-      };
-      const desc = notes.trim()
-        ? `${notes.trim()}\n\n[rule]${JSON.stringify(advanced)}[/rule]`
-        : `[rule]${JSON.stringify(advanced)}[/rule]`;
       await api.post('/reminders', {
         title: title.trim(),
-        description: desc,
+        description: notes.trim() || null,
         reminder_date: dateTime.toISOString(),
         reminder_type: 'custom',
         is_recurring: recurrence !== 'none',
         recurrence,
+        // Structured advanced rule
+        url: url.trim() || null,
+        end_type: endType,
+        end_date: endType === 'on' ? endDate.toISOString() : null,
+        max_occurrences: endType === 'after' ? occurrences : null,
       });
       if (router.canGoBack()) router.back();
       else router.replace('/reminders/all' as any);

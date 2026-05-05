@@ -21,6 +21,7 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -125,6 +126,57 @@ export default function RemindersAllScreen() {
   useEffect(() => { load(); }, []);
   useFocusEffect(useCallback(() => { load(); }, []));
 
+  const completeReminder = async (r: Reminder) => {
+    // Optimistic UI: remove instantly, restore on error
+    const prev = items;
+    setItems(items.map((it) => (it.reminder_id === r.reminder_id
+      ? { ...it, is_completed: true } : it)));
+    try {
+      await api.put(`/reminders/${r.reminder_id}`, { is_completed: true });
+      load();
+    } catch (e) {
+      setItems(prev);
+      Alert.alert('Error', 'Could not mark complete');
+    }
+  };
+
+  const snoozeReminder = (r: Reminder) => {
+    // Quick presets (1 hour, 1 day, 1 week)
+    Alert.alert(
+      'Snooze reminder',
+      `Postpone "${r.title}"`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: '1 hour',  onPress: () => doSnooze(r, 60 * 60 * 1000) },
+        { text: '1 day',   onPress: () => doSnooze(r, 24 * 60 * 60 * 1000) },
+        { text: '1 week',  onPress: () => doSnooze(r, 7 * 24 * 60 * 60 * 1000) },
+      ],
+    );
+  };
+
+  const doSnooze = async (r: Reminder, deltaMs: number) => {
+    const newDate = new Date(new Date(r.reminder_date).getTime() + deltaMs);
+    // If snoozing to the past (overdue case), bump from now instead.
+    const target = newDate < new Date() ? new Date(Date.now() + deltaMs) : newDate;
+    const prev = items;
+    setItems(
+      items.map((it) =>
+        it.reminder_id === r.reminder_id
+          ? { ...it, reminder_date: target.toISOString() }
+          : it,
+      ),
+    );
+    try {
+      await api.put(`/reminders/${r.reminder_id}`, {
+        snooze_until: target.toISOString(),
+      });
+      load();
+    } catch (e) {
+      setItems(prev);
+      Alert.alert('Error', 'Could not snooze reminder');
+    }
+  };
+
   const upcoming = items.filter((i) => !i.is_completed);
   const completed = items.filter((i) => i.is_completed);
 
@@ -182,32 +234,54 @@ export default function RemindersAllScreen() {
     const due = dueLabel(r.reminder_date, r.is_completed);
     const color = dueColor(r.reminder_date, r.is_completed);
     return (
-      <TouchableOpacity
-        key={r.reminder_id}
-        testID={`reminder-row-${r.reminder_id}`}
-        style={styles.row}
-        onPress={() => router.push({ pathname: '/reminders' as any, params: { id: r.reminder_id } })}
-      >
-        <View style={[styles.rowIcon, { backgroundColor: r.is_completed ? '#22C55E' : meta.color }]}>
-          <Ionicons
-            name={r.is_completed ? 'checkmark' : (meta.icon as any)}
-            size={18}
-            color="#FFFFFF"
-          />
-        </View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.rowTitle} numberOfLines={1}>{r.title}</Text>
-          {!!r.description && (
-            <Text style={styles.rowSub} numberOfLines={1}>{r.description}</Text>
-          )}
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          {amount > 0 && (
-            <Text style={[styles.rowAmount, { color: color }]}>{fmtINR(amount)}</Text>
-          )}
-          <Text style={[styles.rowDue, { color: color }]}>{due}</Text>
-        </View>
-      </TouchableOpacity>
+      <View key={r.reminder_id} style={styles.row}>
+        <TouchableOpacity
+          testID={`reminder-row-${r.reminder_id}`}
+          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+          onPress={() => router.push({ pathname: '/reminders' as any, params: { id: r.reminder_id } })}
+        >
+          <View style={[styles.rowIcon, { backgroundColor: r.is_completed ? '#22C55E' : meta.color }]}>
+            <Ionicons
+              name={r.is_completed ? 'checkmark' : (meta.icon as any)}
+              size={18}
+              color="#FFFFFF"
+            />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.rowTitle} numberOfLines={1}>{r.title}</Text>
+            {!!r.description && (
+              <Text style={styles.rowSub} numberOfLines={1}>{r.description}</Text>
+            )}
+          </View>
+          <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
+            {amount > 0 && (
+              <Text style={[styles.rowAmount, { color: color }]}>{fmtINR(amount)}</Text>
+            )}
+            <Text style={[styles.rowDue, { color: color }]}>{due}</Text>
+          </View>
+        </TouchableOpacity>
+        {/* Quick actions — hidden on completed rows */}
+        {!r.is_completed && (
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            <TouchableOpacity
+              testID={`reminder-snooze-${r.reminder_id}`}
+              onPress={() => snoozeReminder(r)}
+              style={styles.actionBtn}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="time-outline" size={18} color="#FFB300" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID={`reminder-complete-${r.reminder_id}`}
+              onPress={() => completeReminder(r)}
+              style={styles.actionBtn}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
