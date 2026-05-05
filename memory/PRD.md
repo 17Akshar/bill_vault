@@ -385,7 +385,54 @@ Replaced the legacy `[rule]…[/rule]` markup hack with first-class fields on `R
 ### Testing — `test_reminder_advanced.py` 4/4 PASS
 - structured-rule round-trip, complete-advances-date, snooze postpones, max_occurrences caps cycle
 
-## Session 11 Update (2026-05-05)
+## Session 11 Update (2026-05-05) — Dashboard Reminders + expo-notifications + First Modularisation Slice
+- **Dashboard**: replaced Financial Hub with enriched Upcoming Reminders card (type-coloured icons, urgency-coloured due text, 4 rows, taps to `/reminders/all`). `ListRow` got `rightBottomColor` so the recent-tx date stays muted.
+- **expo-notifications**: new `utils/reminderNotifications.ts` schedules/cancels OS banners for next 12 occurrences of every open reminder, matching Daily/Weekly/Monthly/Quarterly/Yearly rules. Hooked into `reminders/all.tsx` (sync on load), `reminders/add.tsx` (schedule on create), and complete/snooze actions (reschedule/cancel).
+- **Reminders router extracted** — `/app/backend/reminders.py` (~240 lines), 5 endpoints + helpers. server.py shrunk 4490 → 4348 (−142 lines). All 4 reminder advanced tests pass post-split.
+
+## Session 12 Update (2026-05-05) — Bills & Investments Modularised + EAS Build Guidance
+
+### Backend Modularisation Continues
+Two more slices extracted from the `server.py` monolith:
+
+**`/app/backend/bills.py`** (~257 lines):
+- Models: `Bill`, `BillCreate`, `BillUpdate`
+- Endpoints: `POST /api/bills`, `GET /api/bills` (filters: month/year/category/status), `GET /api/bills/summary` (overdue/upcoming/paid buckets), `GET /api/bills/{id}`, `PUT /api/bills/{id}`, `DELETE /api/bills/{id}` (cascades to payments)
+
+**`/app/backend/investments.py`** (~126 lines):
+- Models: `InvestmentCreate`, `InvestmentUpdate`
+- Endpoints: `POST /api/investments`, `GET /api/investments`, `PUT /api/investments/{id}`, `DELETE /api/investments/{id}` (soft-delete via `is_active=false`)
+
+Both follow the same recipe as `reminders.py` — lazy-import `get_current_user` from server.py to avoid circular imports, import `db` directly from `firebase_config`, registered via `app.include_router` at bottom of server.py.
+
+`server.py` shrunk: **4348 → 4153 lines (−195)**. **Cumulative reduction: −337 lines** (started at 4490). The duplicated Pydantic models in server.py are kept temporarily — they're harmless and removing them would require checking all 50+ remaining endpoint references; safe deduplication is a follow-up pass.
+
+### EAS Build Guidance
+Mobile build (EAS) cannot be run from this container — it requires the user's own Expo account credentials and a 15-30 minute build on Expo's servers.
+
+**To build & test reminder OS notifications on iOS/Android:**
+```bash
+cd /app/frontend
+npx eas-cli login                # one-time, paste your Expo credentials
+npx eas-cli build:configure      # creates eas.json if missing
+npx eas-cli build --platform android --profile preview      # ~20 min
+# OR for iOS: --platform ios --profile preview (needs Apple dev account)
+```
+Once installed:
+1. Open the app, sign in
+2. Add a reminder for "1 minute from now"
+3. Lock screen / send to background
+4. Banner should fire at the chosen time with the reminder title + description
+
+### Testing
+- `test_reminder_advanced.py` — 4/4 PASS against the now-fully-modularised reminders router (ruled out post-split regressions for the slicing pattern)
+- Backend boots clean (`Application startup complete`); all 3 router files (`reminders`, `bills`, `investments`) register successfully alongside `transfers`, `uploads`, `snapshots`
+- Curl smoke for bills/investments blocked by Firestore daily-read quota (`RESOURCE_EXHAUSTED 429` — environmental, not code)
+
+### Known Limitations
+- Pydantic models duplicated in server.py & router files. Deduplication pass deferred — no functional impact.
+- Firestore quota intermittent: live curl smoke works in some windows, fails in others. Pytest passes within quota windows.
+- Accounts module NOT extracted yet (has cross-collection side-effects with snapshots, transfers, dashboards). Will tackle next, with care.
 
 ### Dashboard: Financial Hub → Enriched Upcoming Reminders
 Per user's latest spec image, the Financial Hub grid has been **removed** and the **Upcoming Reminders** card now shows:

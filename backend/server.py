@@ -1066,159 +1066,7 @@ async def single_user_mode():
 
 # ==================== BILL ENDPOINTS ====================
 
-@api_router.post("/bills", response_model=Bill)
-async def create_bill(bill_data: BillCreate, request: Request, authorization: Optional[str] = Header(None)):
-    """Create new bill"""
-    user = await get_current_user(request)
-    
-    bill_id = f"bill_{uuid.uuid4().hex[:12]}"
-    bill = {
-        "bill_id": bill_id,
-        "user_id": user.user_id,
-        "family_member_id": bill_data.family_member_id,
-        "account_id": bill_data.account_id,
-        "name": bill_data.name,
-        "amount": bill_data.amount,
-        "currency": bill_data.currency,
-        "due_date": datetime.fromisoformat(bill_data.due_date.replace('Z', '+00:00')),
-        "category": bill_data.category,
-        "vendor": bill_data.vendor,
-        "notes": bill_data.notes,
-        "receipt_image": bill_data.receipt_image,
-        "is_recurring": bill_data.is_recurring,
-        "recurrence_type": bill_data.recurrence_type,
-        "recurrence_interval": bill_data.recurrence_interval,
-        "payment_status": "unpaid",
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc)
-    }
-    
-    await db.bills.insert_one(bill)
-    bill.pop("_id", None)
-    
-    return Bill(**bill)
-
-@api_router.get("/bills", response_model=List[Bill])
-async def get_bills(
-    request: Request,
-    authorization: Optional[str] = Header(None),
-    month: Optional[int] = None,
-    year: Optional[int] = None,
-    category: Optional[str] = None,
-    status: Optional[str] = None
-):
-    """Get all bills for user with optional filtering"""
-    user = await get_current_user(request)
-    
-    query = {"user_id": user.user_id}
-    
-    # Filter by month/year
-    if month and year:
-        start_date = datetime(year, month, 1, tzinfo=timezone.utc)
-        if month == 12:
-            end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
-        else:
-            end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc)
-        query["due_date"] = {"$gte": start_date, "$lt": end_date}
-    
-    # Filter by category
-    if category:
-        query["category"] = category
-    
-    # Filter by status
-    if status:
-        query["payment_status"] = status
-    
-    bills = await db.bills.find(query, {"_id": 0}).sort("due_date", 1).to_list(1000)
-    return [Bill(**bill) for bill in bills]
-
-@api_router.get("/bills/summary")
-async def bills_summary_early(request: Request):
-    """Get bills with overdue/upcoming/paid status"""
-    user = await get_current_user(request)
-    now = datetime.now(timezone.utc)
-    all_bills = await db.bills.find({"user_id": user.user_id}, {"_id": 0}).sort("due_date", 1).to_list(1000)
-
-    overdue = []
-    upcoming = []
-    paid_bills = []
-    for b in all_bills:
-        due = b.get("due_date")
-        if isinstance(due, str):
-            try:
-                due = datetime.fromisoformat(due.replace('Z', '+00:00'))
-            except (ValueError, TypeError):
-                due = None
-        elif isinstance(due, datetime):
-            if due.tzinfo is None:
-                due = due.replace(tzinfo=timezone.utc)
-        status = b.get("payment_status", b.get("status", "pending"))
-        if status == "paid":
-            paid_bills.append({**b, "bill_status": "paid"})
-        elif due and due < now:
-            overdue.append({**b, "bill_status": "overdue", "days_overdue": (now - due).days})
-        else:
-            days_until = (due - now).days if due else 999
-            upcoming.append({**b, "bill_status": "upcoming", "days_until": days_until})
-
-    return {
-        "overdue": overdue, "overdue_count": len(overdue),
-        "upcoming": upcoming, "upcoming_count": len(upcoming),
-        "paid": paid_bills, "paid_count": len(paid_bills),
-        "total_overdue_amount": sum(b.get("amount", 0) for b in overdue),
-        "total_upcoming_amount": sum(b.get("amount", 0) for b in upcoming),
-    }
-
-@api_router.get("/bills/{bill_id}", response_model=Bill)
-async def get_bill(bill_id: str, request: Request, authorization: Optional[str] = Header(None)):
-    """Get specific bill"""
-    user = await get_current_user(request)
-    
-    bill_doc = await db.bills.find_one({"bill_id": bill_id, "user_id": user.user_id}, {"_id": 0})
-    if not bill_doc:
-        raise HTTPException(status_code=404, detail="Bill not found")
-    
-    return Bill(**bill_doc)
-
-@api_router.put("/bills/{bill_id}", response_model=Bill)
-async def update_bill(bill_id: str, bill_data: BillUpdate, request: Request, authorization: Optional[str] = Header(None)):
-    """Update bill"""
-    user = await get_current_user(request)
-    
-    # Check bill exists and belongs to user
-    existing_bill = await db.bills.find_one({"bill_id": bill_id, "user_id": user.user_id})
-    if not existing_bill:
-        raise HTTPException(status_code=404, detail="Bill not found")
-    
-    # Prepare update data
-    update_data = {k: v for k, v in bill_data.model_dump(exclude_unset=True).items() if v is not None}
-    if "due_date" in update_data:
-        update_data["due_date"] = datetime.fromisoformat(update_data["due_date"].replace('Z', '+00:00'))
-    update_data["updated_at"] = datetime.now(timezone.utc)
-    
-    # Update bill
-    await db.bills.update_one(
-        {"bill_id": bill_id, "user_id": user.user_id},
-        {"$set": update_data}
-    )
-    
-    # Get updated bill
-    updated_bill = await db.bills.find_one({"bill_id": bill_id}, {"_id": 0})
-    return Bill(**updated_bill)
-
-@api_router.delete("/bills/{bill_id}")
-async def delete_bill(bill_id: str, request: Request, authorization: Optional[str] = Header(None)):
-    """Delete bill"""
-    user = await get_current_user(request)
-    
-    result = await db.bills.delete_one({"bill_id": bill_id, "user_id": user.user_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Bill not found")
-    
-    # Also delete associated payments
-    await db.payments.delete_many({"bill_id": bill_id})
-    
-    return {"message": "Bill deleted successfully"}
+# ==================== BILL ENDPOINTS — moved to bills.py ====================
 
 # ==================== PAYMENT ENDPOINTS ====================
 
@@ -2417,57 +2265,6 @@ async def delete_lending(lending_id: str, request: Request):
     return {"message": "Lending record deleted"}
 
 # ==================== INVESTMENT ENDPOINTS ====================
-
-@api_router.post("/investments")
-async def create_investment(data: InvestmentCreate, request: Request):
-    user = await get_current_user(request)
-    inv_id = f"inv_{uuid.uuid4().hex[:12]}"
-    investment = {
-        "investment_id": inv_id, "user_id": user.user_id, "name": data.name,
-        "investment_type": data.investment_type, "invested_amount": data.invested_amount,
-        "current_value": data.current_value,
-        "purchase_date": datetime.fromisoformat(data.purchase_date.replace('Z', '+00:00')),
-        "maturity_date": datetime.fromisoformat(data.maturity_date.replace('Z', '+00:00')) if data.maturity_date else None,
-        "family_member_id": data.family_member_id, "notes": data.notes,
-        "heading_id": data.heading_id, "sub_category": data.sub_category,
-        "is_active": True, "created_at": datetime.now(timezone.utc)
-    }
-    await db.investments.insert_one(investment)
-    investment.pop("_id", None)
-    return investment
-
-@api_router.get("/investments")
-async def get_investments(request: Request, investment_type: Optional[str] = None):
-    user = await get_current_user(request)
-    query: Dict = {"user_id": user.user_id, "is_active": True}
-    if investment_type:
-        query["investment_type"] = investment_type
-    investments = await db.investments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return investments
-
-@api_router.put("/investments/{inv_id}")
-async def update_investment(inv_id: str, data: InvestmentUpdate, request: Request):
-    user = await get_current_user(request)
-    existing = await db.investments.find_one({"investment_id": inv_id, "user_id": user.user_id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Investment not found")
-    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
-    if "maturity_date" in update_data and isinstance(update_data["maturity_date"], str):
-        update_data["maturity_date"] = datetime.fromisoformat(update_data["maturity_date"].replace('Z', '+00:00'))
-    await db.investments.update_one({"investment_id": inv_id}, {"$set": update_data})
-    updated = await db.investments.find_one({"investment_id": inv_id}, {"_id": 0})
-    return updated
-
-@api_router.delete("/investments/{inv_id}")
-async def delete_investment(inv_id: str, request: Request):
-    user = await get_current_user(request)
-    existing = await db.investments.find_one({"investment_id": inv_id, "user_id": user.user_id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Investment not found")
-    await db.investments.update_one({"investment_id": inv_id}, {"$set": {"is_active": False}})
-    return {"message": "Investment removed"}
-
-# ==================== REMINDERS ENDPOINTS ====================
 
 # ==================== RENTAL INCOME ENDPOINTS ====================
 
@@ -4330,6 +4127,14 @@ app.include_router(uploads_router)
 # Reminders module (extracted from server.py monolith — Session 11 modularisation)
 from reminders import reminders_router
 app.include_router(reminders_router)
+
+# Bills module (extracted from server.py monolith — Session 12)
+from bills import bills_router
+app.include_router(bills_router)
+
+# Investments module (extracted from server.py monolith — Session 12)
+from investments import investments_router
+app.include_router(investments_router)
 
 @app.on_event("startup")
 async def _start_snapshot_scheduler():
