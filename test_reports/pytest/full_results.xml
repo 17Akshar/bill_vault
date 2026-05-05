@@ -1,1 +1,408 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="109" time="452.529" timestamp="2026-05-05T18:52:18.413468+00:00" hostname="agent-env-3389e5f7-8a97-4fb5-beee-72397ba91511"><testcase classname="backend.tests.test_fintracker_api.TestAuth" name="test_single_user_auth" time="0.477" /><testcase classname="backend.tests.test_fintracker_api.TestAuth" name="test_login_register_endpoints_exist" time="0.984" /><testcase classname="backend.tests.test_fintracker_api.TestAccounts" name="test_accounts_crud" time="6.529" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_create_increases_balance" time="7.308" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_expense_create_decreases_balance" time="7.917" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_update_adjusts_balance" time="10.433" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_delete_reverts_balance" time="8.411" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_expense_update_and_delete_balance" time="12.153" /><testcase classname="backend.tests.test_fintracker_api.TestBills" name="test_bills_flow" time="4.685" /><testcase classname="backend.tests.test_fintracker_api.TestCreditCards" name="test_credit_cards_flow" time="3.299" /><testcase classname="backend.tests.test_fintracker_api.TestInvestments" name="test_investment_flow_with_roi" time="7.340" /><testcase classname="backend.tests.test_fintracker_api.TestRentalsLoans" name="test_rentals" time="3.054" /><testcase classname="backend.tests.test_fintracker_api.TestRentalsLoans" name="test_loans_lending" time="6.427" /><testcase classname="backend.tests.test_fintracker_api.TestBudgetsReminders" name="test_budgets_progress" time="3.582" /><testcase classname="backend.tests.test_fintracker_api.TestBudgetsReminders" name="test_reminders" time="3.169" /><testcase classname="backend.tests.test_fintracker_api.TestNotes" name="test_note_headings_and_notes" time="6.347" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_dashboard" time="3.771" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_net_worth" time="2.678" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_analytics_cashflow" time="3.971" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_settings" time="2.438" /><testcase classname="backend.tests.test_fintracker_api.TestFamilyMembers" name="test_family_members_crud" time="3.058" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[1111-all the same digit]" time="1.154" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[0000-all the same digit]" time="0.622" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[2222-all the same digit]" time="0.612" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[1234-simple sequence]" time="0.614" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[4321-simple descending sequence]" time="0.608" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[9876-simple descending sequence]" time="0.611" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[1212-repeating pattern]" time="0.632" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[4545-repeating pattern]" time="0.614" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[123456-simple sequence]" time="0.608" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[654321-simple descending sequence]" time="0.599" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_common_mpin_rejected" time="0.611" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_non_digit_rejected[abc]" time="0.620" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_non_digit_rejected[12a4]" time="0.624" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_non_digit_rejected[12.4]" time="0.621" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_too_short_rejected" time="0.640" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_too_long_rejected" time="0.609" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_empty_rejected" time="0.620" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupSuccess" name="test_strong_4_digit_accepted" time="2.651" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupSuccess" name="test_strong_6_digit_accepted" time="2.201" /><testcase classname="backend.tests.test_mpin_api.TestMpinSetupSuccess" name="test_bcrypt_hash_in_db" time="3.725" /><testcase classname="backend.tests.test_mpin_api.TestMpinVerify" name="test_correct_mpin_returns_verified" time="4.474" /><testcase classname="backend.tests.test_mpin_api.TestMpinVerify" name="test_wrong_mpin_returns_401_with_remaining" time="3.939" /><testcase classname="backend.tests.test_mpin_api.TestMpinBruteForceLockout" name="test_5_wrong_attempts_then_429" time="15.306" /><testcase classname="backend.tests.test_mpin_api.TestMpinBruteForceLockout" name="test_setup_resets_rate_limit" time="10.409" /><testcase classname="backend.tests.test_mpin_api.TestMpinStatus" name="test_status_after_setup" time="3.191" /><testcase classname="backend.tests.test_mpin_api.TestMpinStatus" name="test_status_after_6_digit_setup" time="3.160" /><testcase classname="backend.tests.test_mpin_api.TestDismissPrompt" name="test_dismiss_prompt_persists" time="2.397" /><testcase classname="backend.tests.test_mpin_api.TestMpinDisable" name="test_disable_flips_flag" time="6.405" /><testcase classname="backend.tests.test_mpin_api.TestMpinAuth" name="test_setup_requires_auth" time="0.192" /><testcase classname="backend.tests.test_mpin_api.TestMpinAuth" name="test_verify_requires_auth" time="0.112" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_three_incomes_persist" time="8.274" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_three_expenses_persist" time="6.121" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_bills_persist" time="2.668" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_credit_cards_persist" time="2.671" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_loans_persist" time="2.664" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_investments_persist" time="2.669" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_reminders_persist" time="2.699" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_notes_persist" time="2.669" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_family_members_persist" time="2.659" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestDashboardDeltas" name="test_full_delta_response" time="13.031" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestDeltaEdgeCases" name="test_prev_zero_curr_positive_returns_100" time="7.846" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestDeltaEdgeCases" name="test_both_zero_returns_zero" time="4.917" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestSingleUserCollections" name="test_single_user_returns_same_user" time="0.853" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestSingleUserCollections" name="test_settings_still_single_doc" time="4.514" /><testcase classname="backend.tests.test_recovery_api.TestRecoveryStatus" name="test_status_for_fresh_identifier" time="0.448" /><testcase classname="backend.tests.test_recovery_api.TestRecoveryStatus" name="test_status_after_attempts" time="3.461" /><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_no_enumeration_message_for_random_email" time="1.526" /><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_same_message_for_existing_user" time="1.522" /><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_rate_limit_5_attempts_then_429" time="9.444" /><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_email_validation" time="0.133" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_too_short_pydantic_422" time="0.137" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_weak_no_uppercase_or_digit_400" time="0.143" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_weak_no_digit_400" time="0.139" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_weak_no_uppercase_400" time="0.132" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_invalid_firebase_token_returns_401" time="0.147" /><testcase classname="backend.tests.test_recovery_api.TestEmailReveal" name="test_invalid_token_returns_401" time="0.146" /><testcase classname="backend.tests.test_recovery_api.TestEmailReveal" name="test_token_too_short_422" time="0.141" /><testcase classname="backend.tests.test_recovery_api.TestEmailMaskingFunction" name="test_mask_email_format" time="0.168" /><testcase classname="backend.tests.test_recovery_api.TestLegacyForgotReset" name="test_legacy_forgot_password_endpoint_responds" time="0.406" /><testcase classname="backend.tests.test_recovery_api.TestLegacyForgotReset" name="test_legacy_reset_password_endpoint_responds" time="0.415" /><testcase classname="backend.tests.test_recovery_api.TestBalanceRegressionSmoke" name="test_income_then_expense_balance_flow" time="12.203" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_capture_requires_auth" time="0.199" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_list_requires_auth" time="0.150" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_last_month_requires_auth" time="0.142" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_capture_returns_full_schema" time="4.202" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_three_captures_persist" time="6.977" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_networth_math_with_account_balance" time="2.025" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_list_returns_count_and_sorted_desc" time="0.911" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_filter_by_type_manual" time="0.909" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_filter_by_type_daily_safe" time="0.906" /><testcase classname="backend.tests.test_snapshots_api.TestLastMonthSnapshot" name="test_404_when_no_prior_month_snapshot" time="0.912" /><testcase classname="backend.tests.test_snapshots_api.TestLastMonthSnapshot" name="test_returns_injected_prior_month" time="1.209" /><testcase classname="backend.tests.test_snapshots_api.TestDashboardSnapshotBasis" name="test_basis_is_snapshot_when_prior_exists" time="4.608" /><testcase classname="backend.tests.test_snapshots_api.TestDashboardSnapshotBasis" name="test_basis_is_flow_approx_for_new_user" time="4.922" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_happy_path" time="12.656" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_amount_zero_rejected" time="5.046" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_negative_amount_rejected" time="4.988" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_from_equals_to_rejected" time="5.685" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_missing_account_ids_rejected" time="0.065" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_account_not_owned_rejected" time="6.196" /><testcase classname="backend.tests.test_transfers_api.TestTransferRead" name="test_list_and_get_one" time="22.649" /><testcase classname="backend.tests.test_transfers_api.TestTransferRead" name="test_get_nonexistent_returns_404" time="0.902" /><testcase classname="backend.tests.test_transfers_api.TestTransferUpdate" name="test_amount_change_rebalances" time="18.962" /><testcase classname="backend.tests.test_transfers_api.TestTransferUpdate" name="test_change_from_account_rebalances" time="25.010" /><testcase classname="backend.tests.test_transfers_api.TestTransferDelete" name="test_delete_reverses_balances" time="16.225" /><testcase classname="backend.tests.test_transfers_api.TestDashboardTransferIsolation" name="test_transfer_not_in_income_expense_and_total_balance_conserved" time="18.182" /><testcase classname="backend.tests.test_transfers_api.TestIncomeExpenseNewFields" name="test_income_optional_fields_persist" time="7.175" /><testcase classname="backend.tests.test_transfers_api.TestIncomeExpenseNewFields" name="test_expense_optional_fields_persist" time="8.071" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="73" failures="24" skipped="1" tests="118" time="48.345" timestamp="2026-05-05T19:54:28.334427+00:00" hostname="agent-env-3389e5f7-8a97-4fb5-beee-72397ba91511"><testcase classname="backend.tests.test_fintracker_api.TestAuth" name="test_single_user_auth" time="0.492" /><testcase classname="backend.tests.test_fintracker_api.TestAuth" name="test_login_register_endpoints_exist" time="1.022" /><testcase classname="backend.tests.test_fintracker_api.TestAccounts" name="test_accounts_crud" time="7.446" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_create_increases_balance" time="7.365" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_expense_create_decreases_balance" time="7.466" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_update_adjusts_balance" time="4.567"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:138: in test_income_update_adjusts_balance
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_delete_reverts_balance" time="0.333"><error message="failed on setup with &quot;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_fintracker_api.py:91: in account
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_expense_update_and_delete_balance" time="0.334"><error message="failed on setup with &quot;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_fintracker_api.py:91: in account
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_fintracker_api.TestBills" name="test_bills_flow" time="0.329"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:184: in test_bills_flow
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestCreditCards" name="test_credit_cards_flow" time="0.329"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:204: in test_credit_cards_flow
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestInvestments" name="test_investment_flow_with_roi" time="0.599"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:219: in test_investment_flow_with_roi
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestRentalsLoans" name="test_rentals" time="0.333"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:252: in test_rentals
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestRentalsLoans" name="test_loans_lending" time="0.334"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:264: in test_loans_lending
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestBudgetsReminders" name="test_budgets_progress" time="0.330"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:286: in test_budgets_progress
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestBudgetsReminders" name="test_reminders" time="0.612"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:301: in test_reminders
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestNotes" name="test_note_headings_and_notes" time="0.331"><skipped type="pytest.skip" message="note-headings not supported: 500">/app/backend/tests/test_fintracker_api.py:314: note-headings not supported: 500</skipped></testcase><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_dashboard" time="0.329"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:335: in test_dashboard
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_net_worth" time="0.607"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:342: in test_net_worth
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_analytics_cashflow" time="0.331"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:349: in test_analytics_cashflow
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_settings" time="0.331"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:353: in test_settings
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_fintracker_api.TestFamilyMembers" name="test_family_members_crud" time="0.607"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_fintracker_api.py:365: in test_family_members_crud
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[1111-all the same digit]" time="0.455"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[0000-all the same digit]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[2222-all the same digit]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[1234-simple sequence]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[4321-simple descending sequence]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[9876-simple descending sequence]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[1212-repeating pattern]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[4545-repeating pattern]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[123456-simple sequence]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_weak_mpin_rejected[654321-simple descending sequence]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupWeakRejection" name="test_common_mpin_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_non_digit_rejected[abc]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_non_digit_rejected[12a4]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_non_digit_rejected[12.4]" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_too_short_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_too_long_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupFormat" name="test_empty_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupSuccess" name="test_strong_4_digit_accepted" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupSuccess" name="test_strong_6_digit_accepted" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinSetupSuccess" name="test_bcrypt_hash_in_db" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinVerify" name="test_correct_mpin_returns_verified" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinVerify" name="test_wrong_mpin_returns_401_with_remaining" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinBruteForceLockout" name="test_5_wrong_attempts_then_429" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinBruteForceLockout" name="test_setup_resets_rate_limit" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinStatus" name="test_status_after_setup" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinStatus" name="test_status_after_6_digit_setup" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestDismissPrompt" name="test_dismiss_prompt_persists" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinDisable" name="test_disable_flips_flag" time="0.000"><error message="failed on setup with &quot;AssertionError: single-user auth failed: 500 Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_mpin_api.py:27: in token
+    assert r.status_code == 200, f"single-user auth failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: single-user auth failed: 500 Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_mpin_api.TestMpinAuth" name="test_setup_requires_auth" time="0.132" /><testcase classname="backend.tests.test_mpin_api.TestMpinAuth" name="test_verify_requires_auth" time="0.117" /><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_three_incomes_persist" time="0.416"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_three_expenses_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_bills_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_credit_cards_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_loans_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_investments_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_reminders_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_notes_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestMultiRecordPersistence" name="test_two_family_members_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register failed: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:28: in fresh_user
+    assert r.status_code in (200, 201), f"register failed: {r.status_code} {r.text[:200]}"
+E   AssertionError: register failed: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestDashboardDeltas" name="test_full_delta_response" time="0.425"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_multirecord_and_deltas.py:191: in delta_user
+    assert r.status_code in (200, 201), r.text[:200]
+E   AssertionError: Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestDeltaEdgeCases" name="test_prev_zero_curr_positive_returns_100" time="0.427"><failure message="assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_multirecord_and_deltas.py:302: in test_prev_zero_curr_positive_returns_100
+    assert reg.status_code in (200, 201)
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestDeltaEdgeCases" name="test_both_zero_returns_zero" time="1.708"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_multirecord_and_deltas.py:327: in test_both_zero_returns_zero
+    r = requests.get(f"{BASE_URL}/dashboard", headers=h, timeout=30).json()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestSingleUserCollections" name="test_single_user_returns_same_user" time="0.808"><failure message="assert (500 == 200)&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_multirecord_and_deltas.py:340: in test_single_user_returns_same_user
+    assert r1.status_code == 200 and r2.status_code == 200
+E   assert (500 == 200)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_multirecord_and_deltas.TestSingleUserCollections" name="test_settings_still_single_doc" time="0.396"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_multirecord_and_deltas.py:345: in test_settings_still_single_doc
+    tok = requests.post(f"{BASE_URL}/auth/single-user", timeout=30).json()["access_token"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestRecoveryStatus" name="test_status_for_fresh_identifier" time="0.412" /><testcase classname="backend.tests.test_recovery_api.TestRecoveryStatus" name="test_status_after_attempts" time="1.216"><failure message="assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_recovery_api.py:48: in test_status_after_attempts
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_no_enumeration_message_for_random_email" time="0.697"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_recovery_api.py:61: in test_no_enumeration_message_for_random_email
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_same_message_for_existing_user" time="0.669"><failure message="AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_recovery_api.py:70: in test_same_message_for_existing_user
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_rate_limit_5_attempts_then_429" time="0.388"><failure message="AssertionError: attempt 1 got 500: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_recovery_api.py:85: in test_rate_limit_5_attempts_then_429
+    assert r.status_code == 200, f"attempt {i+1} got {r.status_code}: {r.text}"
+E   AssertionError: attempt 1 got 500: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestPasswordEmailRecovery" name="test_email_validation" time="0.130" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_too_short_pydantic_422" time="0.138" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_weak_no_uppercase_or_digit_400" time="0.129" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_weak_no_digit_400" time="0.134" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_password_weak_no_uppercase_400" time="0.130" /><testcase classname="backend.tests.test_recovery_api.TestPhonePasswordReset" name="test_invalid_firebase_token_returns_401" time="0.118" /><testcase classname="backend.tests.test_recovery_api.TestEmailReveal" name="test_invalid_token_returns_401" time="0.117" /><testcase classname="backend.tests.test_recovery_api.TestEmailReveal" name="test_token_too_short_422" time="0.128" /><testcase classname="backend.tests.test_recovery_api.TestEmailMaskingFunction" name="test_mask_email_format" time="0.204" /><testcase classname="backend.tests.test_recovery_api.TestLegacyForgotReset" name="test_legacy_forgot_password_endpoint_responds" time="0.404"><failure message="AssertionError: legacy forgot-password broken: 500 Internal Server Error&#10;assert 500 in (200, 400, 404)&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_recovery_api.py:210: in test_legacy_forgot_password_endpoint_responds
+    assert r.status_code in (200, 400, 404), \
+E   AssertionError: legacy forgot-password broken: 500 Internal Server Error
+E   assert 500 in (200, 400, 404)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestLegacyForgotReset" name="test_legacy_reset_password_endpoint_responds" time="0.410"><failure message="AssertionError: legacy reset-password broken: 500 Internal Server Error&#10;assert 500 in (400, 401, 404, 422)&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_recovery_api.py:218: in test_legacy_reset_password_endpoint_responds
+    assert r.status_code in (400, 401, 404, 422), \
+E   AssertionError: legacy reset-password broken: 500 Internal Server Error
+E   assert 500 in (400, 401, 404, 422)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_recovery_api.TestBalanceRegressionSmoke" name="test_income_then_expense_balance_flow" time="0.406"><error message="failed on setup with &quot;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_recovery_api.py:227: in client
+    assert r.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_capture_requires_auth" time="0.164" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_list_requires_auth" time="0.141" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_last_month_requires_auth" time="0.137" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_capture_returns_full_schema" time="0.405"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_three_captures_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_networth_math_with_account_balance" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_list_returns_count_and_sorted_desc" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_filter_by_type_manual" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_filter_by_type_daily_safe" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestLastMonthSnapshot" name="test_404_when_no_prior_month_snapshot" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestLastMonthSnapshot" name="test_returns_injected_prior_month" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestDashboardSnapshotBasis" name="test_basis_is_snapshot_when_prior_exists" time="0.000"><error message="failed on setup with &quot;AssertionError: register: 500 Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:52: in fresh_user
+    assert r.status_code in (200, 201), f"register: {r.status_code} {r.text[:200]}"
+E   AssertionError: register: 500 Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestDashboardSnapshotBasis" name="test_basis_is_flow_approx_for_new_user" time="0.385"><failure message="AssertionError: Internal Server Error&#10;assert 500 in (200, 201)&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_snapshots_api.py:253: in test_basis_is_flow_approx_for_new_user
+    assert reg.status_code in (200, 201), reg.text[:200]
+E   AssertionError: Internal Server Error
+E   assert 500 in (200, 201)
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_happy_path" time="0.406"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_amount_zero_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_negative_amount_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_from_equals_to_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_missing_account_ids_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_account_not_owned_rejected" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferRead" name="test_list_and_get_one" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferRead" name="test_get_nonexistent_returns_404" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferUpdate" name="test_amount_change_rebalances" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferUpdate" name="test_change_from_account_rebalances" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferDelete" name="test_delete_reverses_balances" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestDashboardTransferIsolation" name="test_transfer_not_in_income_expense_and_total_balance_conserved" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestIncomeExpenseNewFields" name="test_income_optional_fields_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestIncomeExpenseNewFields" name="test_expense_optional_fields_persist" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:31: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestUploadAttachment" name="test_upload_png_success" time="0.413"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestUploadAttachment" name="test_upload_rejects_non_image" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestUploadAttachment" name="test_upload_rejects_empty" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestUploadAttachment" name="test_upload_rejects_too_large" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestLabels" name="test_labels_reflect_recent_expense" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestTransferOptionalFields" name="test_transfer_with_new_fields_round_trip" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestBackwardCompat" name="test_expense_without_new_fields" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestBackwardCompat" name="test_income_without_new_fields" time="0.000"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_uploads_and_labels.TestBackwardCompat" name="test_transfer_without_new_fields" time="0.001"><error message="failed on setup with &quot;AssertionError: Internal Server Error&#10;assert 500 == 200&#10; +  where 500 = &lt;Response [500]&gt;.status_code&quot;">backend/tests/test_uploads_and_labels.py:44: in client
+    assert r.status_code == 200, r.text
+E   AssertionError: Internal Server Error
+E   assert 500 == 200
+E    +  where 500 = &lt;Response [500]&gt;.status_code</error></testcase></testsuite></testsuites>

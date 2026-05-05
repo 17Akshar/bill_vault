@@ -28,6 +28,8 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CrossPlatformPicker from '../../components/CrossPlatformPicker';
 import { FamilyMemberPicker } from '../../components/FamilyMemberSelector';
+import LabelsInput from '../../components/LabelsInput';
+import AttachmentPicker from '../../components/AttachmentPicker';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
@@ -53,6 +55,12 @@ export default function AddTransactionScreen() {
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [subCategory, setSubCategory] = useState('');
+
+  // Optional UI fields per design spec — Income/Expense/Transfer
+  const [labels, setLabels] = useState<string[]>([]);
+  const [payee, setPayee] = useState('');
+  const [location, setLocation] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     loadAccounts();
@@ -118,6 +126,9 @@ export default function AddTransactionScreen() {
           date: date.toISOString(),
           notes: notes.trim() || null,
           family_member_id: familyMemberId,
+          labels: labels.length ? labels : null,
+          location: location.trim() || null,
+          attachment_url: attachmentUrl || null,
         });
       } else if (txType === 'expense') {
         await api.post('/expenses', {
@@ -130,6 +141,10 @@ export default function AddTransactionScreen() {
           date: date.toISOString(),
           notes: notes.trim() || null,
           family_member_id: familyMemberId,
+          labels: labels.length ? labels : null,
+          payee: payee.trim() || null,
+          location: location.trim() || null,
+          attachment_url: attachmentUrl || null,
         });
       } else {
         // Transfer
@@ -140,6 +155,11 @@ export default function AddTransactionScreen() {
           date: date.toISOString(),
           notes: notes.trim() || null,
           family_member_id: familyMemberId,
+          labels: labels.length ? labels : null,
+          payee: payee.trim() || null,
+          payment_type: paymentType,
+          location: location.trim() || null,
+          attachment_url: attachmentUrl || null,
         });
       }
       if (router.canGoBack()) {
@@ -423,8 +443,8 @@ export default function AddTransactionScreen() {
             );
           })()}
 
-          {/* Payment Type (Expense only) */}
-          {txType === 'expense' && (
+          {/* Payment Type (Expense + Transfer) */}
+          {(txType === 'expense' || txType === 'transfer') && (
             <>
               <Text style={[styles.label, { color: colors.text }]}>Payment Type</Text>
               <View style={styles.paymentTypeRow}>
@@ -479,6 +499,54 @@ export default function AddTransactionScreen() {
               numberOfLines={3}
             />
           </View>
+
+          {/* Payee — Expense + Transfer */}
+          {(txType === 'expense' || txType === 'transfer') && (
+            <>
+              <Text style={[styles.label, { color: colors.text }]}>Payee (Optional)</Text>
+              <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <TextInput
+                  testID="tx-payee-input"
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="e.g., Amazon, John Doe"
+                  placeholderTextColor={colors.textSecondary}
+                  value={payee}
+                  onChangeText={setPayee}
+                />
+              </View>
+            </>
+          )}
+
+          {/* Labels — all types */}
+          <Text style={[styles.label, { color: colors.text }]}>Labels (Optional)</Text>
+          <LabelsInput value={labels} onChange={setLabels} colors={colors} />
+
+          {/* Location — all types */}
+          <Text style={[styles.label, { color: colors.text }]}>Location (Optional)</Text>
+          <View style={[styles.inputWrapper, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Ionicons
+              name="location-outline"
+              size={18}
+              color={colors.textSecondary}
+              style={{ marginRight: 8 }}
+            />
+            <TextInput
+              testID="tx-location-input"
+              style={[styles.input, { color: colors.text }]}
+              placeholder="e.g., Big Bazaar, Mumbai"
+              placeholderTextColor={colors.textSecondary}
+              value={location}
+              onChangeText={setLocation}
+            />
+          </View>
+
+          {/* Attachment — all types */}
+          <Text style={[styles.label, { color: colors.text }]}>Attachment (Optional)</Text>
+          <AttachmentPicker
+            value={attachmentUrl}
+            onChange={setAttachmentUrl}
+            colors={colors}
+          />
 
           {/* Save */}
           <TouchableOpacity
