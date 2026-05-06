@@ -51,6 +51,7 @@ const TYPE_META: Record<string, { color: string; icon: string }> = {
   loan_emi: { color: '#7C4DFF', icon: 'home' },
   credit_card: { color: '#EF4444', icon: 'card' },
   investment: { color: '#FFB300', icon: 'trending-up' },
+  insurance: { color: '#22C55E', icon: 'shield-checkmark' },
   lending: { color: '#22C55E', icon: 'people' },
   custom: { color: '#7C4DFF', icon: 'notifications' },
 };
@@ -67,8 +68,7 @@ const CATEGORIES = [
   { key: 'bill', label: 'Bills' },
   { key: 'loan_emi', label: 'EMI' },
   { key: 'investment', label: 'Investment' },
-  { key: 'lending', label: 'Lending' },
-  { key: 'credit_card', label: 'Credit Card' },
+  { key: 'insurance', label: 'Insurance' },
 ];
 
 const fmtINR = (n: number) => formatINR(n || 0);
@@ -156,6 +156,50 @@ export default function RemindersAllScreen() {
     }
   };
 
+  const markUpcoming = async (r: Reminder) => {
+    // "Mark as Upcoming" — moves a completed reminder back to upcoming
+    const prev = items;
+    setItems(
+      items.map((it) =>
+        it.reminder_id === r.reminder_id ? { ...it, is_completed: false } : it,
+      ),
+    );
+    try {
+      const res = await api.put(`/reminders/${r.reminder_id}`, { is_completed: false });
+      if (res?.data) scheduleReminderNotifications(res.data).catch(() => {});
+      load();
+    } catch (e) {
+      setItems(prev);
+      Alert.alert('Error', 'Could not move back to upcoming');
+    }
+  };
+
+  const showActionMenu = (r: Reminder) => {
+    if (r.is_completed) {
+      Alert.alert(r.title, undefined, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Mark as Upcoming', onPress: () => markUpcoming(r) },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/reminders/${r.reminder_id}`);
+              cancelReminderNotifications(r.reminder_id).catch(() => {});
+              load();
+            } catch { Alert.alert('Error', 'Could not delete'); }
+          },
+        },
+      ]);
+    } else {
+      Alert.alert(r.title, undefined, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Mark as Completed', onPress: () => completeReminder(r) },
+        { text: 'Snooze',  onPress: () => snoozeReminder(r) },
+        { text: 'Edit',    onPress: () => router.push({ pathname: '/reminders' as any, params: { id: r.reminder_id } }) },
+      ]);
+    }
+  };
+
   const snoozeReminder = (r: Reminder) => {
     // Quick presets (1 hour, 1 day, 1 week)
     Alert.alert(
@@ -215,9 +259,11 @@ export default function RemindersAllScreen() {
   const groupedUpcoming = useMemo(() => {
     const tomorrow = new Date(today.getTime() + 86_400_000);
     const inWeek = new Date(today.getTime() + 7 * 86_400_000);
+    const fmtDay = (d: Date) =>
+      d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     const groups: { label: string; items: Reminder[] }[] = [
-      { label: 'Today', items: [] },
-      { label: 'Tomorrow', items: [] },
+      { label: `Today, ${fmtDay(today)}`, items: [] },
+      { label: `Tomorrow, ${fmtDay(tomorrow)}`, items: [] },
       { label: 'Next 7 Days', items: [] },
       { label: 'Later', items: [] },
     ];
@@ -250,12 +296,16 @@ export default function RemindersAllScreen() {
       r.related_item?.current_outstanding ?? r.related_item?.remaining_amount ?? 0;
     const due = dueLabel(r.reminder_date, r.is_completed);
     const color = dueColor(r.reminder_date, r.is_completed);
+    const source = r.related_item?.name || r.description || '';
     return (
       <View key={r.reminder_id} style={styles.row}>
         <TouchableOpacity
           testID={`reminder-row-${r.reminder_id}`}
           style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-          onPress={() => router.push({ pathname: '/reminders' as any, params: { id: r.reminder_id } })}
+          // Per spec: tap row → mark as completed (or undo if completed)
+          onPress={() => (r.is_completed ? markUpcoming(r) : completeReminder(r))}
+          onLongPress={() => showActionMenu(r)}
+          delayLongPress={350}
         >
           <View style={[styles.rowIcon, { backgroundColor: r.is_completed ? '#22C55E' : meta.color }]}>
             <Ionicons
@@ -265,39 +315,39 @@ export default function RemindersAllScreen() {
             />
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.rowTitle} numberOfLines={1}>{r.title}</Text>
-            {!!r.description && (
-              <Text style={styles.rowSub} numberOfLines={1}>{r.description}</Text>
+            <Text
+              style={[
+                styles.rowTitle,
+                r.is_completed && { textDecorationLine: 'line-through', color: '#A0A3BD' },
+              ]}
+              numberOfLines={1}
+            >
+              {r.title}
+            </Text>
+            {!!source && (
+              <Text style={styles.rowSub} numberOfLines={1}>{source}</Text>
             )}
           </View>
           <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
             {amount > 0 && (
-              <Text style={[styles.rowAmount, { color: color }]}>{fmtINR(amount)}</Text>
+              <Text style={[styles.rowAmount, { color: r.is_completed ? '#A0A3BD' : color }]}>
+                {fmtINR(amount)}
+              </Text>
             )}
-            <Text style={[styles.rowDue, { color: color }]}>{due}</Text>
+            <Text style={[styles.rowDue, { color: r.is_completed ? '#22C55E' : color }]}>
+              {r.is_completed ? 'Paid' : due}
+            </Text>
           </View>
         </TouchableOpacity>
-        {/* Quick actions — hidden on completed rows */}
-        {!r.is_completed && (
-          <View style={{ flexDirection: 'row', gap: 4 }}>
-            <TouchableOpacity
-              testID={`reminder-snooze-${r.reminder_id}`}
-              onPress={() => snoozeReminder(r)}
-              style={styles.actionBtn}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Ionicons name="time-outline" size={18} color="#FFB300" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID={`reminder-complete-${r.reminder_id}`}
-              onPress={() => completeReminder(r)}
-              style={styles.actionBtn}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* ⋮ action menu — works for both upcoming + completed */}
+        <TouchableOpacity
+          testID={`reminder-menu-${r.reminder_id}`}
+          onPress={() => showActionMenu(r)}
+          style={styles.menuBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color="#A0A3BD" />
+        </TouchableOpacity>
       </View>
     );
   };
@@ -380,6 +430,25 @@ export default function RemindersAllScreen() {
                 </View>
               ))}
               {groupedUpcoming.length === 0 && <EmptyState text="No upcoming reminders" />}
+              {/* Manage Alerts CTA card per spec */}
+              <TouchableOpacity
+                testID="manage-alerts-cta"
+                style={styles.manageAlertsCard}
+                onPress={() => router.push('/settings/notifications' as any)}
+              >
+                <View style={{
+                  width: 40, height: 40, borderRadius: 20,
+                  backgroundColor: '#7C4DFF22',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Ionicons name="notifications-outline" size={22} color="#7C4DFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.manageAlertsTitle}>Manage Alerts</Text>
+                  <Text style={styles.manageAlertsSub}>Customise notification preferences</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#A0A3BD" />
+              </TouchableOpacity>
             </>
           )}
 
@@ -430,20 +499,40 @@ export default function RemindersAllScreen() {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              <View style={[styles.listCard, { marginTop: 8 }]}>
-                {filtered.length === 0 ? (
+              {/* Group by month for both All + Completed per spec */}
+              {filtered.length === 0 ? (
+                <View style={[styles.listCard, { marginTop: 8 }]}>
                   <EmptyState text={tab === 'completed' ? 'No completed reminders' : 'No reminders'} />
-                ) : (
+                </View>
+              ) : (
+                (() => {
+                  // Group by Month-Year
+                  const groups: Record<string, Reminder[]> = {};
                   filtered
+                    .slice()
                     .sort((a, b) => new Date(b.reminder_date).getTime() - new Date(a.reminder_date).getTime())
-                    .map((r) => renderRow(r))
-                )}
-              </View>
+                    .forEach((r) => {
+                      const d = new Date(r.reminder_date);
+                      const k = d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+                      if (!groups[k]) groups[k] = [];
+                      groups[k].push(r);
+                    });
+                  return Object.entries(groups).map(([month, rows]) => (
+                    <View key={month} style={{ marginTop: 12 }}>
+                      <Text style={styles.groupHeader}>{month}</Text>
+                      <View style={[styles.listCard, { marginTop: 8 }]}>
+                        {rows.map((r) => renderRow(r))}
+                      </View>
+                    </View>
+                  ));
+                })()
+              )}
               {filtered.length > 0 && (
-                <View style={{ marginTop: 10, alignItems: 'center' }}>
+                <View style={styles.sortFooter}>
                   <Text style={{ color: '#A0A3BD', fontSize: 12 }}>
                     Showing {filtered.length} {tab === 'completed' ? 'completed' : 'reminder' + (filtered.length === 1 ? '' : 's')}
                   </Text>
+                  <Text style={{ color: '#7C4DFF', fontSize: 12, fontWeight: '600' }}>Sort by: Date ↓</Text>
                 </View>
               )}
             </>
@@ -676,6 +765,25 @@ const styles = StyleSheet.create({
   rowSub: { color: '#A0A3BD', fontSize: 11, marginTop: 2 },
   rowAmount: { fontSize: 14, fontWeight: '700' },
   rowDue: { fontSize: 11, fontWeight: '500', marginTop: 2 },
+  menuBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  manageAlertsCard: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#1B1845',
+    borderRadius: 14,
+    padding: 14,
+  },
+  manageAlertsTitle: {
+    color: '#FFFFFF', fontSize: 14, fontWeight: '600',
+  },
+  manageAlertsSub: {
+    color: '#A0A3BD', fontSize: 12, marginTop: 2,
+  },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -684,6 +792,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 40,
+  },
+  sortFooter: {
+    marginTop: 14,
+    paddingHorizontal: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   searchInput: { flex: 1, color: '#FFFFFF', fontSize: 13 },
   catChip: {

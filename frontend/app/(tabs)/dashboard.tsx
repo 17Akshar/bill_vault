@@ -572,7 +572,17 @@ export default function DashboardScreen() {
                       rightColor={T.text}
                       rightBottomColor={dueColor}
                       showChevron
-                      onPress={() => router.push({ pathname: '/reminders/all' as any })}
+                      // Per spec: tap reminder on dashboard → mark as completed
+                      onPress={async () => {
+                        try {
+                          await api.put(`/reminders/${rem.reminder_id}`, { is_completed: true });
+                          // Optimistically update local state by reloading dashboard
+                          loadAll();
+                        } catch (err: any) {
+                          // Fallback to navigation on error
+                          router.push({ pathname: '/reminders/all' as any });
+                        }
+                      }}
                       testID={`reminder-row-${i}`}
                     />
                   </View>

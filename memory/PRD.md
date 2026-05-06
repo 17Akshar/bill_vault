@@ -400,6 +400,44 @@ Replaced the legacy `[rule]…[/rule]` markup hack with first-class fields on `R
 - `/app/backend/accounts.py` (~385 lines): 6 endpoints with per-type validation (Bank IFSC/holder/a-c-no, UPI upi_id, Overdraft limit/used range), auto-uppercase IFSC, demote prior primary UPI, derived `balance = -overdraft_used` for overdraft.
 - Removed orphaned Pydantic models (Account/Bill/Investment families) from server.py — 165 lines deduped. All models exist exactly once.
 
+## Session 15 Update (2026-05-06) — Reminders Spec Compliance Pass
+
+### Pixel-aligned the entire Reminders feature to the 5 finalised UI screens
+**Tab 1 — Upcoming:**
+- Stat tiles re-aligned: Due Today / Due This Week / Due This Month / **Completed (This Month)** with coloured dots
+- Section headers carry the date suffix per spec: `Today, 06 May 2026`, `Tomorrow, 07 May 2026`, `Next 7 Days`, `Later`
+- Right-aligned `N Reminders` count next to each section header
+- New **Manage Alerts** CTA card at bottom (purple bell icon, "Customise notification preferences", chevron-right)
+
+**Tab 3 — All / Tab 4 — Completed:**
+- Filter chips updated to spec: All / Bills / EMI / Investment / **Insurance** (replaced legacy Lending & Credit Card chips)
+- New `insurance` reminder_type with green shield-checkmark icon meta
+- **Group-by-Month** for both tabs (e.g. "May 2026" header above month's reminders)
+- New **Sort footer**: "Showing X reminders / Sort by: Date ↓"
+
+**Per-row interactions per spec:**
+- **Tap row** = mark as completed (or "mark as upcoming" if already completed) — was previously navigation-only
+- **Long-press / ⋮ icon** = action sheet (Mark Completed / Snooze / Edit  OR  Mark as Upcoming / Delete)
+- Completed rows: green checkmark icon, **strike-through title**, "Paid" status text in green, muted amount
+
+**Dashboard widget:**
+- Tap a reminder → mark completed in-place + reload dashboard. Falls back to navigation on error.
+
+### Backend Spec Logic
+- `PUT /api/reminders/{id} {is_completed: false}` correctly moves a completed reminder back to Upcoming (verified by test).
+- For non-recurring reminders, `is_completed=true` marks them complete permanently; recurring ones advance per Session 10 logic.
+
+### Testing
+- New `test_reminder_state_transitions.py` (2 tests):
+  - `test_upcoming_to_completed_and_back` — full round-trip of the spec's "Mark as Upcoming" action
+  - `test_listing_filters_complete_correctly` — `is_completed` query filter splits the two states cleanly
+- **6/6 PASS** combined with the existing `test_reminder_advanced.py` (round-trip / advance / snooze / cap)
+- Frontend verified via 2 screenshots — Upcoming and All tabs render exactly to the spec
+
+### Known
+- "Insurance" is now a category chip but isn't a backend `reminder_type` enum value yet — once a user creates an insurance reminder via Add Reminder it'll need either a `reminder_type=insurance` option in that screen or be remapped to `custom`. Defer to next round if user adds Insurance reminders.
+- The `/settings/notifications` route doesn't exist yet — Manage Alerts CTA navigates there but will 404 until that screen ships.
+
 ## Session 14 Update (2026-05-05) — Credit Cards / Loans / Lending Modularised
 
 ### Three more slices extracted in one round
