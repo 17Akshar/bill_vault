@@ -22,6 +22,9 @@
  */
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PREFS_KEY = 'fintracker_notif_prefs';
 
 // Foreground display config — show banner + sound even when app is open.
 Notifications.setNotificationHandler({
@@ -36,6 +39,33 @@ Notifications.setNotificationHandler({
 
 const TAG = 'fintracker-reminder';
 const NEXT_N_OCCURRENCES = 12;
+
+type Prefs = {
+  master_enabled: boolean;
+  by_type: Record<string, boolean>;
+  lead_time_hours: number;
+};
+
+const DEFAULT_PREFS: Prefs = {
+  master_enabled: true,
+  by_type: {},          // empty = treat all types as enabled (back-compat)
+  lead_time_hours: 0,
+};
+
+async function loadPrefs(): Promise<Prefs> {
+  try {
+    const raw = await AsyncStorage.getItem(PREFS_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    const parsed = JSON.parse(raw);
+    return {
+      master_enabled: parsed.master_enabled ?? true,
+      by_type: parsed.by_type || {},
+      lead_time_hours: parsed.lead_time_hours ?? 0,
+    };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
 
 export async function ensureNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') return false;
@@ -106,6 +136,14 @@ export async function scheduleReminderNotifications(reminder: any): Promise<void
   if (Platform.OS === 'web') return;
   if (!reminder?.reminder_id || !reminder?.reminder_date || reminder.is_completed) return;
 
+  // Honor user preferences
+  const prefs = await loadPrefs();
+  if (!prefs.master_enabled) return;
+  const rtype = String(reminder.reminder_type || 'custom');
+  // Empty by_type = back-compat (everything on). Otherwise only schedule
+  // when the type's toggle is true.
+  if (Object.keys(prefs.by_type).length > 0 && prefs.by_type[rtype] === false) return;
+
   await cancelReminderNotifications(reminder.reminder_id);
 
   const startDate = new Date(reminder.reminder_date);
@@ -124,11 +162,15 @@ export async function scheduleReminderNotifications(reminder: any): Promise<void
     ? String(reminder.description).split('\n')[0].slice(0, 120)
     : 'Tap to view details';
 
+  const leadMs = (prefs.lead_time_hours || 0) * 60 * 60 * 1000;
+
   for (const when of occurrences) {
-    if (when.getTime() <= Date.now() + 1000) continue;
+    // Apply lead-time offset; skip if it lands in the past
+    const fireAt = new Date(when.getTime() - leadMs);
+    if (fireAt.getTime() <= Date.now() + 1000) continue;
     try {
       await Notifications.scheduleNotificationAsync({
-        identifier: `${TAG}-${reminder.reminder_id}-${when.getTime()}`,
+        identifier: `${TAG}-${reminder.reminder_id}-${fireAt.getTime()}`,
         content: {
           title: reminder.title || 'Reminder',
           body,
@@ -141,7 +183,7 @@ export async function scheduleReminderNotifications(reminder: any): Promise<void
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: when,
+          date: fireAt,
         },
       });
     } catch (err) {
@@ -162,6 +204,8 @@ export async function syncRemindersToNotifications(reminders: any[]): Promise<vo
   const granted = await ensureNotificationPermissions();
   if (!granted) return;
 
+  const prefs = await loadPrefs();
+
   // Cancel all tag-managed schedules first (we re-create them below). Cheaper
   // than diffing because schedule limits aren't a concern at typical usage.
   const all = await Notifications.getAllScheduledNotificationsAsync();
@@ -170,6 +214,9 @@ export async function syncRemindersToNotifications(reminders: any[]): Promise<vo
       .filter((n) => (n.content?.data as any)?.tag === TAG)
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
+
+  // Master switch off → leave everything cancelled
+  if (!prefs.master_enabled) return;
 
   for (const r of reminders || []) {
     if (r?.is_completed) continue;

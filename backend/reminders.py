@@ -40,7 +40,7 @@ class ReminderCreate(BaseModel):
     title: str
     description: Optional[str] = None
     reminder_date: str  # ISO date
-    reminder_type: str  # investment, loan_emi, credit_card, lending, bill, custom
+    reminder_type: str  # investment, loan_emi, credit_card, lending, bill, insurance, custom
     related_id: Optional[str] = None
     is_recurring: bool = False
     recurrence: Optional[str] = None  # daily, weekly, monthly, quarterly, yearly

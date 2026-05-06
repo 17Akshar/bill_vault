@@ -31,12 +31,23 @@ import { scheduleReminderNotifications } from '../../utils/reminderNotifications
 
 type Recurrence = 'none' | 'daily' | 'monthly' | 'quarterly' | 'yearly';
 type EndType = 'never' | 'on' | 'after';
+type ReminderType = 'bill' | 'loan_emi' | 'investment' | 'insurance' | 'custom';
 
 const RECURRENCE_TABS: { key: Recurrence; label: string }[] = [
   { key: 'daily', label: 'Daily' },
   { key: 'monthly', label: 'Monthly' },
   { key: 'quarterly', label: 'Quarterly' },
   { key: 'yearly', label: 'Yearly' },
+];
+
+const REMINDER_TYPE_OPTIONS: {
+  key: ReminderType; label: string; icon: string; color: string;
+}[] = [
+  { key: 'bill',        label: 'Bill',       icon: 'wifi',                color: '#3B82F6' },
+  { key: 'loan_emi',    label: 'EMI',        icon: 'home',                color: '#7C4DFF' },
+  { key: 'investment',  label: 'Investment', icon: 'trending-up',         color: '#FFB300' },
+  { key: 'insurance',   label: 'Insurance',  icon: 'shield-checkmark',    color: '#22C55E' },
+  { key: 'custom',      label: 'Custom',     icon: 'notifications',       color: '#A0A3BD' },
 ];
 
 const ordinal = (n: number) => {
@@ -53,6 +64,7 @@ const fmtTime = (d: Date) =>
 
 export default function AddReminderScreen() {
   const router = useRouter();
+  const [reminderType, setReminderType] = useState<ReminderType>('bill');
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [url, setUrl] = useState('');
@@ -110,7 +122,7 @@ export default function AddReminderScreen() {
         title: title.trim(),
         description: notes.trim() || null,
         reminder_date: dateTime.toISOString(),
-        reminder_type: 'custom',
+        reminder_type: reminderType,
         is_recurring: recurrence !== 'none',
         recurrence,
         // Structured advanced rule
@@ -152,6 +164,44 @@ export default function AddReminderScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+          {/* Reminder Type — pick one of Bill/EMI/Investment/Insurance/Custom */}
+          <Card>
+            <Label icon="pricetag-outline">Reminder Type</Label>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {REMINDER_TYPE_OPTIONS.map((t) => {
+                const active = reminderType === t.key;
+                return (
+                  <TouchableOpacity
+                    key={t.key}
+                    testID={`reminder-type-${t.key}`}
+                    onPress={() => setReminderType(t.key)}
+                    style={[
+                      styles.typeChip,
+                      active && { backgroundColor: t.color + '22', borderColor: t.color, borderWidth: 1 },
+                    ]}
+                  >
+                    <Ionicons
+                      name={t.icon as any}
+                      size={16}
+                      color={active ? t.color : '#A0A3BD'}
+                    />
+                    <Text style={{
+                      color: active ? t.color : '#FFFFFF',
+                      fontSize: 13,
+                      fontWeight: active ? '700' : '500',
+                    }}>
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Card>
+
           {/* Name */}
           <Card>
             <Label icon="bookmark-outline" required>Reminder Name</Label>
@@ -364,6 +414,17 @@ function RadioRow({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#08082A' },
+  typeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#1B1845',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
