@@ -20,32 +20,11 @@ export const AddToBudgetScreen = ({ navigation }: any) => {
       color: COLORS.primary,
     },
     {
-      title: 'Add Custom Category',
-      subtitle: 'Create a new category',
-      icon: 'tag',
-      screen: 'AddCustomCategory',
-      color: COLORS.success,
-    },
-    {
-      title: 'Set Total Budget',
-      subtitle: 'Define your monthly budget',
-      icon: 'dollar-sign',
-      screen: 'SetTotalBudget',
-      color: COLORS.warning,
-    },
-    {
       title: 'Set Savings Goal',
       subtitle: 'Create a savings target',
       icon: 'target',
       screen: 'SavingsGoal',
-      color: COLORS.error,
-    },
-    {
-      title: 'Import from Previous Month',
-      subtitle: 'Copy last month\'s budget',
-      icon: 'copy',
-      screen: 'ImportBudget',
-      color: COLORS.textSecondary,
+      color: COLORS.success,
     },
   ];
 
