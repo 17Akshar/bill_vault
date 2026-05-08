@@ -3,6 +3,21 @@ import { Category, Budget, CategoryBudget, SavingsGoal, BudgetSummary } from '..
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL + '/api';
 
 export const api = {
+  // Transactions
+  getTransactions: async (startDate?: string, endDate?: string, category?: string, type?: string): Promise<any[]> => {
+    let url = `${API_URL}/transactions?`;
+    const params = [];
+    if (startDate) params.push(`start_date=${startDate}`);
+    if (endDate) params.push(`end_date=${endDate}`);
+    if (category) params.push(`category=${category}`);
+    if (type) params.push(`type=${type}`);
+    url += params.join('&');
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch transactions');
+    return response.json();
+  },
+
   // Categories
   getCategories: async (): Promise<Category[]> => {
     const response = await fetch(`${API_URL}/categories`);
