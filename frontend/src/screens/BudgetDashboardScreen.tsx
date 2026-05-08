@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS, FONT_WEIGHTS } from '../constants/theme';
 import { ProgressBar } from '../components/ProgressBar';
 import { CategoryIcon } from '../components/CategoryIcon';
+import { BudgetFilterDropdown } from '../components/BudgetFilterDropdown';
 
 interface BudgetDashboardScreenProps {
   navigation: any;
@@ -46,9 +47,16 @@ const DUMMY_CATEGORIES = [
 
 export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ navigation }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
-  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
+  const [customDateRange, setCustomDateRange] = useState<{ from?: Date; to?: Date }>({});
 
-  const periods = ['This Month', 'Last Month', 'This Year', 'Last Year', 'Custom Range'];
+  const handlePeriodChange = (period: string, fromDate?: Date, toDate?: Date) => {
+    setSelectedPeriod(period);
+    if (period === 'Custom Range' && fromDate && toDate) {
+      setCustomDateRange({ from: fromDate, to: toDate });
+      console.log('Custom Range Selected:', fromDate, 'to', toDate);
+      // Here you would typically fetch data for the custom date range
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return `${DUMMY_BUDGET_DATA.currency} ${amount.toLocaleString()}`;
@@ -81,62 +89,11 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
 
       <ScrollView style={styles.scrollView}>
         {/* Budget Filter Dropdown */}
-        <View style={styles.filterSection}>
-          <TouchableOpacity
-            style={styles.periodSelector}
-            onPress={() => setShowPeriodMenu(!showPeriodMenu)}
-          >
-            <Feather name="calendar" size={20} color={COLORS.primary} />
-            <Text style={styles.periodText}>{selectedPeriod}</Text>
-            <Feather name="chevron-down" size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-          
-          <View style={styles.periodInfo}>
-            <Text style={styles.periodInfoText}>
-              {DUMMY_BUDGET_DATA.daysPassed} days passed • {formatCurrency(dailyBudget)} / day left
-            </Text>
-          </View>
-          
-          <TouchableOpacity style={styles.filterButton}>
-            <Feather name="filter" size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Period Dropdown Menu */}
-        {showPeriodMenu && (
-          <View style={styles.periodMenu}>
-            {periods.map((period, index) => (
-              <TouchableOpacity
-                key={period}
-                style={[
-                  styles.periodMenuItem,
-                  selectedPeriod === period && styles.periodMenuItemActive,
-                  index === periods.length - 1 && { borderBottomWidth: 0 },
-                ]}
-                onPress={() => {
-                  setSelectedPeriod(period);
-                  setShowPeriodMenu(false);
-                }}
-              >
-                <Feather name="calendar" size={18} color={selectedPeriod === period ? COLORS.primary : COLORS.textSecondary} />
-                <Text style={[
-                  styles.periodMenuText,
-                  selectedPeriod === period && styles.periodMenuTextActive,
-                ]}>
-                  {period}
-                </Text>
-                {period === 'This Year' && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularText}>Popular</Text>
-                  </View>
-                )}
-                {selectedPeriod === period && (
-                  <Feather name="check" size={18} color={COLORS.primary} style={{ marginLeft: 'auto' }} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+        <BudgetFilterDropdown
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={handlePeriodChange}
+          daysInfo={`${DUMMY_BUDGET_DATA.daysPassed} days passed • ${formatCurrency(dailyBudget)} / day left`}
+        />
 
         <Text style={styles.dataForText}>
           Showing data for: {DUMMY_BUDGET_DATA.month}
@@ -386,79 +343,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  filterSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    marginBottom: SPACING.sm,
-  },
-  periodSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  periodText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium,
-    color: COLORS.textPrimary,
-  },
-  periodInfo: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-  },
-  periodInfoText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  filterButton: {
-    padding: SPACING.sm,
-  },
-  periodMenu: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    ...SHADOWS.md,
-  },
-  periodMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  periodMenuItemActive: {
-    backgroundColor: COLORS.primaryLight + '20',
-  },
-  periodMenuText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textPrimary,
-  },
-  periodMenuTextActive: {
-    color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold,
-  },
-  popularBadge: {
-    backgroundColor: COLORS.primaryLight,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.sm,
-    marginLeft: SPACING.xs,
-  },
-  popularText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.white,
-    fontWeight: FONT_WEIGHTS.medium,
   },
   dataForText: {
     fontSize: FONT_SIZES.md,
