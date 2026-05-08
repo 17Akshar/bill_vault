@@ -146,7 +146,7 @@ class SavingsGoalUpdate(BaseModel):
     target_date: Optional[date] = None
     notes: Optional[str] = None
 
-# Transaction Model (for future)
+# Transaction Model
 class Transaction(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     user_id: str = "default_user"
@@ -160,6 +160,13 @@ class Transaction(BaseModel):
     class Config:
         populate_by_name = True
         json_encoders = {ObjectId: str}
+
+class TransactionCreate(BaseModel):
+    amount: float
+    category: str
+    type: str = "expense"
+    date: datetime
+    description: Optional[str] = None
 
 class BudgetSummary(BaseModel):
     total_budget: float
@@ -380,11 +387,78 @@ async def delete_savings_goal(goal_id: str):
     
     return {"message": "Goal deleted successfully"}
 
+# ========== Transaction Routes ==========
+
+@api_router.get("/transactions", response_model=List[Transaction])
+async def get_transactions(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    category: Optional[str] = None,
+    type: Optional[str] = None
+):
+    """Get all transactions with optional filters"""
+    query = {"user_id": "default_user"}
+    
+    # Add date range filter
+    if start_date or end_date:
+        date_filter = {}
+        if start_date:
+            date_filter["$gte"] = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        if end_date:
+            date_filter["$lte"] = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        query["date"] = date_filter
+    
+    # Add category filter
+    if category:
+        query["category"] = category
+    
+    # Add type filter
+    if type:
+        query["type"] = type
+    
+    transactions = await db.transactions.find(query).sort("date", -1).to_list(1000)
+    return [Transaction(**{**t, "_id": str(t["_id"])}) for t in transactions]
+
+@api_router.post("/transactions", response_model=Transaction)
+async def create_transaction(transaction: TransactionCreate):
+    """Create a new transaction"""
+    transaction_dict = transaction.dict()
+    transaction_dict["user_id"] = "default_user"
+    transaction_dict["created_at"] = datetime.utcnow()
+    
+    result = await db.transactions.insert_one(transaction_dict)
+    created_transaction = await db.transactions.find_one({"_id": result.inserted_id})
+    return Transaction(**{**created_transaction, "_id": str(created_transaction["_id"])})
+
+@api_router.get("/transactions/{transaction_id}", response_model=Transaction)
+async def get_transaction(transaction_id: str):
+    """Get a specific transaction"""
+    if not ObjectId.is_valid(transaction_id):
+        raise HTTPException(status_code=400, detail="Invalid transaction ID")
+    
+    transaction = await db.transactions.find_one({"_id": ObjectId(transaction_id)})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    return Transaction(**{**transaction, "_id": str(transaction["_id"])})
+
+@api_router.delete("/transactions/{transaction_id}")
+async def delete_transaction(transaction_id: str):
+    """Delete a transaction"""
+    if not ObjectId.is_valid(transaction_id):
+        raise HTTPException(status_code=400, detail="Invalid transaction ID")
+    
+    result = await db.transactions.delete_one({"_id": ObjectId(transaction_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    return {"message": "Transaction deleted successfully"}
+
 # ========== Budget Summary Route ==========
 
 @api_router.get("/budget-summary", response_model=BudgetSummary)
 async def get_budget_summary(month: int, year: int):
-    """Get comprehensive budget summary for a month"""
+    """Get comprehensive budget summary for a month with real transaction data"""
     # Get budget settings
     budget_settings = await db.budgets.find_one({"user_id": "default_user"})
     total_budget = budget_settings["total_budget"] if budget_settings else 0.0
@@ -397,32 +471,62 @@ async def get_budget_summary(month: int, year: int):
         "year": year
     }).to_list(100)
     
-    # Calculate totals
-    total_spent = sum(cb["spent"] for cb in category_budgets)
-    remaining_budget = total_budget - total_spent
+    # Calculate date range for the month
+    start_date = datetime(year, month, 1)
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1)
+    else:
+        end_date = datetime(year, month + 1, 1)
     
-    # For now, we'll use placeholder values for income
-    # In a real app, this would come from transaction data
-    income = total_budget  # Placeholder
-    expenses = total_spent
-    savings = income - expenses
-    savings_rate = (savings / income * 100) if income > 0 else 0
+    # Get all transactions for this month
+    transactions = await db.transactions.find({
+        "user_id": "default_user",
+        "date": {
+            "$gte": start_date,
+            "$lt": end_date
+        }
+    }).to_list(1000)
     
-    # Format category data
+    # Calculate totals from transactions
+    total_income = sum(t["amount"] for t in transactions if t["type"] == "income")
+    total_expenses = sum(t["amount"] for t in transactions if t["type"] == "expense")
+    
+    # Calculate category-wise spending from transactions
+    category_spending = {}
+    for transaction in transactions:
+        if transaction["type"] == "expense":
+            category = transaction["category"]
+            category_spending[category] = category_spending.get(category, 0) + transaction["amount"]
+    
+    # Update category budgets with actual spending
+    total_spent = 0.0
     categories_data = []
+    
     for cb in category_budgets:
-        remaining = cb["budget_amount"] - cb["spent"]
-        progress = (cb["spent"] / cb["budget_amount"] * 100) if cb["budget_amount"] > 0 else 0
+        # Get actual spent from transactions
+        actual_spent = category_spending.get(cb["category_name"], 0.0)
+        total_spent += actual_spent
+        
+        remaining = cb["budget_amount"] - actual_spent
+        progress = (actual_spent / cb["budget_amount"] * 100) if cb["budget_amount"] > 0 else 0
+        
         categories_data.append({
             "id": str(cb["_id"]),
             "category": cb["category_name"],
             "icon": cb["category_icon"],
             "budget": cb["budget_amount"],
-            "spent": cb["spent"],
+            "spent": actual_spent,
             "remaining": remaining,
             "progress": round(progress, 2),
             "alert_limit": cb["alert_limit"]
         })
+    
+    # Calculate final values
+    remaining_budget = total_budget - total_spent
+    income = total_income if total_income > 0 else total_budget  # Use actual income or budget as fallback
+    expenses = total_expenses
+    savings = income - expenses
+    savings_rate = (savings / income * 100) if income > 0 else 0
     
     return BudgetSummary(
         total_budget=total_budget,
