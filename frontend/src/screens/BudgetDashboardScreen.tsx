@@ -1,115 +1,62 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
-  Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { format } from 'date-fns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS, FONT_WEIGHTS } from '../constants/theme';
 import { ProgressBar } from '../components/ProgressBar';
 import { CategoryIcon } from '../components/CategoryIcon';
-import { api } from '../services/api';
-import { BudgetSummary } from '../types';
 
 interface BudgetDashboardScreenProps {
   navigation: any;
 }
 
+// DUMMY DATA
+const DUMMY_BUDGET_DATA = {
+  totalBudget: 100000,
+  totalSpent: 62340,
+  remainingBudget: 37660,
+  income: 150000,
+  expenses: 62340,
+  savings: 87660,
+  savingsRate: 58.4,
+  month: 'May 2024',
+  daysInMonth: 31,
+  daysPassed: 16,
+  currency: '₹',
+};
+
+const DUMMY_CATEGORIES = [
+  { id: '1', name: 'Home', icon: 'home', budget: 20000, spent: 16000, remaining: 4000, progress: 80 },
+  { id: '2', name: 'Food & Dining', icon: 'restaurant', budget: 10000, spent: 8045, remaining: 1955, progress: 80 },
+  { id: '3', name: 'Transport', icon: 'car', budget: 10000, spent: 6520, remaining: 3480, progress: 65 },
+  { id: '4', name: 'Shopping', icon: 'shopping-bag', budget: 5000, spent: 3780, remaining: 1220, progress: 75 },
+  { id: '5', name: 'Entertainment', icon: 'film', budget: 3000, spent: 2100, remaining: 900, progress: 70 },
+  { id: '6', name: 'Travel', icon: 'airplane', budget: 5000, spent: 6300, remaining: -1300, progress: 126 },
+  { id: '7', name: 'Investments', icon: 'trending-up', budget: 15000, spent: 10000, remaining: 5000, progress: 66 },
+  { id: '8', name: 'Health', icon: 'heart', budget: 3000, spent: 2000, remaining: 1000, progress: 66 },
+  { id: '9', name: 'Education', icon: 'book', budget: 2000, spent: 1000, remaining: 1000, progress: 50 },
+  { id: '10', name: 'Others', icon: 'more-horizontal', budget: 2000, spent: 1395, remaining: 605, progress: 70 },
+];
+
 export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ navigation }) => {
-  const [summary, setSummary] = useState<BudgetSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
-  
-  const currentDate = new Date();
-  const [month, setMonth] = useState(currentDate.getMonth() + 1);
-  const [year, setYear] = useState(currentDate.getFullYear());
 
   const periods = ['This Month', 'Last Month', 'This Year', 'Last Year', 'Custom Range'];
 
-  const loadSummary = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getBudgetSummary(month, year);
-      setSummary(data);
-    } catch (error) {
-      console.error('Error loading summary:', error);
-      Alert.alert('Error', 'Failed to load budget summary');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    loadSummary();
-    // Seed categories on first load
-    api.seedCategories().catch(console.error);
-  }, [month, year]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadSummary();
-  }, [month, year]);
-
-  const handlePeriodChange = (period: string) => {
-    setSelectedPeriod(period);
-    setShowPeriodMenu(false);
-    
-    const now = new Date();
-    switch (period) {
-      case 'This Month':
-        setMonth(now.getMonth() + 1);
-        setYear(now.getFullYear());
-        break;
-      case 'Last Month':
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1);
-        setMonth(lastMonth.getMonth() + 1);
-        setYear(lastMonth.getFullYear());
-        break;
-      case 'This Year':
-        setMonth(now.getMonth() + 1);
-        setYear(now.getFullYear());
-        break;
-      case 'Last Year':
-        setMonth(now.getMonth() + 1);
-        setYear(now.getFullYear() - 1);
-        break;
-    }
-  };
-
-  const getCurrencySymbol = (code: string) => {
-    const symbols: Record<string, string> = {
-      USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥', CNY: '¥', AUD: 'A$', CAD: 'C$'
-    };
-    return symbols[code] || '$';
-  };
-
   const formatCurrency = (amount: number) => {
-    const symbol = summary ? getCurrencySymbol(summary.currency) : '$';
-    return `${symbol} ${amount.toLocaleString()}`;
+    return `${DUMMY_BUDGET_DATA.currency} ${amount.toLocaleString()}`;
   };
 
-  if (loading && !summary) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </SafeAreaView>
-    );
-  }
-
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const currentDay = currentDate.getDate();
-  const daysRemaining = daysInMonth - currentDay;
-  const dailyBudget = summary ? Math.floor(summary.remaining_budget / Math.max(daysRemaining, 1)) : 0;
+  const usedPercentage = (DUMMY_BUDGET_DATA.totalSpent / DUMMY_BUDGET_DATA.totalBudget) * 100;
+  const remainingPercentage = 100 - usedPercentage;
+  const dailyBudget = Math.floor(DUMMY_BUDGET_DATA.remainingBudget / (DUMMY_BUDGET_DATA.daysInMonth - DUMMY_BUDGET_DATA.daysPassed));
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -126,17 +73,15 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
               <Text style={styles.badgeText}>3</Text>
             </View>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton}>
+            <Feather name="plus" size={24} color={COLORS.white} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
-        }
-      >
-        {/* Period Selector */}
-        <View style={styles.periodSection}>
+      <ScrollView style={styles.scrollView}>
+        {/* Budget Filter Dropdown */}
+        <View style={styles.filterSection}>
           <TouchableOpacity
             style={styles.periodSelector}
             onPress={() => setShowPeriodMenu(!showPeriodMenu)}
@@ -148,7 +93,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
           
           <View style={styles.periodInfo}>
             <Text style={styles.periodInfoText}>
-              {currentDay} days passed • {formatCurrency(dailyBudget)} / day left
+              {DUMMY_BUDGET_DATA.daysPassed} days passed • {formatCurrency(dailyBudget)} / day left
             </Text>
           </View>
           
@@ -157,16 +102,21 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
           </TouchableOpacity>
         </View>
 
+        {/* Period Dropdown Menu */}
         {showPeriodMenu && (
           <View style={styles.periodMenu}>
-            {periods.map((period) => (
+            {periods.map((period, index) => (
               <TouchableOpacity
                 key={period}
                 style={[
                   styles.periodMenuItem,
                   selectedPeriod === period && styles.periodMenuItemActive,
+                  index === periods.length - 1 && { borderBottomWidth: 0 },
                 ]}
-                onPress={() => handlePeriodChange(period)}
+                onPress={() => {
+                  setSelectedPeriod(period);
+                  setShowPeriodMenu(false);
+                }}
               >
                 <Feather name="calendar" size={18} color={selectedPeriod === period ? COLORS.primary : COLORS.textSecondary} />
                 <Text style={[
@@ -189,7 +139,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
         )}
 
         <Text style={styles.dataForText}>
-          Showing data for: {format(new Date(year, month - 1), 'MMMM yyyy')}
+          Showing data for: {DUMMY_BUDGET_DATA.month}
         </Text>
 
         {/* Budget Overview Card */}
@@ -200,34 +150,34 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
             <View style={styles.metric}>
               <Text style={styles.metricLabel}>Total Budget</Text>
               <Text style={[styles.metricValue, { color: COLORS.primary }]}>
-                {formatCurrency(summary?.total_budget || 0)}
+                {formatCurrency(DUMMY_BUDGET_DATA.totalBudget)}
               </Text>
             </View>
             <View style={styles.metric}>
               <Text style={styles.metricLabel}>Total Spent</Text>
               <Text style={[styles.metricValue, { color: COLORS.error }]}>
-                {formatCurrency(summary?.total_spent || 0)}
+                {formatCurrency(DUMMY_BUDGET_DATA.totalSpent)}
               </Text>
             </View>
             <View style={styles.metric}>
               <Text style={styles.metricLabel}>Remaining Budget</Text>
               <Text style={[styles.metricValue, { color: COLORS.success }]}>
-                {formatCurrency(summary?.remaining_budget || 0)}
+                {formatCurrency(DUMMY_BUDGET_DATA.remainingBudget)}
               </Text>
             </View>
           </View>
 
           <ProgressBar
-            progress={summary ? (summary.total_spent / summary.total_budget) * 100 : 0}
+            progress={usedPercentage}
             height={12}
           />
           
           <View style={styles.progressLabels}>
             <Text style={styles.progressLabel}>
-              {summary ? Math.round((summary.total_spent / summary.total_budget) * 100) : 0}% Used
+              {Math.round(usedPercentage)}% Used
             </Text>
             <Text style={styles.progressLabel}>
-              {summary ? Math.round((summary.remaining_budget / summary.total_budget) * 100) : 0}% Remaining
+              {Math.round(remainingPercentage)}% Remaining
             </Text>
           </View>
         </View>
@@ -241,7 +191,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
               <Text style={styles.expenseLabel}>Income</Text>
               <View style={styles.expenseValueContainer}>
                 <Text style={[styles.expenseValue, { color: COLORS.success }]}>
-                  {formatCurrency(summary?.income || 0)}
+                  {formatCurrency(DUMMY_BUDGET_DATA.income)}
                 </Text>
                 <View style={[styles.iconCircle, { backgroundColor: COLORS.successLight }]}>
                   <Feather name="arrow-up" size={16} color={COLORS.success} />
@@ -253,7 +203,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
               <Text style={styles.expenseLabel}>Expenses</Text>
               <View style={styles.expenseValueContainer}>
                 <Text style={[styles.expenseValue, { color: COLORS.error }]}>
-                  {formatCurrency(summary?.expenses || 0)}
+                  {formatCurrency(DUMMY_BUDGET_DATA.expenses)}
                 </Text>
                 <View style={[styles.iconCircle, { backgroundColor: COLORS.errorLight }]}>
                   <Feather name="arrow-down" size={16} color={COLORS.error} />
@@ -266,7 +216,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
             <Text style={styles.expenseLabel}>Savings</Text>
             <View style={styles.expenseValueContainer}>
               <Text style={[styles.expenseValue, { color: COLORS.success }]}>
-                {formatCurrency(summary?.savings || 0)}
+                {formatCurrency(DUMMY_BUDGET_DATA.savings)}
               </Text>
               <View style={[styles.iconCircle, { backgroundColor: COLORS.successLight }]}>
                 <Feather name="dollar-sign" size={16} color={COLORS.success} />
@@ -276,16 +226,16 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
 
           <View style={styles.savingsRate}>
             <Text style={styles.savingsRateLabel}>Savings Rate</Text>
-            <Text style={styles.savingsRateValue}>{summary?.savings_rate || 0}%</Text>
+            <Text style={styles.savingsRateValue}>{DUMMY_BUDGET_DATA.savingsRate}%</Text>
           </View>
           <ProgressBar
-            progress={summary?.savings_rate || 0}
+            progress={DUMMY_BUDGET_DATA.savingsRate}
             height={8}
             color={COLORS.success}
           />
         </View>
 
-        {/* Category Summary */}
+        {/* Category Summary Section */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Category Summary</Text>
           
@@ -297,84 +247,74 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
             <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Progress</Text>
           </View>
 
-          {summary?.categories && summary.categories.length > 0 ? (
-            summary.categories.map((cat, index) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.tableRow, index === summary.categories.length - 1 && { borderBottomWidth: 0 }]}
-                onPress={() => navigation.navigate('CategoryDetails', { categoryId: cat.id })}
-              >
-                <View style={[styles.tableCell, { flex: 2 }]}>
-                  <View style={styles.categoryIconContainer}>
-                    <CategoryIcon name={cat.icon} size={20} color={COLORS.primary} />
-                  </View>
-                  <Text style={styles.categoryName}>{cat.category}</Text>
+          {DUMMY_CATEGORIES.map((cat, index) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[styles.tableRow, index === DUMMY_CATEGORIES.length - 1 && { borderBottomWidth: 0 }]}
+            >
+              <View style={[styles.tableCell, { flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
+                <View style={styles.categoryIconContainer}>
+                  <CategoryIcon name={cat.icon} size={20} color={COLORS.primary} />
                 </View>
-                <Text style={[styles.tableCell, { flex: 1 }]}>{formatCurrency(cat.budget)}</Text>
-                <Text style={[styles.tableCell, { flex: 1 }]}>{formatCurrency(cat.spent)}</Text>
-                <Text style={[styles.tableCell, { flex: 1, color: cat.remaining < 0 ? COLORS.error : COLORS.success }]}>
-                  {formatCurrency(cat.remaining)}
-                </Text>
-                <View style={[styles.tableCell, { flex: 1.5, alignItems: 'flex-end' }]}>
-                  <View style={styles.progressContainer}>
-                    <ProgressBar
-                      progress={cat.progress}
-                      height={6}
-                      showWarning={cat.progress > 100}
-                    />
-                    <View style={styles.progressTextContainer}>
-                      <Text style={[styles.progressText, cat.progress > 100 && { color: COLORS.error }]}>
-                        {Math.round(cat.progress)}%
-                      </Text>
-                      {cat.progress > 100 && (
-                        <Feather name="alert-circle" size={14} color={COLORS.error} />
-                      )}
-                    </View>
+                <Text style={styles.categoryName}>{cat.name}</Text>
+              </View>
+              <Text style={[styles.tableCell, { flex: 1 }]}>{formatCurrency(cat.budget)}</Text>
+              <Text style={[styles.tableCell, { flex: 1 }]}>{formatCurrency(cat.spent)}</Text>
+              <Text style={[styles.tableCell, { flex: 1, color: cat.remaining < 0 ? COLORS.error : COLORS.success }]}>
+                {formatCurrency(cat.remaining)}
+              </Text>
+              <View style={[styles.tableCell, { flex: 1.5, flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                <View style={styles.progressContainer}>
+                  <ProgressBar
+                    progress={cat.progress}
+                    height={6}
+                    showWarning={cat.progress > 100}
+                  />
+                  <View style={styles.progressTextContainer}>
+                    <Text style={[styles.progressText, cat.progress > 100 && { color: COLORS.error }]}>
+                      {Math.round(cat.progress)}%
+                    </Text>
+                    {cat.progress > 100 && (
+                      <Feather name="alert-circle" size={14} color={COLORS.error} />
+                    )}
                   </View>
-                  <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
                 </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Feather name="inbox" size={48} color={COLORS.textDisabled} />
-              <Text style={styles.emptyStateText}>No category budgets set</Text>
-              <Text style={styles.emptyStateSubtext}>Tap the button below to add your first category budget</Text>
-            </View>
-          )}
+                <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          ))}
 
+          {/* Add Category Budget Button */}
           <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('AddToBudget')}
+            style={styles.addCategoryButton}
+            onPress={() => navigation?.navigate?.('AddToBudget')}
           >
             <Feather name="plus" size={20} color={COLORS.primary} />
-            <Text style={styles.addButtonText}>Add Category Budget</Text>
+            <Text style={styles.addCategoryButtonText}>Add Category Budget</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Motivational Banner */}
-        {summary && summary.savings_rate > 0 && (
-          <View style={styles.motivationalBanner}>
-            <View style={styles.bannerContent}>
-              <View style={[styles.iconCircle, { backgroundColor: COLORS.warningLight }]}>
-                <Feather name="zap" size={20} color={COLORS.warning} />
-              </View>
-              <View style={styles.bannerTextContainer}>
-                <Text style={styles.bannerTitle}>You are doing great!</Text>
-                <Text style={styles.bannerSubtitle}>
-                  You've saved {summary.savings_rate}% of your income this month.
-                </Text>
-              </View>
+        {/* Bottom Insights Card */}
+        <View style={styles.insightsCard}>
+          <View style={styles.insightsContent}>
+            <View style={[styles.iconCircle, { backgroundColor: COLORS.warningLight, marginRight: SPACING.md }]}>
+              <Feather name="zap" size={24} color={COLORS.warning} />
             </View>
-            <TouchableOpacity
-              style={styles.insightsButton}
-              onPress={() => navigation.navigate('BudgetInsights')}
-            >
-              <Feather name="bar-chart-2" size={18} color={COLORS.primary} />
-              <Text style={styles.insightsButtonText}>View Insights</Text>
-            </TouchableOpacity>
+            <View style={styles.insightsTextContainer}>
+              <Text style={styles.insightsTitle}>You are doing great! 🎉</Text>
+              <Text style={styles.insightsSubtitle}>
+                You've saved {DUMMY_BUDGET_DATA.savingsRate}% of your income this month.
+              </Text>
+            </View>
           </View>
-        )}
+          <TouchableOpacity
+            style={styles.insightsButton}
+            onPress={() => navigation?.navigate?.('BudgetInsights')}
+          >
+            <Feather name="bar-chart-2" size={18} color={COLORS.primary} />
+            <Text style={styles.insightsButtonText}>View Insights</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={{ height: SPACING.xxl }} />
       </ScrollView>
@@ -382,7 +322,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('AddToBudget')}
+        onPress={() => navigation?.navigate?.('AddToBudget')}
       >
         <Feather name="plus" size={28} color={COLORS.white} />
       </TouchableOpacity>
@@ -393,12 +333,6 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: COLORS.background,
   },
   header: {
@@ -425,10 +359,19 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
     position: 'relative',
   },
+  addButton: {
+    backgroundColor: COLORS.primary,
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.round,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.sm,
+  },
   notificationBadge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: 2,
+    right: 2,
     backgroundColor: COLORS.error,
     borderRadius: BORDER_RADIUS.round,
     width: 18,
@@ -444,7 +387,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  periodSection: {
+  filterSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -550,10 +493,12 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
+    textAlign: 'center',
   },
   metricValue: {
     fontSize: FONT_SIZES.lg,
     fontWeight: FONT_WEIGHTS.bold,
+    textAlign: 'center',
   },
   progressLabels: {
     flexDirection: 'row',
@@ -649,7 +594,7 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
   progressContainer: {
-    width: '100%',
+    flex: 1,
     gap: 4,
   },
   progressTextContainer: {
@@ -663,24 +608,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontWeight: FONT_WEIGHTS.medium,
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xxl,
-  },
-  emptyStateText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textPrimary,
-    marginTop: SPACING.md,
-  },
-  emptyStateSubtext: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-    textAlign: 'center',
-    paddingHorizontal: SPACING.lg,
-  },
-  addButton: {
+  addCategoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -690,12 +618,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  addButtonText: {
+  addCategoryButtonText: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.primary,
   },
-  motivationalBanner: {
+  insightsCard: {
     backgroundColor: COLORS.white,
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
@@ -703,24 +631,24 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     ...SHADOWS.sm,
   },
-  bannerContent: {
+  insightsContent: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
-  bannerTextContainer: {
+  insightsTextContainer: {
     flex: 1,
-    marginLeft: SPACING.md,
   },
-  bannerTitle: {
+  insightsTitle: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
   },
-  bannerSubtitle: {
+  insightsSubtitle: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+    lineHeight: 20,
   },
   insightsButton: {
     flexDirection: 'row',
