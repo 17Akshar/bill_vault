@@ -261,6 +261,22 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
               <TouchableOpacity
                 key={cat.id}
                 style={[styles.tableRow, index === summary.categories.length - 1 && { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  // Navigate to edit screen with budget data
+                  const budgetData = {
+                    _id: cat.id,
+                    category_name: cat.category,
+                    category_icon: cat.icon,
+                    budget_amount: cat.budget,
+                    spent: cat.spent,
+                    period: 'monthly',
+                    alert_limit: cat.alert_limit,
+                    notes: '',
+                    month,
+                    year,
+                  };
+                  navigation?.navigate?.('AddCategoryBudget', { budget: budgetData });
+                }}
               >
                 <View style={[styles.tableCell, { flex: 2, flexDirection: 'row', alignItems: 'center' }]}>
                   <View style={styles.categoryIconContainer}>
