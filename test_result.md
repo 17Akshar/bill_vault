@@ -229,6 +229,120 @@ backend:
         agent: "testing"
         comment: "GET /api/savings-goals endpoint tested successfully. Returns list of savings goals with all required fields"
 
+  - task: "Savings Goals API - PUT update savings goal"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "PUT /api/savings-goals/{goal_id} returned HTTP 500 when payload included target_date. BSON cannot encode datetime.date. Same root cause as the previously-fixed POST handler. 400/404 branches worked correctly."
+      - working: true
+        agent: "main"
+        comment: "Fixed by adding date->datetime conversion in update_savings_goal() in /app/backend/server.py — mirrors the POST handler logic. Backend restarted. Needs retest."
+      - working: true
+        agent: "testing"
+        comment: "Re-tested after fix. 7/7 scenarios pass: (1) POST create goal_amount=10000/target_date=2027-06-30/notes returned 200; (2) PUT {target_date:'2027-12-31'} -> 200, target_date updated; (3) PUT {goal_amount:12500,current_amount:1500,notes:'Updated test note'} (no target_date) -> 200, all fields updated; (4) PUT {target_date:'2028-03-15',goal_amount:15000} -> 200, both fields updated correctly; (5) PUT invalid id 'not-valid' -> 400 'Invalid goal ID'; (6) PUT valid-format missing id 507f1f77bcf86cd799439011 -> 404 'Goal not found'; (7) DELETE cleanup -> 200. The date->datetime conversion fix in update_savings_goal() resolves the BSON encoding error. No 500s observed. Bug fully resolved."
+
+  - task: "Savings Goals API - DELETE savings goal"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "DELETE /api/savings-goals/{goal_id} verified: 200 on valid delete, 400 invalid id, 404 missing id."
+
+  - task: "Category Budgets API - PUT update category budget"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "PUT /api/category-budgets/{id} verified: updates budget_amount/alert_limit/notes; 400 invalid id, 404 missing id."
+
+  - task: "Category Budgets API - DELETE category budget"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "DELETE /api/category-budgets/{id} verified: 200 / 400 / 404 cases all work."
+
+  - task: "Transactions API - GET list with filters"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/transactions tested with no filter, date range, category, type, and combined filters. All return correct results."
+
+  - task: "Transactions API - POST create transaction"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/transactions creates income and expense transactions correctly."
+
+  - task: "Transactions API - GET by id"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "GET /api/transactions/{id}: 200 / 400 invalid / 404 missing all verified."
+
+  - task: "Transactions API - DELETE transaction"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "DELETE /api/transactions/{id}: 200 / 400 / 404 verified."
+
+  - task: "Import Budget API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "POST /api/import-budget verified: copies budgets between months with spent reset to 0; 404 when source empty; 400 when target month already has budgets."
+
   - task: "Error Handling - Duplicate category budget"
     implemented: true
     working: true
@@ -393,8 +507,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Savings Goals API - PUT update savings goal"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -404,5 +517,7 @@ agent_communication:
     message: "Snapshot v1 captured. User requested full regression test of all features. Please re-test ALL endpoints in /app/backend/server.py including the routes added/expanded since the last test run: Transactions (GET list with filters, GET by id, POST, DELETE), Category Budgets (PUT/DELETE), Savings Goals (PUT/DELETE), Import Budget. Also verify Budget Summary uses real transaction data correctly when transactions exist. Also test edge cases: invalid ObjectId format, deleting non-existent resources, creating duplicate category budget for same month/year, and import-budget with empty source or already-existing target month. Default user is 'default_user'. Backend base URL uses /api prefix. Use clean state where possible by inserting test data and cleaning up afterwards."
   - agent: "testing"
     message: "Completed comprehensive backend API testing. All 10 endpoints tested successfully with 100% pass rate. Fixed one critical bug in savings goals endpoint (datetime.date to datetime conversion for MongoDB compatibility). All CRUD operations working correctly. Error handling verified. Backend is production-ready."
+  - agent: "testing"
+    message: "Re-tested PUT /api/savings-goals/{goal_id} after the date->datetime conversion fix in update_savings_goal(). All 7 scenarios PASS: create goal, PUT with target_date only, PUT with goal_amount+current_amount+notes (no target_date), PUT with target_date+goal_amount combined, invalid id -> 400, valid-format missing id -> 404, cleanup DELETE -> 200. No HTTP 500s, no BSON errors in backend logs. Bug fully resolved. Set working=true and needs_retesting=false."
   - agent: "testing"
     message: "Comprehensive regression run v2 (2026): 106/107 assertions passed across all 19 endpoint scenarios. ONE CRITICAL BUG FOUND: PUT /api/savings-goals/{goal_id} crashes with HTTP 500 when payload includes target_date. Backend stack trace shows 'bson.errors.InvalidDocument: cannot encode object: datetime.date(2027, 6, 30)'. Same root cause that was previously patched in POST /savings-goals (server.py lines 351-352) is missing in update_savings_goal() (~line 364). Fix: after building update_data, convert date->datetime: `if 'target_date' in update_data and isinstance(update_data['target_date'], date) and not isinstance(update_data['target_date'], datetime): update_data['target_date'] = datetime.combine(update_data['target_date'], datetime.min.time())`. All other endpoints (root, categories CRUD+seed idempotency, budget GET/POST 404/200 lifecycle, category-budgets full CRUD with dup-rejection, savings-goals GET/POST/DELETE, transactions full CRUD with multi-filter, budget-summary aggregation against real transactions including per-category mapping, import-budget with 404 source-empty / 200 success-with-spent-reset / 400 dup-target) all pass and aggregate values verified end-to-end (income=50000, expenses=3500, savings=46500, savings_rate=93.0). Test data cleaned up. Did NOT modify production code; main agent should fix the PUT savings-goal date conversion."

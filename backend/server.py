@@ -363,6 +363,9 @@ async def update_savings_goal(goal_id: str, goal: SavingsGoalUpdate):
     
     update_data = {k: v for k, v in goal.dict().items() if v is not None}
     update_data["updated_at"] = datetime.utcnow()
+    # Convert date to datetime for MongoDB compatibility (BSON cannot encode datetime.date)
+    if "target_date" in update_data and isinstance(update_data["target_date"], date) and not isinstance(update_data["target_date"], datetime):
+        update_data["target_date"] = datetime.combine(update_data["target_date"], datetime.min.time())
     
     result = await db.savings_goals.update_one(
         {"_id": ObjectId(goal_id)},
