@@ -26,6 +26,13 @@ export const AddToBudgetScreen = ({ navigation }: any) => {
       screen: 'SavingsGoal',
       color: COLORS.success,
     },
+    {
+      title: 'Use a Template',
+      subtitle: 'One-tap setup with preset plans',
+      icon: 'zap',
+      screen: 'BudgetTemplates',
+      color: COLORS.warning,
+    },
   ];
 
   return (

@@ -7,6 +7,7 @@ import { AddCategoryBudgetScreen } from '../src/screens/AddCategoryBudgetScreen'
 import { SavingsGoalScreen } from '../src/screens/SavingsGoalScreen';
 import { BudgetInsightsScreen } from '../src/screens/BudgetInsightsScreen';
 import { CurrencySettingsScreen } from '../src/screens/CurrencySettingsScreen';
+import { BudgetTemplatesScreen } from '../src/screens/BudgetTemplatesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +41,7 @@ export default function Index() {
             animation: 'slide_from_bottom',
           }}
         />
+        <Stack.Screen name="BudgetTemplates" component={BudgetTemplatesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

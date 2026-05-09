@@ -595,6 +595,178 @@ async def import_budget(from_month: int, from_year: int, to_month: int, to_year:
         "message": f"Imported {len(new_budgets)} budgets from {from_month}/{from_year} to {to_month}/{to_year}"
     }
 
+# ========== Budget Templates ==========
+
+BUDGET_TEMPLATES = [
+    {
+        "id": "student",
+        "name": "Student Saver",
+        "description": "Tight budget with focus on essentials and education",
+        "icon": "book",
+        "color": "#6C63FF",
+        "total_budget": 30000,
+        "categories": [
+            {"category_name": "Food & Dining", "category_icon": "restaurant", "budget_amount": 8000, "alert_limit": 80},
+            {"category_name": "Transport", "category_icon": "car", "budget_amount": 4000, "alert_limit": 80},
+            {"category_name": "Education", "category_icon": "book", "budget_amount": 10000, "alert_limit": 80},
+            {"category_name": "Entertainment", "category_icon": "film", "budget_amount": 3000, "alert_limit": 80},
+            {"category_name": "Others", "category_icon": "more-horizontal", "budget_amount": 5000, "alert_limit": 80},
+        ],
+    },
+    {
+        "id": "family",
+        "name": "Family Plan",
+        "description": "Comprehensive household budget for families",
+        "icon": "users",
+        "color": "#4CAF50",
+        "total_budget": 100000,
+        "categories": [
+            {"category_name": "Home", "category_icon": "home", "budget_amount": 30000, "alert_limit": 80},
+            {"category_name": "Food & Dining", "category_icon": "restaurant", "budget_amount": 20000, "alert_limit": 80},
+            {"category_name": "Transport", "category_icon": "car", "budget_amount": 12000, "alert_limit": 80},
+            {"category_name": "Health", "category_icon": "heart", "budget_amount": 8000, "alert_limit": 80},
+            {"category_name": "Education", "category_icon": "book", "budget_amount": 15000, "alert_limit": 80},
+            {"category_name": "Entertainment", "category_icon": "film", "budget_amount": 5000, "alert_limit": 80},
+            {"category_name": "Shopping", "category_icon": "shopping-bag", "budget_amount": 10000, "alert_limit": 80},
+        ],
+    },
+    {
+        "id": "saver",
+        "name": "Aggressive Saver",
+        "description": "Minimal spending, maximum savings — 70%+ savings rate",
+        "icon": "trending-up",
+        "color": "#FF9800",
+        "total_budget": 25000,
+        "categories": [
+            {"category_name": "Home", "category_icon": "home", "budget_amount": 10000, "alert_limit": 70},
+            {"category_name": "Food & Dining", "category_icon": "restaurant", "budget_amount": 6000, "alert_limit": 70},
+            {"category_name": "Transport", "category_icon": "car", "budget_amount": 3000, "alert_limit": 70},
+            {"category_name": "Health", "category_icon": "heart", "budget_amount": 3000, "alert_limit": 80},
+            {"category_name": "Others", "category_icon": "more-horizontal", "budget_amount": 3000, "alert_limit": 70},
+        ],
+    },
+    {
+        "id": "professional",
+        "name": "Professional",
+        "description": "Balanced lifestyle with investments and travel",
+        "icon": "briefcase",
+        "color": "#F44336",
+        "total_budget": 75000,
+        "categories": [
+            {"category_name": "Home", "category_icon": "home", "budget_amount": 20000, "alert_limit": 80},
+            {"category_name": "Food & Dining", "category_icon": "restaurant", "budget_amount": 12000, "alert_limit": 80},
+            {"category_name": "Transport", "category_icon": "car", "budget_amount": 8000, "alert_limit": 80},
+            {"category_name": "Investments", "category_icon": "trending-up", "budget_amount": 15000, "alert_limit": 80},
+            {"category_name": "Travel", "category_icon": "airplane", "budget_amount": 5000, "alert_limit": 80},
+            {"category_name": "Shopping", "category_icon": "shopping-bag", "budget_amount": 7000, "alert_limit": 80},
+            {"category_name": "Entertainment", "category_icon": "film", "budget_amount": 4000, "alert_limit": 80},
+            {"category_name": "Health", "category_icon": "heart", "budget_amount": 4000, "alert_limit": 80},
+        ],
+    },
+]
+
+
+class ApplyTemplateRequest(BaseModel):
+    template_id: str
+    month: int
+    year: int
+    overwrite: bool = False  # If True, replace existing category budgets for that month
+
+
+@api_router.get("/budget/templates")
+async def get_budget_templates():
+    """List all available preset budget templates."""
+    return BUDGET_TEMPLATES
+
+
+@api_router.post("/budget/apply-template")
+async def apply_budget_template(payload: ApplyTemplateRequest):
+    """Apply a preset budget template to the given month/year.
+
+    Creates category budgets for each category in the template. Skips categories
+    that already have budgets for that month/year (unless overwrite=True).
+    Also sets the user's total_budget to the template's total_budget.
+    """
+    template = next((t for t in BUDGET_TEMPLATES if t["id"] == payload.template_id), None)
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template '{payload.template_id}' not found")
+
+    if payload.month < 1 or payload.month > 12:
+        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+
+    # Optionally clear existing budgets for that month
+    if payload.overwrite:
+        await db.category_budgets.delete_many({
+            "user_id": "default_user",
+            "month": payload.month,
+            "year": payload.year,
+        })
+
+    # Get currently saved currency (preserve user's currency choice)
+    existing_budget = await db.budgets.find_one({"user_id": "default_user"})
+    currency = existing_budget["currency"] if existing_budget else "USD"
+
+    # Update or create the total budget setting
+    budget_dict = {
+        "user_id": "default_user",
+        "total_budget": float(template["total_budget"]),
+        "period": "monthly",
+        "start_date": datetime(payload.year, payload.month, 1),
+        "currency": currency,
+        "updated_at": datetime.utcnow(),
+    }
+    if existing_budget:
+        budget_dict["created_at"] = existing_budget["created_at"]
+        await db.budgets.update_one({"user_id": "default_user"}, {"$set": budget_dict})
+    else:
+        budget_dict["created_at"] = datetime.utcnow()
+        await db.budgets.insert_one(budget_dict)
+
+    # Insert category budgets, skipping duplicates
+    created = []
+    skipped = []
+    for cat in template["categories"]:
+        exists = await db.category_budgets.find_one({
+            "user_id": "default_user",
+            "category_name": cat["category_name"],
+            "month": payload.month,
+            "year": payload.year,
+        })
+        if exists:
+            skipped.append(cat["category_name"])
+            continue
+        new_doc = {
+            "user_id": "default_user",
+            "category_name": cat["category_name"],
+            "category_icon": cat["category_icon"],
+            "budget_amount": float(cat["budget_amount"]),
+            "spent": 0.0,
+            "period": "monthly",
+            "alert_limit": float(cat.get("alert_limit", 80)),
+            "notes": f"Applied from template: {template['name']}",
+            "month": payload.month,
+            "year": payload.year,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        result = await db.category_budgets.insert_one(new_doc)
+        new_doc["_id"] = str(result.inserted_id)
+        created.append(new_doc["category_name"])
+
+    return {
+        "message": f"Applied template '{template['name']}'",
+        "template_id": template["id"],
+        "template_name": template["name"],
+        "total_budget": template["total_budget"],
+        "currency": currency,
+        "month": payload.month,
+        "year": payload.year,
+        "created_count": len(created),
+        "skipped_count": len(skipped),
+        "created": created,
+        "skipped": skipped,
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 

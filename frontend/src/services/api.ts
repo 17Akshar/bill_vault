@@ -151,4 +151,24 @@ export const api = {
     }
     return response.json();
   },
+
+  // Budget Templates
+  getBudgetTemplates: async () => {
+    const response = await fetch(`${API_URL}/budget/templates`);
+    if (!response.ok) throw new Error('Failed to fetch templates');
+    return response.json();
+  },
+
+  applyBudgetTemplate: async (templateId: string, month: number, year: number, overwrite: boolean = false) => {
+    const response = await fetch(`${API_URL}/budget/apply-template`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template_id: templateId, month, year, overwrite }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to apply template');
+    }
+    return response.json();
+  },
 };

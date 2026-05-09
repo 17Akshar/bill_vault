@@ -343,6 +343,36 @@ backend:
         agent: "testing"
         comment: "POST /api/import-budget verified: copies budgets between months with spent reset to 0; 404 when source empty; 400 when target month already has budgets."
 
+  - task: "Budget Templates - GET list"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New endpoint GET /api/budget/templates returning 4 preset templates: student, family, saver, professional. Each has id, name, description, icon, color, total_budget, categories[]. Needs verification."
+      - working: true
+        agent: "testing"
+        comment: "GET /api/budget/templates verified: returns 200 with list of exactly 4 templates. All required ids present (student, family, saver, professional). Each template has all required keys: id, name, description, icon, color, total_budget (numeric), categories (non-empty list). Verified payload via /app/backend_test.py."
+
+  - task: "Budget Templates - Apply template"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New endpoint POST /api/budget/apply-template with body {template_id, month, year, overwrite}. Should create category budgets for each category in the template (skipping duplicates by default), update total_budget, preserve existing currency. Returns created/skipped counts. Needs verification including: invalid template_id (404), invalid month (400), overwrite=true behavior, currency preservation."
+      - working: true
+        agent: "testing"
+        comment: "POST /api/budget/apply-template verified across all 7 scenarios on month=8/year=2099 (52/52 assertions passed). (a) student to clean month -> 200, created_count=5, skipped_count=0; GET /api/category-budgets returns 5 entries with exact names/amounts (Food & Dining=8000, Transport=4000, Education=10000, Entertainment=3000, Others=5000); GET /api/budget shows total_budget=30000 and currency preserved (INR retained). (b) Re-apply student no-overwrite -> created=0, skipped=5. (c) Apply family on top of student no-overwrite -> created=3, skipped=4 (family and student SHARE 4 categories: Food & Dining, Transport, Education, Entertainment; family-only new = Home, Health, Shopping = 3). NOTE: Review request expected created=7,skipped=0 but that expectation was incorrect — the implementation correctly identifies overlapping categories and skips them. After student+family overlay, 8 category budgets exist. (d) Apply saver overwrite=true -> existing 8 wiped, exactly 5 saver categories present (Home, Food & Dining, Transport, Health, Others). created=5, skipped=0. (e) Invalid template_id 'xxx' -> 404 with detail \"Template 'xxx' not found\". (f) Invalid month=13 -> 400 with detail 'Month must be between 1 and 12'. (g) Currency preservation: set currency=EUR via POST /budget, apply professional template with overwrite=true, response currency=EUR, GET /budget currency=EUR confirmed. Cleanup completed: 0 budgets remain for month=8/year=2099 and currency restored to INR with total_budget=75000."
+
   - task: "Error Handling - Duplicate category budget"
     implemented: true
     working: true
@@ -584,5 +614,7 @@ agent_communication:
     message: "Re-tested PUT /api/savings-goals/{goal_id} after the date->datetime conversion fix in update_savings_goal(). All 7 scenarios PASS: create goal, PUT with target_date only, PUT with goal_amount+current_amount+notes (no target_date), PUT with target_date+goal_amount combined, invalid id -> 400, valid-format missing id -> 404, cleanup DELETE -> 200. No HTTP 500s, no BSON errors in backend logs. Bug fully resolved. Set working=true and needs_retesting=false."
   - agent: "testing"
     message: "Frontend UI verification (2026-05-09) at viewports 390x844 and 360x800. All 5 frontend tasks pass: BudgetDashboardScreen renders Overview/Budget vs Expense/Category Summary correctly with empty state + filter dropdown showing all 5 options + 'Showing data for' text updates after selecting Last Month + 'View Insights' navigates to BudgetInsightsScreen. AddToBudgetScreen modal opens via FAB and shows both 'Add Category Budget' and 'Set Savings Goal' cards. AddCategoryBudgetScreen is reachable and form fields render. SavingsGoalScreen reachable; backend PUT/POST verified earlier; goal progress reflects on Insights (₹15,000 progress bar). BudgetInsightsScreen renders all sections (Savings Rate 100%, Total Savings ₹75,000, Alerts 0, Monthly Savings Rate ring with 100.0%, Spending Trends, Savings Insights with Current/Projected/Goal Progress, Quick Tips, refresh + back). Zero console errors. NOTE: Currency is ₹ (INR) not $ (USD) as the brief mentioned — app is consistent. Did not exhaustively perform UI CRUD on AddCategoryBudget/SavingsGoal create/edit/delete flows in this run to keep browser-automation invocations bounded; backend CRUD is fully covered by API regression. All 5 frontend tasks marked working=true."
+  - agent: "testing"
+    message: "Budget Templates testing complete (2026). All 52 assertions passed in /app/backend_test.py. GET /api/budget/templates returns the correct 4 templates with full schemas. POST /api/budget/apply-template handles all scenarios correctly: clean apply (5/0), idempotent re-apply (0/5), overlay onto existing (3 created/4 skipped because student & family share 4 categories — review's expected 7/0 was incorrect), overwrite=true wipes & replaces, invalid template_id -> 404 with proper detail, invalid month=13 -> 400, currency preserved (INR retained on first apply, EUR retained on subsequent test). Cleanup: 0 budgets remain for month=8/year=2099, currency restored to INR, total_budget back to 75000. No bugs found in either endpoint. Both tasks marked working=true, needs_retesting=false."
   - agent: "testing"
     message: "Comprehensive regression run v2 (2026): 106/107 assertions passed across all 19 endpoint scenarios. ONE CRITICAL BUG FOUND: PUT /api/savings-goals/{goal_id} crashes with HTTP 500 when payload includes target_date. Backend stack trace shows 'bson.errors.InvalidDocument: cannot encode object: datetime.date(2027, 6, 30)'. Same root cause that was previously patched in POST /savings-goals (server.py lines 351-352) is missing in update_savings_goal() (~line 364). Fix: after building update_data, convert date->datetime: `if 'target_date' in update_data and isinstance(update_data['target_date'], date) and not isinstance(update_data['target_date'], datetime): update_data['target_date'] = datetime.combine(update_data['target_date'], datetime.min.time())`. All other endpoints (root, categories CRUD+seed idempotency, budget GET/POST 404/200 lifecycle, category-budgets full CRUD with dup-rejection, savings-goals GET/POST/DELETE, transactions full CRUD with multi-filter, budget-summary aggregation against real transactions including per-category mapping, import-budget with 404 source-empty / 200 success-with-spent-reset / 400 dup-target) all pass and aggregate values verified end-to-end (income=50000, expenses=3500, savings=46500, savings_rate=93.0). Test data cleaned up. Did NOT modify production code; main agent should fix the PUT savings-goal date conversion."
