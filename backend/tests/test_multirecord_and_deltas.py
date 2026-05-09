@@ -10,7 +10,7 @@ import pytest
 import requests
 from datetime import datetime, timezone
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://account-central-15.preview.emergentagent.com").rstrip('/') + "/api"
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://fincare-investments.preview.emergentagent.com").rstrip('/') + "/api"
 
 
 # ---------- Fresh user per test session to avoid stale Firestore data ----------

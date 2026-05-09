@@ -13,7 +13,7 @@ import requests
 
 BASE_URL = os.environ.get(
     "BACKEND_URL",
-    "https://account-central-15.preview.emergentagent.com",
+    "https://fincare-investments.preview.emergentagent.com",
 ).rstrip("/") + "/api"
 
 

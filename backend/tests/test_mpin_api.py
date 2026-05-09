@@ -15,7 +15,7 @@ import pytest
 import requests
 from pymongo import MongoClient
 
-BASE_URL = "https://account-central-15.preview.emergentagent.com/api"
+BASE_URL = "https://fincare-investments.preview.emergentagent.com/api"
 
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "test_database")

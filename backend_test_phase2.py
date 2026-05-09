@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import time
 
 # Backend URL from frontend .env
-BASE_URL = "https://account-central-15.preview.emergentagent.com/api"
+BASE_URL = "https://fincare-investments.preview.emergentagent.com/api"
 
 class Phase2APITester:
     def __init__(self):
