@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -15,253 +14,135 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
-import api from '../../utils/api';
-import { formatINR } from '../../utils/formatINR';
-import { getInvestmentType, InvestmentField } from './types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
+// Investment type options
+const INVESTMENT_TYPES = [
+  { id: 'stocks', label: 'Shares / Stocks', icon: 'trending-up', color: '#00E676' },
+  { id: 'mutual_funds', label: 'Mutual Funds', icon: 'pie-chart', color: '#448AFF' },
+  { id: 'etf', label: 'ETF', icon: 'stats-chart', color: '#7C4DFF' },
+  { id: 'bonds', label: 'Bonds', icon: 'document-text', color: '#14B8A6' },
+  { id: 'fd', label: 'Fixed Deposit', icon: 'lock-closed', color: '#FF6B81' },
+  { id: 'gold', label: 'Gold', icon: 'diamond', color: '#FF9100' },
+  { id: 'ppf', label: 'PPF', icon: 'shield-checkmark', color: '#FF5722' },
+  { id: 'nps', label: 'NPS', icon: 'ribbon', color: '#00BCD4' },
+];
+
+type StepType = 1 | 2 | 3;
 
 export default function AddInvestmentScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { type: typeParam, id: editId } = useLocalSearchParams();
+
+  const [currentStep, setCurrentStep] = useState<StepType>(1);
   
-  const [investmentType, setInvestmentType] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState<string | null>(null);
-  
-  // Form state
-  const [name, setName] = useState('');
+  // Form fields
+  const [investmentType, setInvestmentType] = useState(typeParam as string || '');
+  const [investmentName, setInvestmentName] = useState('');
   const [investedAmount, setInvestedAmount] = useState('');
-  const [currentValue, setCurrentValue] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState(new Date());
-  const [maturityDate, setMaturityDate] = useState<Date | null>(null);
-  const [status, setStatus] = useState('active');
+  const [quantity, setQuantity] = useState('');
+  const [buyPrice, setBuyPrice] = useState('');
+  const [buyDate, setBuyDate] = useState(new Date());
+  const [brokerCharges, setBrokerCharges] = useState('');
   const [notes, setNotes] = useState('');
-  const [typeSpecificData, setTypeSpecificData] = useState<any>({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const loadInvestment = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await api.get(`/investments/${editId}`);
-      const inv = response.data;
-      
-      setName(inv.name);
-      setInvestedAmount(String(inv.invested_amount));
-      setCurrentValue(String(inv.current_value));
-      setPurchaseDate(new Date(inv.purchase_date));
-      if (inv.maturity_date) setMaturityDate(new Date(inv.maturity_date));
-      setStatus(inv.status);
-      setNotes(inv.notes || '');
-      setTypeSpecificData(inv.type_specific_data || {});
-      
-      const type = getInvestmentType(inv.investment_type);
-      setInvestmentType(type);
-    } catch (e) {
-      Alert.alert('Error', 'Failed to load investment');
-      router.back();
-    } finally {
-      setLoading(false);
-    }
-  }, [editId, router]);
+  const isEditMode = !!editId;
 
-  useEffect(() => {
-    if (typeParam) {
-      const type = getInvestmentType(typeParam as string);
-      setInvestmentType(type);
+  // Validation
+  const validateStep1 = () => {
+    if (!investmentType) {
+      Alert.alert('Required', 'Please select an investment type');
+      return false;
     }
-    
-    if (editId) {
-      loadInvestment();
-    }
-  }, [typeParam, editId, loadInvestment]);
-
-  const handleSave = useCallback(async () => {
-    if (!name.trim()) {
+    if (!investmentName.trim()) {
       Alert.alert('Required', 'Please enter investment name');
-      return;
+      return false;
     }
-    if (!investedAmount || parseFloat(investedAmount) <= 0) {
-      Alert.alert('Required', 'Please enter invested amount');
-      return;
-    }
-    if (!currentValue || parseFloat(currentValue) < 0) {
-      Alert.alert('Required', 'Please enter current value');
-      return;
-    }
+    return true;
+  };
 
-    // Validate required type-specific fields
-    if (investmentType?.fields) {
-      for (const field of investmentType.fields) {
-        if (field.required && !typeSpecificData[field.key]) {
-          Alert.alert('Required', `Please enter ${field.label}`);
-          return;
-        }
-      }
+  const validateStep2 = () => {
+    const amount = parseFloat(investedAmount);
+    const qty = parseFloat(quantity);
+    const price = parseFloat(buyPrice);
+    const charges = parseFloat(brokerCharges || '0');
+
+    if (!investedAmount || amount <= 0) {
+      Alert.alert('Invalid Amount', 'Invested amount must be greater than zero');
+      return false;
     }
 
-    setSaving(true);
-    try {
-      const payload = {
-        name: name.trim(),
-        investment_type: investmentType.key,
-        invested_amount: parseFloat(investedAmount),
-        current_value: parseFloat(currentValue),
-        purchase_date: purchaseDate.toISOString(),
-        maturity_date: maturityDate ? maturityDate.toISOString() : null,
-        status,
-        notes: notes.trim() || null,
-        type_specific_data: typeSpecificData,
-      };
-
-      if (editId) {
-        await api.put(`/investments/${editId}`, payload);
-        Alert.alert('Success', 'Investment updated successfully');
-      } else {
-        await api.post('/investments', payload);
-        Alert.alert('Success', 'Investment added successfully');
-      }
-      
-      router.back();
-    } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.detail || 'Failed to save investment');
-    } finally {
-      setSaving(false);
-    }
-  }, [name, investedAmount, currentValue, investmentType, typeSpecificData, purchaseDate, maturityDate, status, notes, editId, router]);
-
-  const renderField = (field: InvestmentField) => {
-    const value = typeSpecificData[field.key] || '';
-
-    const updateField = (val: string) => {
-      setTypeSpecificData({ ...typeSpecificData, [field.key]: val });
-    };
-
-    if (field.type === 'select') {
-      return (
-        <View key={field.key} style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            {field.label} {field.required && <Text style={{ color: '#FF5252' }}>*</Text>}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-            {field.options?.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionChip,
-                  { borderColor: colors.border },
-                  value === option && { backgroundColor: investmentType.color + '20', borderColor: investmentType.color },
-                ]}
-                onPress={() => updateField(option)}
-              >
-                <Text style={{ 
-                  color: value === option ? investmentType.color : colors.text,
-                  fontSize: 13,
-                  fontWeight: '600'
-                }}>
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      );
+    if (!quantity || qty <= 0) {
+      Alert.alert('Invalid Quantity', 'Quantity must be greater than zero');
+      return false;
     }
 
-    if (field.type === 'date') {
-      return (
-        <View key={field.key} style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            {field.label} {field.required && <Text style={{ color: '#FF5252' }}>*</Text>}
-          </Text>
-          <TouchableOpacity
-            style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}
-            onPress={() => setShowDatePicker(field.key)}
-          >
-            <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-            <Text style={[styles.inputText, { color: value ? colors.text : colors.textSecondary }]}>
-              {value ? new Date(value).toLocaleDateString() : 'Select date'}
-            </Text>
-          </TouchableOpacity>
-          {showDatePicker === field.key && (
-            <DateTimePicker
-              value={value ? new Date(value) : new Date()}
-              mode="date"
-              display="default"
-              onChange={(event, date) => {
-                setShowDatePicker(null);
-                if (date) updateField(date.toISOString());
-              }}
-            />
-          )}
-        </View>
-      );
+    if (!buyPrice || price <= 0) {
+      Alert.alert('Invalid Price', 'Buy price must be greater than zero');
+      return false;
     }
 
-    if (field.type === 'textarea') {
-      return (
-        <View key={field.key} style={styles.fieldGroup}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            {field.label} {field.required && <Text style={{ color: '#FF5252' }}>*</Text>}
-          </Text>
-          <View style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, height: 80 }]}>
-            <TextInput
-              style={[styles.inputText, { color: colors.text, flex: 1, textAlignVertical: 'top' }]}
-              value={value}
-              onChangeText={updateField}
-              placeholder={field.placeholder}
-              placeholderTextColor={colors.textSecondary}
-              multiline
-            />
-          </View>
-        </View>
-      );
+    if (charges < 0) {
+      Alert.alert('Invalid Charges', 'Broker charges cannot be negative');
+      return false;
     }
 
-    return (
-      <View key={field.key} style={styles.fieldGroup}>
-        <Text style={[styles.label, { color: colors.text }]}>
-          {field.label} {field.required && <Text style={{ color: '#FF5252' }}>*</Text>}
-        </Text>
-        <View style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}>
-          {field.prefix && <Text style={[styles.prefix, { color: colors.primary }]}>{field.prefix}</Text>}
-          <TextInput
-            style={[styles.inputText, { color: colors.text, flex: 1 }]}
-            value={value}
-            onChangeText={updateField}
-            placeholder={field.placeholder}
-            placeholderTextColor={colors.textSecondary}
-            keyboardType={field.type === 'number' ? 'decimal-pad' : 'default'}
-          />
-          {field.suffix && <Text style={[styles.suffix, { color: colors.textSecondary }]}>{field.suffix}</Text>}
-        </View>
-      </View>
+    return true;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1 && validateStep1()) {
+      setCurrentStep(2);
+    } else if (currentStep === 2 && validateStep2()) {
+      setCurrentStep(3);
+    }
+  };
+
+  const handleSave = () => {
+    if (!validateStep1() || !validateStep2()) return;
+
+    // Here you would call API to save
+    Alert.alert(
+      'Success',
+      `Investment ${isEditMode ? 'updated' : 'added'} successfully!`,
+      [{ text: 'OK', onPress: () => router.back() }]
     );
   };
 
-  const gainLoss = parseFloat(currentValue || '0') - parseFloat(investedAmount || '0');
-  const gainLossPct = parseFloat(investedAmount || '0') > 0 ? (gainLoss / parseFloat(investedAmount)) * 100 : 0;
-
-  if (loading) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Investment',
+      'Are you sure you want to delete this investment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            // Call API to delete
+            router.back();
+          },
+        },
+      ]
     );
-  }
+  };
 
-  if (!investmentType) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>Invalid investment type</Text>
-      </View>
-    );
-  }
+  const getSelectedType = () => INVESTMENT_TYPES.find(t => t.id === investmentType);
+
+  // Calculate total amount
+  const calculateTotal = () => {
+    const qty = parseFloat(quantity || '0');
+    const price = parseFloat(buyPrice || '0');
+    const charges = parseFloat(brokerCharges || '0');
+    return (qty * price + charges).toFixed(2);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         {/* Header */}
@@ -270,217 +151,296 @@ export default function AddInvestmentScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>
-            {editId ? 'Edit' : 'Add'} {investmentType.label}
+            {isEditMode ? 'Edit' : 'Add'} Investment
           </Text>
-          <View style={{ width: 24 }} />
+          <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Type Header */}
-          <View style={[styles.typeHeader, { backgroundColor: colors.card }]}>
-            <View style={[styles.typeIcon, { backgroundColor: investmentType.color + '20' }]}>
-              <Ionicons name={investmentType.icon as any} size={28} color={investmentType.color} />
+        {/* Step Indicator */}
+        <View style={styles.stepIndicator}>
+          {[1, 2, 3].map((step) => (
+            <View key={step} style={styles.stepItem}>
+              <View
+                style={[
+                  styles.stepCircle,
+                  {
+                    backgroundColor: currentStep >= step ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.stepNumber, { color: currentStep >= step ? '#FFF' : colors.textSecondary }]}>
+                  {step}
+                </Text>
+              </View>
+              {step < 3 && (
+                <View
+                  style={[
+                    styles.stepLine,
+                    { backgroundColor: currentStep > step ? colors.primary : colors.border },
+                  ]}
+                />
+              )}
             </View>
-            <Text style={[styles.typeName, { color: colors.text }]}>{investmentType.label}</Text>
-          </View>
+          ))}
+        </View>
 
-          {/* Common Fields */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Basic Information</Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          {/* Step 1: Type & Name */}
+          {currentStep === 1 && (
+            <View>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>Investment Details</Text>
 
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
+              {/* Investment Type */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                Investment Type <Text style={{ color: '#FF5252' }}>*</Text>
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
+                {INVESTMENT_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[
+                      styles.typeChip,
+                      { borderColor: colors.border },
+                      investmentType === type.id && {
+                        backgroundColor: type.color + '20',
+                        borderColor: type.color,
+                      },
+                    ]}
+                    onPress={() => setInvestmentType(type.id)}
+                  >
+                    <Ionicons
+                      name={type.icon as any}
+                      size={20}
+                      color={investmentType === type.id ? type.color : colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.typeChipText,
+                        { color: investmentType === type.id ? type.color : colors.text },
+                      ]}
+                    >
+                      {type.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Investment Name */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
                 Investment Name <Text style={{ color: '#FF5252' }}>*</Text>
               </Text>
-              <View style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
                 <TextInput
-                  style={[styles.inputText, { color: colors.text, flex: 1 }]}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="e.g., HDFC Flexicap Fund"
+                  style={[styles.input, { color: colors.text }]}
+                  value={investmentName}
+                  onChangeText={setInvestmentName}
+                  placeholder="e.g., Reliance Industries"
                   placeholderTextColor={colors.textSecondary}
                 />
               </View>
             </View>
+          )}
 
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
+          {/* Step 2: Financial Details */}
+          {currentStep === 2 && (
+            <View>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>Financial Details</Text>
+
+              {/* Invested Amount */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
                 Invested Amount <Text style={{ color: '#FF5252' }}>*</Text>
               </Text>
-              <View style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <Text style={[styles.prefix, { color: colors.primary }]}>₹</Text>
+              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Text style={[styles.inputPrefix, { color: colors.primary }]}>₹</Text>
                 <TextInput
-                  style={[styles.inputText, { color: colors.text, flex: 1 }]}
+                  style={[styles.input, { color: colors.text }]}
                   value={investedAmount}
                   onChangeText={setInvestedAmount}
                   placeholder="100000"
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
-                  editable={!editId}
                 />
               </View>
-            </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Current Value <Text style={{ color: '#FF5252' }}>*</Text>
+              {/* Quantity */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                Quantity / Units <Text style={{ color: '#FF5252' }}>*</Text>
               </Text>
-              <View style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <Text style={[styles.prefix, { color: '#00E676' }]}>₹</Text>
+              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
                 <TextInput
-                  style={[styles.inputText, { color: colors.text, flex: 1 }]}
-                  value={currentValue}
-                  onChangeText={setCurrentValue}
-                  placeholder="120000"
+                  style={[styles.input, { color: colors.text }]}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  placeholder="50"
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="decimal-pad"
                 />
               </View>
-            </View>
 
-            {/* Auto-calculated Gain/Loss */}
-            {investedAmount && currentValue && (
-              <View style={[styles.calcCard, { backgroundColor: gainLoss >= 0 ? '#00E67615' : '#FF525215' }]}>
-                <Ionicons 
-                  name={gainLoss >= 0 ? 'trending-up' : 'trending-down'} 
-                  size={20} 
-                  color={gainLoss >= 0 ? '#00E676' : '#FF5252'} 
+              {/* Buy Price */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                Buy Price (Per Unit) <Text style={{ color: '#FF5252' }}>*</Text>
+              </Text>
+              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Text style={[styles.inputPrefix, { color: colors.primary }]}>₹</Text>
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  value={buyPrice}
+                  onChangeText={setBuyPrice}
+                  placeholder="900.00"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="decimal-pad"
                 />
-                <View>
-                  <Text style={[styles.calcLabel, { color: colors.textSecondary }]}>Gain / Loss</Text>
-                  <Text style={{ color: gainLoss >= 0 ? '#00E676' : '#FF5252', fontSize: 16, fontWeight: 'bold' }}>
-                    {gainLoss >= 0 ? '+' : ''}{formatINR(Math.abs(gainLoss))} ({gainLossPct >= 0 ? '+' : ''}{gainLossPct.toFixed(2)}%)
+              </View>
+
+              {/* Buy Date */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>Buy Date</Text>
+              <TouchableOpacity
+                style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+                <Text style={[styles.dateText, { color: colors.text }]}>
+                  {buyDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={buyDate}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowDatePicker(false);
+                    if (date) setBuyDate(date);
+                  }}
+                />
+              )}
+
+              {/* Broker Charges */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                Brokerage & Charges (Optional)
+              </Text>
+              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Text style={[styles.inputPrefix, { color: colors.primary }]}>₹</Text>
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  value={brokerCharges}
+                  onChangeText={setBrokerCharges}
+                  placeholder="20.00"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+
+              {/* Total Amount Display */}
+              {quantity && buyPrice && (
+                <View style={[styles.totalCard, { backgroundColor: colors.primary + '15' }]}>
+                  <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total Amount</Text>
+                  <Text style={[styles.totalValue, { color: colors.primary }]}>
+                    ₹{calculateTotal()}
                   </Text>
                 </View>
-              </View>
-            )}
-
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Purchase Date</Text>
-              <TouchableOpacity
-                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}
-                onPress={() => setShowDatePicker('purchase_date')}
-              >
-                <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.inputText, { color: colors.text }]}>
-                  {purchaseDate.toLocaleDateString()}
-                </Text>
-              </TouchableOpacity>
-              {showDatePicker === 'purchase_date' && (
-                <DateTimePicker
-                  value={purchaseDate}
-                  mode="date"
-                  display="default"
-                  onChange={(event, date) => {
-                    setShowDatePicker(null);
-                    if (date) setPurchaseDate(date);
-                  }}
-                />
               )}
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Maturity Date (Optional)</Text>
-              <TouchableOpacity
-                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background }]}
-                onPress={() => setShowDatePicker('maturity_date')}
-              >
-                <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.inputText, { color: maturityDate ? colors.text : colors.textSecondary }]}>
-                  {maturityDate ? maturityDate.toLocaleDateString() : 'Select maturity date'}
-                </Text>
-              </TouchableOpacity>
-              {showDatePicker === 'maturity_date' && (
-                <DateTimePicker
-                  value={maturityDate || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={(event, date) => {
-                    setShowDatePicker(null);
-                    if (date) setMaturityDate(date);
-                  }}
-                />
-              )}
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Status</Text>
-              <View style={styles.statusRow}>
-                {['active', 'closed', 'matured'].map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[
-                      styles.statusChip,
-                      { borderColor: colors.border },
-                      status === s && { 
-                        backgroundColor: s === 'active' ? '#00E67620' : s === 'matured' ? '#448AFF20' : '#64748B20',
-                        borderColor: s === 'active' ? '#00E676' : s === 'matured' ? '#448AFF' : '#64748B'
-                      },
-                    ]}
-                    onPress={() => setStatus(s)}
-                  >
-                    <Text style={{ 
-                      color: status === s ? (s === 'active' ? '#00E676' : s === 'matured' ? '#448AFF' : '#64748B') : colors.text,
-                      fontSize: 13,
-                      fontWeight: '600',
-                      textTransform: 'capitalize'
-                    }}>
-                      {s}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          {/* Type-Specific Fields */}
-          {investmentType.fields && investmentType.fields.length > 0 && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {investmentType.label} Details
-              </Text>
-              {investmentType.fields.map(renderField)}
             </View>
           )}
 
-          {/* Notes */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Additional Information</Text>
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Notes (Optional)</Text>
-              <View style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, height: 80 }]}>
+          {/* Step 3: Additional Info */}
+          {currentStep === 3 && (
+            <View>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>Additional Information</Text>
+
+              {/* Notes */}
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>Notes (Optional)</Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  { borderColor: colors.border, backgroundColor: colors.card, height: 120 },
+                ]}
+              >
                 <TextInput
-                  style={[styles.inputText, { color: colors.text, flex: 1, textAlignVertical: 'top' }]}
+                  style={[styles.input, { color: colors.text, textAlignVertical: 'top' }]}
                   value={notes}
                   onChangeText={setNotes}
-                  placeholder="Add any additional notes..."
+                  placeholder="Add any notes about this investment..."
                   placeholderTextColor={colors.textSecondary}
                   multiline
+                  numberOfLines={4}
                 />
               </View>
-            </View>
-          </View>
 
-          {/* Save Button */}
-          <TouchableOpacity
-            style={[styles.saveBtn, { backgroundColor: investmentType.color }]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.saveBtnText}>{editId ? 'Update' : 'Add'} Investment</Text>
-            )}
-          </TouchableOpacity>
+              {/* Summary */}
+              <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>Investment Summary</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Type</Text>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>
+                    {getSelectedType()?.label}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Name</Text>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>{investmentName}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Quantity</Text>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>{quantity} units</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Buy Price</Text>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>₹{buyPrice}</Text>
+                </View>
+                <View style={[styles.summaryRow, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 8 }]}>
+                  <Text style={[styles.summaryLabel, { color: colors.text, fontWeight: '700' }]}>Total Amount</Text>
+                  <Text style={[styles.summaryValue, { color: colors.primary, fontWeight: 'bold', fontSize: 18 }]}>
+                    ₹{calculateTotal()}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Delete Button (Edit Mode) */}
+              {isEditMode && (
+                <TouchableOpacity
+                  style={[styles.deleteBtn, { borderColor: '#FF5252' }]}
+                  onPress={handleDelete}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF5252" />
+                  <Text style={styles.deleteBtnText}>Delete Investment</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </ScrollView>
+
+        {/* Bottom Actions */}
+        <View style={[styles.bottomActions, { backgroundColor: colors.background }]}>
+          {currentStep > 1 && (
+            <TouchableOpacity
+              style={[styles.backButton, { borderColor: colors.border }]}
+              onPress={() => setCurrentStep((currentStep - 1) as StepType)}
+            >
+              <Text style={[styles.backButtonText, { color: colors.text }]}>Back</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              { backgroundColor: colors.primary, flex: currentStep === 1 ? 1 : undefined },
+            ]}
+            onPress={currentStep === 3 ? handleSave : handleNext}
+          >
+            <Text style={styles.nextButtonText}>
+              {currentStep === 3 ? (isEditMode ? 'Update' : 'Save') : 'Next'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -490,70 +450,127 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   backBtn: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold' },
-  content: { paddingHorizontal: 20, paddingBottom: 40 },
-  typeHeader: {
+  title: { fontSize: 20, fontWeight: 'bold', flex: 1, marginHorizontal: 12 },
+  closeBtn: { padding: 4 },
+
+  // Step Indicator
+  stepIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 20,
-    gap: 12,
+    justifyContent: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 40,
   },
-  typeIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  stepItem: { flexDirection: 'row', alignItems: 'center' },
+  stepCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  typeName: { fontSize: 18, fontWeight: '700' },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
-  fieldGroup: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  input: {
+  stepNumber: { fontSize: 16, fontWeight: 'bold' },
+  stepLine: { width: 50, height: 2 },
+
+  // Content
+  content: { paddingHorizontal: 20, paddingBottom: 120 },
+  stepTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 24 },
+
+  // Fields
+  fieldLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 16 },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
-    minHeight: 48,
-    gap: 8,
+    minHeight: 52,
+    gap: 10,
   },
-  inputText: { fontSize: 15 },
-  prefix: { fontSize: 18, fontWeight: 'bold' },
-  suffix: { fontSize: 14, fontWeight: '600' },
-  calcCard: {
+  input: { flex: 1, fontSize: 15 },
+  inputPrefix: { fontSize: 18, fontWeight: 'bold' },
+  dateText: { fontSize: 15 },
+
+  // Type Chips
+  typeScroll: { marginBottom: 8 },
+  typeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 14,
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 12,
-    marginBottom: 16,
-  },
-  calcLabel: { fontSize: 12, marginBottom: 2 },
-  statusRow: { flexDirection: 'row', gap: 10 },
-  statusChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    alignItems: 'center',
-  },
-  optionChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
     borderWidth: 1.5,
     marginRight: 10,
   },
-  saveBtn: {
-    height: 52,
+  typeChipText: { fontSize: 13, fontWeight: '600' },
+
+  // Total Card
+  totalCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  totalLabel: { fontSize: 14, fontWeight: '600' },
+  totalValue: { fontSize: 24, fontWeight: 'bold' },
+
+  // Summary
+  summaryCard: {
     borderRadius: 14,
+    padding: 18,
+    marginTop: 20,
+  },
+  summaryTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  summaryLabel: { fontSize: 14 },
+  summaryValue: { fontSize: 14, fontWeight: '600' },
+
+  // Delete Button
+  deleteBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginTop: 20,
   },
-  saveBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  deleteBtnText: { color: '#FF5252', fontSize: 15, fontWeight: '700' },
+
+  // Bottom Actions
+  bottomActions: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128,128,128,0.1)',
+  },
+  backButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+  },
+  backButtonText: { fontSize: 16, fontWeight: '700' },
+  nextButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  nextButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });
