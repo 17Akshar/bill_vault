@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from firebase_config import db
+from investments_calculations import InvestmentCalculations
 
 investments_router = APIRouter(prefix="/api", tags=["investments"])
 
@@ -126,12 +127,17 @@ async def get_investments(
 
 @investments_router.get("/investments/dashboard")
 async def get_dashboard(request: Request):
-    """Get portfolio summary and analytics"""
+    """Get portfolio summary and analytics with comprehensive calculations"""
     user = await _get_user(request)
     investments = await db.investments.find(
         {"user_id": user.user_id, "is_active": True}, 
         {"_id": 0}
     ).to_list(1000)
+    
+    transactions = await db.investment_transactions.find(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    ).to_list(5000)
     
     if not investments:
         return {
@@ -141,45 +147,71 @@ async def get_dashboard(request: Request):
             "gain_loss_percentage": 0,
             "by_type": [],
             "by_status": {"active": 0, "closed": 0, "matured": 0},
-            "total_count": 0
+            "total_count": 0,
+            "asset_allocation": {"by_type": [], "by_group": []},
+            "diversity_score": {"score": 0, "level": "None"},
+            "top_performers": [],
+            "total_dividends": 0,
+            "total_charges": 0
         }
     
-    total_invested = sum(inv.get("invested_amount", 0) for inv in investments)
-    total_current = sum(inv.get("current_value", 0) for inv in investments)
-    total_gain_loss = total_current - total_invested
-    gain_loss_pct = (total_gain_loss / total_invested * 100) if total_invested > 0 else 0
+    # Use calculation utilities
+    calc = InvestmentCalculations()
     
-    # Group by type
-    by_type = {}
-    for inv in investments:
-        inv_type = inv.get("investment_type", "other")
-        if inv_type not in by_type:
-            by_type[inv_type] = {
-                "type": inv_type,
-                "count": 0,
-                "invested": 0,
-                "current_value": 0,
-                "gain_loss": 0
-            }
-        by_type[inv_type]["count"] += 1
-        by_type[inv_type]["invested"] += inv.get("invested_amount", 0)
-        by_type[inv_type]["current_value"] += inv.get("current_value", 0)
-        by_type[inv_type]["gain_loss"] = by_type[inv_type]["current_value"] - by_type[inv_type]["invested"]
+    # Portfolio summary
+    summary = calc.calculate_investment_summary(investments, transactions)
+    
+    # Asset allocation
+    allocation = calc.calculate_asset_allocation(investments)
+    
+    # Top performers
+    top_performers = calc.calculate_top_performers(investments, limit=5)
+    top_losers = calc.calculate_top_losers(investments, limit=5)
+    
+    # Diversity score
+    diversity = calc.calculate_portfolio_diversity_score(investments)
     
     # Group by status
-    by_status = {"active": 0, "closed": 0, "matured": 0}
-    for inv in investments:
-        status = inv.get("status", "active")
-        by_status[status] = by_status.get(status, 0) + 1
+    by_status = {
+        "active": len([i for i in investments if i.get("status") == "active"]),
+        "closed": len([i for i in investments if i.get("status") == "closed"]),
+        "matured": len([i for i in investments if i.get("status") == "matured"]),
+        "partially_sold": len([i for i in investments if i.get("status") == "partially_sold"])
+    }
     
     return {
-        "total_invested": total_invested,
-        "total_current_value": total_current,
-        "total_gain_loss": total_gain_loss,
-        "gain_loss_percentage": round(gain_loss_pct, 2),
-        "by_type": list(by_type.values()),
+        **summary['portfolio'],
+        "by_type": allocation['by_type'],
+        "by_group": allocation['by_group'],
         "by_status": by_status,
-        "total_count": len(investments)
+        "total_count": summary['counts']['total'],
+        "counts": summary['counts'],
+        "asset_allocation": allocation,
+        "diversity_score": diversity,
+        "top_performers": [
+            {
+                "investment_id": p.get("investment_id"),
+                "name": p.get("investment_name"),
+                "type": p.get("investment_type"),
+                "gain_loss_percentage": p.get("gain_loss_percentage"),
+                "current_value": p.get("current_value")
+            }
+            for p in top_performers
+        ],
+        "top_losers": [
+            {
+                "investment_id": l.get("investment_id"),
+                "name": l.get("investment_name"),
+                "type": l.get("investment_type"),
+                "gain_loss_percentage": l.get("gain_loss_percentage"),
+                "current_value": l.get("current_value")
+            }
+            for l in top_losers
+        ],
+        "total_dividends_received": summary['total_dividends_received'],
+        "total_charges_paid": summary['total_charges_paid'],
+        "net_gain_loss": summary['net_gain_loss'],
+        "transaction_summary": summary['transaction_counts']
     }
 
 
@@ -287,3 +319,59 @@ async def get_transactions(inv_id: str, request: Request):
     ).sort("transaction_date", -1).to_list(100)
     
     return transactions
+
+
+@investments_router.get("/investments/analytics/summary")
+async def get_analytics_summary(request: Request):
+    """Get comprehensive portfolio analytics"""
+    user = await _get_user(request)
+    investments = await db.investments.find(
+        {"user_id": user.user_id, "is_active": True}, 
+        {"_id": 0}
+    ).to_list(1000)
+    
+    transactions = await db.investment_transactions.find(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    ).to_list(5000)
+    
+    calc = InvestmentCalculations()
+    
+    # Get complete summary
+    summary = calc.calculate_investment_summary(investments, transactions)
+    
+    # Get diversity score
+    diversity = calc.calculate_portfolio_diversity_score(investments)
+    
+    # Get top and bottom performers
+    top_performers = calc.calculate_top_performers(investments, limit=10)
+    top_losers = calc.calculate_top_losers(investments, limit=10)
+    
+    return {
+        "portfolio_summary": summary,
+        "diversity": diversity,
+        "top_performers": [
+            {
+                "investment_id": p.get("investment_id"),
+                "name": p.get("investment_name"),
+                "type": p.get("investment_type"),
+                "invested_amount": p.get("invested_amount"),
+                "current_value": p.get("current_value"),
+                "gain_loss": p.get("gain_loss"),
+                "gain_loss_percentage": p.get("gain_loss_percentage")
+            }
+            for p in top_performers
+        ],
+        "top_losers": [
+            {
+                "investment_id": l.get("investment_id"),
+                "name": l.get("investment_name"),
+                "type": l.get("investment_type"),
+                "invested_amount": l.get("invested_amount"),
+                "current_value": l.get("current_value"),
+                "gain_loss": l.get("gain_loss"),
+                "gain_loss_percentage": l.get("gain_loss_percentage")
+            }
+            for l in top_losers
+        ]
+    }
