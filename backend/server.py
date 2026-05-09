@@ -767,6 +767,257 @@ async def apply_budget_template(payload: ApplyTemplateRequest):
         "skipped": skipped,
     }
 
+# ========== Lend & Borrowed Models ==========
+
+class LoanCreate(BaseModel):
+    person_name: str
+    person_avatar: Optional[str] = None  # URL or base64
+    type: str  # 'lent' | 'borrowed'
+    purpose: str = "Personal Loan"
+    amount: float
+    start_date: datetime
+    due_date: Optional[datetime] = None
+    interest_rate: float = 0.0
+    notes: Optional[str] = None
+
+
+class LoanUpdate(BaseModel):
+    person_name: Optional[str] = None
+    person_avatar: Optional[str] = None
+    purpose: Optional[str] = None
+    amount: Optional[float] = None
+    start_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
+    interest_rate: Optional[float] = None
+    notes: Optional[str] = None
+    status: Optional[str] = None  # 'active' | 'partial' | 'settled'
+
+
+class LoanPaymentCreate(BaseModel):
+    amount: float
+    date: datetime
+    method: str = "cash"  # 'cash' | 'bank' | 'upi'
+    notes: Optional[str] = None
+
+
+def _serialize_loan(loan_doc: dict) -> dict:
+    loan_doc["_id"] = str(loan_doc["_id"])
+    return loan_doc
+
+
+def _serialize_payment(p: dict) -> dict:
+    p["_id"] = str(p["_id"])
+    p["loan_id"] = str(p["loan_id"])
+    return p
+
+
+async def _compute_loan_aggregates(loan_id_str: str) -> dict:
+    """Compute total paid + remaining + status for a loan."""
+    payments_cursor = db.loan_payments.find({"loan_id": ObjectId(loan_id_str)})
+    payments = await payments_cursor.to_list(length=1000)
+    total_paid = sum(float(p.get("amount", 0)) for p in payments)
+    return {
+        "total_paid": total_paid,
+        "payment_count": len(payments),
+    }
+
+
+# ========== Lend & Borrowed Endpoints ==========
+
+@api_router.get("/loans")
+async def list_loans(type: Optional[str] = None, status: Optional[str] = None):
+    """List loans for the user, optionally filtered by type or status."""
+    query: dict = {"user_id": "default_user"}
+    if type:
+        if type not in ("lent", "borrowed"):
+            raise HTTPException(status_code=400, detail="type must be 'lent' or 'borrowed'")
+        query["type"] = type
+    if status:
+        query["status"] = status
+
+    loans_cursor = db.loans.find(query).sort("created_at", -1)
+    loans = await loans_cursor.to_list(length=500)
+
+    enriched = []
+    for loan in loans:
+        agg = await _compute_loan_aggregates(str(loan["_id"]))
+        loan_out = _serialize_loan(loan)
+        loan_out["total_paid"] = agg["total_paid"]
+        loan_out["remaining_amount"] = max(0.0, float(loan["amount"]) - agg["total_paid"])
+        loan_out["payment_count"] = agg["payment_count"]
+        enriched.append(loan_out)
+    return enriched
+
+
+@api_router.get("/loans/summary")
+async def loans_summary():
+    """Return totals: total lent, total borrowed, people counts, net."""
+    loans_cursor = db.loans.find({"user_id": "default_user"})
+    loans = await loans_cursor.to_list(length=2000)
+
+    total_lent = 0.0
+    total_borrowed = 0.0
+    lent_people: set = set()
+    borrowed_people: set = set()
+    total_lent_remaining = 0.0
+    total_borrowed_remaining = 0.0
+
+    for loan in loans:
+        agg = await _compute_loan_aggregates(str(loan["_id"]))
+        remaining = max(0.0, float(loan["amount"]) - agg["total_paid"])
+        if loan.get("type") == "lent":
+            total_lent += float(loan["amount"])
+            total_lent_remaining += remaining
+            lent_people.add(loan.get("person_name", "Unknown"))
+        elif loan.get("type") == "borrowed":
+            total_borrowed += float(loan["amount"])
+            total_borrowed_remaining += remaining
+            borrowed_people.add(loan.get("person_name", "Unknown"))
+
+    return {
+        "total_lent": total_lent,
+        "total_borrowed": total_borrowed,
+        "total_lent_remaining": total_lent_remaining,
+        "total_borrowed_remaining": total_borrowed_remaining,
+        "lent_people_count": len(lent_people),
+        "borrowed_people_count": len(borrowed_people),
+        "net_position": total_lent_remaining - total_borrowed_remaining,
+        "loan_count": len(loans),
+    }
+
+
+@api_router.post("/loans")
+async def create_loan(payload: LoanCreate):
+    if payload.type not in ("lent", "borrowed"):
+        raise HTTPException(status_code=400, detail="type must be 'lent' or 'borrowed'")
+    if payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+
+    doc = payload.dict()
+    doc["user_id"] = "default_user"
+    doc["status"] = "active"
+    doc["created_at"] = datetime.utcnow()
+    doc["updated_at"] = datetime.utcnow()
+
+    result = await db.loans.insert_one(doc)
+    created = await db.loans.find_one({"_id": result.inserted_id})
+    out = _serialize_loan(created)
+    out["total_paid"] = 0.0
+    out["remaining_amount"] = float(created["amount"])
+    out["payment_count"] = 0
+    return out
+
+
+@api_router.get("/loans/{loan_id}")
+async def get_loan(loan_id: str):
+    if not ObjectId.is_valid(loan_id):
+        raise HTTPException(status_code=400, detail="Invalid loan id")
+    loan = await db.loans.find_one({"_id": ObjectId(loan_id)})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+
+    payments_cursor = db.loan_payments.find({"loan_id": ObjectId(loan_id)}).sort("date", -1)
+    payments = [_serialize_payment(p) for p in await payments_cursor.to_list(length=500)]
+
+    total_paid = sum(float(p["amount"]) for p in payments)
+    out = _serialize_loan(loan)
+    out["total_paid"] = total_paid
+    out["remaining_amount"] = max(0.0, float(loan["amount"]) - total_paid)
+    out["payment_count"] = len(payments)
+    out["payments"] = payments
+    return out
+
+
+@api_router.put("/loans/{loan_id}")
+async def update_loan(loan_id: str, payload: LoanUpdate):
+    if not ObjectId.is_valid(loan_id):
+        raise HTTPException(status_code=400, detail="Invalid loan id")
+    update_data = {k: v for k, v in payload.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update_data["updated_at"] = datetime.utcnow()
+
+    result = await db.loans.update_one(
+        {"_id": ObjectId(loan_id)},
+        {"$set": update_data},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    return await get_loan(loan_id)
+
+
+@api_router.delete("/loans/{loan_id}")
+async def delete_loan(loan_id: str):
+    if not ObjectId.is_valid(loan_id):
+        raise HTTPException(status_code=400, detail="Invalid loan id")
+    # Cascade delete payments
+    await db.loan_payments.delete_many({"loan_id": ObjectId(loan_id)})
+    result = await db.loans.delete_one({"_id": ObjectId(loan_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    return {"message": "Loan deleted"}
+
+
+@api_router.post("/loans/{loan_id}/payments")
+async def add_loan_payment(loan_id: str, payload: LoanPaymentCreate):
+    if not ObjectId.is_valid(loan_id):
+        raise HTTPException(status_code=400, detail="Invalid loan id")
+    if payload.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    loan = await db.loans.find_one({"_id": ObjectId(loan_id)})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+
+    payment_doc = payload.dict()
+    payment_doc["loan_id"] = ObjectId(loan_id)
+    payment_doc["created_at"] = datetime.utcnow()
+
+    result = await db.loan_payments.insert_one(payment_doc)
+    saved = await db.loan_payments.find_one({"_id": result.inserted_id})
+
+    # Auto-update status if fully paid
+    agg = await _compute_loan_aggregates(loan_id)
+    new_status = loan.get("status", "active")
+    if agg["total_paid"] >= float(loan["amount"]):
+        new_status = "settled"
+    elif agg["total_paid"] > 0:
+        new_status = "partial"
+    await db.loans.update_one(
+        {"_id": ObjectId(loan_id)},
+        {"$set": {"status": new_status, "updated_at": datetime.utcnow()}},
+    )
+
+    return _serialize_payment(saved)
+
+
+@api_router.delete("/loans/{loan_id}/payments/{payment_id}")
+async def delete_loan_payment(loan_id: str, payment_id: str):
+    if not ObjectId.is_valid(loan_id) or not ObjectId.is_valid(payment_id):
+        raise HTTPException(status_code=400, detail="Invalid id format")
+    result = await db.loan_payments.delete_one({
+        "_id": ObjectId(payment_id),
+        "loan_id": ObjectId(loan_id),
+    })
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    # Recompute status
+    loan = await db.loans.find_one({"_id": ObjectId(loan_id)})
+    if loan:
+        agg = await _compute_loan_aggregates(loan_id)
+        new_status = "active"
+        if agg["total_paid"] >= float(loan["amount"]):
+            new_status = "settled"
+        elif agg["total_paid"] > 0:
+            new_status = "partial"
+        await db.loans.update_one(
+            {"_id": ObjectId(loan_id)},
+            {"$set": {"status": new_status, "updated_at": datetime.utcnow()}},
+        )
+
+    return {"message": "Payment deleted"}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 

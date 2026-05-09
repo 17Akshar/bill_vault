@@ -8,6 +8,10 @@ import { SavingsGoalScreen } from '../src/screens/SavingsGoalScreen';
 import { BudgetInsightsScreen } from '../src/screens/BudgetInsightsScreen';
 import { CurrencySettingsScreen } from '../src/screens/CurrencySettingsScreen';
 import { BudgetTemplatesScreen } from '../src/screens/BudgetTemplatesScreen';
+import { MoreMenuScreen } from '../src/screens/MoreMenuScreen';
+import { LendBorrowDashboardScreen } from '../src/screens/LendBorrowDashboardScreen';
+import { AddLoanScreen } from '../src/screens/AddLoanScreen';
+import { LoanDetailScreen } from '../src/screens/LoanDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,6 +46,17 @@ export default function Index() {
           }}
         />
         <Stack.Screen name="BudgetTemplates" component={BudgetTemplatesScreen} />
+        <Stack.Screen
+          name="MoreMenu"
+          component={MoreMenuScreen}
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="LendBorrowDashboard"
+          component={LendBorrowDashboardScreen}
+        />
+        <Stack.Screen name="AddLoan" component={AddLoanScreen} />
+        <Stack.Screen name="LoanDetail" component={LoanDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

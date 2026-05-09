@@ -171,4 +171,89 @@ export const api = {
     }
     return response.json();
   },
+
+  // ========== Lend & Borrowed ==========
+  getLoans: async (type?: 'lent' | 'borrowed', status?: string) => {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    if (status) params.append('status', status);
+    const qs = params.toString();
+    const response = await fetch(`${API_URL}/loans${qs ? `?${qs}` : ''}`);
+    if (!response.ok) throw new Error('Failed to fetch loans');
+    return response.json();
+  },
+
+  getLoansSummary: async () => {
+    const response = await fetch(`${API_URL}/loans/summary`);
+    if (!response.ok) throw new Error('Failed to fetch loans summary');
+    return response.json();
+  },
+
+  createLoan: async (loan: any) => {
+    const response = await fetch(`${API_URL}/loans`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loan),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to create loan');
+    }
+    return response.json();
+  },
+
+  getLoan: async (id: string) => {
+    const response = await fetch(`${API_URL}/loans/${id}`);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to fetch loan');
+    }
+    return response.json();
+  },
+
+  updateLoan: async (id: string, data: any) => {
+    const response = await fetch(`${API_URL}/loans/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to update loan');
+    }
+    return response.json();
+  },
+
+  deleteLoan: async (id: string) => {
+    const response = await fetch(`${API_URL}/loans/${id}`, { method: 'DELETE' });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to delete loan');
+    }
+    return response.json();
+  },
+
+  addLoanPayment: async (loanId: string, payment: any) => {
+    const response = await fetch(`${API_URL}/loans/${loanId}/payments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payment),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to add payment');
+    }
+    return response.json();
+  },
+
+  deleteLoanPayment: async (loanId: string, paymentId: string) => {
+    const response = await fetch(`${API_URL}/loans/${loanId}/payments/${paymentId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to delete payment');
+    }
+    return response.json();
+  },
 };

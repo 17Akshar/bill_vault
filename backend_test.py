@@ -1,273 +1,408 @@
 """
-Backend tests for Budget Templates endpoints.
-- GET /api/budget/templates
-- POST /api/budget/apply-template
+Backend Test Suite for Lend & Borrowed (Loans) endpoints.
+Tests all 5 new loan tasks per the review request.
 """
-import os
 import sys
 import requests
+from datetime import datetime
 
-BASE = os.environ.get("BACKEND_URL") or "https://budget-refresh-3.preview.emergentagent.com"
-API = f"{BASE}/api"
+BASE_URL = "https://budget-refresh-3.preview.emergentagent.com/api"
 
 PASS = []
 FAIL = []
+created_loan_ids = []
 
 
-def check(cond, name, info=""):
-    if cond:
-        PASS.append(name)
-        print(f"PASS: {name}")
+def log_pass(name):
+    PASS.append(name)
+    print(f"  PASS: {name}")
+
+
+def log_fail(name, reason):
+    FAIL.append((name, reason))
+    print(f"  FAIL: {name} -> {reason}")
+
+
+def assert_eq(name, got, expected):
+    if got == expected:
+        log_pass(name)
     else:
-        FAIL.append((name, info))
-        print(f"FAIL: {name} :: {info}")
+        log_fail(name, f"expected {expected!r}, got {got!r}")
 
 
-def jget(url, **kw):
-    return requests.get(url, timeout=30, **kw)
+def assert_true(name, cond, detail=""):
+    if cond:
+        log_pass(name)
+    else:
+        log_fail(name, detail or "condition false")
 
 
-def jpost(url, payload):
-    return requests.post(url, json=payload, timeout=30)
+def post(path, payload):
+    return requests.post(f"{BASE_URL}{path}", json=payload, timeout=30)
+
+
+def get(path, params=None):
+    return requests.get(f"{BASE_URL}{path}", params=params, timeout=30)
+
+
+def put(path, payload):
+    return requests.put(f"{BASE_URL}{path}", json=payload, timeout=30)
+
+
+def delete(path):
+    return requests.delete(f"{BASE_URL}{path}", timeout=30)
+
+
+def test_post_loans():
+    print("\n--- POST /api/loans ---")
+    payload = {
+        "person_name": "QA Tester Anjali Singh",
+        "type": "lent",
+        "purpose": "Personal Loan",
+        "amount": 5000,
+        "start_date": datetime(2026, 1, 15).isoformat(),
+        "due_date": datetime(2026, 6, 15).isoformat(),
+        "interest_rate": 5.0,
+        "notes": "Test loan #1",
+    }
+    r = post("/loans", payload)
+    assert_eq("POST /loans (happy lent) status", r.status_code, 200)
+    if r.status_code == 200:
+        data = r.json()
+        loan_id = data.get("_id")
+        if loan_id:
+            created_loan_ids.append(loan_id)
+        for k in ["_id", "person_name", "type", "amount", "status", "total_paid",
+                  "remaining_amount", "payment_count", "start_date"]:
+            assert_true(f"POST /loans returns key '{k}'", k in data, f"missing {k}")
+        assert_eq("POST /loans status=active", data.get("status"), "active")
+        assert_eq("POST /loans total_paid=0", data.get("total_paid"), 0.0)
+        assert_eq("POST /loans remaining_amount=5000", data.get("remaining_amount"), 5000.0)
+        assert_eq("POST /loans payment_count=0", data.get("payment_count"), 0)
+        assert_eq("POST /loans person_name", data.get("person_name"), "QA Tester Anjali Singh")
+        assert_eq("POST /loans interest_rate", data.get("interest_rate"), 5.0)
+
+    r = post("/loans", dict(payload, amount=0, person_name="QA Bad Zero"))
+    assert_eq("POST /loans amount=0 -> 400", r.status_code, 400)
+
+    r = post("/loans", dict(payload, amount=-100, person_name="QA Bad Neg"))
+    assert_eq("POST /loans amount=-100 -> 400", r.status_code, 400)
+
+    r = post("/loans", dict(payload, type="other", person_name="QA Bad Type"))
+    assert_eq("POST /loans type='other' -> 400", r.status_code, 400)
+
+    r = post("/loans", {})
+    assert_eq("POST /loans missing required -> 422", r.status_code, 422)
+
+
+def test_list_loans():
+    print("\n--- GET /api/loans (list + filters) ---")
+    borrowed_payload = {
+        "person_name": "QA Tester Vikram Kapoor",
+        "type": "borrowed",
+        "amount": 3000,
+        "start_date": datetime(2026, 2, 1).isoformat(),
+    }
+    r = post("/loans", borrowed_payload)
+    assert_eq("Setup: create borrowed loan", r.status_code, 200)
+    if r.status_code == 200:
+        created_loan_ids.append(r.json()["_id"])
+
+    r = get("/loans")
+    assert_eq("GET /loans status", r.status_code, 200)
+    if r.status_code == 200:
+        data = r.json()
+        assert_true("GET /loans returns list", isinstance(data, list))
+        if isinstance(data, list) and data:
+            sample = data[0]
+            for k in ["_id", "person_name", "type", "purpose", "amount",
+                      "total_paid", "remaining_amount", "payment_count",
+                      "status", "start_date"]:
+                assert_true(f"GET /loans item has '{k}'", k in sample, f"missing {k}")
+
+    r = get("/loans", {"type": "lent"})
+    assert_eq("GET /loans?type=lent status", r.status_code, 200)
+    if r.status_code == 200:
+        data = r.json()
+        assert_true("GET /loans?type=lent only lent",
+                    all(item.get("type") == "lent" for item in data))
+
+    r = get("/loans", {"type": "borrowed"})
+    assert_eq("GET /loans?type=borrowed status", r.status_code, 200)
+    if r.status_code == 200:
+        data = r.json()
+        assert_true("GET /loans?type=borrowed only borrowed",
+                    all(item.get("type") == "borrowed" for item in data))
+
+    r = get("/loans", {"type": "invalid"})
+    assert_eq("GET /loans?type=invalid -> 400", r.status_code, 400)
+
+
+def test_loans_summary():
+    print("\n--- GET /api/loans/summary ---")
+    r = get("/loans/summary")
+    assert_eq("GET /loans/summary status", r.status_code, 200)
+    if r.status_code != 200:
+        return
+    data = r.json()
+    expected_keys = ["total_lent", "total_borrowed", "total_lent_remaining",
+                     "total_borrowed_remaining", "lent_people_count",
+                     "borrowed_people_count", "net_position", "loan_count"]
+    for k in expected_keys:
+        assert_true(f"summary has '{k}'", k in data, f"missing {k}")
+
+    r2 = get("/loans", {"type": "lent"})
+    if r2.status_code == 200:
+        lent_loans = r2.json()
+        sum_amount = sum(float(loan.get("amount", 0)) for loan in lent_loans)
+        sum_remaining = sum(float(loan.get("remaining_amount", 0)) for loan in lent_loans)
+        sum_paid = sum(float(loan.get("total_paid", 0)) for loan in lent_loans)
+        assert_eq("summary.total_lent matches",
+                  round(data["total_lent"], 2), round(sum_amount, 2))
+        assert_eq("summary.total_lent_remaining matches",
+                  round(data["total_lent_remaining"], 2), round(sum_remaining, 2))
+        assert_eq("summary: total_lent - paid == total_lent_remaining",
+                  round(data["total_lent"] - sum_paid, 2),
+                  round(data["total_lent_remaining"], 2))
+
+    expected_net = round(data["total_lent_remaining"] - data["total_borrowed_remaining"], 2)
+    assert_eq("summary.net_position consistency",
+              round(data["net_position"], 2), expected_net)
+
+
+def test_get_loan_by_id():
+    print("\n--- GET /api/loans/{id} ---")
+    payload = {
+        "person_name": "QA Tester Neha Bansal",
+        "type": "lent",
+        "amount": 2500,
+        "start_date": datetime(2026, 3, 1).isoformat(),
+    }
+    r = post("/loans", payload)
+    assert_eq("Setup: create loan for GET-by-id", r.status_code, 200)
+    if r.status_code != 200:
+        return
+    loan_id = r.json()["_id"]
+    created_loan_ids.append(loan_id)
+
+    r = get(f"/loans/{loan_id}")
+    assert_eq("GET /loans/{id} happy", r.status_code, 200)
+    if r.status_code == 200:
+        data = r.json()
+        assert_true("GET /loans/{id} payments[]",
+                    "payments" in data and isinstance(data["payments"], list))
+        assert_eq("GET /loans/{id} _id matches", data.get("_id"), loan_id)
+        assert_eq("GET /loans/{id} payment_count=0", data.get("payment_count"), 0)
+
+    r = get("/loans/not-a-valid-id")
+    assert_eq("GET /loans/{invalid} -> 400", r.status_code, 400)
+
+    r = get("/loans/507f1f77bcf86cd799439099")
+    assert_eq("GET /loans/{unknown valid id} -> 404", r.status_code, 404)
+
+
+def test_put_loan():
+    print("\n--- PUT /api/loans/{id} ---")
+    payload = {
+        "person_name": "QA Tester Rohit Iyer",
+        "type": "borrowed",
+        "amount": 1500,
+        "start_date": datetime(2026, 1, 5).isoformat(),
+    }
+    r = post("/loans", payload)
+    assert_eq("Setup: create loan for PUT", r.status_code, 200)
+    if r.status_code != 200:
+        return
+    loan_id = r.json()["_id"]
+    created_loan_ids.append(loan_id)
+
+    upd = {
+        "person_name": "QA Tester Rohit Iyer (Updated)",
+        "amount": 1800,
+        "notes": "Updated note from QA",
+    }
+    r = put(f"/loans/{loan_id}", upd)
+    assert_eq("PUT /loans/{id} happy", r.status_code, 200)
+    if r.status_code == 200:
+        data = r.json()
+        assert_eq("PUT updated person_name", data.get("person_name"),
+                  "QA Tester Rohit Iyer (Updated)")
+        assert_eq("PUT updated amount", float(data.get("amount", 0)), 1800.0)
+        assert_eq("PUT updated notes", data.get("notes"), "Updated note from QA")
+
+    r = put(f"/loans/{loan_id}", {})
+    assert_eq("PUT /loans/{id} empty body -> 400", r.status_code, 400)
+
+    r = put("/loans/bad-id", {"notes": "x"})
+    assert_eq("PUT /loans/{invalid id} -> 400", r.status_code, 400)
+
+    r = put("/loans/507f1f77bcf86cd799439099", {"notes": "x"})
+    assert_eq("PUT /loans/{unknown valid id} -> 404", r.status_code, 404)
+
+
+def test_delete_loan_cascade():
+    print("\n--- DELETE /api/loans/{id} cascade ---")
+    payload = {
+        "person_name": "QA Tester Cascade Sahu",
+        "type": "lent",
+        "amount": 4000,
+        "start_date": datetime(2026, 4, 1).isoformat(),
+    }
+    r = post("/loans", payload)
+    assert_eq("Setup: create loan for DELETE cascade", r.status_code, 200)
+    if r.status_code != 200:
+        return
+    loan_id = r.json()["_id"]
+
+    p1 = post(f"/loans/{loan_id}/payments",
+              {"amount": 1000, "date": datetime(2026, 4, 5).isoformat(), "method": "cash"})
+    p2 = post(f"/loans/{loan_id}/payments",
+              {"amount": 500, "date": datetime(2026, 4, 10).isoformat(), "method": "upi"})
+    assert_eq("Setup: add payment 1", p1.status_code, 200)
+    assert_eq("Setup: add payment 2", p2.status_code, 200)
+
+    s_before = get("/loans/summary").json()
+    total_lent_remaining_before = s_before["total_lent_remaining"]
+
+    r = delete(f"/loans/{loan_id}")
+    assert_eq("DELETE /loans/{id} happy", r.status_code, 200)
+
+    r = get(f"/loans/{loan_id}")
+    assert_eq("GET /loans/{deleted} -> 404", r.status_code, 404)
+
+    s_after = get("/loans/summary").json()
+    diff = round(total_lent_remaining_before - s_after["total_lent_remaining"], 2)
+    assert_eq("DELETE cascade reduced total_lent_remaining by 2500",
+              diff, 2500.0)
+
+    r = delete("/loans/bad-id")
+    assert_eq("DELETE /loans/{invalid} -> 400", r.status_code, 400)
+
+    r = delete("/loans/507f1f77bcf86cd799439099")
+    assert_eq("DELETE /loans/{unknown} -> 404", r.status_code, 404)
+
+
+def test_payments_auto_status():
+    print("\n--- Payments POST/DELETE with auto-status ---")
+    r = post("/loans", {
+        "person_name": "QA Tester Status Flow Mehta",
+        "type": "lent",
+        "amount": 10000,
+        "start_date": datetime(2026, 5, 1).isoformat(),
+    })
+    assert_eq("Setup: create loan amount=10000", r.status_code, 200)
+    if r.status_code != 200:
+        return
+    loan_id = r.json()["_id"]
+    created_loan_ids.append(loan_id)
+
+    r = post(f"/loans/{loan_id}/payments",
+             {"amount": 3000, "date": datetime(2026, 5, 5).isoformat(), "method": "bank"})
+    assert_eq("POST payment 3000 status", r.status_code, 200)
+    p1_id = r.json().get("_id") if r.status_code == 200 else None
+
+    r = get(f"/loans/{loan_id}")
+    if r.status_code == 200:
+        d = r.json()
+        assert_eq("After 3000: status=partial", d.get("status"), "partial")
+        assert_eq("After 3000: remaining=7000", d.get("remaining_amount"), 7000.0)
+        assert_eq("After 3000: total_paid=3000", d.get("total_paid"), 3000.0)
+
+    r = post(f"/loans/{loan_id}/payments",
+             {"amount": 7000, "date": datetime(2026, 5, 10).isoformat(), "method": "bank"})
+    assert_eq("POST payment 7000 status", r.status_code, 200)
+    p2_id = r.json().get("_id") if r.status_code == 200 else None
+
+    r = get(f"/loans/{loan_id}")
+    if r.status_code == 200:
+        d = r.json()
+        assert_eq("After 7000: status=settled", d.get("status"), "settled")
+        assert_eq("After 7000: remaining=0", d.get("remaining_amount"), 0.0)
+        assert_eq("After 7000: payments has 2 entries", len(d.get("payments", [])), 2)
+
+    r = post(f"/loans/{loan_id}/payments",
+             {"amount": -50, "date": datetime(2026, 5, 11).isoformat()})
+    assert_eq("POST payment amount=-50 -> 400", r.status_code, 400)
+
+    r = post(f"/loans/{loan_id}/payments",
+             {"amount": 0, "date": datetime(2026, 5, 11).isoformat()})
+    assert_eq("POST payment amount=0 -> 400", r.status_code, 400)
+
+    r = post("/loans/bad-id/payments",
+             {"amount": 100, "date": datetime(2026, 5, 11).isoformat()})
+    assert_eq("POST payment invalid loan id -> 400", r.status_code, 400)
+
+    r = post("/loans/507f1f77bcf86cd799439099/payments",
+             {"amount": 100, "date": datetime(2026, 5, 11).isoformat()})
+    assert_eq("POST payment unknown loan id -> 404", r.status_code, 404)
+
+    if not p2_id or not p1_id:
+        log_fail("Setup payment ids missing", "cannot proceed with delete flow")
+        return
+
+    r = delete(f"/loans/{loan_id}/payments/{p2_id}")
+    assert_eq("DELETE one payment status", r.status_code, 200)
+    r = get(f"/loans/{loan_id}")
+    if r.status_code == 200:
+        d = r.json()
+        assert_eq("After deleting 7000 payment: status=partial",
+                  d.get("status"), "partial")
+        assert_eq("After deleting 7000 payment: remaining=7000",
+                  d.get("remaining_amount"), 7000.0)
+
+    r = delete(f"/loans/{loan_id}/payments/{p1_id}")
+    assert_eq("DELETE second payment status", r.status_code, 200)
+    r = get(f"/loans/{loan_id}")
+    if r.status_code == 200:
+        d = r.json()
+        assert_eq("After deleting both payments: status=active",
+                  d.get("status"), "active")
+        assert_eq("After deleting both payments: remaining=10000",
+                  d.get("remaining_amount"), 10000.0)
+
+    r = delete(f"/loans/bad/payments/{p1_id or 'x'}")
+    assert_eq("DELETE payment invalid loan id -> 400", r.status_code, 400)
+
+    r = delete(f"/loans/{loan_id}/payments/bad")
+    assert_eq("DELETE payment invalid payment id -> 400", r.status_code, 400)
+
+    r = delete(f"/loans/{loan_id}/payments/507f1f77bcf86cd799439099")
+    assert_eq("DELETE unknown payment id -> 404", r.status_code, 404)
+
+
+def cleanup():
+    print("\n--- Cleanup ---")
+    for lid in created_loan_ids:
+        try:
+            r = delete(f"/loans/{lid}")
+            print(f"  cleanup delete {lid} -> {r.status_code}")
+        except Exception as e:
+            print(f"  cleanup error {lid} -> {e}")
 
 
 def main():
-    print(f"Using API base: {API}")
-
-    original_currency = None
-    original_total_budget = None
-    original_start_date = None
+    print(f"Testing against: {BASE_URL}")
     try:
-        r = jget(f"{API}/budget")
-        if r.status_code == 200:
-            b = r.json()
-            original_currency = b.get("currency")
-            original_total_budget = b.get("total_budget")
-            original_start_date = b.get("start_date")
-            print(f"Original budget: currency={original_currency}, total={original_total_budget}")
-    except Exception as e:
-        print(f"Could not read original budget: {e}")
+        test_post_loans()
+        test_list_loans()
+        test_loans_summary()
+        test_get_loan_by_id()
+        test_put_loan()
+        test_delete_loan_cascade()
+        test_payments_auto_status()
+    finally:
+        cleanup()
 
-    MONTH = 8
-    YEAR = 2099
-
-    # Pre-cleanup
-    try:
-        r = jget(f"{API}/category-budgets", params={"month": MONTH, "year": YEAR})
-        if r.status_code == 200:
-            for cb in r.json():
-                requests.delete(f"{API}/category-budgets/{cb['id']}", timeout=15)
-    except Exception as e:
-        print(f"pre-cleanup: {e}")
-
-    # ---- TEST 1: GET /api/budget/templates ----
-    r = jget(f"{API}/budget/templates")
-    check(r.status_code == 200, "GET /budget/templates -> 200", f"got {r.status_code}")
-    if r.status_code == 200:
-        templates = r.json()
-        check(isinstance(templates, list) and len(templates) == 4,
-              "Templates list has 4 entries",
-              f"got {len(templates) if isinstance(templates, list) else type(templates)}")
-        ids = [t.get("id") for t in templates]
-        for needed in ["student", "family", "saver", "professional"]:
-            check(needed in ids, f"Template id '{needed}' present", f"ids={ids}")
-        required_keys = {"id", "name", "description", "icon", "color", "total_budget", "categories"}
-        for t in templates:
-            missing = required_keys - set(t.keys())
-            check(not missing, f"Template '{t.get('id')}' has all required keys",
-                  f"missing={missing}")
-            check(isinstance(t.get("total_budget"), (int, float)),
-                  f"Template '{t.get('id')}' total_budget is number",
-                  f"got {type(t.get('total_budget'))}")
-            check(isinstance(t.get("categories"), list) and len(t["categories"]) > 0,
-                  f"Template '{t.get('id')}' categories is non-empty list")
-
-    # ---- TEST 2a: Apply 'student' to clean month ----
-    body = {"template_id": "student", "month": MONTH, "year": YEAR, "overwrite": False}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 200, "Apply 'student' to clean month -> 200",
-          f"got {r.status_code}: {r.text[:300]}")
-    apply_currency = None
-    if r.status_code == 200:
-        data = r.json()
-        apply_currency = data.get("currency")
-        check(data.get("created_count") == 5, "student created_count=5", f"got {data.get('created_count')}")
-        check(data.get("skipped_count") == 0, "student skipped_count=0", f"got {data.get('skipped_count')}")
-        check(apply_currency is not None, "currency is in response", f"got {apply_currency}")
-
-    # Verify GET /api/category-budgets shows 5 entries with correct names/amounts
-    r = jget(f"{API}/category-budgets", params={"month": MONTH, "year": YEAR})
-    check(r.status_code == 200, "GET category-budgets after student -> 200")
-    student_expected = {
-        "Food & Dining": 8000,
-        "Transport": 4000,
-        "Education": 10000,
-        "Entertainment": 3000,
-        "Others": 5000,
-    }
-    if r.status_code == 200:
-        cbs = r.json()
-        check(len(cbs) == 5, "5 category budgets created", f"got {len(cbs)}")
-        names_amounts = {cb["category_name"]: cb["budget_amount"] for cb in cbs}
-        for name, amt in student_expected.items():
-            check(names_amounts.get(name) == amt,
-                  f"Category '{name}' budget_amount={amt}",
-                  f"got {names_amounts.get(name)}")
-
-    # Verify GET /api/budget shows total_budget=30000 and currency preserved
-    r = jget(f"{API}/budget")
-    check(r.status_code == 200, "GET /budget after student -> 200")
-    if r.status_code == 200:
-        bj = r.json()
-        check(bj.get("total_budget") == 30000,
-              "Budget total_budget=30000 after student",
-              f"got {bj.get('total_budget')}")
-        if original_currency:
-            check(bj.get("currency") == original_currency,
-                  f"Currency preserved (={original_currency}) after student apply",
-                  f"got {bj.get('currency')}")
-
-    # ---- TEST 2b: Apply 'student' again (overwrite=false default) ----
-    body = {"template_id": "student", "month": MONTH, "year": YEAR, "overwrite": False}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 200, "Re-apply 'student' (no overwrite) -> 200")
-    if r.status_code == 200:
-        data = r.json()
-        check(data.get("created_count") == 0, "Re-apply created_count=0", f"got {data.get('created_count')}")
-        check(data.get("skipped_count") == 5, "Re-apply skipped_count=5", f"got {data.get('skipped_count')}")
-
-    # ---- TEST 2c: Apply 'family' to same month, overwrite=false ----
-    # NOTE: Review request states "expect created_count=7 (different categories, none conflict with student's). skipped_count=0"
-    # However family categories are: Home, Food & Dining, Transport, Health, Education, Entertainment, Shopping
-    # Student categories are: Food & Dining, Transport, Education, Entertainment, Others
-    # Overlap = Food & Dining, Transport, Education, Entertainment (4)
-    # New = Home, Health, Shopping (3)
-    # So actual expected behavior: created=3, skipped=4. The review's expectation appears INCORRECT.
-    body = {"template_id": "family", "month": MONTH, "year": YEAR, "overwrite": False}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 200, "Apply 'family' on top of student -> 200")
-    if r.status_code == 200:
-        data = r.json()
-        cc = data.get("created_count")
-        sc = data.get("skipped_count")
-        print(f"  Actual family-on-student: created={cc}, skipped={sc}")
-        # Test the actual correct behavior (overlap-based skipping)
-        check(cc == 3, "family created_count=3 (3 new categories not in student)", f"got {cc}")
-        check(sc == 4, "family skipped_count=4 (4 overlap with student)", f"got {sc}")
-
-    # Verify total budgets in this month is now 5 (student) + 3 (new from family) = 8
-    r = jget(f"{API}/category-budgets", params={"month": MONTH, "year": YEAR})
-    if r.status_code == 200:
-        check(len(r.json()) == 8, "After student+family overlay, 8 category budgets exist",
-              f"got {len(r.json())}")
-
-    # ---- TEST 2d: Apply 'saver' with overwrite=true ----
-    body = {"template_id": "saver", "month": MONTH, "year": YEAR, "overwrite": True}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 200, "Apply 'saver' with overwrite=true -> 200")
-    if r.status_code == 200:
-        data = r.json()
-        check(data.get("created_count") == 5, "saver created_count=5 after overwrite",
-              f"got {data.get('created_count')}")
-        check(data.get("skipped_count") == 0, "saver skipped_count=0 after overwrite",
-              f"got {data.get('skipped_count')}")
-
-    # Verify only 5 saver categories exist for that month
-    r = jget(f"{API}/category-budgets", params={"month": MONTH, "year": YEAR})
-    saver_expected = {"Home", "Food & Dining", "Transport", "Health", "Others"}
-    if r.status_code == 200:
-        cbs = r.json()
-        check(len(cbs) == 5, "After overwrite, only 5 budgets exist", f"got {len(cbs)}")
-        names = {cb["category_name"] for cb in cbs}
-        check(names == saver_expected, "Saver categories are exactly the saver template's set",
-              f"got {names}")
-
-    # ---- TEST 2e: Invalid template_id -> 404 ----
-    body = {"template_id": "xxx", "month": MONTH, "year": YEAR, "overwrite": False}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 404, "Invalid template_id -> 404", f"got {r.status_code}")
-    if r.status_code == 404:
-        detail = r.json().get("detail", "")
-        check("xxx" in detail and "not found" in detail.lower(),
-              "404 detail format: 'Template \\'xxx\\' not found'",
-              f"detail={detail}")
-
-    # ---- TEST 2f: Invalid month=13 -> 400 ----
-    body = {"template_id": "student", "month": 13, "year": YEAR, "overwrite": False}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 400, "Invalid month=13 -> 400", f"got {r.status_code}: {r.text[:300]}")
-    if r.status_code == 400:
-        detail = r.json().get("detail", "")
-        check(bool(detail), "400 has detail message", f"detail={detail}")
-
-    # ---- TEST 2g: Currency preservation when set to EUR ----
-    set_eur = {
-        "total_budget": 50000,
-        "period": "monthly",
-        "start_date": "2099-08-01T00:00:00",
-        "currency": "EUR",
-    }
-    r = jpost(f"{API}/budget", set_eur)
-    check(r.status_code == 200, "Set currency=EUR via POST /budget -> 200", f"got {r.status_code}")
-
-    body = {"template_id": "professional", "month": MONTH, "year": YEAR, "overwrite": True}
-    r = jpost(f"{API}/budget/apply-template", body)
-    check(r.status_code == 200, "Apply 'professional' with EUR set -> 200")
-    if r.status_code == 200:
-        data = r.json()
-        check(data.get("currency") == "EUR", "Apply-template response currency=EUR preserved",
-              f"got {data.get('currency')}")
-
-    r = jget(f"{API}/budget")
-    if r.status_code == 200:
-        check(r.json().get("currency") == "EUR",
-              "GET /budget currency=EUR after apply-template (preserved)",
-              f"got {r.json().get('currency')}")
-
-    # ---- CLEANUP ----
-    print("\nCleanup: deleting test category_budgets and restoring currency...")
-    try:
-        r = jget(f"{API}/category-budgets", params={"month": MONTH, "year": YEAR})
-        if r.status_code == 200:
-            for cb in r.json():
-                requests.delete(f"{API}/category-budgets/{cb['id']}", timeout=15)
-        r2 = jget(f"{API}/category-budgets", params={"month": MONTH, "year": YEAR})
-        if r2.status_code == 200:
-            remaining = len(r2.json())
-            print(f"  Remaining budgets after cleanup: {remaining}")
-            check(remaining == 0, "Cleanup successful (0 budgets remaining for test month)",
-                  f"got {remaining}")
-    except Exception as e:
-        print(f"  cleanup error: {e}")
-
-    # Restore currency to INR (or whatever was originally set)
-    restore_currency = original_currency or "INR"
-    try:
-        rb = jget(f"{API}/budget")
-        if rb.status_code == 200:
-            cur = rb.json()
-            payload = {
-                "total_budget": original_total_budget if original_total_budget else cur.get("total_budget", 75000),
-                "period": cur.get("period", "monthly"),
-                "start_date": original_start_date or cur.get("start_date") or "2026-01-01T00:00:00",
-                "currency": restore_currency,
-            }
-            r = jpost(f"{API}/budget", payload)
-            print(f"  Restored currency to {restore_currency}: status={r.status_code}")
-    except Exception as e:
-        print(f"  currency restore error: {e}")
-
-    # ---- SUMMARY ----
-    print("\n" + "=" * 60)
-    print(f"PASSED: {len(PASS)}")
-    print(f"FAILED: {len(FAIL)}")
+    total = len(PASS) + len(FAIL)
+    print(f"\n=========================")
+    print(f"PASSED: {len(PASS)} / {total}")
+    print(f"FAILED: {len(FAIL)} / {total}")
     if FAIL:
         print("\nFailures:")
-        for n, info in FAIL:
-            print(f"  - {n} :: {info}")
-    print("=" * 60)
-    sys.exit(0 if not FAIL else 1)
+        for name, reason in FAIL:
+            print(f" - {name}: {reason}")
+    return 0 if not FAIL else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
