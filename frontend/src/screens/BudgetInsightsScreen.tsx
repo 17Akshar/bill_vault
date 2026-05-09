@@ -17,6 +17,12 @@ import { CategoryIcon } from '../components/CategoryIcon';
 import { api } from '../services/api';
 import { BudgetSummary } from '../types';
 import { formatCurrency as fmt } from '../utils/currency';
+import { CategoryPieChart } from '../components/CategoryPieChart';
+
+const PIE_PALETTE = [
+  '#6C63FF', '#4CAF50', '#FF9800', '#F44336', '#03A9F4',
+  '#E91E63', '#009688', '#795548', '#9C27B0', '#FFC107',
+];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -214,6 +220,30 @@ export const BudgetInsightsScreen = ({ navigation }: any) => {
           </View>
         </View>
 
+        {/* Spending Distribution Pie Chart */}
+        {summary && summary.categories && summary.categories.filter((c) => c.spent > 0).length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Feather name="pie-chart" size={22} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Spending Distribution</Text>
+            </View>
+            <CategoryPieChart
+              size={220}
+              strokeWidth={32}
+              centerValue={formatCurrency(summary.total_spent)}
+              centerLabel="Spent"
+              data={summary.categories
+                .filter((c) => c.spent > 0)
+                .sort((a, b) => b.spent - a.spent)
+                .map((c, i) => ({
+                  label: c.category,
+                  value: c.spent,
+                  color: PIE_PALETTE[i % PIE_PALETTE.length],
+                }))}
+            />
+          </View>
+        )}
+
         {/* Highest Spending Category */}
         {highestSpending && (
           <View style={styles.card}>
@@ -221,7 +251,6 @@ export const BudgetInsightsScreen = ({ navigation }: any) => {
               <Feather name="award" size={24} color={COLORS.warning} />
               <Text style={styles.cardTitle}>Highest Spending</Text>
             </View>
-            
             <View style={styles.highestSpendingCard}>
               <View style={styles.categoryIconLarge}>
                 <CategoryIcon name={highestSpending.icon} size={32} color={COLORS.warning} />

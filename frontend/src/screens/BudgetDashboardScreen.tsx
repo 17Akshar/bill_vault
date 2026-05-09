@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
+  Share,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -112,6 +114,68 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
   const usedPercentage = summary ? (summary.total_spent / summary.total_budget) * 100 : 0;
   const remainingPercentage = 100 - usedPercentage;
 
+  // Compute alert count: categories where spent exceeds alert_limit threshold
+  const alertCount = summary?.categories?.filter(
+    (c) => c.progress >= (c.alert_limit ?? 80)
+  ).length ?? 0;
+
+  const handleCarryOver = async () => {
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    Alert.alert(
+      'Recurring Budget',
+      `Copy all current category budgets to ${new Date(
+        nextYear,
+        nextMonth - 1
+      ).toLocaleString('default', { month: 'long', year: 'numeric' })}? Spent amounts will be reset to 0.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Carry Over',
+          onPress: async () => {
+            try {
+              const res = await api.importBudget(month, year, nextMonth, nextYear);
+              Alert.alert('Done!', res?.message || 'Budgets carried over successfully.');
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Failed to carry over');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleExport = async () => {
+    if (!summary) return;
+    const monthName = new Date(year, month - 1).toLocaleString('default', {
+      month: 'long',
+      year: 'numeric',
+    });
+    const lines = [
+      `Fincare — Budget Summary`,
+      `Period: ${monthName}`,
+      `Currency: ${summary.currency}`,
+      ``,
+      `Total Budget: ${formatCurrency(summary.total_budget)}`,
+      `Total Spent: ${formatCurrency(summary.total_spent)}`,
+      `Remaining: ${formatCurrency(summary.remaining_budget)}`,
+      `Income: ${formatCurrency(summary.income)}`,
+      `Expenses: ${formatCurrency(summary.expenses)}`,
+      `Savings: ${formatCurrency(summary.savings)} (${summary.savings_rate}%)`,
+      ``,
+      `Category Breakdown:`,
+      ...summary.categories.map(
+        (c) =>
+          `- ${c.category}: spent ${formatCurrency(c.spent)} of ${formatCurrency(c.budget)} (${Math.round(c.progress)}%)`
+      ),
+    ];
+    try {
+      await Share.share({ message: lines.join('\n'), title: 'Budget Summary' });
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to share');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -129,13 +193,21 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
             <Text style={styles.currencyChipCode}>{summary?.currency || 'USD'}</Text>
             <Feather name="chevron-down" size={14} color={COLORS.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation?.navigate?.('BudgetInsights')}
+          >
             <Feather name="bell" size={24} color={COLORS.textPrimary} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
+            {alertCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.badgeText}>{alertCount > 9 ? '9+' : alertCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => navigation?.navigate?.('AddToBudget')}
+          >
             <Feather name="plus" size={24} color={COLORS.white} />
           </TouchableOpacity>
         </View>
@@ -332,6 +404,61 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
             <Feather name="plus" size={20} color={COLORS.primary} />
             <Text style={styles.addCategoryButtonText}>Add Category Budget</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsRow}>
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={handleCarryOver}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: COLORS.primaryLight + '22' },
+                ]}
+              >
+                <Feather name="repeat" size={22} color={COLORS.primary} />
+              </View>
+              <Text style={styles.quickActionLabel}>Carry Over</Text>
+              <Text style={styles.quickActionSub}>To next month</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={handleExport}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: COLORS.successLight + '44' },
+                ]}
+              >
+                <Feather name="share-2" size={22} color={COLORS.success} />
+              </View>
+              <Text style={styles.quickActionLabel}>Export</Text>
+              <Text style={styles.quickActionSub}>Share summary</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickActionBtn}
+              onPress={() => navigation?.navigate?.('BudgetTemplates')}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.quickActionIcon,
+                  { backgroundColor: COLORS.warningLight + '55' },
+                ]}
+              >
+                <Feather name="zap" size={22} color={COLORS.warning} />
+              </View>
+              <Text style={styles.quickActionLabel}>Templates</Text>
+              <Text style={styles.quickActionSub}>Quick setup</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Bottom Insights Card */}
@@ -666,5 +793,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.lg,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
+  quickActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.background,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: BORDER_RADIUS.round,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  quickActionLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textPrimary,
+  },
+  quickActionSub: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });
