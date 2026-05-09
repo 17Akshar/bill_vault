@@ -43,11 +43,7 @@ export default function InvestmentDetailScreen() {
   const [txnNotes, setTxnNotes] = useState('');
   const [showTxnDatePicker, setShowTxnDatePicker] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, [id]);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const response = await api.get(`/investments/${id}`);
       setInvestment(response.data);
@@ -58,14 +54,18 @@ export default function InvestmentDetailScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     load();
-  }, []);
+  }, [load]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     Alert.alert(
       'Delete Investment',
       `Are you sure you want to remove "${investment?.name}"?`,
@@ -85,9 +85,9 @@ export default function InvestmentDetailScreen() {
         },
       ]
     );
-  };
+  }, [id, investment?.name, router]);
 
-  const handleAddTransaction = async () => {
+  const handleAddTransaction = useCallback(async () => {
     if (!txnAmount || parseFloat(txnAmount) <= 0) {
       Alert.alert('Required', 'Please enter transaction amount');
       return;
@@ -118,7 +118,7 @@ export default function InvestmentDetailScreen() {
     } finally {
       setSavingTxn(false);
     }
-  };
+  }, [id, txnAmount, txnType, txnQuantity, txnPrice, txnDate, txnNotes, load]);
 
   if (loading) {
     return (

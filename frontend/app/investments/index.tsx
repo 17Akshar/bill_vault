@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,11 +26,7 @@ export default function InvestmentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [investmentsRes, dashboardRes] = await Promise.all([
         api.get('/investments'),
@@ -45,14 +41,18 @@ export default function InvestmentsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     load();
-  }, []);
+  }, [load]);
 
-  const handleDeleteInvestment = (inv: any) => {
+  const handleDeleteInvestment = useCallback((inv: any) => {
     Alert.alert(
       'Delete Investment',
       `Are you sure you want to remove "${inv.name}"?`,
@@ -72,14 +72,16 @@ export default function InvestmentsScreen() {
         },
       ]
     );
-  };
+  }, [load]);
 
-  const filteredInvestments = selectedCategory
-    ? investments.filter(inv => {
-        const type = getInvestmentType(inv.investment_type);
-        return type?.category === selectedCategory;
-      })
-    : investments;
+  const filteredInvestments = useMemo(() => {
+    return selectedCategory
+      ? investments.filter(inv => {
+          const type = getInvestmentType(inv.investment_type);
+          return type?.category === selectedCategory;
+        })
+      : investments;
+  }, [investments, selectedCategory]);
 
   if (loading) {
     return (

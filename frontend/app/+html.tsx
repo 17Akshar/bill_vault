@@ -19,6 +19,10 @@ export default function Root({ children }: PropsWithChildren) {
           set `overflow: auto` on the body style below.
         */}
         <ScrollViewStyleReset />
+        {/* 
+          Safe use of dangerouslySetInnerHTML: contains only static CSS with no user input.
+          This is required for proper layout rendering in Expo web apps.
+        */}
         <style
           dangerouslySetInnerHTML={{
             __html: `

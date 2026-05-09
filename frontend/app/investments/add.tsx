@@ -40,18 +40,7 @@ export default function AddInvestmentScreen() {
   const [notes, setNotes] = useState('');
   const [typeSpecificData, setTypeSpecificData] = useState<any>({});
 
-  useEffect(() => {
-    if (typeParam) {
-      const type = getInvestmentType(typeParam as string);
-      setInvestmentType(type);
-    }
-    
-    if (editId) {
-      loadInvestment();
-    }
-  }, [typeParam, editId]);
-
-  const loadInvestment = async () => {
+  const loadInvestment = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get(`/investments/${editId}`);
@@ -74,9 +63,20 @@ export default function AddInvestmentScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [editId, router]);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    if (typeParam) {
+      const type = getInvestmentType(typeParam as string);
+      setInvestmentType(type);
+    }
+    
+    if (editId) {
+      loadInvestment();
+    }
+  }, [typeParam, editId, loadInvestment]);
+
+  const handleSave = useCallback(async () => {
     if (!name.trim()) {
       Alert.alert('Required', 'Please enter investment name');
       return;
@@ -128,7 +128,7 @@ export default function AddInvestmentScreen() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [name, investedAmount, currentValue, investmentType, typeSpecificData, purchaseDate, maturityDate, status, notes, editId, router]);
 
   const renderField = (field: InvestmentField) => {
     const value = typeSpecificData[field.key] || '';
