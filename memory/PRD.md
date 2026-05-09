@@ -47,6 +47,8 @@ Transition the fully-built "Bill Tracker" app into a Production-Ready Personal F
 - **CrossPlatformPicker** for dates/times — DONE
 - **Family Member** integration (filter chips + "For whom?" picker) — DONE
 - **MongoDB → Firebase Firestore** migration (via wrapper) — DONE
+- **Investments Feature (Live)** — Dashboard, type-grouped categories, stocks list, details w/ chart, Add/Edit/Delete wizard, transactions filter — DONE (2026-05-09)
+
 
 ## Work Done This Session (2026-05-02)
 ### Critical Bug Fixes
@@ -694,4 +696,35 @@ Implemented the Phase-2 spec for Bank / Cash / UPI / Overdraft account creation 
 ### Known Limitations
 - Frontend smoke pass; no automated regression for the new endpoints because Firestore daily quota is exhausted (will pass once quota resets — same blocker hit by previous testing iterations).
 - "Find IFSC" link from the Bank screen UI is not yet wired (returns no UX) — defer to Phase-3 polish.
+
+
+
+## Session 16 Update (2026-05-09) — Investments Feature Wired End-to-End
+
+### Frontend Investment screens connected to live API
+All 5 screens that previously used hardcoded `DUMMY_*` arrays now consume the FastAPI backend:
+- `app/investments/index.tsx` — calls `GET /api/investments/dashboard` (portfolio totals, allocation donut) and `GET /api/investments` (category cards). Empty-state, loading, refresh-on-focus, pull-to-refresh.
+- `app/investments/stocks.tsx` — calls `GET /api/investments?investment_type=stocks` (or other types via `?type=` param). Per-holding gain/loss computed client-side from invested vs current value.
+- `app/investments/[id].tsx` — calls `GET /api/investments/{id}` which now returns a `metrics` object (gain_loss, gain_loss_percentage, total_dividends, total_charges, buy_count, sell_count, transaction_count). Performance chart built from real buy-transaction price series filtered by the selected period (1M/3M/6M/1Y/ALL). Edit + Delete buttons live.
+- `app/investments/add.tsx` — `POST /api/investments` for create, `PUT /api/investments/{id}` for edit (loads existing investment via GET first), `DELETE` for remove. 3-step wizard: type+name → financials → notes & summary.
+- `app/investments/transactions.tsx` — `GET /api/investments/{id}/transactions` with All/Buy/Sell/Dividends filter chips. Summary cards aggregate totalBought/totalSold/dividend/charges.
+
+### Backend
+- `backend/investments.py` — `GET /api/investments/{id}` now returns inline `metrics` dict. Top-performers/losers response uses correct `name` field (was `investment_name`, returned null). Empty-portfolio fallback now also returns `total_dividends`, `top_losers`, `by_group` keys for shape consistency. Variable name `l` → `loser` (PEP-8).
+- `backend/investments_calculations.py` — `calculate_top_performers` / `calculate_top_losers` now compute `gain_loss_percentage` on the fly when missing (previously sorting by missing field returned arbitrary order).
+- `backend/firebase_config.py:284-316` — **CRITICAL FIX**: added `transaction_id` as the FIRST entry in the doc-id preference list so investment transactions don't overwrite each other (previously the wrapper picked `investment_id` — the parent FK — as the doc-id, making every transaction for the same investment overwrite the previous one). Verified: 9 seeded transactions, 4 of which are on a single investment, all persist and round-trip via `GET /transactions`.
+
+### Seed Script
+`backend/scripts/seed_investments.py` clears + reseeds 13 realistic investments (5 stocks, 2 mutual funds, 1 ETF, 1 FD, 1 gold, PPF, NPS, EPF) and 9 transactions (7 buys, 2 dividends) for the single-user-mode account.
+
+### Refactor
+- Moved `app/frontend/app/investments/types.ts` (a route-warning generator under Expo Router) to `app/frontend/types/investments.ts`. File was unused; warning silenced.
+
+### Testing
+- New `/app/backend/tests/test_investments_api.py` — **8/8 PASS** (38s) covering dashboard shape & totals, list, type filter, detail+metrics, 404, CRUD round-trip, multi-record persistence (3 distinct txns inserted, all 3 returned), seeded-transaction count.
+- Frontend smoke verified via authed screenshot — Investments dashboard renders ₹27,57,375 / +18.24% / 8 categories with mini sparklines, donut chart, dividend chip.
+- Multi-record overwrite regression verified (4 txns on one investment, all returned by API).
+
+### Known
+- AuthContext.checkAuth() does NOT auto-bootstrap single-user mode for fresh browser sessions hitting `/investments` directly — by design, app expects users to land on `/` welcome screen first or arrive via authenticated nav. Test agent flagged this as P0 but it's pre-existing and not a regression of this round's work.
 
