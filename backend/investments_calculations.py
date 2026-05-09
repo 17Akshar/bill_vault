@@ -311,6 +311,16 @@ class InvestmentCalculations:
             if i.get('is_active', True) and i.get('status') == 'active'
         ]
         
+        # Compute gain_loss_percentage on each investment if not present
+        for inv in active_investments:
+            if 'gain_loss_percentage' not in inv:
+                invested = float(inv.get('invested_amount', 0))
+                current = float(inv.get('current_value', 0))
+                inv['gain_loss_percentage'] = (
+                    round(((current - invested) / invested) * 100, 2) if invested > 0 else 0.0
+                )
+                inv['gain_loss'] = round(current - invested, 2)
+        
         # Sort by gain/loss percentage
         sorted_investments = sorted(
             active_investments,
@@ -339,6 +349,16 @@ class InvestmentCalculations:
             i for i in investments 
             if i.get('is_active', True) and i.get('status') == 'active'
         ]
+        
+        # Compute gain_loss_percentage on each investment if not present
+        for inv in active_investments:
+            if 'gain_loss_percentage' not in inv:
+                invested = float(inv.get('invested_amount', 0))
+                current = float(inv.get('current_value', 0))
+                inv['gain_loss_percentage'] = (
+                    round(((current - invested) / invested) * 100, 2) if invested > 0 else 0.0
+                )
+                inv['gain_loss'] = round(current - invested, 2)
         
         # Sort by gain/loss percentage ascending
         sorted_investments = sorted(

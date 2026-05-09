@@ -1,109 +1,34 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatINR } from '../../utils/formatINR';
-
-// Dummy transaction data
-const DUMMY_TRANSACTIONS = [
-  // Buy Transactions
-  {
-    id: '1',
-    type: 'buy',
-    date: '10 Jan 2023',
-    quantity: 50,
-    price: 2120.00,
-    charges: 40.00,
-    totalAmount: 106040.00,
-    notes: 'Initial investment',
-  },
-  {
-    id: '2',
-    type: 'buy',
-    date: '15 Mar 2023',
-    quantity: 30,
-    price: 2700.00,
-    charges: 30.00,
-    totalAmount: 81030.00,
-    notes: 'Added more shares',
-  },
-  {
-    id: '3',
-    type: 'buy',
-    date: '10 Aug 2023',
-    quantity: 32,
-    price: 2850.00,
-    charges: 35.00,
-    totalAmount: 91235.00,
-    notes: 'Market dip purchase',
-  },
-
-  // Sell Transactions
-  {
-    id: '4',
-    type: 'sell',
-    date: '05 Feb 2024',
-    quantity: 40,
-    price: 2920.00,
-    charges: 25.00,
-    totalAmount: 116775.00,
-    notes: 'Partial profit booking',
-  },
-  {
-    id: '5',
-    type: 'sell',
-    date: '20 Apr 2024',
-    quantity: 10,
-    price: 2960.00,
-    charges: 15.00,
-    totalAmount: 29585.00,
-    notes: 'Emergency funds',
-  },
-
-  // Dividend Transactions
-  {
-    id: '6',
-    type: 'dividend',
-    date: '30 May 2024',
-    quantity: 112,
-    price: 18.00,
-    charges: 0,
-    totalAmount: 2016.00,
-    notes: 'Dividend @ ₹18 per share',
-  },
-  {
-    id: '7',
-    type: 'dividend',
-    date: '30 Nov 2023',
-    quantity: 112,
-    price: 15.00,
-    charges: 0,
-    totalAmount: 1680.00,
-    notes: 'Interim dividend',
-  },
-
-  // Charges
-  {
-    id: '8',
-    type: 'charges',
-    date: '31 Mar 2024',
-    quantity: 0,
-    price: 0,
-    charges: 250.00,
-    totalAmount: 250.00,
-    notes: 'Annual maintenance charges',
-  },
-];
+import api from '../../utils/api';
 
 type FilterType = 'all' | 'buy' | 'sell' | 'dividends';
+
+const formatDate = (iso?: string) => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
+};
 
 export default function InvestmentTransactionScreen() {
   const router = useRouter();
@@ -111,11 +36,39 @@ export default function InvestmentTransactionScreen() {
   const { id, name } = useLocalSearchParams();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredTransactions = DUMMY_TRANSACTIONS.filter((txn) => {
+  const loadTransactions = useCallback(async () => {
+    try {
+      const res = await api.get(`/investments/${id}/transactions`);
+      setTransactions(res.data || []);
+    } catch (e) {
+      // keep prior state
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      setLoading(true);
+      loadTransactions();
+    }, [id, loadTransactions])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadTransactions();
+  };
+
+  const filteredTransactions = transactions.filter((txn) => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'dividends') return txn.type === 'dividend' || txn.type === 'charges';
-    return txn.type === activeFilter;
+    if (activeFilter === 'dividends') return txn.transaction_type === 'dividend' || txn.transaction_type === 'charges';
+    return txn.transaction_type === activeFilter;
   });
 
   const getTransactionIcon = (type: string) => {
@@ -148,49 +101,67 @@ export default function InvestmentTransactionScreen() {
     }
   };
 
-  // Calculate summary
-  const summary = DUMMY_TRANSACTIONS.reduce(
+  const summary = transactions.reduce(
     (acc, txn) => {
-      if (txn.type === 'buy') {
-        acc.totalBought += txn.totalAmount;
+      const amt = txn.amount || txn.total_amount || 0;
+      if (txn.transaction_type === 'buy') {
+        acc.totalBought += amt;
         acc.buyCount += 1;
-      } else if (txn.type === 'sell') {
-        acc.totalSold += txn.totalAmount;
+      } else if (txn.transaction_type === 'sell') {
+        acc.totalSold += amt;
         acc.sellCount += 1;
-      } else if (txn.type === 'dividend') {
-        acc.totalDividend += txn.totalAmount;
-      } else if (txn.type === 'charges') {
-        acc.totalCharges += txn.totalAmount;
+      } else if (txn.transaction_type === 'dividend') {
+        acc.totalDividend += amt;
+      } else if (txn.transaction_type === 'charges') {
+        acc.totalCharges += amt;
       }
       return acc;
     },
     { totalBought: 0, totalSold: 0, totalDividend: 0, totalCharges: 0, buyCount: 0, sellCount: 0 }
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>Transactions</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} testID="txn-back-btn">
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: colors.text }]}>Transactions</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {name || 'Investment History'}
-          </Text>
+          {name && (
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+              {name}
+            </Text>
+          )}
         </View>
-        <TouchableOpacity style={styles.iconBtn}>
-          <Ionicons name="download-outline" size={24} color={colors.primary} />
-        </TouchableOpacity>
       </View>
 
-      {/* Summary Cards */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.summaryScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.summaryScroll}
+        contentContainerStyle={{ paddingRight: 20 }}
+      >
         <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
           <Ionicons name="arrow-down-circle" size={20} color="#00E676" />
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Bought</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>
+          <Text style={[styles.summaryValue, { color: colors.text }]} testID="summary-total-bought">
             {formatINR(summary.totalBought)}
           </Text>
           <Text style={[styles.summaryCount, { color: colors.textSecondary }]}>
@@ -228,89 +199,71 @@ export default function InvestmentTransactionScreen() {
         </View>
       </ScrollView>
 
-      {/* Filter Tabs */}
       <View style={[styles.filterTabs, { borderBottomColor: colors.border }]}>
-        {[
-          { key: 'all', label: 'All', count: DUMMY_TRANSACTIONS.length },
-          {
-            key: 'buy',
-            label: 'Buy',
-            count: DUMMY_TRANSACTIONS.filter((t) => t.type === 'buy').length,
-          },
-          {
-            key: 'sell',
-            label: 'Sell',
-            count: DUMMY_TRANSACTIONS.filter((t) => t.type === 'sell').length,
-          },
-          {
-            key: 'dividends',
-            label: 'Dividends',
-            count: DUMMY_TRANSACTIONS.filter((t) => t.type === 'dividend' || t.type === 'charges')
-              .length,
-          },
-        ].map((filter) => (
-          <TouchableOpacity
-            key={filter.key}
-            style={[
-              styles.filterTab,
-              activeFilter === filter.key && [
-                styles.activeFilterTab,
-                { borderBottomColor: colors.primary },
-              ],
-            ]}
-            onPress={() => setActiveFilter(filter.key as FilterType)}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                { color: activeFilter === filter.key ? colors.primary : colors.textSecondary },
-              ]}
-            >
-              {filter.label} ({filter.count})
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Transactions List */}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.txnList}>
-        {filteredTransactions.map((txn) => {
-          const iconData = getTransactionIcon(txn.type);
-          const badgeStyle = getTransactionBadgeStyle(txn.type);
-
+        {(['all', 'buy', 'sell', 'dividends'] as FilterType[]).map((f) => {
+          const counts: Record<FilterType, number> = {
+            all: transactions.length,
+            buy: transactions.filter((t) => t.transaction_type === 'buy').length,
+            sell: transactions.filter((t) => t.transaction_type === 'sell').length,
+            dividends: transactions.filter(
+              (t) => t.transaction_type === 'dividend' || t.transaction_type === 'charges'
+            ).length,
+          };
+          const labels: Record<FilterType, string> = {
+            all: 'All',
+            buy: 'Buy',
+            sell: 'Sell',
+            dividends: 'Dividends',
+          };
           return (
             <TouchableOpacity
-              key={txn.id}
+              key={f}
+              style={[
+                styles.filterTab,
+                activeFilter === f && [styles.activeFilterTab, { borderBottomColor: colors.primary }],
+              ]}
+              onPress={() => setActiveFilter(f)}
+              testID={`filter-${f}`}
+            >
+              <Text style={[styles.filterTabText, { color: activeFilter === f ? colors.primary : colors.textSecondary }]}>
+                {labels[f]} ({counts[f]})
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.txnList}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        {filteredTransactions.map((txn) => {
+          const iconData = getTransactionIcon(txn.transaction_type);
+          const badgeStyle = getTransactionBadgeStyle(txn.transaction_type);
+          const amt = txn.amount || txn.total_amount || 0;
+
+          return (
+            <View
+              key={txn.transaction_id}
               style={[styles.txnCard, { backgroundColor: colors.card }]}
-              activeOpacity={0.7}
+              testID={`txn-card-${txn.transaction_id}`}
             >
               <View style={styles.txnHeader}>
                 <View style={styles.txnLeft}>
-                  <View
-                    style={[
-                      styles.txnIconContainer,
-                      { backgroundColor: iconData.color + '20' },
-                    ]}
-                  >
+                  <View style={[styles.txnIconContainer, { backgroundColor: iconData.color + '20' }]}>
                     <Ionicons name={iconData.icon as any} size={22} color={iconData.color} />
                   </View>
                   <View>
                     <View style={styles.txnTitleRow}>
-                      <View
-                        style={[styles.txnBadge, { backgroundColor: badgeStyle.backgroundColor }]}
-                      >
-                        <Text
-                          style={[
-                            styles.txnBadgeText,
-                            { color: badgeStyle.textColor },
-                          ]}
-                        >
-                          {txn.type.toUpperCase()}
+                      <View style={[styles.txnBadge, { backgroundColor: badgeStyle.backgroundColor }]}>
+                        <Text style={[styles.txnBadgeText, { color: badgeStyle.textColor }]}>
+                          {(txn.transaction_type || '').toUpperCase()}
                         </Text>
                       </View>
                     </View>
                     <Text style={[styles.txnDate, { color: colors.textSecondary }]}>
-                      {txn.date}
+                      {formatDate(txn.transaction_date)}
                     </Text>
                   </View>
                 </View>
@@ -321,48 +274,32 @@ export default function InvestmentTransactionScreen() {
                       styles.txnAmount,
                       {
                         color:
-                          txn.type === 'buy' || txn.type === 'charges'
+                          txn.transaction_type === 'buy' || txn.transaction_type === 'charges'
                             ? '#FF5252'
-                            : txn.type === 'sell'
+                            : txn.transaction_type === 'sell' || txn.transaction_type === 'dividend'
                             ? '#00E676'
                             : colors.text,
                       },
                     ]}
                   >
-                    {txn.type === 'buy' || txn.type === 'charges' ? '-' : '+'}
-                    {formatINR(txn.totalAmount)}
+                    {txn.transaction_type === 'buy' || txn.transaction_type === 'charges' ? '-' : '+'}
+                    {formatINR(amt)}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.txnDetails}>
-                {txn.quantity > 0 && (
+                {(txn.quantity || 0) > 0 && (
                   <View style={styles.txnDetailRow}>
-                    <Text style={[styles.txnDetailLabel, { color: colors.textSecondary }]}>
-                      Quantity
-                    </Text>
-                    <Text style={[styles.txnDetailValue, { color: colors.text }]}>
-                      {txn.quantity} shares
-                    </Text>
+                    <Text style={[styles.txnDetailLabel, { color: colors.textSecondary }]}>Quantity</Text>
+                    <Text style={[styles.txnDetailValue, { color: colors.text }]}>{txn.quantity}</Text>
                   </View>
                 )}
-                {txn.price > 0 && (
+                {(txn.price_per_unit || 0) > 0 && (
                   <View style={styles.txnDetailRow}>
-                    <Text style={[styles.txnDetailLabel, { color: colors.textSecondary }]}>
-                      Price per share
-                    </Text>
+                    <Text style={[styles.txnDetailLabel, { color: colors.textSecondary }]}>Price per unit</Text>
                     <Text style={[styles.txnDetailValue, { color: colors.text }]}>
-                      ₹{txn.price.toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-                {txn.charges > 0 && (
-                  <View style={styles.txnDetailRow}>
-                    <Text style={[styles.txnDetailLabel, { color: colors.textSecondary }]}>
-                      Charges & Fees
-                    </Text>
-                    <Text style={[styles.txnDetailValue, { color: '#FF9100' }]}>
-                      ₹{txn.charges.toFixed(2)}
+                      ₹{Number(txn.price_per_unit).toFixed(2)}
                     </Text>
                   </View>
                 )}
@@ -374,7 +311,7 @@ export default function InvestmentTransactionScreen() {
                   </View>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
           );
         })}
 
@@ -385,42 +322,25 @@ export default function InvestmentTransactionScreen() {
               No transactions found
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              Transactions will appear here once you buy or sell shares
+              Transactions will appear here once you buy or sell.
             </Text>
           </View>
         )}
       </ScrollView>
-
-      {/* Add Transaction Button */}
-      <View style={[styles.bottomBar, { backgroundColor: colors.background }]}>
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]}>
-          <Ionicons name="add" size={20} color="#FFF" />
-          <Text style={styles.addBtnText}>Add Transaction</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  backBtn: { padding: 4 },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 2 },
-  subtitle: { fontSize: 13 },
-  iconBtn: { padding: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 },
+  backBtn: { padding: 4, marginRight: 8 },
+  title: { fontSize: 20, fontWeight: 'bold' },
+  subtitle: { fontSize: 13, marginTop: 2 },
 
-  // Summary Cards
-  summaryScroll: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  summaryScroll: { paddingLeft: 20, marginBottom: 20, maxHeight: 110 },
   summaryCard: {
     width: 140,
     padding: 14,
@@ -432,126 +352,35 @@ const styles = StyleSheet.create({
   summaryValue: { fontSize: 16, fontWeight: 'bold' },
   summaryCount: { fontSize: 10 },
 
-  // Filter Tabs
-  filterTabs: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    marginBottom: 16,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  activeFilterTab: {
-    borderBottomWidth: 2,
-  },
+  filterTabs: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, marginBottom: 16 },
+  filterTab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  activeFilterTab: { borderBottomWidth: 2 },
   filterTabText: { fontSize: 13, fontWeight: '600' },
 
-  // Transactions List
-  txnList: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
-  },
-  txnCard: {
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-  },
-  txnHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  txnLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  txnIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  txnTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  txnBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  txnBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
+  txnList: { paddingHorizontal: 20, paddingBottom: 40 },
+  txnCard: { borderRadius: 14, padding: 16, marginBottom: 12 },
+  txnHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  txnLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  txnIconContainer: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  txnTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  txnBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  txnBadgeText: { fontSize: 11, fontWeight: '700' },
   txnDate: { fontSize: 12 },
-  txnRight: {
-    alignItems: 'flex-end',
-  },
-  txnAmount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  txnRight: { alignItems: 'flex-end' },
+  txnAmount: { fontSize: 18, fontWeight: 'bold' },
   txnDetails: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(128,128,128,0.08)',
     paddingTop: 12,
     gap: 8,
   },
-  txnDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
+  txnDetailRow: { flexDirection: 'row', justifyContent: 'space-between' },
   txnDetailLabel: { fontSize: 12 },
   txnDetailValue: { fontSize: 12, fontWeight: '600' },
-  txnNotes: {
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  txnNotesText: {
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
+  txnNotes: { padding: 10, borderRadius: 8, marginTop: 4 },
+  txnNotesText: { fontSize: 12, fontStyle: 'italic' },
 
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    gap: 12,
-  },
+  emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   emptyDesc: { fontSize: 13, textAlign: 'center', paddingHorizontal: 40 },
-
-  // Bottom Bar
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128,128,128,0.1)',
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-  },
-  addBtnText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
 });

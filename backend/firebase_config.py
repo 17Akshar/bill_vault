@@ -289,7 +289,8 @@ class FirestoreCollection:
             # over `user_id` which is SHARED across many records for a single user —
             # using user_id as doc_id would cause inserts to silently overwrite each other.
             doc_id = None
-            for key in ["income_id", "expense_id", "bill_id", "investment_id",
+            for key in ["transaction_id",  # MUST come before investment_id (parent FK)
+                        "income_id", "expense_id", "bill_id", "investment_id",
                         "heading_id", "reminder_id", "note_id", "family_member_id",
                         "card_id", "loan_id", "lending_id", "rental_id",
                         "payment_id", "account_id", "attempt_id", "log_id",

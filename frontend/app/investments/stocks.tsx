@@ -1,240 +1,219 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatINR } from '../../utils/formatINR';
-
-// Dummy portfolio data
-const PORTFOLIO_SUMMARY = {
-  totalInvested: 1245000,
-  currentValue: 1620000,
-  gainLoss: 375000,
-  gainLossPercent: 30.12,
-};
-
-// Dummy holdings data
-const DUMMY_HOLDINGS = [
-  {
-    id: '1',
-    company: 'Reliance Industries',
-    quantity: 112,
-    invested: 356000,
-    current: 475000,
-    buyPrice: 2987.45,
-    currentPrice: 4241.07,
-    gainLoss: 119000,
-    gainLossPercent: 33.43,
-    status: 'active',
-  },
-  {
-    id: '2',
-    company: 'Reliance Industries',
-    quantity: 85,
-    invested: 168000,
-    current: 360425,
-    buyPrice: 1976.47,
-    currentPrice: 4241.07,
-    gainLoss: 192425,
-    gainLossPercent: 114.54,
-    status: 'active',
-  },
-  {
-    id: '3',
-    company: 'TCS Consultancy',
-    quantity: 64,
-    invested: 230000,
-    current: 264000,
-    buyPrice: 3593.75,
-    currentPrice: 4125.00,
-    gainLoss: 34000,
-    gainLossPercent: 14.78,
-    status: 'active',
-  },
-  {
-    id: '4',
-    company: 'HDFC Bank NSE',
-    quantity: 150,
-    invested: 220000,
-    current: 264000,
-    buyPrice: 1466.67,
-    currentPrice: 1760.00,
-    gainLoss: 44000,
-    gainLossPercent: 20.00,
-    status: 'active',
-  },
-  {
-    id: '5',
-    company: 'Infosys Ltd. NSE',
-    quantity: 45,
-    invested: 191000,
-    current: 216000,
-    buyPrice: 4244.44,
-    currentPrice: 4800.00,
-    gainLoss: 25000,
-    gainLossPercent: 13.09,
-    status: 'active',
-  },
-  {
-    id: '6',
-    company: 'ITC Ltd.',
-    quantity: 600,
-    invested: 80000,
-    current: 231000,
-    buyPrice: 133.33,
-    currentPrice: 385.00,
-    gainLoss: -49000,
-    gainLossPercent: -38.27,
-    status: 'sold',
-  },
-];
+import api from '../../utils/api';
 
 type TabType = 'all' | 'active' | 'sold';
+
+const TYPE_CONFIG: Record<string, { title: string; addLabel: string }> = {
+  stocks: { title: 'Shares / Stocks', addLabel: 'Add Share / Stock' },
+  mutual_funds: { title: 'Mutual Funds', addLabel: 'Add Mutual Fund' },
+  etf: { title: 'ETFs', addLabel: 'Add ETF' },
+  fd: { title: 'Fixed Deposits', addLabel: 'Add Fixed Deposit' },
+  gold: { title: 'Gold', addLabel: 'Add Gold' },
+  ppf: { title: 'PPF', addLabel: 'Add PPF' },
+  nps: { title: 'NPS', addLabel: 'Add NPS' },
+  epf: { title: 'EPF', addLabel: 'Add EPF' },
+};
 
 export default function SharesStocksScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const { type: typeParam } = useLocalSearchParams();
+  const investmentType = (typeParam as string) || 'stocks';
+  const config = TYPE_CONFIG[investmentType] || TYPE_CONFIG.stocks;
 
-  const filteredHoldings = DUMMY_HOLDINGS.filter((holding) => {
-    if (activeTab === 'all') return true;
-    return holding.status === activeTab;
+  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [holdings, setHoldings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadHoldings = useCallback(async () => {
+    try {
+      const res = await api.get('/investments', { params: { investment_type: investmentType } });
+      setHoldings(res.data || []);
+    } catch (e) {
+      // silently keep previous list
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [investmentType]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      loadHoldings();
+    }, [loadHoldings])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadHoldings();
+  };
+
+  // Aggregate metrics on each holding
+  const enrichedHoldings = holdings.map((h) => {
+    const invested = h.invested_amount || 0;
+    const current = h.current_value || 0;
+    const gainLoss = current - invested;
+    const gainLossPercent = invested > 0 ? (gainLoss / invested) * 100 : 0;
+    const tsd = h.type_specific_data || {};
+    return {
+      ...h,
+      gainLoss,
+      gainLossPercent,
+      quantity: tsd.quantity || tsd.units || 0,
+      buyPrice: tsd.average_buy_price || tsd.purchase_price_per_gram || tsd.nav || 0,
+      currentPrice: tsd.current_price || tsd.current_price_per_gram || tsd.nav || 0,
+    };
   });
 
-  const activeCount = DUMMY_HOLDINGS.filter((h) => h.status === 'active').length;
-  const soldCount = DUMMY_HOLDINGS.filter((h) => h.status === 'sold').length;
+  const filteredHoldings = enrichedHoldings.filter((h) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'active') return h.status === 'active' || !h.status;
+    if (activeTab === 'sold') return h.status === 'closed' || h.status === 'matured';
+    return true;
+  });
 
-  const gainLossColor = PORTFOLIO_SUMMARY.gainLoss >= 0 ? '#00E676' : '#FF5252';
+  const activeCount = enrichedHoldings.filter((h) => h.status === 'active' || !h.status).length;
+  const soldCount = enrichedHoldings.filter((h) => h.status === 'closed' || h.status === 'matured').length;
+
+  const totalInvested = enrichedHoldings.reduce((acc, h) => acc + (h.invested_amount || 0), 0);
+  const totalCurrent = enrichedHoldings.reduce((acc, h) => acc + (h.current_value || 0), 0);
+  const totalGainLoss = totalCurrent - totalInvested;
+  const totalGainLossPercent = totalInvested > 0 ? (totalGainLoss / totalInvested) * 100 : 0;
+  const isPortfolioPositive = totalGainLoss >= 0;
+  const portfolioColor = isPortfolioPositive ? '#00E676' : '#FF5252';
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>{config.title}</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} testID="stocks-back-btn">
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Shares / Stocks</Text>
-        <TouchableOpacity style={styles.iconBtn}>
-          <Ionicons name="funnel-outline" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>{config.title}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Portfolio Summary */}
-        <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                Total Invested
-              </Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>
-                {formatINR(PORTFOLIO_SUMMARY.totalInvested)}
-              </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        {enrichedHoldings.length > 0 && (
+          <View style={[styles.summaryCard, { backgroundColor: colors.card }]} testID="stocks-summary-card">
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Invested</Text>
+                <Text style={[styles.summaryValue, { color: colors.text }]} testID="stocks-total-invested">
+                  {formatINR(totalInvested)}
+                </Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Current Value</Text>
+                <Text style={[styles.summaryValue, { color: colors.text }]} testID="stocks-current-value">
+                  {formatINR(totalCurrent)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
-                Current Value
-              </Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>
-                {formatINR(PORTFOLIO_SUMMARY.currentValue)}
+
+            <View style={[styles.gainLossCard, { backgroundColor: portfolioColor + '15' }]}>
+              <Ionicons
+                name={isPortfolioPositive ? 'trending-up' : 'trending-down'}
+                size={20}
+                color={portfolioColor}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.gainLossLabel, { color: colors.textSecondary }]}>Total Gain/Loss</Text>
+                <Text style={[styles.gainLossValue, { color: portfolioColor }]} testID="stocks-gain-loss">
+                  {isPortfolioPositive ? '+' : '-'}
+                  {formatINR(Math.abs(totalGainLoss))}
+                </Text>
+              </View>
+              <Text style={[styles.gainLossPercent, { color: portfolioColor }]}>
+                {isPortfolioPositive ? '+' : ''}
+                {totalGainLossPercent.toFixed(2)}%
               </Text>
             </View>
           </View>
+        )}
 
-          <View style={[styles.gainLossCard, { backgroundColor: gainLossColor + '15' }]}>
-            <Ionicons
-              name={PORTFOLIO_SUMMARY.gainLoss >= 0 ? 'trending-up' : 'trending-down'}
-              size={20}
-              color={gainLossColor}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.gainLossLabel, { color: colors.textSecondary }]}>
-                Total Gain/Loss
-              </Text>
-              <Text style={[styles.gainLossValue, { color: gainLossColor }]}>
-                +{formatINR(PORTFOLIO_SUMMARY.gainLoss)}
-              </Text>
-            </View>
-            <Text style={[styles.gainLossPercent, { color: gainLossColor }]}>
-              +{PORTFOLIO_SUMMARY.gainLossPercent.toFixed(2)}%
-            </Text>
-          </View>
-        </View>
-
-        {/* Tabs */}
         <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'all' && [styles.activeTab, { borderBottomColor: colors.primary }],
-            ]}
-            onPress={() => setActiveTab('all')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'all' ? colors.primary : colors.textSecondary },
-              ]}
-            >
-              All ({DUMMY_HOLDINGS.length})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'active' && [styles.activeTab, { borderBottomColor: colors.primary }],
-            ]}
-            onPress={() => setActiveTab('active')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'active' ? colors.primary : colors.textSecondary },
-              ]}
-            >
-              Active ({activeCount})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'sold' && [styles.activeTab, { borderBottomColor: colors.primary }],
-            ]}
-            onPress={() => setActiveTab('sold')}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'sold' ? colors.primary : colors.textSecondary },
-              ]}
-            >
-              Sold ({soldCount})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Holdings List */}
-        <View style={styles.holdingsList}>
-          {filteredHoldings.map((holding) => {
-            const isPositive = holding.gainLoss >= 0;
-            const stockGainLossColor = isPositive ? '#00E676' : '#FF5252';
-
+          {(['all', 'active', 'sold'] as TabType[]).map((t) => {
+            const labels: Record<TabType, string> = {
+              all: `All (${enrichedHoldings.length})`,
+              active: `Active (${activeCount})`,
+              sold: `Sold (${soldCount})`,
+            };
             return (
               <TouchableOpacity
-                key={holding.id}
+                key={t}
+                style={[
+                  styles.tab,
+                  activeTab === t && [styles.activeTab, { borderBottomColor: colors.primary }],
+                ]}
+                onPress={() => setActiveTab(t)}
+                testID={`stocks-tab-${t}`}
+              >
+                <Text style={[styles.tabText, { color: activeTab === t ? colors.primary : colors.textSecondary }]}>
+                  {labels[t]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={styles.holdingsList}>
+          {filteredHoldings.length === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="trending-up-outline" size={64} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                No holdings yet
+              </Text>
+              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+                Tap "{config.addLabel}" below to start tracking.
+              </Text>
+            </View>
+          )}
+
+          {filteredHoldings.map((holding) => {
+            const stockColor = holding.gainLoss >= 0 ? '#00E676' : '#FF5252';
+            const isPositive = holding.gainLoss >= 0;
+            return (
+              <TouchableOpacity
+                key={holding.investment_id}
                 style={[styles.holdingCard, { backgroundColor: colors.card }]}
                 activeOpacity={0.7}
-                onPress={() => {
-                  // Navigate to stock detail screen
-                }}
+                onPress={() => router.push(`/investments/${holding.investment_id}` as any)}
+                testID={`holding-${holding.investment_id}`}
               >
                 <View style={styles.holdingHeader}>
                   <View style={styles.holdingLeft}>
@@ -242,25 +221,23 @@ export default function SharesStocksScreen() {
                       <Ionicons name="business" size={20} color="#FF9100" />
                     </View>
                     <View>
-                      <Text style={[styles.companyName, { color: colors.text }]}>
-                        {holding.company}
-                      </Text>
+                      <Text style={[styles.companyName, { color: colors.text }]}>{holding.name}</Text>
                       <Text style={[styles.quantity, { color: colors.textSecondary }]}>
-                        Qty: {holding.quantity} shares
+                        Qty: {holding.quantity} {investmentType === 'stocks' ? 'shares' : 'units'}
                       </Text>
                     </View>
                   </View>
                   <View style={styles.holdingRight}>
                     <Text style={[styles.currentValue, { color: colors.text }]}>
-                      {formatINR(holding.current)}
+                      {formatINR(holding.current_value || 0)}
                     </Text>
-                    <View style={[styles.gainBadge, { backgroundColor: stockGainLossColor + '15' }]}>
+                    <View style={[styles.gainBadge, { backgroundColor: stockColor + '15' }]}>
                       <Ionicons
                         name={isPositive ? 'arrow-up' : 'arrow-down'}
                         size={12}
-                        color={stockGainLossColor}
+                        color={stockColor}
                       />
-                      <Text style={[styles.gainBadgeText, { color: stockGainLossColor }]}>
+                      <Text style={[styles.gainBadgeText, { color: stockColor }]}>
                         {isPositive ? '+' : ''}
                         {holding.gainLossPercent.toFixed(2)}%
                       </Text>
@@ -270,59 +247,44 @@ export default function SharesStocksScreen() {
 
                 <View style={styles.holdingStats}>
                   <View style={styles.statBox}>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                      Invested
-                    </Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Invested</Text>
                     <Text style={[styles.statValue, { color: colors.text }]}>
-                      {formatINR(holding.invested)}
+                      {formatINR(holding.invested_amount || 0)}
                     </Text>
                   </View>
                   <View style={styles.statBox}>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                      Buy Price
-                    </Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Buy Price</Text>
                     <Text style={[styles.statValue, { color: colors.text }]}>
-                      ₹{holding.buyPrice.toFixed(2)}
+                      ₹{(holding.buyPrice || 0).toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.statBox}>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                      Current Price
-                    </Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Current Price</Text>
                     <Text style={[styles.statValue, { color: colors.text }]}>
-                      ₹{holding.currentPrice.toFixed(2)}
+                      ₹{(holding.currentPrice || 0).toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.statBox}>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                      Profit/Loss
-                    </Text>
-                    <Text style={[styles.statValue, { color: stockGainLossColor }]}>
-                      {isPositive ? '+' : ''}
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Profit/Loss</Text>
+                    <Text style={[styles.statValue, { color: stockColor }]}>
+                      {isPositive ? '+' : '-'}
                       {formatINR(Math.abs(holding.gainLoss))}
                     </Text>
                   </View>
                 </View>
-
-                <TouchableOpacity style={styles.chevronBtn}>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Add Button */}
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: '#6366F1' }]}
-          onPress={() => {
-            // Navigate to add stock screen
-            router.push('/investments/add?type=stocks' as any);
-          }}
+          onPress={() => router.push(`/investments/add?type=${investmentType}` as any)}
           activeOpacity={0.8}
+          testID="stocks-add-btn"
         >
           <Ionicons name="add" size={24} color="#FFF" />
-          <Text style={styles.addButtonText}>Add Share / Stock</Text>
+          <Text style={styles.addButtonText}>{config.addLabel}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -334,15 +296,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
   backBtn: { padding: 4 },
   title: { fontSize: 20, fontWeight: 'bold', flex: 1, marginLeft: 12 },
-  iconBtn: { padding: 4 },
 
-  // Portfolio Summary
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
   summaryCard: {
     marginHorizontal: 20,
     borderRadius: 16,
@@ -354,30 +315,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
+  summaryRow: { flexDirection: 'row', marginBottom: 16 },
   summaryItem: { flex: 1 },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: 'rgba(128,128,128,0.1)',
-    marginHorizontal: 16,
-  },
+  summaryDivider: { width: 1, backgroundColor: 'rgba(128,128,128,0.1)', marginHorizontal: 16 },
   summaryLabel: { fontSize: 12, marginBottom: 6 },
   summaryValue: { fontSize: 18, fontWeight: 'bold' },
-  gainLossCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 12,
-  },
+  gainLossCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12 },
   gainLossLabel: { fontSize: 12, marginBottom: 4 },
   gainLossValue: { fontSize: 18, fontWeight: 'bold' },
   gainLossPercent: { fontSize: 16, fontWeight: '700' },
 
-  // Tabs
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -385,57 +332,28 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(128,128,128,0.1)',
     marginBottom: 20,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-  },
+  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
+  activeTab: { borderBottomWidth: 2 },
   tabText: { fontSize: 14, fontWeight: '600' },
 
-  // Holdings List
-  holdingsList: {
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 20,
-  },
+  holdingsList: { paddingHorizontal: 20, gap: 12, marginBottom: 20 },
   holdingCard: {
     borderRadius: 14,
     padding: 16,
-    position: 'relative',
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
-  holdingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
+  holdingHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
   holdingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  companyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  companyIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   companyName: { fontSize: 15, fontWeight: '700', marginBottom: 3 },
   quantity: { fontSize: 12 },
   holdingRight: { alignItems: 'flex-end' },
   currentValue: { fontSize: 16, fontWeight: 'bold', marginBottom: 6 },
-  gainBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
+  gainBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
   gainBadgeText: { fontSize: 12, fontWeight: '700' },
   holdingStats: {
     flexDirection: 'row',
@@ -448,13 +366,11 @@ const styles = StyleSheet.create({
   statBox: { width: '48%' },
   statLabel: { fontSize: 11, marginBottom: 4 },
   statValue: { fontSize: 13, fontWeight: 'bold' },
-  chevronBtn: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-  },
 
-  // Add Button
+  emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
+  emptyText: { fontSize: 16, fontWeight: '600' },
+  emptyDesc: { fontSize: 13, textAlign: 'center', paddingHorizontal: 40 },
+
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -465,9 +381,5 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 40,
   },
-  addButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  addButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });

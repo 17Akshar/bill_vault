@@ -146,13 +146,18 @@ async def get_dashboard(request: Request):
             "total_gain_loss": 0,
             "gain_loss_percentage": 0,
             "by_type": [],
-            "by_status": {"active": 0, "closed": 0, "matured": 0},
+            "by_group": [],
+            "by_status": {"active": 0, "closed": 0, "matured": 0, "partially_sold": 0},
             "total_count": 0,
-            "asset_allocation": {"by_type": [], "by_group": []},
+            "asset_allocation": {"by_type": [], "by_group": [], "total_portfolio_value": 0},
             "diversity_score": {"score": 0, "level": "None"},
             "top_performers": [],
+            "top_losers": [],
             "total_dividends": 0,
-            "total_charges": 0
+            "total_dividends_received": 0,
+            "total_charges_paid": 0,
+            "net_gain_loss": 0,
+            "transaction_summary": {"total": 0, "buy": 0, "sell": 0, "dividend": 0, "charges": 0}
         }
     
     # Use calculation utilities
@@ -191,7 +196,7 @@ async def get_dashboard(request: Request):
         "top_performers": [
             {
                 "investment_id": p.get("investment_id"),
-                "name": p.get("investment_name"),
+                "name": p.get("name"),
                 "type": p.get("investment_type"),
                 "gain_loss_percentage": p.get("gain_loss_percentage"),
                 "current_value": p.get("current_value")
@@ -200,14 +205,15 @@ async def get_dashboard(request: Request):
         ],
         "top_losers": [
             {
-                "investment_id": l.get("investment_id"),
-                "name": l.get("investment_name"),
-                "type": l.get("investment_type"),
-                "gain_loss_percentage": l.get("gain_loss_percentage"),
-                "current_value": l.get("current_value")
+                "investment_id": loser.get("investment_id"),
+                "name": loser.get("name"),
+                "type": loser.get("investment_type"),
+                "gain_loss_percentage": loser.get("gain_loss_percentage"),
+                "current_value": loser.get("current_value")
             }
-            for l in top_losers
+            for loser in top_losers
         ],
+        "total_dividends": summary['total_dividends_received'],
         "total_dividends_received": summary['total_dividends_received'],
         "total_charges_paid": summary['total_charges_paid'],
         "net_gain_loss": summary['net_gain_loss'],
@@ -217,7 +223,7 @@ async def get_dashboard(request: Request):
 
 @investments_router.get("/investments/{inv_id}")
 async def get_investment_detail(inv_id: str, request: Request):
-    """Get single investment details"""
+    """Get single investment details with computed metrics"""
     user = await _get_user(request)
     investment = await db.investments.find_one(
         {"investment_id": inv_id, "user_id": user.user_id},
@@ -232,7 +238,33 @@ async def get_investment_detail(inv_id: str, request: Request):
         {"_id": 0}
     ).sort("transaction_date", -1).to_list(100)
     
+    # Compute metrics on the fly
+    invested = float(investment.get("invested_amount", 0))
+    current = float(investment.get("current_value", 0))
+    gain_loss = current - invested
+    gain_loss_percentage = (gain_loss / invested * 100) if invested > 0 else 0.0
+    
+    # Aggregate per-type transaction summary
+    total_dividends = sum(
+        float(t.get("total_amount") or t.get("amount") or 0)
+        for t in transactions if t.get("transaction_type") == "dividend"
+    )
+    total_charges = sum(
+        float(t.get("brokerage_charges") or 0) for t in transactions
+    )
+    buy_count = sum(1 for t in transactions if t.get("transaction_type") == "buy")
+    sell_count = sum(1 for t in transactions if t.get("transaction_type") == "sell")
+    
     investment["transactions"] = transactions
+    investment["metrics"] = {
+        "gain_loss": round(gain_loss, 2),
+        "gain_loss_percentage": round(gain_loss_percentage, 2),
+        "total_dividends": round(total_dividends, 2),
+        "total_charges": round(total_charges, 2),
+        "buy_count": buy_count,
+        "sell_count": sell_count,
+        "transaction_count": len(transactions),
+    }
     return investment
 
 
@@ -353,7 +385,7 @@ async def get_analytics_summary(request: Request):
         "top_performers": [
             {
                 "investment_id": p.get("investment_id"),
-                "name": p.get("investment_name"),
+                "name": p.get("name"),
                 "type": p.get("investment_type"),
                 "invested_amount": p.get("invested_amount"),
                 "current_value": p.get("current_value"),
@@ -364,14 +396,14 @@ async def get_analytics_summary(request: Request):
         ],
         "top_losers": [
             {
-                "investment_id": l.get("investment_id"),
-                "name": l.get("investment_name"),
-                "type": l.get("investment_type"),
-                "invested_amount": l.get("invested_amount"),
-                "current_value": l.get("current_value"),
-                "gain_loss": l.get("gain_loss"),
-                "gain_loss_percentage": l.get("gain_loss_percentage")
+                "investment_id": loser.get("investment_id"),
+                "name": loser.get("name"),
+                "type": loser.get("investment_type"),
+                "invested_amount": loser.get("invested_amount"),
+                "current_value": loser.get("current_value"),
+                "gain_loss": loser.get("gain_loss"),
+                "gain_loss_percentage": loser.get("gain_loss_percentage")
             }
-            for l in top_losers
+            for loser in top_losers
         ]
     }

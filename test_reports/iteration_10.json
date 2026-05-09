@@ -1,0 +1,57 @@
+{
+  "summary": "Tested Investments P0+P1: 7 backend endpoints (dashboard / list / filter / detail+metrics / CRUD / 2 transactions endpoints) and 5 frontend screens (dashboard, stocks list, detail, transactions, add). Backend: 8/8 pytest tests passed (38s) including the multirecord-overwrite regression — Reliance now correctly returns all 4 seeded transactions. Frontend (after manual auth bootstrap): all 5 screens render real seed data correctly — dashboard ₹27,57,375 / +18.24%, all 8 categories with mini-spark charts and correct gain%, Stocks list with 5 holdings including ITC at -6.25%, detail page Reliance with metrics tile + Performance chart + Transactions(4) tab, transactions page with summary cards + filter tabs all populated. ONE CRITICAL BUG FOUND: AuthContext.checkAuth() does NOT auto-bootstrap single-user mode on app load — fresh browsers see 'Not authenticated' banner and ₹0.00 values until they manually login. The task brief incorrectly stated AuthContext auto-bootstraps; code at /app/frontend/contexts/AuthContext.tsx:50-65 only reads stored token, never calls singleUserLogin().",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/investments/{id}", "issue": "metrics.total_charges is computed via brokerage_charges field but TransactionCreate model doesn't accept that field — only seeded data populates it. New txns added via POST never include charges, so charges always = 0 for user-created data."},
+      {"endpoint": "GET /api/investments/dashboard", "issue": "InvestmentCalculations.calculate_total_portfolio_value (and asset_allocation) skip non-active or is_active=False investments; matured/closed investments are excluded from total_invested. This is correct for 'active portfolio' semantics but the dashboard label is just 'Total Invested' which may mislead users with closed/matured investments. Consider exposing both actives-only and lifetime totals."},
+      {"endpoint": "POST /api/investments/{id}/transactions", "issue": "TransactionCreate.transaction_type accepts any string (no enum/Literal) — typos like 'BUY' (uppercase) or 'purchase' will silently break dashboard aggregation which compares to lower-case 'buy'/'sell'/'dividend'."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AuthContext", "issue": "checkAuth() does NOT call singleUserLogin() when no stored token exists, so fresh browser sessions land on /investments showing 'Not authenticated' banner and all values at ₹0.00. Manually injecting the token via localStorage + reload makes everything work. The task brief asserted 'AuthContext auto-bootstraps single-user mode on app load' — that is not true in the current code.", "selector": "/app/frontend/contexts/AuthContext.tsx:50-65", "priority": "CRITICAL"},
+      {"component": "investments/types.ts", "issue": "Console warning: 'Route ./investments/types.ts is missing the required default export.' Expo Router treats every .ts/.tsx in app/ as a route. Move the types file out of app/investments/ (e.g. into /app/frontend/types/investments.ts) or rename with an underscore prefix to opt out of routing.", "selector": "/app/frontend/app/investments/types.ts", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/investments", "issues": ["The 'Not authenticated' red error banner persists at the top even after the page successfully loads with auth — once auth succeeds, the error state should be cleared. Reproduced by visiting before bootstrap then reloading; banner sometimes lingers.", "Category card label is 'Shares / Stocks' but the URL slug is /investments/stocks and the seed data uses 'stocks' — inconsistent naming may confuse search/filter."]},
+      {"screen": "/investments/add", "issues": ["Type chip row overflows on narrow viewports (visible 'Other' truncation in screenshot). Add horizontal scroll indicator or wrap to second row."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_investments_api.py",
+    "/app/test_reports/pytest/investments_results.xml"
+  ],
+  "action_items": [
+    "[P0] Fix AuthContext.checkAuth() to auto-bootstrap single-user mode when no stored token is present (call singleUserLogin() in the else branch). Without this, dashboard shows ₹0 for all fresh browser sessions despite the seeded data.",
+    "[P1] Move /app/frontend/app/investments/types.ts out of the routes folder (rename with _ prefix or move to /app/frontend/types/) to silence the Expo Router default-export warning.",
+    "[P2] Constrain TransactionCreate.transaction_type with a Literal['buy','sell','dividend','interest','mature','redeem','charges'] so silent typos can't break aggregation.",
+    "[P2] Add brokerage_charges (and related fee fields) to TransactionCreate model so user-added charges actually persist (currently only seed data populates this and metrics.total_charges is always 0 for new data).",
+    "[P3] Expose lifetime portfolio totals alongside active-only totals on the dashboard, OR rename labels to clarify scope (e.g., 'Active Investments').",
+    "[P3] Make the 'Not authenticated' error banner clear automatically when isAuthenticated flips to true.",
+    "[P3] Improve type-chip overflow on /investments/add for narrow viewports."
+  ],
+  "critical_code_review_comments": [
+    "investments.py is well-scoped (~410 lines, 8 endpoints, single concern). Pydantic models cover create/update/transaction. ObjectId is correctly suppressed via {'_id': 0} on every find/find_one — good.",
+    "investments_calculations.py is a clean static-method utility class. Math validated: total_current_value - total_invested = total_gain_loss within ₹1 rounding; gain_loss_percentage matches within 0.5%.",
+    "Multi-record persistence fix in firebase_config.py:284-316 (transaction_id prioritised over investment_id) is verified working — added 3 distinct transactions to a fresh investment, GET returned all 3 with unique transaction_ids; seeded Reliance has 4 transactions and all 4 render in /investments/transactions.",
+    "GET /api/investments/{id} computes metrics on-the-fly from transactions; this is correct but means EVERY detail-page load fans out a Firestore query for transactions. Consider caching or denormalizing for frequently-viewed investments.",
+    "DELETE is soft-delete (is_active=false) which is good for audit, but there is no endpoint to restore or hard-delete; if the user repeatedly creates+deletes test data, the collection grows unbounded.",
+    "The frontend api.ts axios instance auto-attaches auth_token from AsyncStorage — this works correctly once token is present, but combined with the AuthContext auto-bootstrap miss, the first page-load before login produces the 401s seen in console.",
+    "GET /api/investments/dashboard returns data via dict-spread of summary['portfolio'] which silently overrides if any key collides with the explicit fields below; no collisions today but fragile pattern."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_investments_api.py (NEW — 8 tests across 5 classes)"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8 passed in 38s — dashboard shape+totals, list, filter by stocks, detail+metrics, 404, CRUD round-trip, 3-txn no-overwrite, seed multi-txn presence)",
+    "frontend": "100% on rendering (dashboard / stocks list / detail / transactions / add wizard all show correct seed data and computed metrics) BUT 0% on first-load auth bootstrap (AuthContext does not auto-login as documented)."
+  },
+  "test_credentials": "Single-user mode: POST /api/auth/single-user (no body) returns access_token. Frontend testing required manual localStorage injection because AuthContext.checkAuth() does not call singleUserLogin() on missing-token path.",
+  "seed_data_creation": "Test created two TEST_-prefixed investments (TEST_INV_AAPL for CRUD + TEST_INV_TXN_PERSIST for multi-record) — both soft-deleted at end of their respective tests. 9 seeded transactions on the 4 seeded investments verified intact (Reliance has 4: 3 BUY + 1 DIVIDEND).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend fully validated; reuse /app/backend/tests/test_investments_api.py as regression. The auth-bootstrap bug means frontend cannot be re-tested in a clean browser without first running the localStorage injection snippet: `await fetch('${URL}/api/auth/single-user',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json()).then(d=>{localStorage.setItem('auth_token',d.access_token);localStorage.setItem('user',JSON.stringify(d.user));})` then reload. Once main agent fixes AuthContext.checkAuth to auto-call singleUserLogin in the no-token branch, this manual step will not be needed. Seeded user_id is user_60e1e8b7a649; do NOT delete the 13 seed investments / 9 seed transactions — they are the source of truth for dashboard rendering tests.",
+  "rca of the issue": "Frontend 'Not authenticated' bug RCA: /app/frontend/contexts/AuthContext.tsx:50-65 — checkAuth() reads AsyncStorage for auth_token+user. If missing, it sets isLoading=false but never calls singleUserLogin(). On the investments dashboard, this leaves isAuthenticated=false and the api.ts interceptor sends requests without Authorization header → backend returns 401 → screen shows 'Not authenticated' banner with ₹0.00 values. Reproduction: open https://fincare-investments.preview.emergentagent.com/investments in a clean incognito window. Mitigation: add `else { await singleUserLogin(); }` (or unconditional fallback if /api/auth/single-user is intended to be the default) in checkAuth; alternatively call singleUserLogin from a top-level useEffect when isAuthenticated is false after the storage read settles."
+}
