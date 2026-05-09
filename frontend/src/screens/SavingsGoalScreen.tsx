@@ -34,9 +34,18 @@ export const SavingsGoalScreen = ({ navigation }: any) => {
   const [savedAmount, setSavedAmount] = useState(0);
   const [remainingAmount, setRemainingAmount] = useState(0);
   const [progressPercentage, setProgressPercentage] = useState(0);
+  const [currency, setCurrency] = useState<string>('USD');
 
   useEffect(() => {
     loadFinancialData();
+    (async () => {
+      try {
+        const b = await api.getBudget();
+        if (b?.currency) setCurrency(b.currency);
+      } catch {
+        // budget not yet set
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -235,7 +244,7 @@ export const SavingsGoalScreen = ({ navigation }: any) => {
                     setGoalAmount(value);
                   }
                 }}
-                currency="USD"
+                currency={currency}
               />
               <Text style={styles.helperText}>
                 Total amount you want to save for this goal

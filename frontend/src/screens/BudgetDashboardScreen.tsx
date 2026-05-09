@@ -16,6 +16,7 @@ import { CategoryIcon } from '../components/CategoryIcon';
 import { BudgetFilterDropdown } from '../components/BudgetFilterDropdown';
 import { api } from '../services/api';
 import { BudgetSummary } from '../types';
+import { formatCurrency as fmt, getCurrencySymbol } from '../utils/currency';
 
 interface BudgetDashboardScreenProps {
   navigation: any;
@@ -35,6 +36,14 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
   useEffect(() => {
     loadBudgetData();
   }, [month, year]);
+
+  // Reload when screen regains focus (e.g., after changing currency)
+  useEffect(() => {
+    const unsubscribe = navigation?.addListener?.('focus', () => {
+      loadBudgetData();
+    });
+    return unsubscribe;
+  }, [navigation, month, year]);
 
   const loadBudgetData = async () => {
     try {
@@ -85,17 +94,7 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
     }
   };
 
-  const getCurrencySymbol = (code: string) => {
-    const symbols: Record<string, string> = {
-      USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥', CNY: '¥', AUD: 'A$', CAD: 'C$'
-    };
-    return symbols[code] || '$';
-  };
-
-  const formatCurrency = (amount: number) => {
-    const symbol = summary ? getCurrencySymbol(summary.currency) : '$';
-    return `${symbol} ${amount.toLocaleString()}`;
-  };
+  const formatCurrency = (amount: number) => fmt(amount, summary?.currency);
 
   if (loading && !summary) {
     return (
@@ -119,8 +118,16 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Budget</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Feather name="search" size={24} color={COLORS.textPrimary} />
+          <TouchableOpacity
+            style={styles.currencyChip}
+            onPress={() => navigation?.navigate?.('CurrencySettings')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.currencyChipSymbol}>
+              {getCurrencySymbol(summary?.currency)}
+            </Text>
+            <Text style={styles.currencyChipCode}>{summary?.currency || 'USD'}</Text>
+            <Feather name="chevron-down" size={14} color={COLORS.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton}>
             <Feather name="bell" size={24} color={COLORS.textPrimary} />
@@ -393,6 +400,27 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: SPACING.xs,
     position: 'relative',
+  },
+  currencyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: COLORS.primaryLight + '22',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '55',
+  },
+  currencyChipSymbol: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.primary,
+  },
+  currencyChipCode: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.primary,
   },
   addButton: {
     backgroundColor: COLORS.primary,

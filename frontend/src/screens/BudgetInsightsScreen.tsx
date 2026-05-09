@@ -16,6 +16,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { CategoryIcon } from '../components/CategoryIcon';
 import { api } from '../services/api';
 import { BudgetSummary } from '../types';
+import { formatCurrency as fmt } from '../utils/currency';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -164,17 +165,7 @@ export const BudgetInsightsScreen = ({ navigation }: any) => {
     });
   };
 
-  const getCurrencySymbol = (code: string) => {
-    const symbols: Record<string, string> = {
-      USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥', CNY: '¥', AUD: 'A$', CAD: 'C$'
-    };
-    return symbols[code] || '$';
-  };
-
-  const formatCurrency = (amount: number) => {
-    const symbol = summary ? getCurrencySymbol(summary.currency) : '$';
-    return `${symbol} ${amount.toLocaleString()}`;
-  };
+  const formatCurrency = (amount: number) => fmt(amount, summary?.currency);
 
   if (loading) {
     return (

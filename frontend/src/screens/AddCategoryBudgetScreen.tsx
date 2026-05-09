@@ -33,6 +33,7 @@ export const AddCategoryBudgetScreen = ({ navigation, route }: any) => {
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [currency, setCurrency] = useState<string>('USD');
 
   const currentDate = new Date();
   const month = currentDate.getMonth() + 1;
@@ -40,6 +41,7 @@ export const AddCategoryBudgetScreen = ({ navigation, route }: any) => {
 
   useEffect(() => {
     loadCategories();
+    loadCurrency();
     if (editMode && existingBudget) {
       // Populate form with existing budget data
       setSelectedCategory(existingBudget.category_name);
@@ -49,6 +51,15 @@ export const AddCategoryBudgetScreen = ({ navigation, route }: any) => {
       setNotes(existingBudget.notes || '');
     }
   }, []);
+
+  const loadCurrency = async () => {
+    try {
+      const b = await api.getBudget();
+      if (b?.currency) setCurrency(b.currency);
+    } catch {
+      // budget not set yet — keep USD default
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -300,7 +311,7 @@ export const AddCategoryBudgetScreen = ({ navigation, route }: any) => {
                     setBudgetAmount(value);
                   }
                 }}
-                currency="USD"
+                currency={currency}
               />
               <Text style={styles.helperText}>
                 Enter the budget amount for this category
