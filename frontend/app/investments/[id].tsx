@@ -1,11 +1,12 @@
-// Per user request: this screen now uses the reusable InvestmentDetailForm
-// framework (`/components/investments/InvestmentDetailForm.tsx`) which renders
-// category-specific fields + reusable sections (Header, Summary, Gain/Loss,
-// Sale/Maturity Details, Notes, Save button).
+// Investment detail screen — uses the shared InvestmentDetailForm framework
+// (`/components/investments/InvestmentDetailForm.tsx`) which renders
+// category-specific fields based on the `investment_type`.
 //
-// The previous tab-based layout (Overview / Transactions / Notes) is preserved
-// in git history; this new layout matches the reference designs supplied by
-// the user (Mutual Funds, ETF, REIT, Fixed Deposit, Corporate Deposit screens).
+// Behaviour:
+//   • Loaded in view-mode (read-only) by default.
+//   • Tap "Edit" in the header → fields become editable; "Save" replaces "Edit".
+//   • Tap "Save" → PUT to the API; on success, return to view-mode.
+//   • Tap "Delete Investment" at the bottom → confirmation dialog → DELETE.
 
 import React, { useCallback, useState } from 'react';
 import { Alert, View, ActivityIndicator } from 'react-native';
@@ -22,7 +23,9 @@ export default function InvestmentDetailsScreen() {
 
   const [investment, setInvestment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -38,6 +41,7 @@ export default function InvestmentDetailsScreen() {
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
+      setEditing(false);  // always re-enter view-mode on focus
       load();
     }, [load])
   );
@@ -45,7 +49,6 @@ export default function InvestmentDetailsScreen() {
   const handleSave = async (next: any) => {
     setSaving(true);
     try {
-      // Send only the editable subset accepted by InvestmentUpdate.
       const payload: any = {
         name: next.name,
         invested_amount: Number(next.invested_amount) || 0,
@@ -59,12 +62,38 @@ export default function InvestmentDetailsScreen() {
       };
       const res = await api.put(`/investments/${id}`, payload);
       setInvestment(res.data);
+      setEditing(false);  // back to view-mode after save
       Alert.alert('Saved', 'Investment details updated.');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.detail || 'Failed to save changes');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Investment',
+      'Are you sure you want to delete this investment? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await api.delete(`/investments/${id}`);
+              router.back();
+            } catch (e: any) {
+              Alert.alert('Error', e?.response?.data?.detail || 'Failed to delete');
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading || !investment) {
@@ -83,6 +112,10 @@ export default function InvestmentDetailsScreen() {
       onBack={() => router.back()}
       onSave={handleSave}
       saving={saving}
+      viewMode={!editing}
+      onEnterEdit={() => setEditing(true)}
+      onDelete={handleDelete}
+      deleting={deleting}
       colors={colors}
     />
   );

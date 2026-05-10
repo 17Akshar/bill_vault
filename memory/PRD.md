@@ -857,3 +857,36 @@ Reused the InvestmentDetailForm framework built in Session 19. A single category
 #### Untouched
 Dashboard, Transactions tab, Budget module, navigation tabs, AuthContext, all auth flows. The legacy `/investments/add?type=X` 3-step wizard route is still in place but no longer linked from the UI; can be removed in a future cleanup.
 
+
+
+## Session 21 Update (2026-05-10) — Mutual Fund Detail Screen Polish
+
+User requested: modify only the MutualFundDetailScreen — add Fund Name as the first field, support Save/Edit/Delete, reuse the InvestmentDetailForm structure, don't touch other forms.
+
+### Changes
+1. **`categoryFields.ts → CATEGORY_CONFIG.mutual_funds`** — added `{ key: 'name', label: 'Fund Name', type: 'text' }` as the first field. Other categories (etf, reit, fd, bonds, ppf, nps, corporate_deposit, rd, stocks) **untouched**.
+
+2. **`InvestmentDetailForm.tsx`** — extended with optional, backward-compatible props:
+   - `viewMode?: boolean` — when true, all fields render read-only and the header link reads "Edit" instead of "Save"
+   - `onEnterEdit?: () => void` — fires when the user taps Edit
+   - `onDelete?: () => void` + `deleting?: boolean` — when provided, a red outlined "Delete Investment" button is rendered below Save Changes
+   
+   Screens that don't pass these props keep the original always-editable behaviour, so other category forms (FD, ETF, REIT, Bonds, PPF, NPS, etc.) continue to render identically.
+
+3. **`app/investments/[id].tsx`** — wires up the new flow: load → view-mode by default → tap "Edit" → fields become editable → tap "Save" → PUT → return to view-mode. Tap "Delete Investment" → confirm dialog → DELETE → router.back(). `useFocusEffect` resets `editing=false` so re-entering the screen always starts in view-mode.
+
+### Verification
+- Smoke screenshots:
+  - **MF view-mode**: Header shows "Edit" link, all 9 fields rendered as read-only values (Fund Name → Axis Bluechip Fund, Folio → 12345678901234, AMC, Invested ₹2,50,000, 19 May 2024, Units 5,234.12, NAV ₹61.13, Current ₹3,20,000, Gain/Loss +₹70,000 +28.00%), Sale Details all populated (10 May 2024, 50 units, ₹780.50, ₹39,025), Notes "Sold 50 units in May 2024", Delete Investment button at bottom. **No big Save Changes button** (correct — view-mode).
+  - **MF edit-mode**: Header shows "Save" link, all 9 fields converted to editable inputs (raw values: 250000, 5234.12, 61.13, 320000), date fields show calendar icons, Sale Details inputs editable, Notes is a multi-line TextInput, big purple **"Save Changes"** button visible.
+  - **FD view-mode** (regression): unchanged from Session 19 — same fields, same Maturity Details, no extra schema changes; view-mode toggle and Delete button now also available there for free (framework-level, no per-category change).
+- 8/8 investments pytest pass (37s) — no backend regressions
+- Frontend hot-reloaded (5s bundle), HTTP 200
+
+### Files modified
+- `frontend/components/investments/categoryFields.ts` — 1 entry added to MF config
+- `frontend/components/investments/InvestmentDetailForm.tsx` — extended with optional viewMode/onEnterEdit/onDelete props
+- `frontend/app/investments/[id].tsx` — wires view/edit/delete flow
+
+No backend or other category schemas changed. The new screens at `/investments/new?type=X` (Session 20) automatically inherit the Fund Name field for MF (since they share the same schema).
+

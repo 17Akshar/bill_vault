@@ -1,10 +1,27 @@
-// InvestmentDetailForm — composer that wires all 6 sections together using a
-// per-category field schema. Drop this into any screen with an investment
-// object and it produces the right form for the investment's category.
+// InvestmentDetailForm — composer that wires all sections together using the
+// per-category field schema (`/components/investments/categoryFields.ts`).
+//
+// Optional props (all backward compatible):
+//   viewMode      — when true, fields render read-only and the header shows
+//                   an "Edit" link instead of "Save"
+//   onEnterEdit   — called when the user taps Edit in view-mode header
+//   onDelete      — when provided, a Delete button is rendered next to Save
+//
+// Screens that don't pass these props keep the original always-editable
+// behaviour, so other category forms are untouched.
 
 import React, { useEffect, useState } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, View } from 'react-native';
+import {
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { InvestmentHeader } from './sections/InvestmentHeader';
 import { InvestmentSummaryCard } from './sections/InvestmentSummaryCard';
 import { GainLossDisplay } from './sections/GainLossDisplay';
@@ -18,9 +35,15 @@ import { getCategoryConfig, getByPath } from './categoryFields';
 interface InvestmentDetailFormProps {
   investment: any;
   onBack: () => void;
-  onSave: (next: any) => Promise<void>;
+  onSave: (next: any) => Promise<void> | void;
   saving?: boolean;
   initialEditable?: boolean;
+  // ---- new optional props ----
+  viewMode?: boolean;
+  onEnterEdit?: () => void;
+  onDelete?: () => void;
+  deleting?: boolean;
+  // ---------------------------
   colors: any;
 }
 
@@ -30,10 +53,13 @@ export const InvestmentDetailForm = ({
   onSave,
   saving,
   initialEditable = true,
+  viewMode,
+  onEnterEdit,
+  onDelete,
+  deleting,
   colors,
 }: InvestmentDetailFormProps) => {
   const [draft, setDraft] = useState<any>(investment);
-  const [editable] = useState<boolean>(initialEditable);
 
   // If the parent re-fetches the investment (eg after save), re-sync the draft.
   useEffect(() => {
@@ -45,9 +71,17 @@ export const InvestmentDetailForm = ({
   const config = getCategoryConfig(draft.investment_type || '');
   const subtitle = config.subtitleKey ? getByPath(draft, config.subtitleKey) : undefined;
 
+  // editable state: explicit `viewMode` prop wins; otherwise fall back to
+  // the legacy `initialEditable` flag (which defaults to true).
+  const editable = viewMode === undefined ? initialEditable : !viewMode;
+
   const handleSave = () => {
     onSave(draft);
   };
+
+  // Header right-link: shows "Edit" in view-mode, "Save" otherwise.
+  const headerSaveHandler = editable ? handleSave : onEnterEdit;
+  const headerSaveLabel = editable ? 'Save' : 'Edit';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -59,8 +93,9 @@ export const InvestmentDetailForm = ({
         <InvestmentHeader
           title={config.name}
           onBack={onBack}
-          onSave={editable ? handleSave : undefined}
+          onSave={headerSaveHandler}
           saving={saving}
+          saveLabel={headerSaveLabel}
           colors={colors}
         />
 
@@ -127,8 +162,40 @@ export const InvestmentDetailForm = ({
           {editable && (
             <SaveButton onPress={handleSave} loading={saving} colors={colors} />
           )}
+
+          {/* OPTIONAL — Delete CTA (only rendered when caller passes onDelete) */}
+          {onDelete && (
+            <TouchableOpacity
+              onPress={onDelete}
+              disabled={deleting || saving}
+              style={[styles.deleteBtn, (deleting || saving) && { opacity: 0.6 }]}
+              activeOpacity={0.8}
+              testID="invdetail-delete-btn"
+            >
+              <Ionicons name="trash-outline" size={18} color="#FF5252" />
+              <Text style={styles.deleteText}>{deleting ? 'Deleting…' : 'Delete Investment'}</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 50,
+    marginHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 32,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#FF5252',
+    backgroundColor: 'transparent',
+  },
+  deleteText: { color: '#FF5252', fontSize: 15, fontWeight: '700' },
+});

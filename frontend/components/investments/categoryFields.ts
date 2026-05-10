@@ -32,6 +32,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconBg: '#FF525220',
     subtitleKey: 'type_specific_data.scheme_type',
     fields: [
+      { key: 'name', label: 'Fund Name', type: 'text', placeholder: 'e.g., SBI Bluechip Fund' },
       { key: 'type_specific_data.folio_number', label: 'Folio Number', type: 'text', placeholder: '12345678901234' },
       { key: 'type_specific_data.fund_house', label: 'AMC', type: 'text', placeholder: 'SBI Mutual Fund' },
       { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
