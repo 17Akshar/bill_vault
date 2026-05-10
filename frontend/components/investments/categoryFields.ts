@@ -70,7 +70,8 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconBg: '#7C4DFF20',
     subtitleKey: 'type_specific_data.reit_type',
     fields: [
-      { key: 'type_specific_data.folio_number', label: 'Folio/DP ID', type: 'text', placeholder: 'IN300468123456789' },
+      { key: 'name', label: 'REIT Name', type: 'text', placeholder: 'e.g., Embassy Office Parks REIT' },
+      { key: 'type_specific_data.folio_number', label: 'Folio ID', type: 'text', placeholder: 'IN300468123456789' },
       { key: 'type_specific_data.exchange', label: 'Exchange', type: 'text', placeholder: 'NSE / BSE' },
       { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
       { key: 'purchase_date', label: 'Invested Date', type: 'date' },
