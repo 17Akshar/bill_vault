@@ -279,7 +279,7 @@ export default function SharesStocksScreen() {
 
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: '#6366F1' }]}
-          onPress={() => router.push(`/investments/add?type=${investmentType}` as any)}
+          onPress={() => router.push(`/investments/new?type=${investmentType}` as any)}
           activeOpacity={0.8}
           testID="stocks-add-btn"
         >

@@ -832,3 +832,28 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 
 ### Adding categories later
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
+
+
+## Session 20 Update (2026-05-10) — Category-specific Detail Form on Add
+
+User asked: when a category is selected from `/investments/select-type`, open the corresponding detail form screen (MutualFundDetailScreen, ETFDetailScreen, REITDetailScreen, FDDetailScreen, BondsDetailScreen, PPFDetailScreen, NPSDetailScreen). Reuse the existing Investments navigation flow. Don't modify unrelated modules.
+
+### Implementation
+Reused the InvestmentDetailForm framework built in Session 19. A single category-aware route now serves all 7 named "screens" — the form's behaviour is fully driven by the category schema in `categoryFields.ts`, so each category is effectively its own logical screen even though there's only one route file.
+
+#### New / updated files
+- **`app/investments/new.tsx`** (NEW, 102 lines) — opens an empty `InvestmentDetailForm` for the type passed via `?type=` query param. On save, POSTs to `/api/investments`, then `router.replace`s to the newly created investment's detail screen so the user lands on the persistent record.
+- **`app/investments/select-type.tsx`** — category tap now routes to `/investments/new?type=X` instead of the old wizard at `/investments/add?type=X`.
+- **`app/investments/stocks.tsx`** — "Add Share / Stock" CTA also routes to `/investments/new?type=stocks` for consistency.
+- **`components/investments/categoryFields.ts`** — added 5 new category configs: **stocks** (ticker/exchange/sector/qty/avg buy/current price), **rd** (RD number/monthly installment/tenure), **bonds** (issuer/type/ISIN/face value/coupon rate), **ppf** (account number/annual contribution/interest rate), **nps** (PRAN/tier/fund manager/asset allocation). Now 10 categories total: stocks, mutual_funds, etf, reit, fd, corporate_deposit, rd, bonds, ppf, nps. All others fall back to a universal 3-field form via `FALLBACK_CONFIG`.
+
+#### Verification
+- Smoke screenshots:
+  - **`/investments/new?type=nps`** — green ribbon icon, "New NPS" title, PRAN/Tier/Fund Manager/Asset Allocation/Total Invested/Account Opened/Current Value, no Sale/Maturity (bottomSection: 'none'), Notes, Save Changes
+  - **`/investments/new?type=bonds`** — teal document-text icon, "New Bonds" title, Issuer/Type/ISIN/Face Value/Units/Invested Amount/Coupon Rate/Purchase Date/Maturity Date/Current Value, **Maturity Details** sub-section, Notes, Save Changes
+- Backend round-trip: POST → GET round-trip verified for bonds with full type_specific_data (issuer, ISIN, coupon, face_value, units) — all fields persist
+- 8/8 investments pytest pass (37s) — no regressions
+
+#### Untouched
+Dashboard, Transactions tab, Budget module, navigation tabs, AuthContext, all auth flows. The legacy `/investments/add?type=X` 3-step wizard route is still in place but no longer linked from the UI; can be removed in a future cleanup.
+

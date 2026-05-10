@@ -197,8 +197,8 @@ export default function InvestmentTypeSelectionScreen() {
                     itemIndex === group.items.length - 1 && { borderBottomWidth: 0 },
                   ]}
                   onPress={() => {
-                    // Navigate to add screen with type
-                    router.push(`/investments/add?type=${item.id}` as any);
+                    // Open the category-specific empty detail form
+                    router.push(`/investments/new?type=${item.id}` as any);
                   }}
                   activeOpacity={0.7}
                 >

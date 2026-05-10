@@ -114,6 +114,82 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     ],
     bottomSection: 'maturity',
   },
+
+  rd: {
+    name: 'Recurring Deposit',
+    iconName: 'calendar',
+    iconColor: '#9C27B0',
+    iconBg: '#9C27B020',
+    fields: [
+      { key: 'type_specific_data.bank', label: 'Bank Name', type: 'text', placeholder: 'HDFC Bank' },
+      { key: 'type_specific_data.rd_number', label: 'RD Number', type: 'text', placeholder: 'RD123456789' },
+      { key: 'type_specific_data.monthly_installment', label: 'Monthly Installment', type: 'currency' },
+      { key: 'type_specific_data.interest_rate', label: 'Interest Rate (p.a.)', type: 'percentage' },
+      { key: 'type_specific_data.tenure_months', label: 'Tenure (months)', type: 'number' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
+      { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
+      { key: 'invested_amount', label: 'Total Invested', type: 'currency' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'maturity',
+  },
+
+  bonds: {
+    name: 'Bonds',
+    iconName: 'document-text',
+    iconColor: '#14B8A6',
+    iconBg: '#14B8A620',
+    subtitleKey: 'type_specific_data.bond_type',
+    fields: [
+      { key: 'type_specific_data.issuer_name', label: 'Issuer', type: 'text', placeholder: 'Government of India / Tata Capital' },
+      { key: 'type_specific_data.bond_type', label: 'Type', type: 'text', placeholder: 'Government / Corporate / Tax-Free' },
+      { key: 'type_specific_data.isin', label: 'ISIN', type: 'text', placeholder: 'IN0020230041' },
+      { key: 'type_specific_data.face_value', label: 'Face Value (per unit)', type: 'currency' },
+      { key: 'type_specific_data.units', label: 'Units', type: 'number' },
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'type_specific_data.coupon_rate', label: 'Coupon Rate (p.a.)', type: 'percentage' },
+      { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+      { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'maturity',
+  },
+
+  ppf: {
+    name: 'PPF',
+    iconName: 'shield-checkmark',
+    iconColor: '#00BCD4',
+    iconBg: '#00BCD420',
+    fields: [
+      { key: 'type_specific_data.bank', label: 'Bank / Post Office', type: 'text', placeholder: 'State Bank of India' },
+      { key: 'type_specific_data.ppf_account_number', label: 'PPF Account Number', type: 'text', placeholder: 'PPF1234567890' },
+      { key: 'invested_amount', label: 'Total Invested', type: 'currency' },
+      { key: 'type_specific_data.annual_contribution', label: 'Annual Contribution', type: 'currency' },
+      { key: 'type_specific_data.interest_rate', label: 'Interest Rate (p.a.)', type: 'percentage' },
+      { key: 'purchase_date', label: 'Account Opened', type: 'date' },
+      { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
+      { key: 'current_value', label: 'Current Balance', type: 'currency' },
+    ],
+    bottomSection: 'maturity',
+  },
+
+  nps: {
+    name: 'NPS',
+    iconName: 'ribbon',
+    iconColor: '#4CAF50',
+    iconBg: '#4CAF5020',
+    subtitleKey: 'type_specific_data.tier',
+    fields: [
+      { key: 'type_specific_data.pran', label: 'PRAN Number', type: 'text', placeholder: '110012345678' },
+      { key: 'type_specific_data.tier', label: 'Tier', type: 'text', placeholder: 'Tier 1 / Tier 2' },
+      { key: 'type_specific_data.fund_manager', label: 'Pension Fund Manager', type: 'text', placeholder: 'HDFC Pension Fund' },
+      { key: 'type_specific_data.asset_allocation', label: 'Asset Allocation', type: 'text', placeholder: '75% Equity, 25% Debt' },
+      { key: 'invested_amount', label: 'Total Invested', type: 'currency' },
+      { key: 'purchase_date', label: 'Account Opened', type: 'date' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'none',
+  },
 };
 
 // Fallback config for any investment_type without a dedicated schema yet.
