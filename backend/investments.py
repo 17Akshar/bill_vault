@@ -50,12 +50,16 @@ class InvestmentCreate(BaseModel):
 
 class InvestmentUpdate(BaseModel):
     name: Optional[str] = None
+    invested_amount: Optional[float] = None
     current_value: Optional[float] = None
+    purchase_date: Optional[str] = None
     maturity_date: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
     documents: Optional[List[str]] = None
     type_specific_data: Optional[Dict[str, Any]] = None
+    sale_details: Optional[Dict[str, Any]] = None
+    maturity_details: Optional[Dict[str, Any]] = None
 
 
 class TransactionCreate(BaseModel):
@@ -282,10 +286,11 @@ async def update_investment(inv_id: str, data: InvestmentUpdate, request: Reques
     update_data = {
         k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None
     }
-    if "maturity_date" in update_data and isinstance(update_data["maturity_date"], str):
-        update_data["maturity_date"] = datetime.fromisoformat(
-            update_data["maturity_date"].replace("Z", "+00:00")
-        )
+    # Coerce ISO date strings to datetimes for known date fields
+    for date_key in ("maturity_date", "purchase_date"):
+        v = update_data.get(date_key)
+        if isinstance(v, str) and v:
+            update_data[date_key] = datetime.fromisoformat(v.replace("Z", "+00:00"))
     update_data["updated_at"] = datetime.now(timezone.utc)
     
     await db.investments.update_one({"investment_id": inv_id}, {"$set": update_data})

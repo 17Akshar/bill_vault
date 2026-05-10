@@ -798,3 +798,37 @@ Reviewed file — the only "empty" catch is in `resetRecaptcha()`'s `try { _veri
 - New: `frontend/components/transactions/atoms.tsx`
 - Modified: `frontend/app/transactions/add.tsx`, `frontend/app/(tabs)/transactions.tsx`, `frontend/app/(tabs)/bills.tsx`, `frontend/components/charts/BarChart.tsx`, `frontend/components/charts/DonutChart.tsx`
 
+
+
+
+## Session 19 Update (2026-05-10) — Reusable InvestmentDetailForm Framework
+
+User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corporate Deposit) and asked for a reusable `InvestmentDetailForm` component framework with 6 named reusable sections that supports category-specific dynamic fields. Constraint: do NOT modify Dashboard, Transactions, Budget, or existing navigation — only the Investments feature.
+
+### New component framework — `/app/frontend/components/investments/`
+- **`categoryFields.ts`** (155 lines) — `CategoryConfig` schema + 5 configs (MF, ETF, REIT, FD, Corporate Deposit) + universal fallback. Includes `getByPath` / `setByPath` dot-notation helpers.
+- **6 reusable sections** under `sections/`:
+  - `InvestmentHeader` — back + title + Save link
+  - `InvestmentSummaryCard` — icon + name + subtitle hero
+  - `GainLossDisplay` — formatted gain/loss row
+  - `SaleDetailsSection` — purple "Sale Details (if any)" + 4-field block
+  - `MaturityDetailsSection` — purple "Maturity Details" + 2-field block
+  - `NotesSection`, `SaveButton`
+  - `DynamicFieldList` — schema-driven field renderer (text/number/currency/date/percentage)
+- **`InvestmentDetailForm.tsx`** — composer that mounts all sections from a category schema lookup.
+
+### Backend
+`InvestmentUpdate` extended with `invested_amount`, `purchase_date`, `sale_details`, `maturity_details`. PUT endpoint coerces both date fields to datetimes.
+
+### Frontend wiring
+`app/investments/[id].tsx` rewritten (89 lines, was 545) — now just loads the investment and mounts `<InvestmentDetailForm>`. Previous tab-based layout replaced per user's reference designs.
+
+### Verification
+- Smoke screenshots verified against both reference designs:
+  - **Mutual Funds**: pink pie-chart icon → Folio Number, AMC, Invested Amount, Invested Date, Units, NAV, Current Value → Sale Details → Notes → Save
+  - **Fixed Deposit**: purple lock icon → Bank Name, FD Number, Deposit Amount, Interest Rate, Tenure, Start Date, Maturity Date, Maturity Amount → Maturity Details → Notes → Save
+- Backend `PUT` round-trip verified: new `sale_details` object persists
+- 8/8 investments pytest still pass (37s)
+
+### Adding categories later
+Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
