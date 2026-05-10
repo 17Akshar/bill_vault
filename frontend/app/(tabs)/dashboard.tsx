@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl,
-  ActivityIndicator, Dimensions, FlatList, StatusBar, Animated, Platform, Pressable,
+  ActivityIndicator, Dimensions, FlatList, StatusBar, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,141 +13,18 @@ import api from '../../utils/api';
 import { formatINR, formatINRCompact } from '../../utils/formatINR';
 import { format, parseISO } from 'date-fns';
 import { FamilyMemberFilter } from '../../components/FamilyMemberSelector';
-import Svg, { Path, Circle } from 'react-native-svg';
-import * as Haptics from 'expo-haptics';
+import {
+  T, FONT,
+  PressScale, MiniChart, SectionHeader, FilterPill, StatPill, QuickActionBtn, ListRow,
+} from '../../components/dashboard/atoms';
 
 const { width: SW } = Dimensions.get('window');
 
 // =============================================================================
-// SPEC THEME TOKENS — hard-coded per design brief; do NOT use ThemeContext here
-// to keep the dashboard pixel-perfect across light/dark mode.
-// =============================================================================
-const T = {
-  bg:       '#08082A',
-  card:     '#12123A',
-  card2:    '#1A1A4A',
-  primary:  '#6C47FF',
-  gradFrom: '#4B2FBF',
-  gradTo:   '#7B4FEF',
-  success:  '#00C48C',
-  danger:   '#FF4D67',
-  info:     '#4D9EFF',
-  text:     '#FFFFFF',
-  textDim:  '#A0A3BD',
-  border:   'rgba(255,255,255,0.06)',
-};
-
-// Haptic feedback — no-op on web
-const tap = (style: 'light' | 'medium' = 'light') => {
-  if (Platform.OS === 'ios' || Platform.OS === 'android') {
-    try {
-      Haptics.impactAsync(
-        style === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
-      );
-    } catch { /* ignore */ }
-  }
-};
-
-// Press-scale wrapper — shrinks to 0.96 on press-in, bounces back on release
-const PressScale = ({ children, onPress, testID, style, hapticStyle = 'light' as any }: any) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  return (
-    <Pressable
-      onPressIn={() => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 6 }).start()}
-      onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 6 }).start()}
-      onPress={() => { tap(hapticStyle); onPress?.(); }}
-      testID={testID}
-    >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
-    </Pressable>
-  );
-};
-
-// =============================================================================
-// Sparkline (white upward trend) for Net Worth card
-// =============================================================================
-const MiniChart = ({ data, color = '#FFF', h = 44, w = 110 }: any) => {
-  if (!data || data.length < 2) return null;
-  const mn = Math.min(...data), mx = Math.max(...data);
-  const range = mx - mn || 1;
-  const pts = data.map((v: number, i: number) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - mn) / range) * (h * 0.78) - h * 0.11;
-    return `${i === 0 ? 'M' : 'L'}${x},${y}`;
-  }).join(' ');
-  return (
-    <Svg width={w} height={h}>
-      <Path d={pts} stroke={color} strokeWidth={2.2} fill="none"
-            strokeLinecap="round" strokeLinejoin="round" />
-      {/* End-point glow */}
-      <Circle cx={w} cy={h - ((data[data.length - 1] - mn) / range) * (h * 0.78) - h * 0.11}
-              r={3} fill="#FFF" />
-    </Svg>
-  );
-};
-
-// =============================================================================
-// Reusable atomic components
-// =============================================================================
-const SectionHeader = ({ title, onViewAll, viewAllLabel = 'View All' }: any) => (
-  <View style={s.sectionHeader}>
-    <Text style={s.sectionTitle}>{title}</Text>
-    {onViewAll && (
-      <TouchableOpacity onPress={onViewAll} testID={`section-${title.toLowerCase().replace(/\s/g, '-')}-view-all`}>
-        <Text style={s.viewAll}>{viewAllLabel}</Text>
-      </TouchableOpacity>
-    )}
-  </View>
-);
-
-const FilterPill = ({ icon, label, onPress, testID }: any) => (
-  <PressScale onPress={onPress} testID={testID} style={s.filterPill}>
-    <Text style={s.filterPillIcon}>{icon}</Text>
-    <Text style={s.filterPillText}>{label}</Text>
-    <Ionicons name="chevron-down" size={14} color={T.textDim} />
-  </PressScale>
-);
-
-const StatPill = ({ color, value, delta, arrow = '▲', deltaColor }: any) => (
-  <View style={s.statPill}>
-    <View style={[s.statDot, { backgroundColor: color }]} />
-    <View style={{ flex: 1 }}>
-      <Text style={s.statValue}>{value}</Text>
-      <Text style={[s.statDelta, { color: deltaColor || T.success }]}>
-        {arrow} {delta}
-      </Text>
-    </View>
-  </View>
-);
-
-const QuickActionBtn = ({ icon, label, color, onPress, testID }: any) => (
-  <TouchableOpacity style={s.qaBtn} onPress={onPress} activeOpacity={0.7} testID={testID}>
-    <View style={[s.qaIcon, { backgroundColor: color }]}>
-      <MaterialCommunityIcons name={icon} size={26} color="#FFF" />
-    </View>
-    <Text style={s.qaLabel}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const ListRow = ({ leftIcon, leftIconBg, leftIconColor, title, subtitle, rightTop, rightBottom, rightColor, rightBottomColor, showChevron, onPress, testID }: any) => (
-  <TouchableOpacity style={s.listRow} onPress={onPress} activeOpacity={0.7} testID={testID}>
-    <View style={[s.listIcon, { backgroundColor: leftIconBg }]}>
-      <MaterialCommunityIcons name={leftIcon} size={22} color={leftIconColor} />
-    </View>
-    <View style={{ flex: 1 }}>
-      <Text style={s.listTitle} numberOfLines={1}>{title}</Text>
-      {!!subtitle && <Text style={s.listSubtitle} numberOfLines={1}>{subtitle}</Text>}
-    </View>
-    <View style={s.listRight}>
-      {!!rightTop && <Text style={[s.listAmount, { color: rightColor || T.text }]}>{rightTop}</Text>}
-      {!!rightBottom && <Text style={[s.listDate, rightBottomColor && { color: rightBottomColor }]}>{rightBottom}</Text>}
-    </View>
-    {showChevron && <Ionicons name="chevron-forward" size={18} color={T.textDim} style={{ marginLeft: 6 }} />}
-  </TouchableOpacity>
-);
-
-// =============================================================================
 // Main Dashboard Screen
+// (Atoms — PressScale, MiniChart, SectionHeader, FilterPill, StatPill,
+//          QuickActionBtn, ListRow — and tokens (T, FONT) live in
+//          /app/frontend/components/dashboard/atoms.tsx)
 // =============================================================================
 export default function DashboardScreen() {
   const router = useRouter();

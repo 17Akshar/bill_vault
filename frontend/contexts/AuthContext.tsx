@@ -56,6 +56,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
+      } else {
+        // Auto-bootstrap single-user mode when no stored credentials exist
+        // so that deep-links to protected screens (eg /investments) work
+        // without forcing a manual login on the welcome screen.
+        try {
+          await useSingleUserMode();
+        } catch (e) {
+          // Network/backend hiccup — silent fallback to unauthenticated state.
+          // Welcome screen will still render its CTAs.
+        }
       }
     } catch (error) {
       console.error('Auth check error:', error);

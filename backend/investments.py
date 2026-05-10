@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -59,12 +59,13 @@ class InvestmentUpdate(BaseModel):
 
 
 class TransactionCreate(BaseModel):
-    transaction_type: str  # buy, sell, mature, redeem, interest
+    transaction_type: Literal["buy", "sell", "dividend", "interest", "mature", "redeem", "charges"]
     amount: float
     quantity: Optional[float] = None
     price_per_unit: Optional[float] = None
     transaction_date: str
     notes: Optional[str] = None
+    brokerage_charges: Optional[float] = None
 
 
 # ==================== HELPERS ====================
@@ -324,10 +325,12 @@ async def add_transaction(inv_id: str, data: TransactionCreate, request: Request
         "user_id": user.user_id,
         "transaction_type": data.transaction_type,
         "amount": data.amount,
+        "total_amount": data.amount,  # alias for calculations module
         "quantity": data.quantity,
         "price_per_unit": data.price_per_unit,
         "transaction_date": datetime.fromisoformat(data.transaction_date.replace("Z", "+00:00")),
         "notes": data.notes,
+        "brokerage_charges": data.brokerage_charges or 0,
         "created_at": datetime.now(timezone.utc)
     }
     await db.investment_transactions.insert_one(transaction)
