@@ -18,12 +18,13 @@ interface SaleDetailsSectionProps {
   onChange: (next: any) => void;
   editable: boolean;
   colors: any;
+  fields?: FieldDef[];
 }
 
-export const SaleDetailsSection = (props: SaleDetailsSectionProps) => (
+export const SaleDetailsSection = ({ fields, ...rest }: SaleDetailsSectionProps) => (
   <View>
     <Text style={[styles.heading, { color: '#A78BFA' }]}>Sale Details (if any)</Text>
-    <DynamicFieldList fields={SALE_FIELDS} {...props} />
+    <DynamicFieldList fields={fields || SALE_FIELDS} {...rest} />
   </View>
 );
 

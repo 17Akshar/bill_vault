@@ -16,12 +16,13 @@ interface MaturityDetailsSectionProps {
   onChange: (next: any) => void;
   editable: boolean;
   colors: any;
+  fields?: FieldDef[];
 }
 
-export const MaturityDetailsSection = (props: MaturityDetailsSectionProps) => (
+export const MaturityDetailsSection = ({ fields, ...rest }: MaturityDetailsSectionProps) => (
   <View>
     <Text style={[styles.heading, { color: '#A78BFA' }]}>Maturity Details</Text>
-    <DynamicFieldList fields={MATURITY_FIELDS} {...props} />
+    <DynamicFieldList fields={fields || MATURITY_FIELDS} {...rest} />
   </View>
 );
 

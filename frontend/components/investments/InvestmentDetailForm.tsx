@@ -139,6 +139,7 @@ export const InvestmentDetailForm = ({
               onChange={setDraft}
               editable={editable}
               colors={colors}
+              fields={config.saleFields}
             />
           )}
           {config.bottomSection === 'maturity' && (
@@ -147,6 +148,7 @@ export const InvestmentDetailForm = ({
               onChange={setDraft}
               editable={editable}
               colors={colors}
+              fields={config.maturityFields}
             />
           )}
 

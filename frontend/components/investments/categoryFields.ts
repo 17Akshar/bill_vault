@@ -22,6 +22,11 @@ export interface CategoryConfig {
   subtitleKey?: string;  // dot path inside investment for the card subtitle
   fields: FieldDef[];
   bottomSection: 'sale' | 'maturity' | 'none';
+  // Optional per-category overrides for the Sale/Maturity sub-sections.
+  // When omitted, the default field-sets in SaleDetailsSection /
+  // MaturityDetailsSection are used (preserving MF/ETF/REIT/FD behaviour).
+  saleFields?: FieldDef[];
+  maturityFields?: FieldDef[];
 }
 
 export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
@@ -142,18 +147,21 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconBg: '#14B8A620',
     subtitleKey: 'type_specific_data.bond_type',
     fields: [
-      { key: 'type_specific_data.issuer_name', label: 'Issuer', type: 'text', placeholder: 'Government of India / Tata Capital' },
-      { key: 'type_specific_data.bond_type', label: 'Type', type: 'text', placeholder: 'Government / Corporate / Tax-Free' },
-      { key: 'type_specific_data.isin', label: 'ISIN', type: 'text', placeholder: 'IN0020230041' },
-      { key: 'type_specific_data.face_value', label: 'Face Value (per unit)', type: 'currency' },
-      { key: 'type_specific_data.units', label: 'Units', type: 'number' },
-      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
-      { key: 'type_specific_data.coupon_rate', label: 'Coupon Rate (p.a.)', type: 'percentage' },
-      { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+      { key: 'name', label: 'Bond Name', type: 'text', placeholder: 'e.g., GoI Sovereign Bond 2034' },
+      { key: 'type_specific_data.bond_type', label: 'Bond Type', type: 'text', placeholder: 'Government / Corporate / Tax-Free' },
+      { key: 'type_specific_data.face_value', label: 'Face Value', type: 'currency' },
+      { key: 'type_specific_data.quantity', label: 'Quantity', type: 'number' },
+      { key: 'type_specific_data.purchase_price', label: 'Purchase Price', type: 'currency' },
+      { key: 'type_specific_data.coupon_rate', label: 'Coupon Rate', type: 'percentage', hint: 'per annum' },
       { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
       { key: 'current_value', label: 'Current Value', type: 'currency' },
     ],
-    bottomSection: 'maturity',
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.sale_price', label: 'Sale Price', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
   },
 
   ppf: {
