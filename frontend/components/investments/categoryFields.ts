@@ -51,7 +51,8 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconBg: '#14B8A620',
     subtitleKey: 'type_specific_data.tracking_index',
     fields: [
-      { key: 'type_specific_data.folio_number', label: 'Folio/DP ID', type: 'text', placeholder: 'IN300214123456789' },
+      { key: 'name', label: 'ETF Name', type: 'text', placeholder: 'e.g., Nippon India ETF Nifty 50' },
+      { key: 'type_specific_data.folio_number', label: 'Folio ID', type: 'text', placeholder: 'IN300214123456789' },
       { key: 'type_specific_data.exchange', label: 'Exchange', type: 'text', placeholder: 'NSE / BSE' },
       { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
       { key: 'purchase_date', label: 'Invested Date', type: 'date' },

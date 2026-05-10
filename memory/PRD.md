@@ -890,3 +890,23 @@ User requested: modify only the MutualFundDetailScreen — add Fund Name as the 
 
 No backend or other category schemas changed. The new screens at `/investments/new?type=X` (Session 20) automatically inherit the Fund Name field for MF (since they share the same schema).
 
+
+
+## Session 22 Update (2026-05-10) — ETF Detail Screen Polish
+
+User asked to apply the same treatment to the ETF screen as Session 21's MF: add ETF Name as the top field, label "Folio ID" (was "Folio/DP ID"). Same 9 fields + Sale Details section. Reuse InvestmentDetailForm.
+
+### Change
+Single 1-file edit: `frontend/components/investments/categoryFields.ts`
+- `CATEGORY_CONFIG.etf.fields` — prepended `{ key: 'name', label: 'ETF Name', type: 'text' }`, renamed first field's label from "Folio/DP ID" → "Folio ID". All other categories untouched.
+
+### Verification
+Smoke screenshot at `/investments/inv_045f2e45700d` (Nippon India ETF Nifty 50):
+- Title "Exchange Traded Funds", "Edit" link top-right
+- Teal stats-chart icon + "Nippon India ETF Nifty 50" hero
+- 9 fields in spec order: ETF Name, Folio ID, Exchange (NSE), Invested Amount (₹2,25,000), Invested Date (13 Feb 2025), Units, NAV, Current Value (₹2,45,000), Gain/Loss (**+₹20,000 +8.89%** green)
+- Sale Details (if any) with Date of Sale / Units Sold / Price Sold / Amount Received
+- Notes + Delete Investment button
+
+MF and FD screens unchanged (verified via grep of remaining schemas).
+
