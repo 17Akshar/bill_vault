@@ -14,6 +14,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { T, FONT, tap } from './tokens';
 
+export { T, FONT, tap };
+
 // Press-scale wrapper — shrinks to 0.96 on press-in, bounces back on release.
 export const PressScale = ({
   children,

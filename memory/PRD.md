@@ -728,3 +728,34 @@ All 5 screens that previously used hardcoded `DUMMY_*` arrays now consume the Fa
 ### Known
 - AuthContext.checkAuth() does NOT auto-bootstrap single-user mode for fresh browser sessions hitting `/investments` directly — by design, app expects users to land on `/` welcome screen first or arrive via authenticated nav. Test agent flagged this as P0 but it's pre-existing and not a regression of this round's work.
 
+
+
+
+## Session 17 Update (2026-05-10) — Action Items from Session 16
+
+Implemented all 4 follow-up items the user explicitly requested:
+
+### 1. AuthContext auto-bootstrap (P1)
+- `frontend/contexts/AuthContext.tsx:checkAuth()` — when no stored token+user is found, auto-calls `useSingleUserMode()` so deep-links to protected screens work without forcing a manual login. Welcome screen still renders if the bootstrap call itself fails.
+
+### 2. TransactionCreate Literal validation (P2)
+- `backend/investments.py` — `TransactionCreate.transaction_type` is now `Literal["buy","sell","dividend","interest","mature","redeem","charges"]`. Typos now return 422 instead of silently breaking the dashboard aggregation.
+
+### 3. brokerage_charges persistence (P2)
+- `backend/investments.py` — `TransactionCreate` accepts an optional `brokerage_charges`; `POST /api/investments/{id}/transactions` persists it. Also stores `total_amount` alias for the calculations module. `metrics.total_charges` now reflects user-added charges.
+
+### 4. Dashboard refactor (P2 — partial)
+Extracted ~125 lines of atomic UI components from `app/(tabs)/dashboard.tsx` (814 → 691 lines):
+- New `frontend/components/dashboard/tokens.ts` (38 lines) — `T` theme tokens, `FONT`, `tap()` haptic helper
+- New `frontend/components/dashboard/atoms.tsx` (231 lines) — `PressScale`, `MiniChart`, `SectionHeader`, `FilterPill`, `StatPill`, `QuickActionBtn`, `ListRow` reusable components
+
+Dashboard imports these via `import { T, FONT, PressScale, ... } from '../../components/dashboard/atoms'`.
+
+**`app/transactions/add.tsx` (909 lines) and `app/(tabs)/transactions.tsx` (630 lines) were NOT refactored this round** — high regression risk for marginal gain. The dashboard refactor establishes the atom-extraction pattern future refactors can follow safely.
+
+### Frontend Boot Issue (resolved)
+During the refactor the Expo dev server hit ENOSPC (inotify watcher limit 12,288 vs 30k+ node_modules dirs). Troubleshoot agent identified root cause: a duplicate `FONT` const declaration (imported from atoms.tsx AND redeclared at line 538 of dashboard.tsx). Removed the redeclaration + re-exported `T`/`FONT` from atoms.tsx; frontend now boots cleanly (`Web Bundled 4508ms ... 1958 modules`, HTTP 200). Watchman was installed during investigation but Metro's FallbackWatcher still uses inotify directly — left in place for future use.
+
+### Verification
+- Backend: 8/8 investments pytest pass (38s) — Literal validation, brokerage_charges persistence, multi-record persistence all green
+- Frontend: dashboard renders end-to-end after auto-bootstrap (single-user redirect `/` → `/dashboard`, "Local User" greeting, ₹79,950 net worth, accounts, recent transactions)

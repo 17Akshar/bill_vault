@@ -534,8 +534,8 @@ export default function DashboardScreen() {
 
 // =============================================================================
 // Styles
+// (FONT token is imported from /components/dashboard/tokens.ts via atoms.tsx)
 // =============================================================================
-const FONT = 'System'; // SF Pro Display on iOS, Roboto on Android — system default
 
 const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
