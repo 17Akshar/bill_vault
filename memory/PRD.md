@@ -759,3 +759,42 @@ During the refactor the Expo dev server hit ENOSPC (inotify watcher limit 12,288
 ### Verification
 - Backend: 8/8 investments pytest pass (38s) — Literal validation, brokerage_charges persistence, multi-record persistence all green
 - Frontend: dashboard renders end-to-end after auto-bootstrap (single-user redirect `/` → `/dashboard`, "Local User" greeting, ₹79,950 net worth, accounts, recent transactions)
+
+
+## Session 18 Update (2026-05-10) — Continued P2/P3 Refactor
+
+### 1. Transactions screens refactored (P2)
+Created `frontend/components/transactions/atoms.tsx` (563 lines) containing 8 reusable atoms:
+- `CategoryGrid`, `SubCategoryChips`, `AccountPickerButton`, `AccountPickerModal`, `PaymentTypeRow`
+- `TxRow`, `FilterChip`, `EmptyState`
+
+Wired into both files:
+- `app/transactions/add.tsx`: **909 → 608 lines (-301, -33%)** — replaced inline category grid, sub-category chips, two account-picker modals, payment-type row. Removed 14 obsolete style entries and unused imports (`Modal`, `FlatList`, `ACCOUNT_TYPE_META`, `formatINR`).
+- `app/(tabs)/transactions.tsx`: **630 → 600 lines (-30, -5%)** — replaced TxRow inline render, filter chips for All/Income/Expense, and the no-transactions empty state. Other custom filter chips (account/category/family) kept inline as they have distinct visuals.
+
+Total reduction across the monolithic files: **~330 lines** + 8 reusable building blocks now available for future screens.
+
+### 2. Auth race condition fix (incidental — found during refactor verification)
+Both `app/(tabs)/transactions.tsx` and `app/(tabs)/bills.tsx` had a useEffect that triggered `router.replace('/auth/login')` when `isAuthenticated` was still false — but that flag is initially false during AuthContext's async bootstrap. Now both screens also gate on `isLoading: authLoading` so the redirect only fires after the bootstrap settles. Without this fix, deep-links to `/transactions` or `/bills` showed an "Attempted to navigate before mounting" error.
+
+### 3. Index-as-key fix in chart components (P3)
+- `components/charts/BarChart.tsx`: `<G key={i}>` → `<G key={`bar-${d.label}-${i}`}>`; same for label loop
+- `components/charts/DonutChart.tsx`: `<Circle key={i}>` → `<Circle key={`${segment.label}-${segment.color}-${i}`}>`
+
+These were the highest-risk index-as-key uses (re-rendered with new data, so wrong-segment animation could occur). Other index-as-key occurrences in less-critical screens (notes, budgets, etc.) left in place.
+
+### 4. firebasePhoneAuth.ts review (P3)
+Reviewed file — the only "empty" catch is in `resetRecaptcha()`'s `try { _verifier?.clear() } catch { /* ignore */ }`, which is intentional (reCAPTCHA clear is best-effort cleanup; failure cannot recover anyway). All other catches re-throw with user-friendly messages. **No changes needed.**
+
+### Verification
+- Backend: 8/8 investments pytest pass (37s)
+- Frontend: bundles cleanly (`Web Bundled 5099ms ... 1959 modules`, HTTP 200)
+- Smoke screenshots verified:
+  - `/transactions` renders TxRow + FilterChip + month picker correctly
+  - `/transactions/add` renders CategoryGrid + AccountPickerButton + PaymentTypeRow correctly
+  - `/dashboard` (from session 17) still renders all atomic components
+
+### Files
+- New: `frontend/components/transactions/atoms.tsx`
+- Modified: `frontend/app/transactions/add.tsx`, `frontend/app/(tabs)/transactions.tsx`, `frontend/app/(tabs)/bills.tsx`, `frontend/components/charts/BarChart.tsx`, `frontend/components/charts/DonutChart.tsx`
+

@@ -10,8 +10,6 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Modal,
-  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,14 +20,19 @@ import {
   INCOME_CATEGORIES,
   EXPENSE_CATEGORIES,
   PAYMENT_TYPES,
-  ACCOUNT_TYPE_META,
-  formatINR,
 } from '../../utils/formatINR';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CrossPlatformPicker from '../../components/CrossPlatformPicker';
 import { FamilyMemberPicker } from '../../components/FamilyMemberSelector';
 import LabelsInput from '../../components/LabelsInput';
 import AttachmentPicker from '../../components/AttachmentPicker';
+import {
+  CategoryGrid,
+  SubCategoryChips,
+  AccountPickerButton,
+  AccountPickerModal,
+  PaymentTypeRow,
+} from '../../components/transactions/atoms';
 
 export default function AddTransactionScreen() {
   const router = useRouter();
@@ -301,38 +304,13 @@ export default function AddTransactionScreen() {
 
               {/* Category */}
               <Text style={[styles.label, { color: colors.text }]}>Category</Text>
-              <View style={styles.categoryGrid}>
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat.key}
-                    style={[
-                      styles.categoryChip,
-                      { backgroundColor: colors.card, borderColor: colors.border },
-                      category === cat.key && {
-                        borderColor: txType === 'income' ? '#00E676' : '#FF5252',
-                        borderWidth: 2,
-                        backgroundColor: txType === 'income' ? 'rgba(0,230,118,0.1)' : 'rgba(255,82,82,0.1)',
-                      },
-                    ]}
-                    onPress={() => { setCategory(cat.key); setSubCategory(''); }}
-                  >
-                    <Ionicons
-                      name={cat.icon as any}
-                      size={18}
-                      color={category === cat.key ? (txType === 'income' ? '#00E676' : '#FF5252') : colors.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.categoryLabel,
-                        { color: category === cat.key ? colors.text : colors.textSecondary },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <CategoryGrid
+                categories={categories}
+                selectedKey={category}
+                onSelect={(key) => { setCategory(key); setSubCategory(''); }}
+                accentColor={txType === 'income' ? '#00E676' : '#FF5252'}
+                colors={colors}
+              />
 
               {/* Sub-Category Picker */}
               {category && (() => {
@@ -343,33 +321,13 @@ export default function AddTransactionScreen() {
                 return (
                   <>
                     <Text style={[styles.label, { color: colors.text }]}>Sub-Category (Optional)</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-                      {subs.map((sub: string) => (
-                        <TouchableOpacity
-                          key={sub}
-                          style={[
-                            styles.subCatChip,
-                            { backgroundColor: colors.card, borderColor: colors.border },
-                            subCategory === sub && {
-                              borderColor: accentColor,
-                              borderWidth: 2,
-                              backgroundColor: accentColor + '18',
-                            },
-                          ]}
-                          onPress={() => setSubCategory(subCategory === sub ? '' : sub)}
-                        >
-                          <Text
-                            style={{
-                              color: subCategory === sub ? accentColor : colors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: subCategory === sub ? '600' : '400',
-                            }}
-                          >
-                            {sub}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
+                    <SubCategoryChips
+                      options={subs}
+                      selected={subCategory}
+                      onToggle={setSubCategory}
+                      accentColor={accentColor}
+                      colors={colors}
+                    />
                   </>
                 );
               })()}
@@ -380,29 +338,13 @@ export default function AddTransactionScreen() {
           <Text style={[styles.label, { color: colors.text }]}>
             {txType === 'transfer' ? 'From Account' : 'Account'}
           </Text>
-          <TouchableOpacity
-            style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+          <AccountPickerButton
+            account={selectedAccount}
             onPress={() => setShowAccountPicker(true)}
-          >
-            {selectedAccount ? (
-              <View style={styles.pickerContent}>
-                <Ionicons
-                  name={(ACCOUNT_TYPE_META[selectedAccount.account_type]?.icon || 'business-outline') as any}
-                  size={20}
-                  color={ACCOUNT_TYPE_META[selectedAccount.account_type]?.color || colors.text}
-                />
-                <Text style={[styles.pickerText, { color: colors.text }]}>
-                  {selectedAccount.name}
-                </Text>
-                <Text style={[styles.pickerBalance, { color: colors.textSecondary }]}>
-                  {formatINR(selectedAccount.balance)}
-                </Text>
-              </View>
-            ) : (
-              <Text style={[styles.pickerText, { color: colors.textSecondary }]}>Select account</Text>
-            )}
-            <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+            placeholder="Select account"
+            colors={colors}
+            testID="tx-from-account-picker"
+          />
 
           {/* To Account picker — Transfer mode only */}
           {txType === 'transfer' && (() => {
@@ -410,30 +352,13 @@ export default function AddTransactionScreen() {
             return (
               <>
                 <Text style={[styles.label, { color: colors.text }]}>To Account</Text>
-                <TouchableOpacity
-                  testID="tx-to-account-picker"
-                  style={[styles.pickerBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+                <AccountPickerButton
+                  account={toAccount}
                   onPress={() => setShowToAccountPicker(true)}
-                >
-                  {toAccount ? (
-                    <View style={styles.pickerContent}>
-                      <Ionicons
-                        name={(ACCOUNT_TYPE_META[toAccount.account_type]?.icon || 'business-outline') as any}
-                        size={20}
-                        color={ACCOUNT_TYPE_META[toAccount.account_type]?.color || colors.text}
-                      />
-                      <Text style={[styles.pickerText, { color: colors.text }]}>
-                        {toAccount.name}
-                      </Text>
-                      <Text style={[styles.pickerBalance, { color: colors.textSecondary }]}>
-                        {formatINR(toAccount.balance)}
-                      </Text>
-                    </View>
-                  ) : (
-                    <Text style={[styles.pickerText, { color: colors.textSecondary }]}>Select destination account</Text>
-                  )}
-                  <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+                  placeholder="Select destination account"
+                  colors={colors}
+                  testID="tx-to-account-picker"
+                />
                 {selectedAccountId && toAccountId && selectedAccountId === toAccountId && (
                   <Text style={{ color: '#FF5252', fontSize: 12, marginTop: -4, marginBottom: 8 }}>
                     From and To accounts must be different
@@ -447,24 +372,12 @@ export default function AddTransactionScreen() {
           {(txType === 'expense' || txType === 'transfer') && (
             <>
               <Text style={[styles.label, { color: colors.text }]}>Payment Type</Text>
-              <View style={styles.paymentTypeRow}>
-                {PAYMENT_TYPES.map((pt) => (
-                  <TouchableOpacity
-                    key={pt.key}
-                    style={[
-                      styles.paymentChip,
-                      { backgroundColor: colors.card, borderColor: colors.border },
-                      paymentType === pt.key && { borderColor: colors.primary, borderWidth: 2 },
-                    ]}
-                    onPress={() => setPaymentType(pt.key)}
-                  >
-                    <Ionicons name={pt.icon as any} size={16} color={paymentType === pt.key ? colors.primary : colors.textSecondary} />
-                    <Text style={[styles.paymentLabel, { color: paymentType === pt.key ? colors.text : colors.textSecondary }]}>
-                      {pt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <PaymentTypeRow
+                paymentTypes={PAYMENT_TYPES}
+                selected={paymentType}
+                onSelect={setPaymentType}
+                colors={colors}
+              />
             </>
           )}
 
@@ -570,121 +483,37 @@ export default function AddTransactionScreen() {
       </KeyboardAvoidingView>
 
       {/* Account Picker Modal */}
-      <Modal visible={showAccountPicker} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Account</Text>
-              <TouchableOpacity onPress={() => setShowAccountPicker(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            {accounts.length === 0 ? (
-              <View style={styles.modalEmpty}>
-                <Text style={[styles.modalEmptyText, { color: colors.textSecondary }]}>
-                  No accounts found. Create one first.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.modalCreateBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    setShowAccountPicker(false);
-                    router.push('/accounts/add' as any);
-                  }}
-                >
-                  <Text style={styles.modalCreateBtnText}>Create Account</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <FlatList
-                data={accounts}
-                keyExtractor={(item) => item.account_id}
-                renderItem={({ item }) => {
-                  const meta = ACCOUNT_TYPE_META[item.account_type] || ACCOUNT_TYPE_META.bank;
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.modalItem,
-                        { borderBottomColor: colors.border },
-                        selectedAccountId === item.account_id && { backgroundColor: colors.primary + '15' },
-                      ]}
-                      onPress={() => {
-                        setSelectedAccountId(item.account_id);
-                        setShowAccountPicker(false);
-                      }}
-                    >
-                      <View style={[styles.modalItemIcon, { backgroundColor: meta.color + '20' }]}>
-                        <Ionicons name={meta.icon as any} size={20} color={meta.color} />
-                      </View>
-                      <View style={styles.modalItemInfo}>
-                        <Text style={[styles.modalItemName, { color: colors.text }]}>{item.name}</Text>
-                        <Text style={[styles.modalItemType, { color: colors.textSecondary }]}>{meta.label}</Text>
-                      </View>
-                      <Text style={[styles.modalItemBalance, { color: colors.text }]}>
-                        {formatINR(item.balance)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            )}
-          </View>
-        </View>
-      </Modal>
+      <AccountPickerModal
+        visible={showAccountPicker}
+        title="Select Account"
+        accounts={accounts}
+        selectedId={selectedAccountId}
+        onSelect={(id) => { setSelectedAccountId(id); setShowAccountPicker(false); }}
+        onClose={() => setShowAccountPicker(false)}
+        emptyMessage="No accounts found. Create one first."
+        emptyAction={{
+          label: 'Create Account',
+          onPress: () => { setShowAccountPicker(false); router.push('/accounts/add' as any); },
+        }}
+        colors={colors}
+      />
 
       {/* To Account picker modal — Transfer mode */}
-      <Modal visible={showToAccountPicker} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Destination Account</Text>
-              <TouchableOpacity onPress={() => setShowToAccountPicker(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={accounts.filter(a => a.account_id !== selectedAccountId)}
-              keyExtractor={(item) => item.account_id}
-              ListEmptyComponent={
-                <View style={styles.modalEmpty}>
-                  <Text style={[styles.modalEmptyText, { color: colors.textSecondary }]}>
-                    {accounts.length < 2
-                      ? 'You need at least 2 accounts to transfer. Create another one first.'
-                      : 'Pick a different From Account first.'}
-                  </Text>
-                </View>
-              }
-              renderItem={({ item }) => {
-                const meta = ACCOUNT_TYPE_META[item.account_type] || ACCOUNT_TYPE_META.bank;
-                return (
-                  <TouchableOpacity
-                    testID={`to-account-item-${item.account_id}`}
-                    style={[
-                      styles.modalItem,
-                      { borderBottomColor: colors.border },
-                      toAccountId === item.account_id && { backgroundColor: colors.primary + '15' },
-                    ]}
-                    onPress={() => {
-                      setToAccountId(item.account_id);
-                      setShowToAccountPicker(false);
-                    }}
-                  >
-                    <View style={[styles.modalItemIcon, { backgroundColor: meta.color + '20' }]}>
-                      <Ionicons name={meta.icon as any} size={20} color={meta.color} />
-                    </View>
-                    <View style={styles.modalItemInfo}>
-                      <Text style={[styles.modalItemName, { color: colors.text }]}>{item.name}</Text>
-                      <Text style={[styles.modalItemType, { color: colors.textSecondary }]}>{meta.label}</Text>
-                    </View>
-                    <Text style={[styles.modalItemBalance, { color: colors.text }]}>
-                      {formatINR(item.balance)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
+      <AccountPickerModal
+        visible={showToAccountPicker}
+        title="Select Destination Account"
+        accounts={accounts.filter(a => a.account_id !== selectedAccountId)}
+        selectedId={toAccountId}
+        onSelect={(id) => { setToAccountId(id); setShowToAccountPicker(false); }}
+        onClose={() => setShowToAccountPicker(false)}
+        emptyMessage={
+          accounts.length < 2
+            ? 'You need at least 2 accounts to transfer. Create another one first.'
+            : 'Pick a different From Account first.'
+        }
+        itemTestIdPrefix="to-account-item-"
+        colors={colors}
+      />
     </SafeAreaView>
   );
 }
@@ -765,70 +594,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
   },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  categoryLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  pickerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 52,
-  },
-  pickerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  pickerText: {
-    fontSize: 16,
-  },
-  pickerBalance: {
-    fontSize: 13,
-  },
-  paymentTypeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  paymentChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  paymentLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  subCatChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginRight: 8,
-  },
   saveButton: {
     height: 54,
     borderRadius: 14,
@@ -839,71 +604,5 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 17,
     fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '60%',
-    padding: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalEmpty: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    gap: 16,
-  },
-  modalEmptyText: {
-    fontSize: 14,
-  },
-  modalCreateBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  modalCreateBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  modalItemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  modalItemInfo: {
-    flex: 1,
-  },
-  modalItemName: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  modalItemType: {
-    fontSize: 12,
-  },
-  modalItemBalance: {
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

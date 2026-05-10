@@ -13,6 +13,7 @@ import api from '../../utils/api';
 import { formatINR, INCOME_CATEGORIES, EXPENSE_CATEGORIES, ACCOUNT_TYPE_META, PAYMENT_TYPES } from '../../utils/formatINR';
 import { format, parseISO } from 'date-fns';
 import MonthYearPicker from '../../components/MonthYearPicker';
+import { TxRow, FilterChip, EmptyState } from '../../components/transactions/atoms';
 
 type FilterType = 'all' | 'income' | 'expense';
 
@@ -40,7 +41,7 @@ interface Account {
 export default function TransactionsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -76,9 +77,10 @@ export default function TransactionsScreen() {
 
   useEffect(() => {
     if (!navState?.key) return;
+    if (authLoading) return;
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadAccounts();
-  }, [isAuthenticated, navState?.key]);
+  }, [isAuthenticated, authLoading, navState?.key]);
 
   useEffect(() => { loadTransactions(); }, [filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter, selectedMemberFilter]);
 
@@ -266,37 +268,16 @@ export default function TransactionsScreen() {
 
   const categories = filter === 'expense' ? EXPENSE_CATEGORIES : filter === 'income' ? INCOME_CATEGORIES : [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
 
-  const renderItem = ({ item }: { item: Transaction }) => {
-    const isIncome = item.type === 'income';
-    const icon = getCategoryIcon(item.category, item.type);
-    const accName = getAccountName(item.account_id);
-    return (
-      <TouchableOpacity
-        style={[styles.txCard, { backgroundColor: colors.card }]}
-        onPress={() => openEdit(item)}
-        onLongPress={() => setActionItem(item)}
-        delayLongPress={400}
-        activeOpacity={0.7}
-      >
-        <View style={[styles.txIcon, { backgroundColor: isIncome ? 'rgba(0,230,118,0.12)' : 'rgba(255,82,82,0.12)' }]}>
-          <Ionicons name={icon as any} size={20} color={isIncome ? '#00E676' : '#FF5252'} />
-        </View>
-        <View style={styles.txInfo}>
-          <Text style={[styles.txDesc, { color: colors.text }]} numberOfLines={1}>{item.description}</Text>
-          <Text style={[styles.txMeta, { color: colors.textSecondary }]}>
-            {item.category}{item.sub_category ? ` › ${item.sub_category}` : ''} · {item.date ? format(parseISO(item.date), 'dd MMM') : ''}
-            {accName ? ` · ${accName}` : ''}
-          </Text>
-        </View>
-        <View style={styles.txRight}>
-          <Text style={[styles.txAmount, { color: isIncome ? '#00E676' : '#FF5252' }]}>
-            {isIncome ? '+' : '-'}{formatINR(item.amount)}
-          </Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const renderItem = ({ item }: { item: Transaction }) => (
+    <TxRow
+      item={item}
+      iconName={getCategoryIcon(item.category, item.type)}
+      accountName={getAccountName(item.account_id)}
+      onPress={() => openEdit(item)}
+      onLongPress={() => setActionItem(item)}
+      colors={colors}
+    />
+  );
 
   if (loading && transactions.length === 0) {
     return <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
@@ -333,15 +314,15 @@ export default function TransactionsScreen() {
       {/* Type Filter */}
       <View style={styles.filterRow}>
         {(['all', 'income', 'expense'] as FilterType[]).map((f) => (
-          <TouchableOpacity
+          <FilterChip
             key={f}
-            style={[styles.filterBtn, { borderColor: colors.border }, filter === f && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            label={f.charAt(0).toUpperCase() + f.slice(1)}
+            active={filter === f}
+            activeColor={colors.primary}
             onPress={() => { setFilter(f); setSelectedCategoryFilter(null); }}
-          >
-            <Text style={[styles.filterText, { color: filter === f ? '#FFF' : colors.text }]}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </Text>
-          </TouchableOpacity>
+            colors={colors}
+            testID={`type-filter-${f}`}
+          />
         ))}
       </View>
 
@@ -436,13 +417,12 @@ export default function TransactionsScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="swap-horizontal-outline" size={64} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No transactions</Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              {filter !== 'all' ? `No ${filter} entries for this month` : 'Add income or expenses to get started'}
-            </Text>
-          </View>
+          <EmptyState
+            iconName="swap-horizontal-outline"
+            title="No transactions"
+            description={filter !== 'all' ? `No ${filter} entries for this month` : 'Add income or expenses to get started'}
+            colors={colors}
+          />
         }
         ListFooterComponent={
           transactions.length > 0 ? (
@@ -582,9 +562,8 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 6 },
   summaryLabel: { fontSize: 12 },
   summaryValue: { fontSize: 16, fontWeight: 'bold' },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 10 },
-  filterBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', borderWidth: 1 },
-  filterText: { fontSize: 14, fontWeight: '500' },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 10 },
+  // (FilterChip styles live in /components/transactions/atoms.tsx)
   accountFilterScroll: { maxHeight: 44, marginBottom: 8 },
   accountFilterContent: { paddingHorizontal: 20, gap: 8 },
   accountChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
@@ -592,17 +571,8 @@ const styles = StyleSheet.create({
   catFilterScroll: { maxHeight: 38, marginBottom: 8 },
   catChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   catChipText: { fontSize: 11, fontWeight: '500' },
-  listContent: { paddingHorizontal: 20, paddingBottom: 100 },
-  txCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, marginBottom: 10 },
-  txIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  txInfo: { flex: 1 },
-  txDesc: { fontSize: 15, fontWeight: '500', marginBottom: 3 },
-  txMeta: { fontSize: 12 },
-  txRight: { alignItems: 'flex-end', gap: 4 },
-  txAmount: { fontSize: 16, fontWeight: '700' },
-  emptyContainer: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyText: { fontSize: 18, fontWeight: '600' },
-  emptySubtext: { fontSize: 14 },
+  listContent: { paddingHorizontal: 4, paddingBottom: 100 },
+  // (TxRow + EmptyState styles live in /components/transactions/atoms.tsx)
   hintText: { textAlign: 'center', fontSize: 12, paddingVertical: 16 },
   fab: { position: 'absolute', right: 20, bottom: 80, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', elevation: 8 },
   // Action menu

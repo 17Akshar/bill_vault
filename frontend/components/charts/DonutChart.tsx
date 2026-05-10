@@ -35,7 +35,7 @@ export default function DonutChart({ data, size = 180, strokeWidth = 24, centerL
             const offset = -cumulativePercent * circumference;
             cumulativePercent += pct;
             return (
-              <Circle key={i} cx={size / 2} cy={size / 2} r={radius} stroke={segment.color} strokeWidth={strokeWidth} fill="none" strokeDasharray={dashArray} strokeDashoffset={offset} strokeLinecap="round" />
+              <Circle key={`${segment.label}-${segment.color}-${i}`} cx={size / 2} cy={size / 2} r={radius} stroke={segment.color} strokeWidth={strokeWidth} fill="none" strokeDasharray={dashArray} strokeDashoffset={offset} strokeLinecap="round" />
             );
           })}
         </G>

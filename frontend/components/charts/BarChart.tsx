@@ -29,7 +29,7 @@ export default function BarChart({ data, height = 180, textColor = '#FFF' }: Bar
           const incH = (d.income / maxVal) * height;
           const expH = (d.expense / maxVal) * height;
           return (
-            <G key={i}>
+            <G key={`bar-${d.label}-${i}`}>
               <Rect x={x} y={height - incH} width={barWidth} height={Math.max(incH, 2)} rx={4} fill="#00E676" opacity={0.85} />
               <Rect x={x + barWidth + 3} y={height - expH} width={barWidth} height={Math.max(expH, 2)} rx={4} fill="#FF5252" opacity={0.85} />
             </G>
@@ -38,7 +38,7 @@ export default function BarChart({ data, height = 180, textColor = '#FFF' }: Bar
       </Svg>
       <View style={[styles.labels, { marginLeft: gap }]}>
         {data.map((d, i) => (
-          <Text key={i} style={[styles.label, { color: textColor, width: barWidth * 2.5 + gap, textAlign: 'center' }]}>{d.label}</Text>
+          <Text key={`lbl-${d.label}-${i}`} style={[styles.label, { color: textColor, width: barWidth * 2.5 + gap, textAlign: 'center' }]}>{d.label}</Text>
         ))}
       </View>
     </View>

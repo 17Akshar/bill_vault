@@ -46,7 +46,7 @@ const HUB_MODULES: HubModule[] = [
 export default function HubScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bills, setBills] = useState<any[]>([]);
@@ -55,9 +55,10 @@ export default function HubScreen() {
 
   useEffect(() => {
     if (!navState?.key) return;
+    if (authLoading) return;
     if (!isAuthenticated) { router.replace('/auth/login'); return; }
     loadData();
-  }, [isAuthenticated, navState?.key]);
+  }, [isAuthenticated, authLoading, navState?.key]);
 
   useFocusEffect(
     useCallback(() => {
