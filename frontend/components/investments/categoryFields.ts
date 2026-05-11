@@ -280,7 +280,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       { key: 'type_specific_data.sum_assured', label: 'Sum Assured', type: 'currency' },
       { key: 'purchase_date', label: 'Start Date', type: 'date' },
       { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
-      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed / Matured' },
+      { key: 'type_specific_data.policy_status', label: 'Policy Status', type: 'text', placeholder: 'Active / Lapsed / Matured' },
     ],
     bottomSection: 'maturity',
     maturityFields: [
@@ -302,7 +302,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       { key: 'type_specific_data.sum_assured', label: 'Sum Assured', type: 'currency' },
       { key: 'purchase_date', label: 'Start Date', type: 'date' },
       { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
-      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed / Matured' },
+      { key: 'type_specific_data.policy_status', label: 'Policy Status', type: 'text', placeholder: 'Active / Lapsed / Matured' },
     ],
     bottomSection: 'maturity',
     maturityFields: [
