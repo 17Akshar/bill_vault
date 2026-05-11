@@ -834,6 +834,41 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 24 Update (2026-05-11) — Investment Detail Forms UI Enhancement
+
+### UI Improvements Applied (frontend only, no backend changes)
+
+**InvestmentSummaryCard.tsx:**
+- Left accent stripe: `borderLeftWidth: 3, borderLeftColor: iconColor` (per-category color)
+- Icon size: 28 → 30, padding improved (paddingV:18), marginHorizontal: 20 → 16
+
+**DynamicFieldList.tsx:**
+- Row height: minHeight 48 → 56 (much more breathing room)
+- Row padding: paddingV 14→16, paddingH 16→18
+- Label: fontSize 14→13, fontWeight 500→400 (lighter, softer)
+- Value: fontWeight 600→700 (bolder contrast against label)
+- Container: borderRadius 14→16, marginHorizontal 20→16
+
+**GainLossDisplay.tsx:**
+- Now renders inside a card: `backgroundColor: colors.card, borderRadius: 16`
+- Value font: 15→16, paddingH 4→18
+
+**Section headings (MaturityDetailsSection, SaleDetailsSection, NotesSection):**
+- All: uppercase, fontSize 11, letterSpacing 1.2, marginTop 20, color #A78BFA
+- Notes heading: changed from `colors.text` (white) to `#A78BFA` (purple) for consistency
+
+**InvestmentHeader.tsx:**
+- Bottom separator: `borderBottomWidth: hairlineWidth, borderBottomColor: colors.border`
+- paddingHorizontal: 20→16, paddingVertical: 16→14
+- Title: fontSize 20→18
+
+**SaveButton.tsx + deleteBtn:**
+- Margins standardized to 16 (was 20)
+
+**Testing:** 19/19 frontend UI tests passed (100%)
+
+---
+
 ## Session 23 Update (2026-05-11) — Investments Database Schema v2.0
 
 ### Scalable Category-Specific Investment Detail Schema
