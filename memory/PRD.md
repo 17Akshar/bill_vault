@@ -834,6 +834,24 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 28 Update (2026-05-11) — TermInsuranceDetailScreen + Schema Docs Updated
+
+### Term Insurance frontend (categoryFields.ts):
+- Label "Premium (Yearly)" → "Premium Amount (Yearly)"
+- Label "Status" → "Policy Status"
+- All 7 fields now match spec: Policy Number, Sum Assured, Premium Amount (Yearly), Start Date, Maturity Date, Nominee, Policy Status
+
+### Investments Database Schema docs updated (v2.1):
+- `type_specific_data` mapping table corrected: EPF (uan/employee_share/employer_share), Gold/Silver (quantity/purchase_price_per_unit/current_price_per_unit/purity), LIC/insurance (policy_number/sum_assured/policy_status), term_insurance (adds nominee)
+- Supported types: `lic`, `insurance` (alias), `term_insurance` now explicitly listed
+- Mapping table: added gold, silver, lic/insurance, term_insurance rows
+- Backend code unchanged — already supported all types from Session 23
+
+**API validation:** All 5 new types (EPF/Gold/Silver/LIC/Term) created and verified via curl — correct persistence of type_specific_data + detail objects
+**Testing:** Frontend 100% pass
+
+---
+
 ## Session 27 Update (2026-05-11) — SilverDetailScreen Updated
 
 **2 targeted changes to `categoryFields.ts` silver config (same as Gold):**
