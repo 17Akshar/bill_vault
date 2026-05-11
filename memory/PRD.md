@@ -834,6 +834,25 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 22 Update (2026-05-11) — NPSDetailScreen Updated
+
+### NPS Detail Form Updated to Match Reference Design
+Modified only `categoryFields.ts` (NPS config) and `select-type.tsx` (NPS icon):
+
+**Changes:**
+- Icon: `ribbon` (green) → `mail-open` (teal `#10B981`) matching reference envelope icon
+- Removed fields: "Pension Fund Manager", "Account Opened" (purchase_date)
+- Renamed: "Total Invested" → "Invested Amount", "Asset Allocation" → "Allocation"
+- Added: "Linked Account" (account_picker)
+- Changed: `bottomSection: 'none'` → `'sale'` with custom NPS withdrawal saleFields
+- Custom `saleFields`: "Date of Withdrawal" + "Amount Received" (overrides default Sale fields)
+
+**NOT modified:** Dashboard, Transactions, Navigation, PPF or other investment forms
+
+**Testing:** 18/18 NPS frontend checks passed (100%)
+
+---
+
 ## Session 21 Update (2026-05-11) — PPFDetailScreen Updated
 
 ### PPF Detail Form Updated to Match Reference Design
