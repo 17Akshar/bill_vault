@@ -834,6 +834,17 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 27 Update (2026-05-11) — SilverDetailScreen Updated
+
+**2 targeted changes to `categoryFields.ts` silver config (same as Gold):**
+1. Removed `invested_amount` from `config.fields` — field list: Quantity, Purchase Price (per kg), Purchase Date, Current Price (per kg), Current Value
+2. Renamed "Price at which Sold" → "Sale Price" in `saleFields`
+
+GainLossDisplay still shows. Other forms unaffected.
+**Testing:** 10/10 frontend tests passed (100%)
+
+---
+
 ## Session 26 Update (2026-05-11) — GoldDetailScreen Updated
 
 **2 targeted changes to `categoryFields.ts` gold config:**
