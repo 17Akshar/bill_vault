@@ -51,24 +51,29 @@ type_specific_data: object   (flexible JSON — stored as-is)
 
 Expected keys per `investment_type`:
 
-| Type | Keys in type_specific_data |
-|------|---------------------------|
-| `stocks` | ticker, exchange, sector, quantity, avg_buy_price, current_price |
-| `mutual_funds` | folio_number, fund_house, scheme_type, units, nav |
-| `etf` | folio_number, exchange, tracking_index, units, nav |
-| `reit` | folio_number, exchange, reit_type, units, nav |
-| `fd` | bank, fd_number, interest_rate, tenure_months, maturity_amount |
-| `corporate_deposit` | issuer_name, interest_rate, tenure_months, maturity_amount, scheme_type |
-| `rd` | bank, monthly_installment, interest_rate, tenure_months, maturity_amount |
-| `bonds` | bond_type, face_value, quantity, purchase_price, coupon_rate, isin |
-| `ppf` | ppf_account_number, interest_rate |
-| `nps` | pran, tier, asset_allocation |
-| `epf` | uan, employer_name, employee_share, employer_share |
-| `gold` | form (physical/etf/bond), weight_grams, purity, storage |
-| `silver` | form, weight_grams, purity, storage |
-| `crypto` | coin_symbol, wallet_type, quantity, avg_buy_price |
-| `esop` | grant_date, vesting_schedule, strike_price, quantity |
-| Others | Any key-value pairs |
+| Type | Keys in `type_specific_data` | Detail Object Used |
+|------|-----------------------------|--------------------|
+| `stocks` | ticker, exchange, sector, quantity, avg_buy_price, current_price | sale_details |
+| `mutual_funds` | folio_number, fund_house, scheme_type, units, nav | sale_details |
+| `etf` | folio_number, exchange, tracking_index, units, nav | sale_details |
+| `reit` | folio_number, exchange, reit_type, units, nav | sale_details |
+| `fd` | bank, fd_number, interest_rate, tenure_months | maturity_details |
+| `corporate_deposit` | issuer_name, interest_rate, tenure_months, scheme_type | maturity_details |
+| `rd` | bank, monthly_installment, interest_rate, tenure_months | maturity_details |
+| `bonds` | bond_type, face_value, quantity, purchase_price, coupon_rate, isin | sale_details + maturity_details |
+| `ppf` | ppf_account_number, interest_rate | maturity_details |
+| `nps` | pran, tier, asset_allocation | sale_details (withdrawal compat) |
+| `epf` | uan, employee_share, employer_share | withdrawal_details |
+| `gold` | quantity, purchase_price_per_unit, current_price_per_unit, purity | sale_details |
+| `silver` | quantity, purchase_price_per_unit, current_price_per_unit, purity | sale_details |
+| `lic` | policy_number, sum_assured, policy_status | maturity_details |
+| `insurance` | policy_number, sum_assured, policy_status | maturity_details (alias of lic) |
+| `term_insurance` | policy_number, sum_assured, nominee, policy_status | — (pure protection) |
+| `crypto` | coin_symbol, wallet_type, quantity, avg_buy_price | sale_details |
+| `esop` | grant_date, vesting_schedule, strike_price, quantity | sale_details |
+| `private_equity` | company_name, round, stake_pct | sale_details |
+| `aif` | fund_name, category, nav | sale_details |
+| Others | Any key-value pairs | any |
 
 ### Sale Details  (market investments)
 
@@ -154,7 +159,9 @@ withdrawal_details: object?   (null until first withdrawal)
 `gold`, `silver`
 
 ### Insurance
-`insurance` (LIC, term, mediclaim, motor — unified key)
+`lic` — LIC / Endowment policies (with maturity value)
+`insurance` — alias for `lic` (backward compat)
+`term_insurance` — pure protection plans (no maturity payout)
 
 ### Others
 `crypto`, `esop`, `private_equity`, `aif`, `arts_artifacts`,

@@ -321,11 +321,11 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     fields: [
       { key: 'type_specific_data.policy_number', label: 'Policy Number', type: 'text', placeholder: '100200300400' },
       { key: 'type_specific_data.sum_assured', label: 'Sum Assured', type: 'currency' },
-      { key: 'invested_amount', label: 'Premium (Yearly)', type: 'currency' },
+      { key: 'invested_amount', label: 'Premium Amount (Yearly)', type: 'currency' },
       { key: 'purchase_date', label: 'Start Date', type: 'date' },
       { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
       { key: 'type_specific_data.nominee', label: 'Nominee', type: 'text', placeholder: 'Spouse / Child / Parent' },
-      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed' },
+      { key: 'type_specific_data.policy_status', label: 'Policy Status', type: 'text', placeholder: 'Active / Lapsed' },
     ],
     bottomSection: 'none',
   },

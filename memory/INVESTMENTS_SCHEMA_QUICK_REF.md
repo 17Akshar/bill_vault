@@ -98,9 +98,12 @@
 | corporate_deposit | — | ✅ | — |
 | rd | — | ✅ | — |
 | ppf | — | ✅ | ✅ (partial) |
-| nps | ✅ (compat) | — | ✅ |
+| nps | ✅ (compat key) | — | ✅ |
 | epf | — | — | ✅ |
-| gold / silver | ✅ | — | — |
+| gold | ✅ | — | — |
+| silver | ✅ | — | — |
+| lic / insurance | — | ✅ | — |
+| term_insurance | — | — | — |
 | crypto | ✅ | — | — |
 | others | ✅ | ✅ | ✅ |
 
