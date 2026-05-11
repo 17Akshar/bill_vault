@@ -1,0 +1,24 @@
+{
+  "summary": "Backend-only testing of Investment detail schema changes. All 19 tests passed covering SaleDetails, MaturityDetails, WithdrawalDetails creation, persistence (create→GET), update (PUT→GET), NPS backward compat, existing data, list/dashboard endpoints, and input validation.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/test_investment_details.py",
+    "/app/test_reports/pytest/pytest_inv_details.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/test_reports/test_investment_details.py"],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "N/A"},
+  "seed_data_creation": "Created ~15 TEST_ prefixed investment records during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Investment detail schema (SaleDetails/MaturityDetails/WithdrawalDetails) fully validated. All create, update, GET persistence, NPS backward compat, existing records, list/dashboard endpoints working. Test file at /app/test_reports/test_investment_details.py."
+}

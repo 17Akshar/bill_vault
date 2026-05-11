@@ -13,6 +13,18 @@ Endpoints:
   DELETE /api/investments/{id}               Soft-delete investment
   POST   /api/investments/{id}/transactions  Add transaction
   GET    /api/investments/{id}/transactions  Get transaction history
+
+Schema Design
+=============
+investments collection (Firestore)
+├── Common fields      — name, type, amounts, dates, status, notes, linked_account
+├── type_specific_data — flexible JSON for category-specific metadata (PRAN, folio, FD number, …)
+├── sale_details       — structured exit/sale info (market investments + NPS compat)
+├── maturity_details   — structured maturity info (FD/RD/PPF/bonds)
+└── withdrawal_details — structured withdrawal info (NPS/EPF/PPF partial)
+
+investment_transactions collection (unchanged)
+└── Per-event records: buy, sell, dividend, interest, mature, redeem, charges
 """
 from __future__ import annotations
 
@@ -21,7 +33,7 @@ from datetime import datetime, timezone
 from typing import Dict, Optional, Any, List, Literal
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from firebase_config import db
 from investments_calculations import InvestmentCalculations
@@ -29,23 +41,80 @@ from investments_calculations import InvestmentCalculations
 investments_router = APIRouter(prefix="/api", tags=["investments"])
 
 
+# ==================== DETAIL MODELS ====================
+
+class SaleDetails(BaseModel):
+    """Sale / exit details for market investments (stocks, MF, ETF, REIT, bonds).
+
+    Also accepts NPS backward-compat key ``date_of_withdrawal`` (stored under
+    ``sale_details`` by the NPS form) via ``extra='allow'``.
+    """
+    model_config = ConfigDict(extra='allow')
+
+    date_of_sale: Optional[str] = None         # ISO date — stocks / MF / ETF / REIT / bonds
+    units_sold: Optional[float] = None          # Units-based investments
+    sold_nav: Optional[float] = None            # MF / ETF price per unit at sale
+    sale_price: Optional[float] = None          # Bonds / stocks exit price per unit
+    amount_received: Optional[float] = None     # Net sale proceeds
+    tax_deducted: Optional[float] = None        # Capital-gains TDS withheld
+    # NPS backward-compat: NPS form stores withdrawal date under sale_details
+    date_of_withdrawal: Optional[str] = None
+
+
+class MaturityDetails(BaseModel):
+    """Maturity / redemption details for fixed-income investments (FD, RD, CD, bonds, PPF)."""
+    model_config = ConfigDict(extra='allow')
+
+    date_of_maturity: Optional[str] = None      # ISO date — actual maturity / redemption date
+    maturity_amount: Optional[float] = None     # Final corpus at maturity
+    amount_received: Optional[float] = None     # Net amount received after TDS
+    tds_deducted: Optional[float] = None        # Tax deducted at source on interest
+    renewed: Optional[bool] = None              # FD/RD auto-renewed on maturity?
+    renewal_investment_id: Optional[str] = None # FK → investments.investment_id of renewed record
+
+
+class WithdrawalDetails(BaseModel):
+    """Structured withdrawal details for government scheme investments (NPS, EPF, PPF partial).
+
+    Separate from sale_details to capture scheme-specific payout breakdowns
+    (e.g. NPS mandatory annuity + lump-sum split).
+    """
+    model_config = ConfigDict(extra='allow')
+
+    date_of_withdrawal: Optional[str] = None    # ISO date
+    withdrawal_type: Optional[str] = None       # partial | full | premature | annuity
+    amount_received: Optional[float] = None     # Net amount credited
+    annuity_amount: Optional[float] = None      # NPS: mandatory annuity portion (40%)
+    lumpsum_amount: Optional[float] = None      # NPS: lump-sum portion (60%)
+    tax_deducted: Optional[float] = None        # TDS on withdrawal
+
+
 # ==================== MODELS ====================
 
 class InvestmentCreate(BaseModel):
     name: str
-    investment_type: str  # stocks, mutual_funds, etf, bonds, reit, fd, corporate_deposit, rd, ppf, nps, epf, gold, silver, lic, term_insurance, mediclaim, motor_insurance, vehicle_car, vehicle_two_wheeler, vehicle_other, esop, private_equity, arts_artifacts, aif, crypto, others
+    # Supported types: stocks, mutual_funds, etf, bonds, reit, fd, corporate_deposit,
+    #   rd, ppf, nps, epf, gold, silver, insurance, crypto, esop, private_equity,
+    #   aif, vehicle_car, vehicle_two_wheeler, vehicle_other, arts_artifacts, others
+    investment_type: str
     invested_amount: float
     current_value: float
     purchase_date: str
     maturity_date: Optional[str] = None
-    status: str = "active"  # active, closed, matured
+    # Status values: active | closed | matured | partially_sold | withdrawn | partially_withdrawn
+    status: str = "active"
     family_member_id: Optional[str] = None
     notes: Optional[str] = None
     documents: Optional[List[str]] = None
     linked_account: Optional[str] = None
-    
-    # Type-specific data stored as flexible JSON object
+
+    # Category-specific metadata (PRAN, folio number, FD number, etc.)
     type_specific_data: Optional[Dict[str, Any]] = None
+
+    # Structured event-detail objects (persisted at creation and on update)
+    sale_details: Optional[SaleDetails] = None
+    maturity_details: Optional[MaturityDetails] = None
+    withdrawal_details: Optional[WithdrawalDetails] = None
 
 
 class InvestmentUpdate(BaseModel):
@@ -58,8 +127,12 @@ class InvestmentUpdate(BaseModel):
     notes: Optional[str] = None
     documents: Optional[List[str]] = None
     type_specific_data: Optional[Dict[str, Any]] = None
-    sale_details: Optional[Dict[str, Any]] = None
-    maturity_details: Optional[Dict[str, Any]] = None
+
+    # Typed detail objects (replaces raw Dict; extra='allow' preserves any extra keys)
+    sale_details: Optional[SaleDetails] = None
+    maturity_details: Optional[MaturityDetails] = None
+    withdrawal_details: Optional[WithdrawalDetails] = None
+
     linked_account: Optional[str] = None
 
 
@@ -78,6 +151,17 @@ class TransactionCreate(BaseModel):
 async def _get_user(request: Request):
     from server import get_current_user
     return await get_current_user(request)
+
+
+def _detail_to_dict(detail) -> Optional[Dict[str, Any]]:
+    """Serialize a detail model to a plain dict, omitting None values.
+    Accepts both Pydantic model instances and raw dicts (backward compat).
+    """
+    if detail is None:
+        return None
+    if isinstance(detail, dict):
+        return detail or None
+    return detail.model_dump(exclude_none=True) or None
 
 
 # ==================== ENDPOINTS ====================
@@ -104,7 +188,12 @@ async def create_investment(data: InvestmentCreate, request: Request):
         "notes": data.notes,
         "documents": data.documents or [],
         "linked_account": data.linked_account,
+        # Category-specific metadata (PRAN, folio, FD number, etc.)
         "type_specific_data": data.type_specific_data or {},
+        # Structured event-detail objects
+        "sale_details": _detail_to_dict(data.sale_details),
+        "maturity_details": _detail_to_dict(data.maturity_details),
+        "withdrawal_details": _detail_to_dict(data.withdrawal_details),
         "is_active": True,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
@@ -283,17 +372,26 @@ async def update_investment(inv_id: str, data: InvestmentUpdate, request: Reques
     )
     if not existing:
         raise HTTPException(status_code=404, detail="Investment not found")
-    
-    update_data = {
-        k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None
-    }
-    # Coerce ISO date strings to datetimes for known date fields
+
+    # Serialize the payload; Pydantic nested models → plain dicts automatically
+    raw = data.model_dump(exclude_unset=True)
+    update_data = {k: v for k, v in raw.items() if v is not None}
+
+    # Coerce ISO date strings to datetimes for top-level date fields
     for date_key in ("maturity_date", "purchase_date"):
         v = update_data.get(date_key)
         if isinstance(v, str) and v:
             update_data[date_key] = datetime.fromisoformat(v.replace("Z", "+00:00"))
+
+    # Normalize detail objects: Pydantic already serialized them to dicts above;
+    # filter out completely-empty dicts (e.g. user cleared a section)
+    for detail_key in ("sale_details", "maturity_details", "withdrawal_details"):
+        if detail_key in update_data and isinstance(update_data[detail_key], dict):
+            if not update_data[detail_key]:
+                update_data[detail_key] = None
+
     update_data["updated_at"] = datetime.now(timezone.utc)
-    
+
     await db.investments.update_one({"investment_id": inv_id}, {"$set": update_data})
     return await db.investments.find_one({"investment_id": inv_id}, {"_id": 0})
 
