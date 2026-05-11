@@ -21,12 +21,14 @@ export interface CategoryConfig {
   iconBg: string;        // background tint behind icon
   subtitleKey?: string;  // dot path inside investment for the card subtitle
   fields: FieldDef[];
-  bottomSection: 'sale' | 'maturity' | 'none';
-  // Optional per-category overrides for the Sale/Maturity sub-sections.
-  // When omitted, the default field-sets in SaleDetailsSection /
-  // MaturityDetailsSection are used (preserving MF/ETF/REIT/FD behaviour).
+  bottomSection: 'sale' | 'maturity' | 'withdrawal' | 'none';
+  // Optional per-category overrides for the sub-sections.
+  // When omitted, the default field-sets in the respective Section components are used.
   saleFields?: FieldDef[];
   maturityFields?: FieldDef[];
+  withdrawalFields?: FieldDef[];
+  // Set true for investment types where Gain/Loss is not meaningful (e.g. insurance).
+  hideGainLoss?: boolean;
 }
 
 export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
@@ -204,6 +206,133 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
     ],
   },
+
+  epf: {
+    name: 'EPF',
+    iconName: 'briefcase',
+    iconColor: '#4285F4',
+    iconBg: '#4285F420',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.uan', label: 'UAN Number', type: 'text', placeholder: '101234567890' },
+      { key: 'type_specific_data.employee_share', label: 'Employee Share', type: 'currency' },
+      { key: 'type_specific_data.employer_share', label: 'Employer Share', type: 'currency' },
+      { key: 'invested_amount', label: 'Total Balance', type: 'currency' },
+      { key: 'purchase_date', label: 'Last Updated', type: 'date' },
+    ],
+    bottomSection: 'withdrawal',
+  },
+
+  gold: {
+    name: 'Gold',
+    iconName: 'medal',
+    iconColor: '#F59E0B',
+    iconBg: '#F59E0B20',
+    subtitleKey: 'type_specific_data.purity',
+    fields: [
+      { key: 'type_specific_data.quantity', label: 'Quantity', type: 'text', placeholder: 'e.g., 50 grams' },
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'type_specific_data.purchase_price_per_unit', label: 'Purchase Price (per gm)', type: 'currency' },
+      { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+      { key: 'type_specific_data.current_price_per_unit', label: 'Current Price (per gm)', type: 'currency' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.units_sold', label: 'Quantity Sold', type: 'text' },
+      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  silver: {
+    name: 'Silver',
+    iconName: 'diamond',
+    iconColor: '#9E9E9E',
+    iconBg: '#9E9E9E20',
+    subtitleKey: 'type_specific_data.purity',
+    fields: [
+      { key: 'type_specific_data.quantity', label: 'Quantity', type: 'text', placeholder: 'e.g., 2 kg' },
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'type_specific_data.purchase_price_per_unit', label: 'Purchase Price (per kg)', type: 'currency' },
+      { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+      { key: 'type_specific_data.current_price_per_unit', label: 'Current Price (per kg)', type: 'currency' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.units_sold', label: 'Quantity Sold', type: 'text' },
+      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  // LIC and general insurance policies (with maturity value)
+  lic: {
+    name: 'LIC',
+    iconName: 'shield-checkmark',
+    iconColor: '#2196F3',
+    iconBg: '#2196F320',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.policy_number', label: 'Policy Number', type: 'text', placeholder: '9876543210' },
+      { key: 'invested_amount', label: 'Premium Amount (Yearly)', type: 'currency' },
+      { key: 'type_specific_data.sum_assured', label: 'Sum Assured', type: 'currency' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
+      { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
+      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed / Matured' },
+    ],
+    bottomSection: 'maturity',
+    maturityFields: [
+      { key: 'maturity_details.date_of_maturity', label: 'Date of Maturity', type: 'date' },
+      { key: 'maturity_details.maturity_amount', label: 'Maturity Amount', type: 'currency' },
+    ],
+  },
+
+  // Alias so existing investments saved as 'insurance' also get the LIC-style form
+  insurance: {
+    name: 'LIC',
+    iconName: 'shield-checkmark',
+    iconColor: '#2196F3',
+    iconBg: '#2196F320',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.policy_number', label: 'Policy Number', type: 'text', placeholder: '9876543210' },
+      { key: 'invested_amount', label: 'Premium Amount (Yearly)', type: 'currency' },
+      { key: 'type_specific_data.sum_assured', label: 'Sum Assured', type: 'currency' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
+      { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
+      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed / Matured' },
+    ],
+    bottomSection: 'maturity',
+    maturityFields: [
+      { key: 'maturity_details.date_of_maturity', label: 'Date of Maturity', type: 'date' },
+      { key: 'maturity_details.maturity_amount', label: 'Maturity Amount', type: 'currency' },
+    ],
+  },
+
+  // Pure term insurance — no surrender or maturity value
+  term_insurance: {
+    name: 'Term Insurance',
+    iconName: 'person-circle',
+    iconColor: '#7C4DFF',
+    iconBg: '#7C4DFF20',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.policy_number', label: 'Policy Number', type: 'text', placeholder: '100200300400' },
+      { key: 'type_specific_data.sum_assured', label: 'Sum Assured', type: 'currency' },
+      { key: 'invested_amount', label: 'Premium (Yearly)', type: 'currency' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
+      { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
+      { key: 'type_specific_data.nominee', label: 'Nominee', type: 'text', placeholder: 'Spouse / Child / Parent' },
+      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed' },
+    ],
+    bottomSection: 'none',
+  },
+
+// ── End of CATEGORY_CONFIG ──
 };
 
 // Fallback config for any investment_type without a dedicated schema yet.

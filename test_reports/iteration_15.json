@@ -1,0 +1,76 @@
+{
+  "summary": "Frontend testing of 5 new investment forms (EPF, Gold, Silver, LIC, Term Insurance) and verification of existing forms (PPF, NPS). All new forms render correctly with proper fields, icons, sections, and hideGainLoss behavior.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "select-type screen - LIC entry",
+        "issues": ["LIC shows as 'LIC / Endowment' (not just 'LIC') - minor label difference, may be intentional"]
+      }
+    ]
+  },
+  "test_results": {
+    "EPF form": {
+      "blue_briefcase_icon": "PASS - visible in screenshot",
+      "fields_UAN_EmployeeShare_EmployerShare_TotalBalance_LastUpdated": "PASS",
+      "withdrawal_details_section": "PASS - 'WITHDRAWAL DETAILS (IF ANY)' in purple uppercase",
+      "withdrawal_fields": "PASS - Date of Withdrawal + Amount Received present",
+      "hideGainLoss": "PASS - Gain/Loss row not shown"
+    },
+    "Gold form": {
+      "amber_medal_icon": "PASS - amber/gold colored medal icon",
+      "fields": "PASS - Quantity, Invested Amount, Purchase Price (per gm), Purchase Date, Current Price (per gm), Current Value",
+      "sale_details_section": "PASS - 'SALE DETAILS (IF ANY)' shown",
+      "sale_fields": "PASS - Date of Sale, Quantity Sold, Price at which Sold, Amount Received",
+      "gainLoss_shown": "PASS - Gain/Loss row visible"
+    },
+    "Silver form": {
+      "gray_diamond_icon": "PASS - gray diamond icon",
+      "fields": "PASS - Quantity, Invested Amount, Purchase Price (per kg), Purchase Date, Current Price (per kg), Current Value",
+      "sale_details_section": "PASS - 'SALE DETAILS (IF ANY)' shown with 4 fields including Quantity Sold",
+      "gainLoss_shown": "PASS"
+    },
+    "LIC form": {
+      "shield_icon": "PASS - blue shield-checkmark icon",
+      "fields": "PASS - Policy Number, Premium Amount (Yearly), Sum Assured, Start Date, Maturity Date, Status",
+      "maturity_details_section": "PASS - 'MATURITY DETAILS' shown",
+      "maturity_fields": "PASS - Date of Maturity + Maturity Amount",
+      "hideGainLoss": "PASS - Gain/Loss row not shown"
+    },
+    "Term Insurance form": {
+      "person_circle_icon": "PASS - purple person-circle icon",
+      "fields": "PASS - Policy Number, Sum Assured, Premium (Yearly), Start Date, Maturity Date, Nominee, Status",
+      "no_bottom_section": "PASS - no sale/maturity/withdrawal section",
+      "hideGainLoss": "PASS - Gain/Loss not shown"
+    },
+    "select-type screen": {
+      "EPF_briefcase_blue": "PASS",
+      "Gold_medal_amber": "PASS",
+      "Silver_diamond_gray": "PASS",
+      "LIC_separate": "PASS - LIC/Endowment shown separately",
+      "TermInsurance_separate": "PASS - Term Insurance shown separately"
+    },
+    "Existing forms": {
+      "PPF_inv_3e4f962b7b4a": "PASS - loads correctly",
+      "NPS_inv_548b2e367a11": "PASS - loads correctly"
+    },
+    "Save API": {
+      "EPF_POST_api_investments": "PASS - returns investment_id with investment_type=epf",
+      "LIC_POST_api_investments": "PASS - returns investment_id with investment_type=lic"
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "100%"},
+  "seed_data_creation": "Created and deleted test EPF and LIC investments via API",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 5 new investment forms (EPF, Gold, Silver, LIC, Term Insurance) verified working. EPF: blue briefcase, withdrawal details, hideGainLoss. Gold/Silver: sale details, Gain/Loss visible. LIC: shield icon, maturity details, hideGainLoss. Term Insurance: no bottom section, no Gain/Loss. Existing PPF and NPS forms unaffected. Save API works for EPF and LIC via direct API calls (POST /api/investments with investment_type=epf/lic)."
+}

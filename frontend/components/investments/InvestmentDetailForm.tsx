@@ -28,6 +28,7 @@ import { GainLossDisplay } from './sections/GainLossDisplay';
 import { DynamicFieldList } from './sections/DynamicFieldList';
 import { SaleDetailsSection } from './sections/SaleDetailsSection';
 import { MaturityDetailsSection } from './sections/MaturityDetailsSection';
+import { WithdrawalDetailsSection } from './sections/WithdrawalDetailsSection';
 import { NotesSection } from './sections/NotesSection';
 import { SaveButton } from './sections/SaveButton';
 import { getCategoryConfig, getByPath } from './categoryFields';
@@ -126,15 +127,17 @@ export const InvestmentDetailForm = ({
           />
 
           {/* SECTION 3 — Gain / Loss — inside its own card (card bg + radius via GainLossDisplay) */}
-          <View style={{ marginHorizontal: 16, marginBottom: 10 }}>
-            <GainLossDisplay
-              invested={Number(draft.invested_amount) || 0}
-              current={Number(draft.current_value) || 0}
-              colors={colors}
-            />
-          </View>
+          {!config.hideGainLoss && (
+            <View style={{ marginHorizontal: 16, marginBottom: 10 }}>
+              <GainLossDisplay
+                invested={Number(draft.invested_amount) || 0}
+                current={Number(draft.current_value) || 0}
+                colors={colors}
+              />
+            </View>
+          )}
 
-          {/* SECTION 4 — Sale or Maturity sub-section, depending on category */}
+          {/* SECTION 4 — Sale, Maturity, or Withdrawal sub-section per category */}
           {config.bottomSection === 'sale' && (
             <SaleDetailsSection
               values={draft}
@@ -151,6 +154,15 @@ export const InvestmentDetailForm = ({
               editable={editable}
               colors={colors}
               fields={config.maturityFields}
+            />
+          )}
+          {config.bottomSection === 'withdrawal' && (
+            <WithdrawalDetailsSection
+              values={draft}
+              onChange={setDraft}
+              editable={editable}
+              colors={colors}
+              fields={config.withdrawalFields}
             />
           )}
 
