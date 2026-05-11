@@ -20,9 +20,24 @@ export const InvestmentSummaryCard = ({
   subtitle,
   colors,
 }: InvestmentSummaryCardProps) => (
-  <View style={[styles.card, { backgroundColor: colors.card }]} testID="invdetail-summary-card">
+  <View
+    style={[
+      styles.card,
+      {
+        backgroundColor: colors.card,
+        borderLeftWidth: 3,
+        borderLeftColor: iconColor,
+        shadowColor: iconColor,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        elevation: 3,
+      },
+    ]}
+    testID="invdetail-summary-card"
+  >
     <View style={[styles.iconBox, { backgroundColor: iconBg }]}>
-      <Ionicons name={iconName as any} size={28} color={iconColor} />
+      <Ionicons name={iconName as any} size={30} color={iconColor} />
     </View>
     <View style={styles.textCol}>
       <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>
@@ -42,19 +57,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    padding: 16,
-    borderRadius: 16,
-    marginHorizontal: 20,
-    marginBottom: 16,
+    paddingVertical: 18,
+    paddingRight: 18,
+    paddingLeft: 16,
+    borderRadius: 18,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
   },
   iconBox: {
-    width: 56,
-    height: 56,
+    width: 54,
+    height: 54,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   textCol: { flex: 1 },
-  name: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  name: { fontSize: 17, fontWeight: '700', marginBottom: 3, lineHeight: 22 },
   subtitle: { fontSize: 13, fontWeight: '500' },
 });

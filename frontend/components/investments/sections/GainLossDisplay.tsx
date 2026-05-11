@@ -22,7 +22,7 @@ export const GainLossDisplay = ({
   const color = positive ? '#00E676' : '#FF5252';
 
   return (
-    <View style={styles.row} testID="invdetail-gain-loss-row">
+    <View style={[styles.row, { backgroundColor: colors.card }]} testID="invdetail-gain-loss-row">
       <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
       <Text style={[styles.value, { color }]} testID="invdetail-gain-loss-value">
         {positive ? '+' : '-'}
@@ -41,10 +41,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 16,
   },
-  label: { fontSize: 14, fontWeight: '500' },
-  value: { fontSize: 15, fontWeight: '700', textAlign: 'right' },
+  label: { fontSize: 13, fontWeight: '500' },
+  value: { fontSize: 16, fontWeight: '700', textAlign: 'right' },
   pct: { fontSize: 13, fontWeight: '600' },
 });

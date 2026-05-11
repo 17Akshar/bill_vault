@@ -21,18 +21,20 @@ interface MaturityDetailsSectionProps {
 
 export const MaturityDetailsSection = ({ fields, ...rest }: MaturityDetailsSectionProps) => (
   <View>
-    <Text style={[styles.heading, { color: '#A78BFA' }]}>Maturity Details</Text>
+    <Text style={styles.heading}>Maturity Details</Text>
     <DynamicFieldList fields={fields || MATURITY_FIELDS} {...rest} />
   </View>
 );
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 14,
+    color: '#A78BFA',
+    fontSize: 11,
     fontWeight: '700',
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 10,
-    letterSpacing: 0.3,
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });

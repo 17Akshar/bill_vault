@@ -198,23 +198,28 @@ const apStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: { borderRadius: 14, marginHorizontal: 20, marginBottom: 16, overflow: 'hidden' },
+  container: {
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    minHeight: 48,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    minHeight: 56,
   },
-  label: { fontSize: 14, fontWeight: '500', flex: 1 },
-  valueRO: { fontSize: 15, fontWeight: '600', textAlign: 'right', maxWidth: '60%' },
+  label: { fontSize: 13, fontWeight: '400', flex: 1, lineHeight: 18 },
+  valueRO: { fontSize: 15, fontWeight: '700', textAlign: 'right', maxWidth: '60%' },
   input: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'right',
-    paddingVertical: 0,
+    paddingVertical: 2,
     paddingHorizontal: 0,
     maxWidth: '60%',
   },

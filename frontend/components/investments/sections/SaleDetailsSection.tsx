@@ -23,18 +23,20 @@ interface SaleDetailsSectionProps {
 
 export const SaleDetailsSection = ({ fields, ...rest }: SaleDetailsSectionProps) => (
   <View>
-    <Text style={[styles.heading, { color: '#A78BFA' }]}>Sale Details (if any)</Text>
+    <Text style={styles.heading}>Sale Details (if any)</Text>
     <DynamicFieldList fields={fields || SALE_FIELDS} {...rest} />
   </View>
 );
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 14,
+    color: '#A78BFA',
+    fontSize: 11,
     fontWeight: '700',
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 10,
-    letterSpacing: 0.3,
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });

@@ -34,10 +34,10 @@ export const SaveButton = ({
 
 const styles = StyleSheet.create({
   btn: {
-    height: 54,
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 32,
+    height: 52,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',

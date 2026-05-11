@@ -101,7 +101,7 @@ export const InvestmentDetailForm = ({
         />
 
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -125,8 +125,8 @@ export const InvestmentDetailForm = ({
             accounts={accounts}
           />
 
-          {/* SECTION 3 — Gain / Loss row sits inside its own light wrapper */}
-          <View style={{ paddingHorizontal: 20, marginBottom: 8 }}>
+          {/* SECTION 3 — Gain / Loss — inside its own card (card bg + radius via GainLossDisplay) */}
+          <View style={{ marginHorizontal: 16, marginBottom: 10 }}>
             <GainLossDisplay
               invested={Number(draft.invested_amount) || 0}
               current={Number(draft.current_value) || 0}
@@ -192,10 +192,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 50,
-    marginHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 32,
+    height: 52,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 40,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#FF5252',

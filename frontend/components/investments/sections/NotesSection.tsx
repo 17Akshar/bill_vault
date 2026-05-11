@@ -11,7 +11,7 @@ interface NotesSectionProps {
 
 export const NotesSection = ({ value, onChange, editable, colors }: NotesSectionProps) => (
   <View style={styles.wrap}>
-    <Text style={[styles.heading, { color: colors.text }]}>Notes</Text>
+    <Text style={styles.heading}>Notes</Text>
     <View style={[styles.box, { backgroundColor: colors.card }]} testID="invdetail-notes-box">
       {editable ? (
         <TextInput
@@ -39,19 +39,21 @@ export const NotesSection = ({ value, onChange, editable, colors }: NotesSection
 );
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 4 },
+  wrap: { marginTop: 0 },
   heading: {
-    fontSize: 14,
+    color: '#A78BFA',
+    fontSize: 11,
     fontWeight: '700',
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 10,
-    letterSpacing: 0.3,
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   box: {
-    borderRadius: 14,
-    padding: 14,
-    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
     marginBottom: 16,
     minHeight: 90,
   },

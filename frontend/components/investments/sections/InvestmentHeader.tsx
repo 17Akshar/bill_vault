@@ -20,7 +20,15 @@ export const InvestmentHeader = ({
   saveLabel = 'Save',
   colors,
 }: InvestmentHeaderProps) => (
-  <View style={styles.header}>
+  <View
+    style={[
+      styles.header,
+      {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+      },
+    ]}
+  >
     <TouchableOpacity onPress={onBack} style={styles.backBtn} testID="invdetail-back-btn">
       <Ionicons name="arrow-back" size={24} color={colors.text} />
     </TouchableOpacity>
@@ -50,11 +58,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   backBtn: { padding: 4 },
-  title: { flex: 1, fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginHorizontal: 12 },
+  title: { flex: 1, fontSize: 18, fontWeight: '700', textAlign: 'center', marginHorizontal: 12 },
   saveLink: { width: 56, alignItems: 'flex-end', padding: 4 },
   saveText: { fontSize: 15, fontWeight: '600' },
 });
