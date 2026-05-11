@@ -834,6 +834,42 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 25 Update (2026-05-11) — 5 New Investment Category Detail Forms
+
+### Added: EPF, Gold, Silver, LIC, Term Insurance forms (frontend only)
+
+**New file:** `WithdrawalDetailsSection.tsx`
+- Shows "WITHDRAWAL DETAILS (IF ANY)" heading (uppercase purple, same style as Sale/Maturity)
+- Defaults to `sale_details.date_of_withdrawal` + `sale_details.amount_received` fields
+
+**`categoryFields.ts` — 6 new configs added:**
+- `epf`: blue briefcase, 5 fields (UAN Number, Employee/Employer Share, Total Balance, Last Updated), `bottomSection: 'withdrawal'`, `hideGainLoss: true`
+- `gold`: amber medal, 6 fields (Quantity, Invested Amount, Purchase Price/per gm, Purchase Date, Current Price/per gm, Current Value), `bottomSection: 'sale'` with Quantity Sold + Price at which Sold
+- `silver`: gray diamond, same pattern as gold but "per kg" labels, `bottomSection: 'sale'`
+- `lic`: blue shield-checkmark, 6 fields (Policy Number, Premium/Yearly, Sum Assured, Start/Maturity Date, Status), `bottomSection: 'maturity'`, `hideGainLoss: true`
+- `insurance`: alias for `lic` (backward compat for existing data)
+- `term_insurance`: purple person-circle, 7 fields (adds Nominee + Status), `bottomSection: 'none'`, `hideGainLoss: true`
+
+**`CategoryConfig` interface additions:**
+- `'withdrawal'` added to `bottomSection` union
+- `withdrawalFields?: FieldDef[]` added
+- `hideGainLoss?: boolean` added (EPF, LIC, Term Insurance)
+
+**`InvestmentDetailForm.tsx` changes:**
+- Imports `WithdrawalDetailsSection`
+- GainLossDisplay wrapped in `!config.hideGainLoss` guard
+- Added `bottomSection === 'withdrawal'` rendering block
+
+**`select-type.tsx` changes:**
+- EPF: `wallet/green` → `briefcase/blue (#4285F4)`
+- Gold: `diamond/orange` → `medal/amber (#F59E0B)`
+- Silver: `medal/gray` → `diamond/gray (#9E9E9E)`
+- `insurance` replaced by 2 items: `lic` (LIC/Endowment) + `term_insurance` (Term Insurance)
+
+**Testing:** 24/24 frontend tests passed (100%)
+
+---
+
 ## Session 24 Update (2026-05-11) — Investment Detail Forms UI Enhancement
 
 ### UI Improvements Applied (frontend only, no backend changes)
