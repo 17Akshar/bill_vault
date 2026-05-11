@@ -834,6 +834,25 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 21 Update (2026-05-11) — PPFDetailScreen Updated
+
+### PPF Detail Form Updated to Match Reference Design
+Modified only `/app/frontend/components/investments/categoryFields.ts` (PPF config) and `/app/frontend/app/investments/select-type.tsx` (PPF icon):
+
+**Changes:**
+- Icon: `shield-checkmark` (cyan) → `home` (blue `#4A90D9`) matching reference design
+- Field label: "Invested Amount" → "Invested Amount (Yearly)"
+- Field label: "Interest Rate" (with hint) → "Interest Rate (p.a.)" (inline label)
+- All other PPF fields preserved: Account Number, Start Date, Maturity Date, Linked Account (account_picker)
+- Maturity Details section: Date of Maturity + Maturity Amount (already correct)
+- Save / Edit / Delete all functional via existing InvestmentDetailForm framework
+
+**NOT modified:** Dashboard, Transactions, Budget module, existing navigation, other investment forms (MF, ETF, REIT, FD, Bonds, NPS, RD, Corporate Deposit)
+
+**Testing:** 14/14 PPF frontend checks passed (100%)
+
+---
+
 ## Session 20 Update (2026-05-10) — Category-specific Detail Form on Add
 
 User asked: when a category is selected from `/investments/select-type`, open the corresponding detail form screen (MutualFundDetailScreen, ETFDetailScreen, REITDetailScreen, FDDetailScreen, BondsDetailScreen, PPFDetailScreen, NPSDetailScreen). Reuse the existing Investments navigation flow. Don't modify unrelated modules.
