@@ -477,7 +477,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     ],
   },
 
-  // Crypto / Others Investments
+  // Crypto / Cryptocurrency
   crypto: {
     name: 'Cryptocurrency',
     iconName: 'logo-bitcoin',
@@ -493,6 +493,25 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     saleFields: [
       { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
       { key: 'sale_details.sale_price', label: 'Sale Price', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  // P2P Lending (Others Investments)
+  p2p_lending: {
+    name: 'Others Investments',
+    iconName: 'people-circle',
+    iconColor: '#26C6A8',
+    iconBg: '#26C6A820',
+    fields: [
+      { key: 'type_specific_data.platform_name', label: 'Investment Platform Name', type: 'text', placeholder: 'Faircent / LenDenClub / Liquiloans' },
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'purchase_date', label: 'Invested Date', type: 'date' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Closure', type: 'date' },
       { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
     ],
   },
