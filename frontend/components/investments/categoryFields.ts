@@ -464,6 +464,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconColor: '#7C4DFF',
     iconBg: '#7C4DFF20',
     fields: [
+      { key: 'name', label: 'Fund Name', type: 'text', placeholder: 'ABC AIF Fund' },
       { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
       { key: 'purchase_date', label: 'Invested Date', type: 'date' },
       { key: 'type_specific_data.fund_type', label: 'Fund Type', type: 'text', placeholder: 'Alternate Investment Fund' },
