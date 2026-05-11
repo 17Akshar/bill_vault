@@ -381,6 +381,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     subtitleKey: 'type_specific_data.vehicle_type',
     hideGainLoss: true,
     fields: [
+      { key: 'name', label: 'Vehicle Name', type: 'text', placeholder: 'Honda City' },
       { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
       { key: 'invested_amount', label: 'Purchase Price', type: 'currency' },
       { key: 'current_value', label: 'Current Value', type: 'currency' },
