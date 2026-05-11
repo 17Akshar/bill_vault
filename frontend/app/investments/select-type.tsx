@@ -93,8 +93,8 @@ const INVESTMENT_GROUPS = [
         id: 'nps',
         name: 'NPS',
         description: 'National Pension Scheme',
-        icon: 'ribbon',
-        iconColor: '#00BCD4',
+        icon: 'mail-open',
+        iconColor: '#10B981',
       },
       {
         id: 'epf',

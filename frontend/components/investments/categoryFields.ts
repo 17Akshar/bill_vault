@@ -186,20 +186,23 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
 
   nps: {
     name: 'NPS',
-    iconName: 'ribbon',
-    iconColor: '#4CAF50',
-    iconBg: '#4CAF5020',
+    iconName: 'mail-open',
+    iconColor: '#10B981',
+    iconBg: '#10B98120',
     subtitleKey: 'type_specific_data.tier',
     fields: [
       { key: 'type_specific_data.pran', label: 'PRAN Number', type: 'text', placeholder: '110012345678' },
       { key: 'type_specific_data.tier', label: 'Tier', type: 'text', placeholder: 'Tier 1 / Tier 2' },
-      { key: 'type_specific_data.fund_manager', label: 'Pension Fund Manager', type: 'text', placeholder: 'HDFC Pension Fund' },
-      { key: 'type_specific_data.asset_allocation', label: 'Asset Allocation', type: 'text', placeholder: '75% Equity, 25% Debt' },
-      { key: 'invested_amount', label: 'Total Invested', type: 'currency' },
-      { key: 'purchase_date', label: 'Account Opened', type: 'date' },
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'type_specific_data.asset_allocation', label: 'Allocation', type: 'text', placeholder: 'Aggressive / Moderate / Conservative' },
       { key: 'current_value', label: 'Current Value', type: 'currency' },
+      { key: 'linked_account', label: 'Linked Account', type: 'account_picker', placeholder: 'Select bank account' },
     ],
-    bottomSection: 'none',
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_withdrawal', label: 'Date of Withdrawal', type: 'date' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
   },
 };
 

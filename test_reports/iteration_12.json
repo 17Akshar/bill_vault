@@ -1,0 +1,39 @@
+{
+  "summary": "Tested NPS-specific changes in categoryFields.ts and select-type.tsx. All 14 targeted checks passed on mobile viewport (390x844).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_12.json"],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A", "frontend": "100% (all 18 NPS checks passed)" },
+  "test_credentials": "Single-user mode: POST /api/auth/single-user (no credentials needed)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "NPS changes fully validated. Auth-bootstrap via fetch /api/auth/single-user then store access_token in localStorage. PPF changes also confirmed still working from iteration_11.",
+  "nps_tests_passed": [
+    "NPS new form (/investments/new?type=nps) loads with teal mail-open envelope icon",
+    "Icon color is teal (#10B981) - confirmed visually in screenshot",
+    "Field: PRAN Number present",
+    "Field: Tier present",
+    "Field: Invested Amount present (NOT 'Total Invested')",
+    "Field: Allocation present (NOT 'Asset Allocation')",
+    "Field: Current Value present",
+    "Field: Linked Account (account picker) present",
+    "NO 'Pension Fund Manager' field",
+    "NO 'Account Opened' field",
+    "Sale Details (if any) section with purple heading present",
+    "Sale Details: Date of Withdrawal field (NOT 'Date of Sale')",
+    "Sale Details: Amount Received field",
+    "Existing NPS detail (/investments/inv_548b2e367a11): Edit button in header",
+    "Existing NPS detail: Delete Investment button at bottom",
+    "Existing NPS detail: shows Invested Amount, Allocation, Linked Account correctly",
+    "View mode shows all 6 fields correctly with data",
+    "NO unwanted legacy fields in any view"
+  ]
+}
