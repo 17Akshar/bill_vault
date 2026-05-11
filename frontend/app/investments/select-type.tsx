@@ -86,8 +86,8 @@ const INVESTMENT_GROUPS = [
         id: 'ppf',
         name: 'PPF',
         description: 'Public Provident Fund',
-        icon: 'shield-checkmark',
-        iconColor: '#FF5722',
+        icon: 'home',
+        iconColor: '#4A90D9',
       },
       {
         id: 'nps',

@@ -166,13 +166,13 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
 
   ppf: {
     name: 'PPF',
-    iconName: 'shield-checkmark',
-    iconColor: '#00BCD4',
-    iconBg: '#00BCD420',
+    iconName: 'home',
+    iconColor: '#4A90D9',
+    iconBg: '#4A90D920',
     fields: [
       { key: 'type_specific_data.ppf_account_number', label: 'Account Number', type: 'text', placeholder: 'PPF1234567890' },
-      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
-      { key: 'type_specific_data.interest_rate', label: 'Interest Rate', type: 'percentage', hint: 'per annum' },
+      { key: 'invested_amount', label: 'Invested Amount (Yearly)', type: 'currency' },
+      { key: 'type_specific_data.interest_rate', label: 'Interest Rate (p.a.)', type: 'percentage' },
       { key: 'purchase_date', label: 'Start Date', type: 'date' },
       { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
       { key: 'linked_account', label: 'Linked Account', type: 'account_picker', placeholder: 'Select bank account' },

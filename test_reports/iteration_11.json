@@ -1,0 +1,36 @@
+{
+  "summary": "Tested PPF-specific changes in categoryFields.ts and select-type.tsx. All targeted changes verified working correctly via Playwright on mobile viewport (390x844).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_11.json"],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested)", "frontend": "100% (all 14 PPF checks passed)"},
+  "test_credentials": "Single-user mode: POST /api/auth/single-user (no credentials needed). Auth bootstrapped via localStorage injection in tests.",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "PPF changes fully validated. The auth-bootstrap issue from iteration_10 was worked around via localStorage injection. Other investment types (Mutual Funds, ETF, FD, Bonds, REIT, RD, Corporate Deposit) verified present and unaffected in select-type screen.",
+  "ppf_tests_passed": [
+    "PPF detail page (inv_3e4f962b7b4a) loads with blue home icon",
+    "Label 'Invested Amount (Yearly)' present in detail view",
+    "Label 'Interest Rate (p.a.)' present in detail view",
+    "Account Number field present",
+    "Maturity Details section (purple heading) present",
+    "Edit button in header present",
+    "Delete Investment button at bottom present",
+    "New PPF form (/investments/new?type=ppf) loads with blue home icon",
+    "New PPF form has 'Invested Amount (Yearly)' label",
+    "New PPF form has 'Interest Rate (p.a.)' label",
+    "Select-type screen shows PPF with home icon",
+    "Other investment types (Mutual Funds, ETF, FD, Bonds) unaffected"
+  ]
+}
