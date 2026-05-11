@@ -422,9 +422,10 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconColor: '#9C27B0',
     iconBg: '#9C27B020',
     fields: [
+      { key: 'name', label: 'Fund Name', type: 'text', placeholder: 'XYZ Private Equity Fund' },
       { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
       { key: 'purchase_date', label: 'Invested Date', type: 'date' },
-      { key: 'type_specific_data.fund_type', label: 'Fund Type', type: 'text', placeholder: 'Private Equity' },
+      { key: 'type_specific_data.fund_type', label: 'Investment Type', type: 'text', placeholder: 'Private Equity' },
       { key: 'current_value', label: 'Current Value', type: 'currency' },
     ],
     bottomSection: 'sale',
