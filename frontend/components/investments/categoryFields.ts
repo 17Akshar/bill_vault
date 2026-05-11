@@ -479,11 +479,12 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
 
   // Crypto / Others Investments
   crypto: {
-    name: 'Others Investments',
+    name: 'Cryptocurrency',
     iconName: 'logo-bitcoin',
     iconColor: '#F7931A',
     iconBg: '#F7931A20',
     fields: [
+      { key: 'name', label: 'Cryptocurrency Name', type: 'text', placeholder: 'Bitcoin' },
       { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
       { key: 'purchase_date', label: 'Invested Date', type: 'date' },
       { key: 'current_value', label: 'Current Value', type: 'currency' },
@@ -491,7 +492,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     bottomSection: 'sale',
     saleFields: [
       { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
-      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.sale_price', label: 'Sale Price', type: 'currency' },
       { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
     ],
   },
