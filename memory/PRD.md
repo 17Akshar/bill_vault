@@ -834,6 +834,33 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 23 Update (2026-05-11) — Investments Database Schema v2.0
+
+### Scalable Category-Specific Investment Detail Schema
+
+Modified only `investments.py` (backend). No frontend, transactions, or user DB changes.
+
+**New Pydantic models added (all with `extra='allow'` for backward compat):**
+- `SaleDetails` — market investment exits (date_of_sale, units_sold, sold_nav, sale_price, amount_received, tax_deducted, date_of_withdrawal [NPS compat])
+- `MaturityDetails` — fixed-income maturity (date_of_maturity, maturity_amount, amount_received, tds_deducted, renewed, renewal_investment_id)
+- `WithdrawalDetails` — government scheme withdrawals (date_of_withdrawal, withdrawal_type, amount_received, annuity_amount, lumpsum_amount, tax_deducted)
+
+**InvestmentCreate updated:** now accepts + persists all 3 detail objects at creation time (previously missing entirely)
+
+**InvestmentUpdate updated:** `sale_details` and `maturity_details` now use typed models (was raw Dict); `withdrawal_details` added as new field
+
+**`_detail_to_dict()` helper added:** normalizes Pydantic model instances and raw dicts for Firestore storage
+
+**Status values added:** `withdrawn`, `partially_withdrawn` for NPS/EPF lifecycle
+
+**NPS backward compat preserved:** `sale_details.date_of_withdrawal` key still accepted (NPS form uses it)
+
+**Documentation updated:** `INVESTMENTS_DATABASE_SCHEMA.md` (v2.0) + `INVESTMENTS_SCHEMA_QUICK_REF.md`
+
+**Testing:** 19/19 backend API tests passed (100%)
+
+---
+
 ## Session 22 Update (2026-05-11) — NPSDetailScreen Updated
 
 ### NPS Detail Form Updated to Match Reference Design
