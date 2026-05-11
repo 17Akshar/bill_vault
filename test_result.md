@@ -668,6 +668,54 @@ frontend:
         agent: "testing"
         comment: "FAB '+' on Dashboard opens 'Add to Budget' modal. Modal shows X close button (top-left), title 'Add to Budget' centered, and two cards: 'Add Category Budget — Set budget for a category' with folder-plus icon, and 'Set Savings Goal — Create a savings target' with target icon. Each card has a chevron-right indicator and is tappable to navigate to its respective screen."
 
+  - task: "HomeScreen (NEW landing tab)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/screens/HomeScreen.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New initial route. Greeting + Budget hero card + Lend&Borrowed snapshot + Quick Actions grid. Tap cards/quick actions navigates to existing module screens."
+
+  - task: "MoreScreen (premium dark sectioned)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/screens/MoreScreen.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Premium dark full-tab screen. Sections: PROFILE/PRODUCTIVITY/FINANCIAL TOOLS/ACCOUNTS & STRUCTURE/SETTINGS/SUPPORT. Only Budget, Lend & Borrowed, Currency navigate to real screens; rest show 'Coming Soon' alert."
+
+  - task: "Bottom Tab navigation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/index.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Root Stack -> Tabs (Home/Transactions/Wealth/Insights/More) as initial route. Existing module screens pushed on top (hides tab bar). Back arrow returns to More tab."
+
+  - task: "PlaceholderTabs (Transactions / Wealth / Insights)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/screens/PlaceholderTabs.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Three placeholder tabs with 'Coming Soon'."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
@@ -675,9 +723,17 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Full backend regression (all 22 endpoints — verify no regression from restructure)"
+    - "HomeScreen (NEW landing tab)"
+    - "MoreScreen (premium dark sectioned)"
+    - "Bottom Tab navigation"
+    - "PlaceholderTabs (Transactions / Wealth / Insights)"
+    - "More -> Financial Tools -> Budget end-to-end navigation"
+    - "More -> Financial Tools -> Lend & Borrowed end-to-end navigation"
+    - "Back navigation from BudgetDashboard / LendBorrowDashboard returns to More tab"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
@@ -695,3 +751,5 @@ agent_communication:
     message: "Lend & Borrowed (Loans) endpoints regression complete (2026). 96/96 assertions passed across all 5 new tasks. Coverage: (1) GET /api/loans no-filter returns array with all 10 expected keys per item; type=lent/borrowed filters correctly; type=invalid -> 400. (2) GET /api/loans/summary returns all 8 keys; consistency verified (total_lent matches sum of lent loan amounts; total_lent_remaining = total_lent - sum(payments); net_position = total_lent_remaining - total_borrowed_remaining). (3) POST /api/loans happy lent loan with full payload returns status=active/total_paid=0/remaining=amount; amount=0/-100 -> 400; type='other' -> 400; missing required -> 422. (4) GET /loans/{id} returns embedded payments[]; invalid id -> 400; valid-format unknown -> 404. PUT /loans/{id} updates fields; empty body -> 400; invalid -> 400; unknown -> 404. DELETE /loans/{id} cascade verified (created loan 4000 with payments 1000+500, deleted loan, GET -> 404, summary's total_lent_remaining decreased by exactly 2500 confirming payments cascade-deleted). (5) Auto-status flow: 10000 loan + 3000 payment -> partial; +7000 -> settled; payments[] has 2 entries. Validation: amount=-50/0 -> 400; invalid loan id -> 400; unknown loan id -> 404. DELETE payment reverts status correctly (settled -> partial -> active). DELETE validation: invalid loan/payment id -> 400; unknown payment id -> 404. All 5 loan tasks marked working=true, needs_retesting=false. Cleanup: all 5 created loans deleted. No bugs found."
   - agent: "testing"
     message: "Comprehensive regression run v2 (2026): 106/107 assertions passed across all 19 endpoint scenarios. ONE CRITICAL BUG FOUND: PUT /api/savings-goals/{goal_id} crashes with HTTP 500 when payload includes target_date. Backend stack trace shows 'bson.errors.InvalidDocument: cannot encode object: datetime.date(2027, 6, 30)'. Same root cause that was previously patched in POST /savings-goals (server.py lines 351-352) is missing in update_savings_goal() (~line 364). Fix: after building update_data, convert date->datetime: `if 'target_date' in update_data and isinstance(update_data['target_date'], date) and not isinstance(update_data['target_date'], datetime): update_data['target_date'] = datetime.combine(update_data['target_date'], datetime.min.time())`. All other endpoints (root, categories CRUD+seed idempotency, budget GET/POST 404/200 lifecycle, category-budgets full CRUD with dup-rejection, savings-goals GET/POST/DELETE, transactions full CRUD with multi-filter, budget-summary aggregation against real transactions including per-category mapping, import-budget with 404 source-empty / 200 success-with-spent-reset / 400 dup-target) all pass and aggregate values verified end-to-end (income=50000, expenses=3500, savings=46500, savings_rate=93.0). Test data cleaned up. Did NOT modify production code; main agent should fix the PUT savings-goal date conversion."
+  - agent: "testing"
+    message: "Full backend smoke regression after frontend navigation restructure (2026). Ran /app/backend_smoke_regression.py against public REACT_APP_BACKEND_URL/api. RESULT: 93/93 assertions passed across all 22 endpoints. NO REGRESSIONS DETECTED. Coverage: (1) GET / root returns message. (2) GET /categories non-empty + POST /categories/seed idempotent (count unchanged). (3+4) GET/POST /budget upsert preserves total_budget/currency. (5) /category-budgets full CRUD round-trip on month=7/year=2099 (POST→PUT amount=6500→DELETE). (6) /savings-goals POST→PUT(with target_date='2028-06-30')→DELETE — confirms date→datetime conversion still works on both POST and PUT, no BSON errors. (7) /transactions POST income(50000)+POST expense(1200)+GET by id+cleanup. (8) /budget-summary?month=7&year=2099 returns all 11 keys; income=50000, expenses=1200 match seeded transactions. (9) /import-budget: 404 when source month empty + 400 when target has data. (10) /budget/templates returns exactly 4 templates with ids {student,family,saver,professional}. (11) /budget/apply-template student to clean month=8/year=2099 → created_count=5, skipped_count=0, verified 5 budgets present, cleanup leaves 0. (12) /loans + /loans/summary returns lists/8-key summary. (13) /loans POST lent(8000)+borrowed(3000)→GET embedded payments[]→PUT amount=8500. (14+15) Payment lifecycle on 8500 loan: pay 4000 → loan.status=partial, remaining=4500; pay 4500 → settled, remaining=0; DELETE second payment → reverts to partial; DELETE first payment → reverts to active. Full cleanup: all test transactions, loans, category budgets, and savings goals deleted; baseline budget restored. Backend logs clean (no 500s, no BSON errors). All tasks in current_focus regression confirmed working. Marked needs_retesting=false on backend tasks that had retest pending (none currently needed updating since all were already false)."
