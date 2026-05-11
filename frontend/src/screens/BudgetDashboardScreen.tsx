@@ -195,10 +195,10 @@ export const BudgetDashboardScreen: React.FC<BudgetDashboardScreenProps> = ({ na
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
-            onPress={() => navigation?.navigate?.('MoreMenu')}
+            onPress={() => navigation?.navigate?.('BudgetTemplates')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Feather name="grid" size={22} color={COLORS.textPrimary} />
+            <Feather name="zap" size={20} color={COLORS.warning} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
