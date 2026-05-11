@@ -231,7 +231,6 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     subtitleKey: 'type_specific_data.purity',
     fields: [
       { key: 'type_specific_data.quantity', label: 'Quantity', type: 'text', placeholder: 'e.g., 50 grams' },
-      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
       { key: 'type_specific_data.purchase_price_per_unit', label: 'Purchase Price (per gm)', type: 'currency' },
       { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
       { key: 'type_specific_data.current_price_per_unit', label: 'Current Price (per gm)', type: 'currency' },
@@ -241,7 +240,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     saleFields: [
       { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
       { key: 'sale_details.units_sold', label: 'Quantity Sold', type: 'text' },
-      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.sale_price', label: 'Sale Price', type: 'currency' },
       { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
     ],
   },
