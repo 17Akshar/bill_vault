@@ -330,6 +330,63 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     bottomSection: 'none',
   },
 
+  // Health insurance / Mediclaim — no surrender / maturity value
+  health_insurance: {
+    name: 'Mediclaim',
+    iconName: 'people',
+    iconColor: '#448AFF',
+    iconBg: '#448AFF20',
+    subtitleKey: 'type_specific_data.plan_type',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.policy_number', label: 'Policy Number', type: 'text', placeholder: '7654321098' },
+      { key: 'type_specific_data.sum_assured', label: 'Sum Insured', type: 'currency' },
+      { key: 'invested_amount', label: 'Premium (Yearly)', type: 'currency' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
+      { key: 'maturity_date', label: 'Expiry Date', type: 'date' },
+      { key: 'type_specific_data.members_covered', label: 'Members Covered', type: 'number', placeholder: '4' },
+      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed' },
+    ],
+    bottomSection: 'none',
+  },
+
+  // Motor insurance (car / two-wheeler) — no surrender / maturity value
+  motor_insurance: {
+    name: 'Motor Insurance',
+    iconName: 'car-sport',
+    iconColor: '#448AFF',
+    iconBg: '#448AFF20',
+    subtitleKey: 'type_specific_data.vehicle_type',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.policy_number', label: 'Policy Number', type: 'text', placeholder: 'MOT123456789' },
+      { key: 'type_specific_data.vehicle_number', label: 'Vehicle Number', type: 'text', placeholder: 'MH02 AB 1234' },
+      { key: 'type_specific_data.idv', label: 'IDV', type: 'currency', hint: 'Insured Declared Value' },
+      { key: 'invested_amount', label: 'Premium (Yearly)', type: 'currency' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
+      { key: 'maturity_date', label: 'Expiry Date', type: 'date' },
+      { key: 'type_specific_data.policy_status', label: 'Status', type: 'text', placeholder: 'Active / Lapsed' },
+    ],
+    bottomSection: 'none',
+  },
+
+  // Vehicle / Asset — Car / Two-Wheeler (Activa) / Any other vehicle
+  vehicle: {
+    name: 'Vehicle',
+    iconName: 'car',
+    iconColor: '#7C4DFF',
+    iconBg: '#7C4DFF20',
+    subtitleKey: 'type_specific_data.vehicle_type',
+    hideGainLoss: true,
+    fields: [
+      { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+      { key: 'invested_amount', label: 'Purchase Price', type: 'currency' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+      { key: 'type_specific_data.insurance_valid_till', label: 'Insurance Valid Till', type: 'date' },
+    ],
+    bottomSection: 'none',
+  },
+
 // ── End of CATEGORY_CONFIG ──
 };
 

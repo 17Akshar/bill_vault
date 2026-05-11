@@ -834,9 +834,30 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
-## Session 28 Update (2026-05-11) — TermInsuranceDetailScreen + Schema Docs Updated
+## Session 29 Update (2026-05-11) — Health/Motor Insurance + Vehicle Asset Forms
 
-### Term Insurance frontend (categoryFields.ts):
+### 3 new investment-detail forms wired (per user reference designs 16/17/18/19/20):
+- **health_insurance** (Mediclaim) — blue people icon, subtitle = `type_specific_data.plan_type` (e.g. "Family Floater"). 7 fields: Policy Number, Sum Insured, Premium (Yearly), Start Date, Expiry Date, Members Covered, Status. `hideGainLoss=true`, `bottomSection='none'`.
+- **motor_insurance** — blue car icon, subtitle = `type_specific_data.vehicle_type` (e.g. "Car Insurance"). 7 fields: Policy Number, Vehicle Number, IDV, Premium (Yearly), Start Date, Expiry Date, Status. `hideGainLoss=true`, `bottomSection='none'`.
+- **vehicle** — single category covering Car/Activa/Other variants via subtitle = `type_specific_data.vehicle_type`. 4 fields: Purchase Date, Purchase Price, Current Value, Insurance Valid Till. `hideGainLoss=true`, `bottomSection='none'`.
+
+### Files
+- `frontend/components/investments/categoryFields.ts` — added 3 new configs after `term_insurance`
+- `frontend/app/investments/select-type.tsx` — added 3 new items under "Others" group
+
+### Verification
+- Backend curl: all 3 types persist with `type_specific_data` (incl. plan_type, vehicle_type, sum_assured, policy_number, vehicle_number, idv, members_covered, insurance_valid_till) ✓
+- Frontend screenshots verified pixel-match vs reference images:
+  - Mediclaim → "Star Health / Family Floater" with 7 fields rendered correctly
+  - Motor Insurance → "Bajaj Allianz / Car Insurance" with 7 fields
+  - Vehicle → "Honda City / Car" with 4 fields (no Gain/Loss row, matches design)
+
+### Backend
+No backend code changes — `investments.py` already accepts arbitrary `investment_type` string and stores free-form `type_specific_data`.
+
+---
+
+## Session 28 Update (2026-05-11) — TermInsuranceDetailScreen + Schema Docs Updated
 - Label "Premium (Yearly)" → "Premium Amount (Yearly)"
 - Label "Status" → "Policy Status"
 - All 7 fields now match spec: Policy Number, Sum Assured, Premium Amount (Yearly), Start Date, Maturity Date, Nominee, Policy Status

@@ -139,6 +139,27 @@ const INVESTMENT_GROUPS = [
         iconColor: '#7C4DFF',
       },
       {
+        id: 'health_insurance',
+        name: 'Health Insurance',
+        description: 'Mediclaim / Family Floater policies',
+        icon: 'people',
+        iconColor: '#448AFF',
+      },
+      {
+        id: 'motor_insurance',
+        name: 'Motor Insurance',
+        description: 'Car / Two-Wheeler insurance policies',
+        icon: 'car-sport',
+        iconColor: '#448AFF',
+      },
+      {
+        id: 'vehicle',
+        name: 'Vehicle / Asset',
+        description: 'Car, two-wheeler or any other vehicle',
+        icon: 'car',
+        iconColor: '#7C4DFF',
+      },
+      {
         id: 'crypto',
         name: 'Crypto',
         description: 'Cryptocurrency (Bitcoin)',
