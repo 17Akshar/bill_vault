@@ -187,6 +187,13 @@ const INVESTMENT_GROUPS = [
         icon: 'layers',
         iconColor: '#06B6D4',
       },
+      {
+        id: 'arts_artifacts',
+        name: 'Arts & Artifacts',
+        description: 'Paintings, sculptures & collectibles',
+        icon: 'color-palette',
+        iconColor: '#F59E0B',
+      },
     ],
   },
 ];

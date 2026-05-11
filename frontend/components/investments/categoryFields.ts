@@ -390,6 +390,108 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     bottomSection: 'none',
   },
 
+  // ESOP — Employee Stock Options
+  esop: {
+    name: 'ESOP',
+    iconName: 'pricetag',
+    iconColor: '#FF5252',
+    iconBg: '#FF525220',
+    hideGainLoss: true,
+    fields: [
+      { key: 'type_specific_data.shares_granted', label: 'Number of Shares', type: 'number', placeholder: '500' },
+      { key: 'purchase_date', label: 'Grant Date', type: 'date' },
+      { key: 'type_specific_data.vesting_period', label: 'Vesting Period', type: 'text', placeholder: '4 Years' },
+      { key: 'type_specific_data.exercise_price', label: 'Exercise Price', type: 'currency' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+      { key: 'type_specific_data.vesting_status', label: 'Status', type: 'text', placeholder: 'Vested / Unvested / Partially Vested' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.units_sold', label: 'Shares Sold', type: 'number' },
+      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  // Private Equity
+  private_equity: {
+    name: 'Private Equity',
+    iconName: 'business',
+    iconColor: '#9C27B0',
+    iconBg: '#9C27B020',
+    fields: [
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'purchase_date', label: 'Invested Date', type: 'date' },
+      { key: 'type_specific_data.fund_type', label: 'Fund Type', type: 'text', placeholder: 'Private Equity' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  // Arts & Artifacts
+  arts_artifacts: {
+    name: 'Arts & Artifacts',
+    iconName: 'color-palette',
+    iconColor: '#F59E0B',
+    iconBg: '#F59E0B20',
+    hideGainLoss: true,
+    fields: [
+      { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+      { key: 'invested_amount', label: 'Purchase Price', type: 'currency' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+      { key: 'type_specific_data.description', label: 'Description', type: 'text', placeholder: 'Modern art painting by Indian artist' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  // Alternate Investment Fund (AIF)
+  aif: {
+    name: 'Alternate Investment Fund',
+    iconName: 'layers',
+    iconColor: '#7C4DFF',
+    iconBg: '#7C4DFF20',
+    fields: [
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'purchase_date', label: 'Invested Date', type: 'date' },
+      { key: 'type_specific_data.fund_type', label: 'Fund Type', type: 'text', placeholder: 'Alternate Investment Fund' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
+  // Crypto / Others Investments
+  crypto: {
+    name: 'Others Investments',
+    iconName: 'logo-bitcoin',
+    iconColor: '#F7931A',
+    iconBg: '#F7931A20',
+    fields: [
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'purchase_date', label: 'Invested Date', type: 'date' },
+      { key: 'current_value', label: 'Current Value', type: 'currency' },
+    ],
+    bottomSection: 'sale',
+    saleFields: [
+      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
+      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
+    ],
+  },
+
 // ── End of CATEGORY_CONFIG ──
 };
 
