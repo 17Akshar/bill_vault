@@ -9,7 +9,7 @@ import pytest
 import requests
 from datetime import datetime
 
-BASE_URL = "https://fincare-investments.preview.emergentagent.com/api"
+BASE_URL = "https://competent-haslett-9.preview.emergentagent.com/api"
 
 
 @pytest.fixture(scope="session")
