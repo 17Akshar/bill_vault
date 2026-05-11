@@ -443,6 +443,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconBg: '#F59E0B20',
     hideGainLoss: true,
     fields: [
+      { key: 'name', label: 'Item Name', type: 'text', placeholder: 'Modern art painting' },
       { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
       { key: 'invested_amount', label: 'Purchase Price', type: 'currency' },
       { key: 'current_value', label: 'Current Value', type: 'currency' },
@@ -451,7 +452,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     bottomSection: 'sale',
     saleFields: [
       { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
-      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
+      { key: 'sale_details.sale_price', label: 'Sale Price', type: 'currency' },
       { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
     ],
   },
