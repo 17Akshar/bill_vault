@@ -22,6 +22,7 @@ export default function InvestmentDetailsScreen() {
   const { id } = useLocalSearchParams();
 
   const [investment, setInvestment] = useState<any>(null);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,8 +30,12 @@ export default function InvestmentDetailsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get(`/investments/${id}`);
-      setInvestment(res.data);
+      const [invRes, accRes] = await Promise.all([
+        api.get(`/investments/${id}`),
+        api.get('/accounts').catch(() => ({ data: [] })),
+      ]);
+      setInvestment(invRes.data);
+      setAccounts(accRes.data || []);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.detail || 'Failed to load investment');
     } finally {
@@ -59,6 +64,7 @@ export default function InvestmentDetailsScreen() {
         type_specific_data: next.type_specific_data || {},
         sale_details: next.sale_details || null,
         maturity_details: next.maturity_details || null,
+        linked_account: next.linked_account || null,
       };
       const res = await api.put(`/investments/${id}`, payload);
       setInvestment(res.data);
@@ -116,6 +122,7 @@ export default function InvestmentDetailsScreen() {
       onEnterEdit={() => setEditing(true)}
       onDelete={handleDelete}
       deleting={deleting}
+      accounts={accounts}
       colors={colors}
     />
   );

@@ -60,6 +60,7 @@ class InvestmentUpdate(BaseModel):
     type_specific_data: Optional[Dict[str, Any]] = None
     sale_details: Optional[Dict[str, Any]] = None
     maturity_details: Optional[Dict[str, Any]] = None
+    linked_account: Optional[str] = None
 
 
 class TransactionCreate(BaseModel):

@@ -57,6 +57,7 @@ export const InvestmentDetailForm = ({
   onEnterEdit,
   onDelete,
   deleting,
+  accounts,
   colors,
 }: InvestmentDetailFormProps) => {
   const [draft, setDraft] = useState<any>(investment);
@@ -121,6 +122,7 @@ export const InvestmentDetailForm = ({
             onChange={setDraft}
             editable={editable}
             colors={colors}
+            accounts={accounts}
           />
 
           {/* SECTION 3 — Gain / Loss row sits inside its own light wrapper */}

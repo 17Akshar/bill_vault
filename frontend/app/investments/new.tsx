@@ -7,7 +7,7 @@
 // only difference is the starting investment object is blank (with the chosen
 // type pre-filled) and the save handler POSTs instead of PUTting.
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -22,6 +22,15 @@ export default function NewInvestmentScreen() {
   const investmentType = (type as string) || 'others';
 
   const [saving, setSaving] = useState(false);
+  const [accounts, setAccounts] = useState<any[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/accounts').then((res) => {
+      if (!cancelled) setAccounts(res.data || []);
+    }).catch(() => { /* ignore — accounts are optional for the picker */ });
+    return () => { cancelled = true; };
+  }, []);
 
   // Build a blank investment shaped the same way the API returns one.
   // The form's `useEffect` that re-syncs draft only fires on
@@ -43,6 +52,7 @@ export default function NewInvestmentScreen() {
       maturity_date: null,
       status: 'active',
       notes: '',
+      linked_account: null,
       type_specific_data: {},
       sale_details: null,
       maturity_details: null,
@@ -69,6 +79,7 @@ export default function NewInvestmentScreen() {
         maturity_date: next.maturity_date || undefined,
         status: 'active',
         notes: next.notes || null,
+        linked_account: next.linked_account || null,
         type_specific_data: next.type_specific_data || {},
         sale_details: next.sale_details || null,
         maturity_details: next.maturity_details || null,
@@ -105,6 +116,7 @@ export default function NewInvestmentScreen() {
       onBack={() => router.back()}
       onSave={handleSave}
       saving={saving}
+      accounts={accounts}
       colors={colors}
     />
   );

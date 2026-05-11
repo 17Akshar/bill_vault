@@ -1,6 +1,6 @@
 // Renders an array of FieldDef rows: label on left, value/input on right.
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, Modal, FlatList } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { FieldDef, getByPath, setByPath } from '../categoryFields';
@@ -12,6 +12,8 @@ interface DynamicFieldListProps {
   onChange: (next: any) => void;             // returns mutated investment object
   editable: boolean;
   colors: any;
+  // Optional list of accounts for fields of type 'account_picker'.
+  accounts?: any[];
 }
 
 const formatDate = (iso: string | Date | undefined): string => {
@@ -39,8 +41,10 @@ export const DynamicFieldList = ({
   onChange,
   editable,
   colors,
+  accounts = [],
 }: DynamicFieldListProps) => {
   const [openDatePicker, setOpenDatePicker] = useState<string | null>(null);
+  const [openAccountPicker, setOpenAccountPicker] = useState<string | null>(null);
 
   const update = (key: string, raw: any, type: FieldDef['type']) => {
     let coerced: any = raw;
@@ -50,6 +54,12 @@ export const DynamicFieldList = ({
       coerced = raw instanceof Date ? raw.toISOString() : raw;
     }
     onChange(setByPath(values, key, coerced));
+  };
+
+  const renderAccountValue = (accountId: string | null | undefined): string => {
+    if (!accountId) return '—';
+    const acc = accounts.find((a) => a.account_id === accountId);
+    return acc ? acc.name : accountId;
   };
 
   return (
@@ -71,7 +81,7 @@ export const DynamicFieldList = ({
 
             {!editable || f.readOnly ? (
               <Text style={[styles.valueRO, { color: colors.text }]} numberOfLines={1}>
-                {formatValueRO(v, f.type)}
+                {f.type === 'account_picker' ? renderAccountValue(v) : formatValueRO(v, f.type)}
               </Text>
             ) : f.type === 'date' ? (
               <>
@@ -94,6 +104,17 @@ export const DynamicFieldList = ({
                   />
                 )}
               </>
+            ) : f.type === 'account_picker' ? (
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => setOpenAccountPicker(f.key)}
+                testID={`account-picker-${f.key.replace(/\./g, '-')}`}
+              >
+                <Text style={[styles.valueRO, { color: v ? colors.text : colors.textSecondary }]}>
+                  {v ? renderAccountValue(v) : (f.placeholder || 'Select account')}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
             ) : (
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -111,9 +132,70 @@ export const DynamicFieldList = ({
           </View>
         );
       })}
+
+      {/* Account picker modal — used by account_picker fields */}
+      <Modal
+        visible={!!openAccountPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setOpenAccountPicker(null)}
+      >
+        <TouchableOpacity
+          style={apStyles.overlay}
+          activeOpacity={1}
+          onPress={() => setOpenAccountPicker(null)}
+        >
+          <View style={[apStyles.sheet, { backgroundColor: colors.card }]}>
+            <View style={apStyles.headerRow}>
+              <Text style={[apStyles.title, { color: colors.text }]}>Select Account</Text>
+              <TouchableOpacity onPress={() => setOpenAccountPicker(null)}>
+                <Ionicons name="close" size={22} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {accounts.length === 0 ? (
+              <Text style={[apStyles.empty, { color: colors.textSecondary }]}>
+                No accounts found. Add one in the Accounts module first.
+              </Text>
+            ) : (
+              <FlatList
+                data={accounts}
+                keyExtractor={(it) => it.account_id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[apStyles.row, { borderBottomColor: colors.border }]}
+                    onPress={() => {
+                      if (openAccountPicker) {
+                        update(openAccountPicker, item.account_id, 'text');
+                      }
+                      setOpenAccountPicker(null);
+                    }}
+                  >
+                    <Text style={[apStyles.rowName, { color: colors.text }]}>{item.name}</Text>
+                    <Text style={[apStyles.rowMeta, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {item.account_type ? String(item.account_type).toUpperCase() : ''}
+                      {item.balance != null ? ` · ${formatINR(item.balance)}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
+
+const apStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 20, maxHeight: '60%' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  title: { fontSize: 17, fontWeight: '700' },
+  empty: { fontSize: 14, textAlign: 'center', paddingVertical: 32 },
+  row: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowName: { fontSize: 15, fontWeight: '600' },
+  rowMeta: { fontSize: 12, marginTop: 4 },
+});
 
 const styles = StyleSheet.create({
   container: { borderRadius: 14, marginHorizontal: 20, marginBottom: 16, overflow: 'hidden' },

@@ -3,7 +3,7 @@
 // investment category. The form composer reads this config and produces
 // matching UI rows automatically.
 
-export type FieldType = 'text' | 'number' | 'currency' | 'date' | 'percentage';
+export type FieldType = 'text' | 'number' | 'currency' | 'date' | 'percentage' | 'account_picker';
 
 export interface FieldDef {
   key: string;          // path inside investment (dot-notation; e.g. "type_specific_data.folio_number")
@@ -170,16 +170,18 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     iconColor: '#00BCD4',
     iconBg: '#00BCD420',
     fields: [
-      { key: 'type_specific_data.bank', label: 'Bank / Post Office', type: 'text', placeholder: 'State Bank of India' },
-      { key: 'type_specific_data.ppf_account_number', label: 'PPF Account Number', type: 'text', placeholder: 'PPF1234567890' },
-      { key: 'invested_amount', label: 'Total Invested', type: 'currency' },
-      { key: 'type_specific_data.annual_contribution', label: 'Annual Contribution', type: 'currency' },
-      { key: 'type_specific_data.interest_rate', label: 'Interest Rate (p.a.)', type: 'percentage' },
-      { key: 'purchase_date', label: 'Account Opened', type: 'date' },
+      { key: 'type_specific_data.ppf_account_number', label: 'Account Number', type: 'text', placeholder: 'PPF1234567890' },
+      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
+      { key: 'type_specific_data.interest_rate', label: 'Interest Rate', type: 'percentage', hint: 'per annum' },
+      { key: 'purchase_date', label: 'Start Date', type: 'date' },
       { key: 'maturity_date', label: 'Maturity Date', type: 'date' },
-      { key: 'current_value', label: 'Current Balance', type: 'currency' },
+      { key: 'linked_account', label: 'Linked Account', type: 'account_picker', placeholder: 'Select bank account' },
     ],
     bottomSection: 'maturity',
+    maturityFields: [
+      { key: 'maturity_details.date_of_maturity', label: 'Date of Maturity', type: 'date' },
+      { key: 'maturity_details.maturity_amount', label: 'Maturity Amount', type: 'currency' },
+    ],
   },
 
   nps: {
