@@ -796,42 +796,53 @@ async def reset_password(data: ResetPasswordRequest):
 
     return {"message": "Password reset successfully"}
 
+# In-memory cache for single-user-mode user doc (TTL: 5 min) to reduce Firestore reads
+_SINGLE_USER_CACHE: dict = {"user": None, "expires_at": 0}
+
 @api_router.post("/auth/single-user")
 async def single_user_mode():
     """Create or get single-user mode user"""
-    # Check if single user exists
-    user_doc = await db.users.find_one({"use_single_user_mode": True}, {"_id": 0})
-    
-    if not user_doc:
-        # Create single user
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user_doc = {
-            "user_id": user_id,
-            "email": "single-user@local",
-            "name": "Local User",
-            "picture": None,
-            "created_at": datetime.now(timezone.utc),
-            "use_single_user_mode": True
-        }
-        await db.users.insert_one(user_doc)
-        
-        # Create default settings
-        settings = {
-            "user_id": user_id,
-            "dark_mode": False,
-            "notifications_enabled": True,
-            "notification_days_before": 3,
-            "default_currency": "INR",
-            "storage_provider": "local",
-            "updated_at": datetime.now(timezone.utc)
-        }
-        await db.user_settings.insert_one(settings)
-        
-        user_doc.pop("_id", None)
-    
+    import time as _time
+    now = _time.time()
+    if _SINGLE_USER_CACHE["user"] and _SINGLE_USER_CACHE["expires_at"] > now:
+        user_doc = _SINGLE_USER_CACHE["user"]
+    else:
+        # Check if single user exists
+        user_doc = await db.users.find_one({"use_single_user_mode": True}, {"_id": 0})
+
+        if not user_doc:
+            # Create single user
+            user_id = f"user_{uuid.uuid4().hex[:12]}"
+            user_doc = {
+                "user_id": user_id,
+                "email": "single-user@local",
+                "name": "Local User",
+                "picture": None,
+                "created_at": datetime.now(timezone.utc),
+                "use_single_user_mode": True
+            }
+            await db.users.insert_one(user_doc)
+
+            # Create default settings
+            settings = {
+                "user_id": user_id,
+                "dark_mode": False,
+                "notifications_enabled": True,
+                "notification_days_before": 3,
+                "default_currency": "INR",
+                "storage_provider": "local",
+                "updated_at": datetime.now(timezone.utc)
+            }
+            await db.user_settings.insert_one(settings)
+
+            user_doc.pop("_id", None)
+
+        _SINGLE_USER_CACHE["user"] = user_doc
+        _SINGLE_USER_CACHE["expires_at"] = now + 300  # 5 min TTL
+
     # Create token
     access_token = create_access_token({"user_id": user_doc["user_id"], "email": user_doc["email"]})
-    
+
     return {
         "user": user_doc,
         "access_token": access_token,

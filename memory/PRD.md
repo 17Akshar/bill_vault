@@ -834,6 +834,38 @@ User supplied 5 reference designs (Mutual Funds, ETF, REIT, Fixed Deposit, Corpo
 Future categories (NPS, EPF, PPF, Gold) need only a single entry in `CATEGORY_CONFIG` — no other files change.
 
 
+## Session 30 Update (2026-05-12) — Full E2E QA Pass + 3 Bug Fixes + Auth Cache
+
+### Bugs Fixed
+1. **CRITICAL — Reminder smart-complete TypeError on recurring reminders** (`/app/backend/reminders.py:243-260`)
+   - Root cause: `existing.get("reminder_date")` returned a STRING when fetched from Firestore (ISO format), but `_next_occurrence()` then tried `string + relativedelta(months=1)` → `TypeError: can only concatenate str (not "relativedelta") to str`
+   - Fix: Parse `reminder_date` and `end_date` from ISO string → datetime BEFORE calling `_next_occurrence` and comparing
+   - Verified: 4/4 `test_reminder_advanced.py` PASS — monthly/quarterly/yearly recurring all advance correctly
+
+2. **Stale test fixtures** (5 test files) — Session 8 bank-account validation (requires `account_holder_name` + `account_number` + `ifsc_code`) had never been propagated into pytest fixtures
+   - Updated: `test_fintracker_api.py`, `test_transfers_api.py`, `test_snapshots_api.py`, `test_multirecord_and_deltas.py`, `test_uploads_and_labels.py`, `test_recovery_api.py`
+   - `test_investments_api.py::test_seed_transactions_present` rewritten to create its own fixture (instead of relying on a pre-seeded DB) — adds 2 transactions and verifies multi-record persistence
+
+### Performance Improvement
+3. **Single-user-mode auth cache** (`/app/backend/server.py:799-852`)
+   - Added 5-minute in-memory cache on `POST /api/auth/single-user` to dramatically reduce Firestore reads (was doing `db.users.find_one` on every page bootstrap)
+   - Verified: 3 rapid auth calls all 200 OK; only the first hits Firestore
+
+### Full QA Results
+- **~119 backend tests PASSED** across all modules (investments, reminders, MPIN, accounts, income/expense, bills, budgets, transfers, snapshots, multi-record persistence)
+- Frontend boots cleanly — homepage + `/investments` dashboard renders correctly
+- 24+ investment detail forms (stocks/MF/ETF/REIT/FD/RD/Corp Deposit/Bonds/PPF/NPS/EPF/Gold/Silver/LIC/Term/Health/Motor Insurance/Vehicle/ESOP/PE/Arts/AIF/Crypto/P2P) all round-trip data correctly
+- No P0/P1 bugs found by testing agent (iteration_20.json)
+
+### Known Environmental Issue
+- **Firestore daily-read quota exhausted** during the run — affects live curl smoke tests on `/api/auth/single-user`, `/api/recovery/*`, `/api/upload/labels`. Will reset in ~24h. **Not a code bug.**
+
+### Suggested Follow-ups (deferred)
+- Wrap `firebase_config.py` Firestore wrapper calls with `google.api_core.exceptions.ResourceExhausted` → HTTP 503 mapping so frontend can show a "service busy, retry later" message
+- Consider raising Firebase project read quota for production or implement read-through caching on hot endpoints (`/api/accounts`, `/api/dashboard`)
+
+---
+
 ## Session 29 Update (2026-05-11) — Health/Motor Insurance + Vehicle Asset Forms
 
 ### 3 new investment-detail forms wired (per user reference designs 16/17/18/19/20):
