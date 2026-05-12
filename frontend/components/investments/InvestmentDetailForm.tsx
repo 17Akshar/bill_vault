@@ -71,7 +71,14 @@ export const InvestmentDetailForm = ({
   if (!draft) return null;
 
   const config = getCategoryConfig(draft.investment_type || '');
-  const subtitle = config.subtitleKey ? getByPath(draft, config.subtitleKey) : undefined;
+  const subtitle = config.subtitleKeys && config.subtitleKeys.length
+    ? config.subtitleKeys
+        .map((k) => getByPath(draft, k))
+        .filter((v) => v !== undefined && v !== null && v !== '')
+        .join(' • ') || undefined
+    : config.subtitleKey
+      ? getByPath(draft, config.subtitleKey)
+      : undefined;
 
   // editable state: explicit `viewMode` prop wins; otherwise fall back to
   // the legacy `initialEditable` flag (which defaults to true).
@@ -174,6 +181,16 @@ export const InvestmentDetailForm = ({
             colors={colors}
           />
 
+          {/* Optional info banner (e.g. tax note for shares) */}
+          {!!config.footerNote && (
+            <View style={styles.footerNote} testID="invdetail-footer-note">
+              <Ionicons name="information-circle-outline" size={18} color="#A78BFA" />
+              <Text style={[styles.footerNoteText, { color: colors.textSecondary }]}>
+                {config.footerNote}
+              </Text>
+            </View>
+          )}
+
           {/* SECTION 6 — Save Button (full-width CTA, mirrors header link) */}
           {editable && (
             <SaveButton onPress={handleSave} loading={saving} colors={colors} />
@@ -214,4 +231,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   deleteText: { color: '#FF5252', fontSize: 15, fontWeight: '700' },
+  footerNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  footerNoteText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
 });
