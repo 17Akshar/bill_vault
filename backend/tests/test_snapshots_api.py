@@ -74,6 +74,9 @@ def account(client):
         "name": "TEST_Snap_Acct",
         "account_type": "bank",
         "initial_balance": 10000.0,
+        "account_holder_name": "TEST Holder",
+        "account_number": "SNAP1234567890",
+        "ifsc_code": "HDFC0001234",
     }, timeout=30)
     assert r.status_code in (200, 201), r.text[:200]
     return r.json()

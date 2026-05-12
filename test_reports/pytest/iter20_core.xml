@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="10" failures="5" skipped="0" tests="48" time="149.260" timestamp="2026-05-12T19:01:43.179776+00:00" hostname="agent-env-4530b668-2fee-4cb1-b0ad-c5e919aa9118"><testcase classname="backend.tests.test_fintracker_api.TestAuth" name="test_single_user_auth" time="0.473" /><testcase classname="backend.tests.test_fintracker_api.TestAuth" name="test_login_register_endpoints_exist" time="1.100" /><testcase classname="backend.tests.test_fintracker_api.TestAccounts" name="test_accounts_crud" time="7.343" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_create_increases_balance" time="7.335" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_expense_create_decreases_balance" time="7.347" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_update_adjusts_balance" time="10.776" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_income_delete_reverts_balance" time="8.257" /><testcase classname="backend.tests.test_fintracker_api.TestBalanceRegression" name="test_expense_update_and_delete_balance" time="11.361" /><testcase classname="backend.tests.test_fintracker_api.TestBills" name="test_bills_flow" time="4.515" /><testcase classname="backend.tests.test_fintracker_api.TestCreditCards" name="test_credit_cards_flow" time="3.315" /><testcase classname="backend.tests.test_fintracker_api.TestInvestments" name="test_investment_flow_with_roi" time="7.618" /><testcase classname="backend.tests.test_fintracker_api.TestRentalsLoans" name="test_rentals" time="3.017" /><testcase classname="backend.tests.test_fintracker_api.TestRentalsLoans" name="test_loans_lending" time="6.371" /><testcase classname="backend.tests.test_fintracker_api.TestBudgetsReminders" name="test_budgets_progress" time="3.633" /><testcase classname="backend.tests.test_fintracker_api.TestBudgetsReminders" name="test_reminders" time="3.019" /><testcase classname="backend.tests.test_fintracker_api.TestNotes" name="test_note_headings_and_notes" time="6.303" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_dashboard" time="4.045" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_net_worth" time="2.746" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_analytics_cashflow" time="8.642" /><testcase classname="backend.tests.test_fintracker_api.TestDashboardEtc" name="test_settings" time="3.314" /><testcase classname="backend.tests.test_fintracker_api.TestFamilyMembers" name="test_family_members_crud" time="3.164" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_happy_path" time="1.241"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_amount_zero_rejected" time="0.669"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_negative_amount_rejected" time="0.664"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_from_equals_to_rejected" time="0.630"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_missing_account_ids_rejected" time="0.072" /><testcase classname="backend.tests.test_transfers_api.TestTransferCreate" name="test_account_not_owned_rejected" time="0.636"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferRead" name="test_list_and_get_one" time="0.634"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferRead" name="test_get_nonexistent_returns_404" time="0.921" /><testcase classname="backend.tests.test_transfers_api.TestTransferUpdate" name="test_amount_change_rebalances" time="0.618"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferUpdate" name="test_change_from_account_rebalances" time="0.701"><failure message="AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code">backend/tests/test_transfers_api.py:185: in test_change_from_account_rebalances
+    a1 = _mk_account(client, f"TEST_From1_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_transfers_api.TestTransferDelete" name="test_delete_reverses_balances" time="0.669"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_transfers_api.py:59: in two_accounts
+    a1 = _mk_account(client, f"TEST_TxfrFrom_{ts}", 50000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_transfers_api.TestDashboardTransferIsolation" name="test_transfer_not_in_income_expense_and_total_balance_conserved" time="0.624"><failure message="AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code">backend/tests/test_transfers_api.py:242: in test_transfer_not_in_income_expense_and_total_balance_conserved
+    a1 = _mk_account(client, f"TEST_DashA_{ts}", 20000)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_transfers_api.TestIncomeExpenseNewFields" name="test_income_optional_fields_persist" time="0.634"><failure message="AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code">backend/tests/test_transfers_api.py:285: in test_income_optional_fields_persist
+    aid = _mk_account(client, f"TEST_IncOpt_{ts}", 0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_transfers_api.TestIncomeExpenseNewFields" name="test_expense_optional_fields_persist" time="0.625"><failure message="AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code">backend/tests/test_transfers_api.py:313: in test_expense_optional_fields_persist
+    aid = _mk_account(client, f"TEST_ExpOpt_{ts}", 10000)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_transfers_api.py:43: in _mk_account
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_capture_requires_auth" time="0.185" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_list_requires_auth" time="0.169" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotAuth" name="test_last_month_requires_auth" time="0.159" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_capture_returns_full_schema" time="1.995"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 in (200, 201)&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:78: in account
+    assert r.status_code in (200, 201), r.text[:200]
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 in (200, 201)
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_three_captures_persist" time="7.010"><failure message="AssertionError: expected &gt;=4 manual snapshots, got 3&#10;assert 3 &gt;= 4&#10; +  where 3 = len([{'captured_at': '2026-05-12T19:03:55.045797+00:00', 'investment_value': 0.0, 'net_worth': 0.0, 'snapshot_id': 'snap_93e61281c86f4f2f', ...}, {'captured_at': '2026-05-12T19:03:53.026281+00:00', 'investment_value': 0.0, 'net_worth': 0.0, 'snapshot_id': 'snap_ecf3b0b01f734d54', ...}, {'captured_at': '2026-05-12T19:03:51.011681+00:00', 'investment_value': 0.0, 'net_worth': 0.0, 'snapshot_id': 'snap_c3632317c58b4423', ...}])">backend/tests/test_snapshots_api.py:125: in test_three_captures_persist
+    assert len(manual) &gt;= 4, f"expected &gt;=4 manual snapshots, got {len(manual)}"
+E   AssertionError: expected &gt;=4 manual snapshots, got 3
+E   assert 3 &gt;= 4
+E    +  where 3 = len([{'captured_at': '2026-05-12T19:03:55.045797+00:00', 'investment_value': 0.0, 'net_worth': 0.0, 'snapshot_id': 'snap_93e61281c86f4f2f', ...}, {'captured_at': '2026-05-12T19:03:53.026281+00:00', 'investment_value': 0.0, 'net_worth': 0.0, 'snapshot_id': 'snap_ecf3b0b01f734d54', ...}, {'captured_at': '2026-05-12T19:03:51.011681+00:00', 'investment_value': 0.0, 'net_worth': 0.0, 'snapshot_id': 'snap_c3632317c58b4423', ...}])</failure></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotCapture" name="test_networth_math_with_account_balance" time="0.000"><error message="failed on setup with &quot;AssertionError: {&quot;detail&quot;:&quot;Bank account requires account_holder_name, account_number, and ifsc_code&quot;}&#10;assert 422 in (200, 201)&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_snapshots_api.py:78: in account
+    assert r.status_code in (200, 201), r.text[:200]
+E   AssertionError: {"detail":"Bank account requires account_holder_name, account_number, and ifsc_code"}
+E   assert 422 in (200, 201)
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_list_returns_count_and_sorted_desc" time="0.915" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_filter_by_type_manual" time="0.922" /><testcase classname="backend.tests.test_snapshots_api.TestSnapshotList" name="test_filter_by_type_daily_safe" time="1.032" /><testcase classname="backend.tests.test_snapshots_api.TestLastMonthSnapshot" name="test_404_when_no_prior_month_snapshot" time="0.912" /><testcase classname="backend.tests.test_snapshots_api.TestLastMonthSnapshot" name="test_returns_injected_prior_month" time="2.707" /><testcase classname="backend.tests.test_snapshots_api.TestDashboardSnapshotBasis" name="test_basis_is_snapshot_when_prior_exists" time="4.570" /><testcase classname="backend.tests.test_snapshots_api.TestDashboardSnapshotBasis" name="test_basis_is_flow_approx_for_new_user" time="5.056" /></testsuite></testsuites>

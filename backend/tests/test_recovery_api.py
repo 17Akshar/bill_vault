@@ -235,7 +235,10 @@ class TestBalanceRegressionSmoke:
         # Create account
         r = client.post(f"{BASE_URL}/accounts",
                         json={"name": "TEST_RecBal", "account_type": "bank",
-                              "initial_balance": 10000}, timeout=30)
+                              "initial_balance": 10000,
+                              "account_holder_name": "TEST",
+                              "account_number": "REC1234567890",
+                              "ifsc_code": "HDFC0001234"}, timeout=30)
         assert r.status_code == 200
         aid = r.json()["account_id"]
 

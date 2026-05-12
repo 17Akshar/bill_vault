@@ -50,10 +50,15 @@ def client():
 
 
 def _mk_account(client, name, balance):
+    import time as _t
+    ts = int(_t.time() * 1000000)
     r = client.post(f"{BASE_URL}/accounts",
                     headers={"Content-Type": "application/json"},
                     json={"name": name, "account_type": "bank",
-                          "initial_balance": balance}, timeout=30)
+                          "initial_balance": balance,
+                          "account_holder_name": "TEST",
+                          "account_number": f"UPL{ts}",
+                          "ifsc_code": "HDFC0001234"}, timeout=30)
     assert r.status_code == 200, r.text
     return r.json()["account_id"]
 

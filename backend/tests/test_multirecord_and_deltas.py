@@ -49,7 +49,8 @@ def account(client):
     """Create one bank account to attach incomes/expenses to."""
     r = client.post(f"{BASE_URL}/accounts", json={
         "name": "TEST_MultiRec_Acct", "account_type": "bank",
-        "initial_balance": 0.0
+        "initial_balance": 0.0,
+        "account_holder_name": "TEST", "account_number": "MR1234567890", "ifsc_code": "HDFC0001234"
     }, timeout=30)
     assert r.status_code in (200, 201), f"acct create: {r.status_code} {r.text[:200]}"
     return r.json()
@@ -207,7 +208,8 @@ def delta_client(delta_user):
 @pytest.fixture(scope="session")
 def delta_account(delta_client):
     r = delta_client.post(f"{BASE_URL}/accounts", json={
-        "name": "TEST_Delta_Acct", "account_type": "bank", "initial_balance": 0.0
+        "name": "TEST_Delta_Acct", "account_type": "bank", "initial_balance": 0.0,
+        "account_holder_name": "TEST", "account_number": "DLT1234567890", "ifsc_code": "HDFC0001234"
     }, timeout=30)
     assert r.status_code in (200, 201), r.text[:200]
     return r.json()
@@ -304,7 +306,8 @@ class TestDeltaEdgeCases:
         h = {"Authorization": f"Bearer {tok}", "Content-Type": "application/json"}
         # Create account + this-month income
         a = requests.post(f"{BASE_URL}/accounts", json={
-            "name": "TEST_EdgeA", "account_type": "bank", "initial_balance": 0.0
+            "name": "TEST_EdgeA", "account_type": "bank", "initial_balance": 0.0,
+            "account_holder_name": "TEST", "account_number": "EDG1234567890", "ifsc_code": "HDFC0001234"
         }, headers=h, timeout=30).json()
         requests.post(f"{BASE_URL}/income", json={
             "account_id": a["account_id"], "amount": 1234, "category": "other",

@@ -58,7 +58,10 @@ class TestAccounts:
         # CREATE
         r = client.post(f"{BASE_URL}/accounts",
                         json={"name": "TEST_Acct", "account_type": "bank",
-                              "initial_balance": 1000}, timeout=30)
+                              "initial_balance": 1000,
+                              "account_holder_name": "Test User",
+                              "account_number": "1234567890",
+                              "ifsc_code": "HDFC0001234"}, timeout=30)
         assert r.status_code == 200, r.text
         acct = r.json()
         assert acct["name"] == "TEST_Acct"
@@ -87,7 +90,10 @@ class TestBalanceRegression:
     def account(self, client):
         r = client.post(f"{BASE_URL}/accounts",
                         json={"name": "TEST_BalRegr", "account_type": "bank",
-                              "initial_balance": 10000}, timeout=30)
+                              "initial_balance": 10000,
+                              "account_holder_name": "Test User",
+                              "account_number": "1234567890",
+                              "ifsc_code": "HDFC0001234"}, timeout=30)
         assert r.status_code == 200
         aid = r.json()["account_id"]
         yield aid

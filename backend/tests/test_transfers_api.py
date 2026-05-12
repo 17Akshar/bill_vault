@@ -37,9 +37,14 @@ def client():
 
 
 def _mk_account(client, name, balance):
+    # Bank accounts require account_holder_name, account_number, ifsc_code (Session 8 validation)
+    ts = int(time.time() * 1000000)
     r = client.post(f"{BASE_URL}/accounts",
                     json={"name": name, "account_type": "bank",
-                          "initial_balance": balance}, timeout=30)
+                          "initial_balance": balance,
+                          "account_holder_name": "TEST Holder",
+                          "account_number": f"ACC{ts}",
+                          "ifsc_code": "HDFC0001234"}, timeout=30)
     assert r.status_code == 200, r.text
     return r.json()["account_id"]
 

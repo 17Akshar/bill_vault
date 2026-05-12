@@ -238,12 +238,23 @@ class TestTransactionsPersistence:
         client.delete(f"{BASE_URL}/api/investments/{inv_id}", timeout=30)
 
     def test_seed_transactions_present(self, client):
-        # Verify seed: at least one investment has >=2 transactions
-        ls = client.get(f"{BASE_URL}/api/investments", timeout=30).json()
-        max_txn = 0
-        for inv in ls[:8]:  # sample first 8 to limit reads
-            r = client.get(f"{BASE_URL}/api/investments/{inv['investment_id']}/transactions",
-                           timeout=30)
-            if r.status_code == 200:
-                max_txn = max(max_txn, len(r.json()))
-        assert max_txn >= 2, f"No investment has >=2 transactions; multi-record bug regressed?"
+        # Verify multi-record persistence: create an investment, add 2 txns, ensure both return
+        inv_id = client.post(f"{BASE_URL}/api/investments",
+                             json={"investment_type": "stocks", "name": "MULTI_TX_TEST",
+                                   "invested_amount": 1000, "current_value": 1000,
+                                   "purchase_date": "2024-01-01T00:00:00"},
+                             timeout=30).json()["investment_id"]
+        client.post(f"{BASE_URL}/api/investments/{inv_id}/transactions",
+                    json={"transaction_type": "buy", "quantity": 10, "price_per_unit": 100,
+                          "amount": 1000,
+                          "transaction_date": "2024-01-01T00:00:00"},
+                    timeout=30)
+        client.post(f"{BASE_URL}/api/investments/{inv_id}/transactions",
+                    json={"transaction_type": "buy", "quantity": 5, "price_per_unit": 110,
+                          "amount": 550,
+                          "transaction_date": "2024-02-01T00:00:00"},
+                    timeout=30)
+        txns = client.get(f"{BASE_URL}/api/investments/{inv_id}/transactions",
+                          timeout=30).json()
+        assert len(txns) >= 2, f"Multi-record bug regressed; got {len(txns)} txns"
+        client.delete(f"{BASE_URL}/api/investments/{inv_id}", timeout=30)

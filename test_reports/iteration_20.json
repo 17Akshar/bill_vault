@@ -1,0 +1,58 @@
+{
+  "summary": "Full end-to-end QA pass executed for Fintracker. Ran existing 10 pytest modules in batches. ~119 backend tests PASSED including investments CRUD/dashboard/transactions (8/8), reminders advanced+state transitions (6/6) which validates the recently-fixed smart-complete-on-recurring (datetime-from-string parse) bug, MPIN setup/verify/lockout, fintracker accounts/income/expense/bills/budgets/dashboards/transfers (27/27), transfers (14/14 after stale-test fix), snapshots (13/13 after stale-test fix), and multi-record persistence core. Frontend boots cleanly — homepage renders 4 module cards (Net Worth, Investments, Accounts, Reminders) + Get Started/Create Account CTAs; /investments page renders Total Investment Value / Total Invested / Total Gain-Loss cards + Investment Categories + Add Investment button. Firestore daily-read quota was exhausted during the latter half of the run (confirmed via backend.err.log: 'google.api_core.exceptions.ResourceExhausted: 429 Quota exceeded'), which caused all subsequent /api/auth/single-user, /api/recovery/*, and /api/upload/labels DB-touching requests to return 500. This is ENVIRONMENTAL per the brief — retry after 24h.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/single-user, /api/recovery/*, /api/upload/labels", "issue": "Returns 500 after Firestore daily-read quota exceeded (ResourceExhausted 429 from Google). Environmental — not a code bug. Retry after quota resets in 24h."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Frontend auto-bootstrap login", "issue": "When Firestore quota is exhausted, auto-bootstrap via useSingleUserMode() shows 'Not authenticated' banner on /investments. Environmental.", "affected_selectors": ["[data-testid=not-authenticated-banner]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_investments_api.py",
+    "/app/backend/tests/test_reminder_advanced.py",
+    "/app/backend/tests/test_reminder_state_transitions.py",
+    "/app/backend/tests/test_fintracker_api.py",
+    "/app/backend/tests/test_transfers_api.py",
+    "/app/backend/tests/test_snapshots_api.py",
+    "/app/backend/tests/test_mpin_api.py",
+    "/app/backend/tests/test_multirecord_and_deltas.py",
+    "/app/backend/tests/test_uploads_and_labels.py",
+    "/app/backend/tests/test_recovery_api.py",
+    "/app/test_reports/pytest/iter20_investments.xml",
+    "/app/test_reports/pytest/iter20_reminders.xml",
+    "/app/test_reports/pytest/iter20_core_retry.xml",
+    "/app/test_reports/pytest/iter20_rest.xml",
+    "/app/test_reports/pytest/iter20_rest2.xml"
+  ],
+  "action_items": [
+    "Wait for Firestore daily-read quota to reset (~24h) and re-run test_recovery_api.py + test_uploads_and_labels.py to confirm those 10 failures are purely environmental.",
+    "Consider raising Firebase project read quota or implementing aggressive backend-side result caching to avoid Firestore reads on every auth bootstrap (each pytest run currently issues 100s of find_one calls).",
+    "Monitor frontend 'Not authenticated' state: ensure a user-friendly retry CTA appears when auth bootstrap fails (currently silent red banner)."
+  ],
+  "critical_code_review_comments": [
+    "server.py:803 single_user_mode() does a DB find_one on every call — high quota cost. Add an in-memory user-id cache (5–10 min TTL) keyed on email to dramatically reduce Firestore reads.",
+    "Backend hard-fails (500) when Firestore quota is hit. Wrap firebase_config.py find_one/find/insert with a try/except google.api_core.exceptions.ResourceExhausted and surface as HTTP 503 with a friendly 'service temporarily busy' message so the frontend can show a proper retry UI.",
+    "test_transfers_api.py, test_snapshots_api.py, test_multirecord_and_deltas.py, test_uploads_and_labels.py, test_recovery_api.py all had stale bank-account fixtures missing account_holder_name/account_number/ifsc_code (Session-8 validation). Fixed in this iteration but main agent should audit all future test factories for the new required fields.",
+    "Reminder smart-complete fix at reminders.py:~244 (parse string reminder_date before _next_occurrence) verified working — monthly/quarterly/yearly recurring all advance correctly."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_transfers_api.py",
+    "/app/backend/tests/test_snapshots_api.py",
+    "/app/backend/tests/test_multirecord_and_deltas.py",
+    "/app/backend/tests/test_uploads_and_labels.py",
+    "/app/backend/tests/test_recovery_api.py"
+  ],
+  "success_rate": {"backend": "~92% (119 passed / ~129 total; 10 failures are Firestore-quota environmental, not code bugs)", "frontend": "100% smoke (boots, routes work, UI structure correct)"},
+  "test_credentials": "Single-user mode via POST /api/auth/single-user — no credentials required; canonical flow documented in /app/memory/test_credentials.md.",
+  "seed_data_creation": "Each pytest run creates TEST_-prefixed accounts/transactions in Firestore. No cleanup is performed across runs (pile-up contributes to quota exhaustion).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Reminder smart-complete recurring bug (reminders.py:~244) is FIXED and tested green. Investments 24+ category forms backend round-trip verified. Bank-account validation tests in test_transfers/snapshots/multirecord/uploads/recovery were updated this iteration with account_holder_name+account_number+ifsc_code helpers — DO NOT roll back. Firestore quota is exhausted as of 2026-05-12 ~19:16 UTC; wait until next day for /api/auth/single-user to work again for live smoke tests. All test JUnit XMLs are saved in /app/test_reports/pytest/iter20_*.xml.",
+  "rca of the issue": "10 backend test failures (recovery 6 + uploads 4) failed with 500 'Internal Server Error'. Backend log shows google.api_core.exceptions.ResourceExhausted: 429 Quota exceeded from firebase_config.py:282 inside single_user_mode() handler. Root cause: Firebase Firestore project daily-read free-tier quota exhausted from cumulative test runs across iterations 1-20. Reproduction: any DB-touching request returns 500 once quota hits. Mitigation: (a) wait 24h for quota reset, (b) add user-id memoization cache in server.py single_user_mode(), (c) wrap Firestore wrapper calls with ResourceExhausted → 503 mapping so frontend can show retry UI rather than crashing."
+}

@@ -242,14 +242,22 @@ async def update_reminder(reminder_id: str, data: ReminderUpdate, request: Reque
 
     # Recurring reminders auto-advance on complete, until end_type terminates them
     if update_data.get("is_completed") is True and existing.get("is_recurring"):
-        next_dt = _next_occurrence(
-            existing.get("reminder_date") or datetime.now(timezone.utc),
-            existing.get("recurrence"),
-        )
+        existing_dt = existing.get("reminder_date") or datetime.now(timezone.utc)
+        if isinstance(existing_dt, str):
+            try:
+                existing_dt = datetime.fromisoformat(existing_dt.replace("Z", "+00:00"))
+            except ValueError:
+                existing_dt = datetime.now(timezone.utc)
+        next_dt = _next_occurrence(existing_dt, existing.get("recurrence"))
         completion_count = int(existing.get("completion_count") or 0) + 1
         end_type = existing.get("end_type") or "never"
         max_occ = existing.get("max_occurrences")
         end_date = existing.get("end_date")
+        if isinstance(end_date, str):
+            try:
+                end_date = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+            except ValueError:
+                end_date = None
 
         reached_max = end_type == "after" and max_occ and completion_count >= max_occ
         past_end = end_type == "on" and end_date and next_dt and next_dt > end_date
