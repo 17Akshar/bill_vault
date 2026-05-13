@@ -295,6 +295,7 @@ class FirestoreCollection:
                         "card_id", "loan_id", "lending_id", "rental_id",
                         "payment_id", "account_id", "attempt_id", "log_id",
                         "snapshot_id", "transfer_id",
+                        "prepay_id", "loan_txn_id",  # loan prepayments + EMI transactions
                         "user_id"]:
                 if key in doc:
                     doc_id = doc[key]
