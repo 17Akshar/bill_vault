@@ -1,150 +1,165 @@
 /**
- * LoansDashboardScreen
- * Accessible via: More → Loans & EMIs
+ * LoansDashboardScreen — UI with dummy data only (no API calls)
+ * Matches reference design exactly.
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, Alert, ActivityIndicator, ScrollView,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
-import api from '../../utils/api';
-import { formatINR } from '../../utils/formatINR';
-import { format, parseISO, isValid } from 'date-fns';
 
-// ─── Loan type meta ─────────────────────────────────────────────────────────
-const LOAN_TYPES: Record<string, { label: string; icon: string; color: string }> = {
-  home:       { label: 'Home Loan',        icon: 'home',               color: '#6C47FF' },
-  car:        { label: 'Car Loan',         icon: 'car',                color: '#22C55E' },
-  personal:   { label: 'Personal Loan',    icon: 'person',             color: '#F59E0B' },
-  education:  { label: 'Education Loan',   icon: 'school',             color: '#3B82F6' },
-  gold:       { label: 'Gold Loan',        icon: 'diamond',            color: '#EAB308' },
-  business:   { label: 'Business Loan',    icon: 'briefcase',          color: '#0EA5E9' },
-  property:   { label: 'Loan vs Property', icon: 'business',           color: '#EC4899' },
-  vehicle:    { label: 'Two-Wheeler',      icon: 'bicycle',            color: '#14B8A6' },
-  other:      { label: 'Other Loan',       icon: 'cash',               color: '#8B5CF6' },
+// ─── Indian rupee format (no decimals) ───────────────────────────────────────
+function fmtINR(n: number): string {
+  const abs = Math.round(Math.abs(n));
+  const s = abs.toString();
+  if (s.length <= 3) return `₹${s}`;
+  const last3 = s.slice(-3);
+  const rest = s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+  return `₹${rest},${last3}`;
+}
+
+// ─── Dummy data ───────────────────────────────────────────────────────────────
+const SUMMARY = {
+  totalOutstanding: 1245300,
+  totalPaid:        1254700,
+  totalInterest:     391580,
+  monthlyEmi:         53350,
 };
 
-function getLoanMeta(type: string) {
-  return LOAN_TYPES[type] ?? LOAN_TYPES.other;
-}
+const LOANS = [
+  {
+    id:          '1',
+    title:       'Home Loan - HDFC',
+    lender:      'HDFC Bank',
+    type:        'home',
+    outstanding: 825000,
+    emi:         32750,
+    nextEmiDate: '18 May 2024',
+    status:      'Active',
+    paidPct:     55,
+    color:       '#5B4FFF',
+    icon:        'home' as const,
+  },
+  {
+    id:          '2',
+    title:       'Car Loan - SBI',
+    lender:      'SBI Bank',
+    type:        'car',
+    outstanding: 315300,
+    emi:         12750,
+    nextEmiDate: '25 May 2024',
+    status:      'Active',
+    paidPct:     57,
+    color:       '#22C55E',
+    icon:        'car' as const,
+  },
+  {
+    id:          '3',
+    title:       'Personal Loan - ICICI',
+    lender:      'ICICI Bank',
+    type:        'personal',
+    outstanding: 105000,
+    emi:         7850,
+    nextEmiDate: '10 Jun 2024',
+    status:      'Active',
+    paidPct:     58,
+    color:       '#F97316',
+    icon:        'person' as const,
+  },
+];
 
-// ─── Safe date parse ─────────────────────────────────────────────────────────
-function safeFormatDate(value: any, fmt = 'dd MMM yyyy'): string {
-  if (!value) return '—';
-  try {
-    const d = typeof value === 'string' ? parseISO(value) : value;
-    return isValid(d) ? format(d, fmt) : '—';
-  } catch {
-    return '—';
-  }
-}
+// ─── Stat card (one of 4 in summary row) ─────────────────────────────────────
+const STAT_META = [
+  { key: 'totalOutstanding', label: 'Total Outstanding', color: '#5B4FFF', iconName: 'trending-down-outline' },
+  { key: 'totalPaid',        label: 'Total Paid',        color: '#22C55E', iconName: 'checkmark-circle-outline' },
+  { key: 'totalInterest',    label: 'Total Interest',    color: '#F97316', iconName: 'calculator-outline' },
+  { key: 'monthlyEmi',       label: 'Monthly EMI',       color: '#3B82F6', iconName: 'calendar-outline' },
+] as const;
 
-// ─── Stat Card ───────────────────────────────────────────────────────────────
 function StatCard({
-  label, value, color, icon,
-}: { label: string; value: number; color: string; icon: string }) {
-  const { colors } = useTheme();
+  label, value, color, iconName, isLast, colors,
+}: { label: string; value: number; color: string; iconName: string; isLast: boolean; colors: any }) {
   return (
-    <View style={[s.statCard, { backgroundColor: colors.card }]}>
-      <Text style={[s.statLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <Text style={[s.statValue, { color }]}>{formatINR(value)}</Text>
-      <View style={[s.statIcon, { backgroundColor: color + '18' }]}>
-        <Ionicons name={icon as any} size={14} color={color} />
+    <View style={[st.wrap, !isLast && { borderRightWidth: 1, borderRightColor: colors.border }]}>
+      <Text style={[st.label, { color: colors.textSecondary }]} numberOfLines={2}>{label}</Text>
+      <Text style={[st.value, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {fmtINR(value)}
+      </Text>
+      <View style={[st.iconPill, { backgroundColor: color + '18' }]}>
+        <Ionicons name={iconName as any} size={12} color={color} />
       </View>
     </View>
   );
 }
 
-// ─── Loan Card ───────────────────────────────────────────────────────────────
-function LoanCard({
-  loan, onPress, onMenuPress,
-}: { loan: any; onPress: () => void; onMenuPress: () => void }) {
-  const { colors } = useTheme();
-  const meta = getLoanMeta(loan.loan_type);
-  const principal = parseFloat(loan.principal_amount) || 0;
-  const outstanding = parseFloat(loan.outstanding_amount) || 0;
-  const paid = principal - outstanding;
-  const paidPct = principal > 0 ? Math.min((paid / principal) * 100, 100) : 0;
-  const status = loan.status || 'active';
+const st = StyleSheet.create({
+  wrap:     { flex: 1, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'flex-start' },
+  label:    { fontSize: 10, fontWeight: '500', marginBottom: 6, lineHeight: 13 },
+  value:    { fontSize: 14, fontWeight: '800', marginBottom: 8, letterSpacing: -0.3 },
+  iconPill: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+});
 
-  const statusColors: Record<string, { bg: string; text: string }> = {
-    active: { bg: '#22C55E18', text: '#16A34A' },
-    closed: { bg: '#9CA3AF18', text: '#6B7280' },
-    paused: { bg: '#F59E0B18', text: '#D97706' },
-  };
-  const sc = statusColors[status] ?? statusColors.active;
-
+// ─── Loan card ────────────────────────────────────────────────────────────────
+function LoanCard({ loan, colors, onPress }: { loan: typeof LOANS[0]; colors: any; onPress: () => void }) {
   return (
     <TouchableOpacity
-      testID={`loan-card-${loan.loan_id}`}
-      style={[s.card, { backgroundColor: colors.card }]}
+      testID={`loan-card-${loan.id}`}
+      activeOpacity={0.8}
       onPress={onPress}
-      activeOpacity={0.75}
+      style={[lc.card, { backgroundColor: colors.card }]}
     >
-      {/* Header row */}
-      <View style={s.cardHeader}>
-        <View style={[s.typeIconWrap, { backgroundColor: meta.color + '20' }]}>
-          <Ionicons name={meta.icon as any} size={24} color={meta.color} />
+      {/* ── Row 1: icon + title + badge + menu ── */}
+      <View style={lc.headerRow}>
+        <View style={[lc.iconBox, { backgroundColor: loan.color + '22' }]}>
+          <Ionicons name={loan.icon} size={26} color={loan.color} />
         </View>
-        <View style={s.cardTitle}>
-          <Text style={[s.cardName, { color: colors.text }]} numberOfLines={1}>
-            {loan.name}
+
+        <View style={lc.titleBlock}>
+          <Text style={[lc.titleText, { color: colors.text }]} numberOfLines={1}>
+            {loan.title}
           </Text>
-          {loan.lender ? (
-            <Text style={[s.cardLender, { color: colors.textSecondary }]} numberOfLines={1}>
-              {loan.lender}
-            </Text>
-          ) : (
-            <Text style={[s.cardLender, { color: colors.textSecondary }]}>{meta.label}</Text>
-          )}
         </View>
-        <View style={s.cardBadgeRow}>
-          <View style={[s.statusBadge, { backgroundColor: sc.bg }]}>
-            <Text style={[s.statusText, { color: sc.text }]}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Text>
+
+        <View style={lc.badgeRow}>
+          <View style={lc.activeBadge}>
+            <Text style={lc.activeBadgeText}>{loan.status}</Text>
           </View>
           <TouchableOpacity
-            testID={`loan-menu-${loan.loan_id}`}
-            onPress={onMenuPress}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            testID={`loan-menu-${loan.id}`}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Stats row */}
-      <View style={s.cardStats}>
-        <View>
-          <Text style={[s.statRowLabel, { color: colors.textSecondary }]}>Outstanding Balance</Text>
-          <Text style={[s.statRowValue, { color: '#6C47FF' }]}>{formatINR(outstanding)}</Text>
+      {/* ── Row 2: Outstanding + EMI ── */}
+      <View style={lc.statsRow}>
+        <View style={lc.statBlock}>
+          <Text style={[lc.statLabel, { color: colors.textSecondary }]}>Outstanding Balance</Text>
+          <Text style={lc.outstandingValue}>{fmtINR(loan.outstanding)}</Text>
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={[s.statRowLabel, { color: colors.textSecondary }]}>EMI Amount</Text>
-          <Text style={[s.statRowValue, { color: colors.text }]}>{formatINR(parseFloat(loan.emi_amount) || 0)}</Text>
+        <View style={[lc.statBlock, { alignItems: 'flex-end' }]}>
+          <Text style={[lc.statLabel, { color: colors.textSecondary }]}>EMI Amount</Text>
+          <Text style={[lc.emiValue, { color: colors.text }]}>{fmtINR(loan.emi)}</Text>
         </View>
       </View>
 
-      {/* Next EMI + progress */}
-      <View style={s.cardBottom}>
-        <View>
-          <Text style={[s.statRowLabel, { color: colors.textSecondary }]}>Next EMI Date</Text>
-          <Text style={[s.nextEmiDate, { color: colors.text }]}>
-            {safeFormatDate(loan.next_emi_date)}
-          </Text>
+      {/* ── Row 3: Next EMI date + Progress ── */}
+      <View style={lc.bottomRow}>
+        <View style={lc.dateBlock}>
+          <Text style={[lc.statLabel, { color: colors.textSecondary }]}>Next EMI Date</Text>
+          <Text style={[lc.emiDateText, { color: colors.text }]}>{loan.nextEmiDate}</Text>
         </View>
-        <View style={s.progressWrap}>
-          <Text style={[s.progressLabel, { color: colors.textSecondary }]}>
-            {paidPct.toFixed(0)}% Completed
+        <View style={lc.progressBlock}>
+          <Text style={[lc.pctText, { color: colors.textSecondary }]}>
+            {loan.paidPct}% Completed
           </Text>
-          <View style={[s.progressBar, { backgroundColor: colors.border }]}>
-            <View style={[s.progressFill, { width: `${paidPct}%` as any }]} />
+          <View style={[lc.progressTrack, { backgroundColor: colors.border }]}>
+            <View style={[lc.progressFill, { width: `${loan.paidPct}%` as any, backgroundColor: '#3B5BFF' }]} />
           </View>
         </View>
       </View>
@@ -152,255 +167,180 @@ function LoanCard({
   );
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
+const lc = StyleSheet.create({
+  card: {
+    borderRadius: 18, paddingHorizontal: 18, paddingVertical: 18, marginBottom: 14,
+    shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+  // Row 1
+  headerRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 },
+  iconBox:      { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  titleBlock:   { flex: 1 },
+  titleText:    { fontSize: 16, fontWeight: '700' },
+  badgeRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  activeBadge:  { backgroundColor: '#DCFCE7', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 7 },
+  activeBadgeText: { color: '#16A34A', fontSize: 11, fontWeight: '700' },
+  // Row 2
+  statsRow:         { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  statBlock:        { gap: 4 },
+  statLabel:        { fontSize: 11 },
+  outstandingValue: { fontSize: 18, fontWeight: '800', color: '#5B4FFF' },
+  emiValue:         { fontSize: 17, fontWeight: '600' },
+  // Row 3
+  bottomRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  dateBlock:    { gap: 4 },
+  emiDateText:  { fontSize: 14, fontWeight: '700' },
+  progressBlock: { flex: 1, marginLeft: 20, alignItems: 'flex-end', gap: 5 },
+  pctText:       { fontSize: 11 },
+  progressTrack: { width: '100%', height: 5, borderRadius: 3, overflow: 'hidden' },
+  progressFill:  { height: 5, borderRadius: 3 },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LoansDashboardScreen() {
   const router = useRouter();
   const { colors } = useTheme();
 
-  const [loans, setLoans] = useState<any[]>([]);
-  const [dashboard, setDashboard] = useState<any>({
-    total_outstanding: 0, total_paid: 0, total_interest: 0, monthly_emi: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<'next_emi' | 'outstanding' | 'name'>('next_emi');
-
-  const load = async () => {
-    try {
-      const [dashRes, loansRes] = await Promise.all([
-        api.get('/loans/dashboard'),
-        api.get('/loans'),
-      ]);
-      setDashboard(dashRes.data);
-      setLoans(loansRes.data);
-    } catch (e) {
-      console.error('Loans load error', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useFocusEffect(useCallback(() => { load(); }, []));
-  const onRefresh = useCallback(() => { setRefreshing(true); load(); }, []);
-
-  const sortedLoans = [...loans].sort((a, b) => {
-    if (sortBy === 'outstanding') return (b.outstanding_amount || 0) - (a.outstanding_amount || 0);
-    if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
-    // next_emi: nulls last
-    if (!a.next_emi_date && !b.next_emi_date) return 0;
-    if (!a.next_emi_date) return 1;
-    if (!b.next_emi_date) return -1;
-    return new Date(a.next_emi_date).getTime() - new Date(b.next_emi_date).getTime();
-  });
-
-  const handleMenu = (loan: any) => {
-    Alert.alert(loan.name, 'Choose an action', [
-      { text: 'View Details', onPress: () => router.push({ pathname: '/loans/[id]', params: { id: loan.loan_id } } as any) },
-      { text: 'Prepayment', onPress: () => router.push({ pathname: '/loans/prepayment', params: { loan_id: loan.loan_id } } as any) },
-      { text: 'Set Reminder', onPress: () => router.push({ pathname: '/loans/reminder', params: { loan_id: loan.loan_id, loan_name: loan.name } } as any) },
-      { text: 'Transactions', onPress: () => router.push({ pathname: '/loans/transactions', params: { loan_id: loan.loan_id, loan_name: loan.name } } as any) },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          Alert.alert('Delete Loan', `Remove "${loan.name}"?`, [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete', style: 'destructive', onPress: async () => {
-                try { await api.delete(`/loans/${loan.loan_id}`); load(); }
-                catch { Alert.alert('Error', 'Failed to delete'); }
-              },
-            },
-          ]);
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
-  const cycleSortBy = () => {
-    setSortBy(prev => prev === 'next_emi' ? 'outstanding' : prev === 'outstanding' ? 'name' : 'next_emi');
-  };
-
-  const sortLabel: Record<string, string> = {
-    next_emi: 'Next EMI Date',
-    outstanding: 'Outstanding',
-    name: 'Name',
-  };
-
-  if (loading) {
-    return (
-      <View style={[s.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color="#6C47FF" />
-      </View>
-    );
-  }
+  const [sortLabel] = useState('Next EMI Date');
+  const [dateRange]  = useState('01 Apr 2024 – 30 Apr 2024');
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]} edges={['top']}>
+
+      {/* ═══ HEADER ════════════════════════════════════════════════════════════ */}
+      <View style={[s.header, { backgroundColor: colors.background }]}>
         <TouchableOpacity
           testID="loans-back-btn"
           onPress={() => router.back()}
-          style={s.backBtn}
+          style={s.headerIconBtn}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
+
         <Text style={[s.headerTitle, { color: colors.text }]}>Loans &amp; EMIs</Text>
+
         <TouchableOpacity
           testID="add-loan-btn"
+          style={s.addLoanBtn}
           onPress={() => router.push('/loans/add' as any)}
-          style={s.addBtn}
         >
-          <Ionicons name="add" size={16} color="#6C47FF" />
-          <Text style={s.addBtnText}>Add Loan</Text>
+          <Ionicons name="add" size={15} color="#5B4FFF" />
+          <Text style={s.addLoanText}>Add Loan</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6C47FF" />}
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={s.scroll}
       >
-        {/* Stats Grid */}
-        <View style={[s.statsContainer, { backgroundColor: colors.card }]}>
-          <View style={s.statsRow}>
-            <StatCard label="Total Outstanding" value={dashboard.total_outstanding} color="#6C47FF" icon="trending-down" />
-            <StatCard label="Total Paid" value={dashboard.total_paid} color="#22C55E" icon="checkmark-circle" />
-          </View>
-          <View style={[s.statsDivider, { backgroundColor: colors.border }]} />
-          <View style={s.statsRow}>
-            <StatCard label="Total Interest" value={dashboard.total_interest} color="#F59E0B" icon="calculator" />
-            <StatCard label="Monthly EMI" value={dashboard.monthly_emi} color="#3B82F6" icon="calendar" />
-          </View>
-        </View>
 
-        {/* Loans List */}
-        <View style={s.section}>
-          <View style={s.sectionHeader}>
-            <Text style={[s.sectionTitle, { color: colors.text }]}>Your Loans</Text>
-            <TouchableOpacity
-              testID="loans-sort-btn"
-              style={s.sortBtn}
-              onPress={cycleSortBy}
-            >
-              <Text style={s.sortText}>Sort: {sortLabel[sortBy]}</Text>
-              <Ionicons name="swap-vertical" size={14} color="#6C47FF" />
-            </TouchableOpacity>
-          </View>
-
-          {sortedLoans.length === 0 ? (
-            <View style={s.emptyState}>
-              <Ionicons name="document-text-outline" size={64} color={colors.textSecondary} />
-              <Text style={[s.emptyTitle, { color: colors.text }]}>No Loans Added</Text>
-              <Text style={[s.emptySubtitle, { color: colors.textSecondary }]}>
-                Tap "+ Add Loan" to track your loans and EMIs
-              </Text>
-              <TouchableOpacity
-                testID="empty-add-loan-btn"
-                style={s.emptyAddBtn}
-                onPress={() => router.push('/loans/add' as any)}
-              >
-                <Text style={s.emptyAddText}>+ Add Your First Loan</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            sortedLoans.map(loan => (
-              <LoanCard
-                key={loan.loan_id}
-                loan={loan}
-                onPress={() => router.push({ pathname: '/loans/[id]', params: { id: loan.loan_id } } as any)}
-                onMenuPress={() => handleMenu(loan)}
+        {/* ═══ SUMMARY CARD ══════════════════════════════════════════════════ */}
+        <View style={[s.summaryCard, { backgroundColor: colors.card }]}>
+          <View style={s.summaryRow}>
+            {STAT_META.map((meta, i) => (
+              <StatCard
+                key={meta.key}
+                label={meta.label}
+                value={SUMMARY[meta.key]}
+                color={meta.color}
+                iconName={meta.iconName}
+                isLast={i === STAT_META.length - 1}
+                colors={colors}
               />
-            ))
-          )}
+            ))}
+          </View>
         </View>
+
+        {/* ═══ DATE FILTER ═══════════════════════════════════════════════════ */}
+        <View style={[s.dateRow, { backgroundColor: colors.card }]}>
+          <View style={s.dateLeft}>
+            <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+            <Text style={[s.dateText, { color: colors.text }]}>{dateRange}</Text>
+            <Ionicons name="chevron-down" size={15} color={colors.textSecondary} />
+          </View>
+          <TouchableOpacity style={[s.filterIconBtn, { borderColor: colors.border }]}>
+            <Ionicons name="funnel-outline" size={17} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ═══ LOANS SECTION HEADER ══════════════════════════════════════════ */}
+        <View style={s.sectionHeader}>
+          <Text style={[s.sectionTitle, { color: colors.text }]}>Your Loans</Text>
+          <TouchableOpacity style={s.sortBtn} testID="loans-sort-btn">
+            <Text style={s.sortBtnText}>Sort: {sortLabel}</Text>
+            <Ionicons name="swap-vertical" size={14} color="#5B4FFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* ═══ LOAN CARDS ════════════════════════════════════════════════════ */}
+        {LOANS.map(loan => (
+          <LoanCard
+            key={loan.id}
+            loan={loan}
+            colors={colors}
+            onPress={() => router.push({ pathname: '/loans/[id]', params: { id: loan.id } } as any)}
+          />
+        ))}
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Screen-level styles ─────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1 },
+  safe:   { flex: 1 },
 
-  // Header
+  /* Header */
   header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-    paddingVertical: 14, gap: 10,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12, gap: 10,
   },
-  backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 20, fontWeight: '700' },
-  addBtn: {
+  headerIconBtn: { padding: 4 },
+  headerTitle:   { flex: 1, fontSize: 20, fontWeight: '800' },
+  addLoanBtn:    {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#6C47FF',
+    paddingHorizontal: 13, paddingVertical: 8,
+    borderRadius: 22, borderWidth: 1.5, borderColor: '#5B4FFF',
   },
-  addBtnText: { color: '#6C47FF', fontSize: 13, fontWeight: '700' },
+  addLoanText: { color: '#5B4FFF', fontSize: 13, fontWeight: '700' },
 
-  // Stats
-  statsContainer: { marginHorizontal: 16, borderRadius: 16, padding: 4, marginBottom: 16 },
-  statsRow: { flexDirection: 'row' },
-  statsDivider: { height: 1, marginHorizontal: 4 },
-  statCard: {
-    flex: 1, padding: 14, borderRadius: 12, margin: 4,
-    alignItems: 'flex-start',
+  /* Scroll */
+  scroll: { paddingHorizontal: 16, paddingTop: 4 },
+
+  /* Summary card */
+  summaryCard: {
+    borderRadius: 18, marginBottom: 14,
+    paddingHorizontal: 6, paddingVertical: 4,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
-  statLabel: { fontSize: 11, fontWeight: '500', marginBottom: 4 },
-  statValue: { fontSize: 15, fontWeight: '700', marginBottom: 8 },
-  statIcon: {
-    width: 26, height: 26, borderRadius: 13,
+  summaryRow: { flexDirection: 'row' },
+
+  /* Date filter */
+  dateRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
+    marginBottom: 20,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 }, elevation: 1,
+  },
+  dateLeft: { flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1 },
+  dateText: { fontSize: 14, fontWeight: '500', flex: 1 },
+  filterIconBtn: {
+    width: 38, height: 38, borderRadius: 10, borderWidth: 1.2,
     alignItems: 'center', justifyContent: 'center',
   },
 
-  // Section
-  section: { paddingHorizontal: 16 },
+  /* Section header */
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', marginBottom: 12,
+    justifyContent: 'space-between', marginBottom: 14,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '700' },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sortText: { color: '#6C47FF', fontSize: 13, fontWeight: '600' },
-
-  // Loan Card
-  card: {
-    borderRadius: 16, padding: 16, marginBottom: 12,
-    shadowColor: '#000', shadowOpacity: 0.05,
-    shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 12 },
-  typeIconWrap: {
-    width: 46, height: 46, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  cardTitle: { flex: 1 },
-  cardName: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  cardLender: { fontSize: 12 },
-  cardBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  cardStats: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  statRowLabel: { fontSize: 11, marginBottom: 3 },
-  statRowValue: { fontSize: 15, fontWeight: '700' },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  nextEmiDate: { fontSize: 14, fontWeight: '600', marginTop: 2 },
-  progressWrap: { alignItems: 'flex-end', flex: 1, marginLeft: 16 },
-  progressLabel: { fontSize: 11, marginBottom: 5 },
-  progressBar: { width: '100%', height: 5, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: 5, borderRadius: 3, backgroundColor: '#6C47FF' },
-
-  // Empty
-  emptyState: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyTitle: { fontSize: 18, fontWeight: '700' },
-  emptySubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  emptyAddBtn: {
-    marginTop: 8, backgroundColor: '#6C47FF',
-    paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24,
-  },
-  emptyAddText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: '800' },
+  sortBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sortBtnText:  { color: '#5B4FFF', fontSize: 13, fontWeight: '600' },
 });
