@@ -41,7 +41,7 @@ Add a new feature called "Loans & EMIs" inside the More section.
 | LoansDashboardScreen | `app/loans/index.tsx` | ✅ Live data + custom action menu |
 | AddLoanScreen | `app/loans/add.tsx` | ✅ Save / Edit / custom Delete modal |
 | LoanDetailScreen | `app/loans/[id].tsx` | ✅ Custom Delete modal + edit nav |
-| PrepaymentScreen | `app/loans/prepayment.tsx` | ✅ Live calc + API |
+| PrepaymentScreen | `app/loans/prepayment.tsx` | ✅ UI-only with dummy calc matching reference (2026-02-13) |
 | EMIReminderScreen | `app/loans/reminder.tsx` | ✅ Reuses `/api/reminders` |
 | LoanTransactionScreen | `app/loans/transactions.tsx` | ✅ Mark EMI modal |
 
