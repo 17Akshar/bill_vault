@@ -106,10 +106,10 @@ export default function LoanTransactionScreen() {
         </Text>
         <TouchableOpacity
           testID="txn-mark-emi"
-          style={s.addBtn}
+          style={s.markEmiHeaderBtn}
           onPress={() => setShowMarkEmi(true)}
         >
-          <Ionicons name="add" size={18} color="#6C47FF" />
+          <Text style={s.markEmiHeaderText}>Mark EMI</Text>
         </TouchableOpacity>
       </View>
 
@@ -263,6 +263,11 @@ const s = StyleSheet.create({
   backBtn: { padding: 4 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
   addBtn: { padding: 8 },
+  markEmiHeaderBtn: {
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#6C47FF',
+  },
+  markEmiHeaderText: { color: '#6C47FF', fontSize: 12, fontWeight: '700' },
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, paddingHorizontal: 16 },
   tab: { paddingVertical: 10, paddingHorizontal: 14, marginRight: 4 },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#6C47FF' },

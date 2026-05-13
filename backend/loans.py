@@ -103,6 +103,8 @@ def _serialize_loan(loan: dict) -> dict:
         v = loan.get(k)
         if v and isinstance(v, datetime):
             loan[k] = v.isoformat()
+        elif v and hasattr(v, 'isoformat'):
+            loan[k] = v.isoformat()
     loan.pop("_id", None)
     return loan
 
