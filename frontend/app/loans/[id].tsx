@@ -163,6 +163,13 @@ export default function LoanDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: colors.text }]} numberOfLines={1}>{loan.name}</Text>
+        <TouchableOpacity
+          testID="loan-detail-edit"
+          onPress={() => router.push({ pathname: '/loans/add', params: { loan_id: id } } as any)}
+          style={{ marginRight: 8 }}
+        >
+          <Ionicons name="create-outline" size={22} color="#5B4FFF" />
+        </TouchableOpacity>
         <TouchableOpacity testID="loan-detail-delete" onPress={handleDelete}>
           <Ionicons name="trash-outline" size={22} color="#EF4444" />
         </TouchableOpacity>
