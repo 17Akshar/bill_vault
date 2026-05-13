@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 
 import requests
 
-BASE_URL = os.environ.get("BACKEND_URL", "https://competent-haslett-9.preview.emergentagent.com").rstrip("/") + "/api"
+BASE_URL = os.environ.get("BACKEND_URL", "https://fincare-loans-emi.preview.emergentagent.com").rstrip("/") + "/api"
 
 
 def _get_token():

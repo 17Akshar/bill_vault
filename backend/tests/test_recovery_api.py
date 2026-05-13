@@ -15,7 +15,7 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = "https://competent-haslett-9.preview.emergentagent.com/api"
+BASE_URL = "https://fincare-loans-emi.preview.emergentagent.com/api"
 
 
 # Helper: unique identifier for each test run
