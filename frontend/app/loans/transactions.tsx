@@ -16,7 +16,7 @@
  *  - POST /api/loans/{id}/transactions  mark EMI paid
  *  - CrossPlatformPicker
  */
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Alert, ActivityIndicator, TextInput, Modal,
@@ -339,9 +339,6 @@ export default function LoanTransactionScreen() {
     }
   };
   useFocusEffect(useCallback(() => { load(); }, [loan_id]));
-  // Belt-and-braces: ensure load() also fires on initial mount (cold deep-link
-  // on web sometimes does not trigger useFocusEffect on the first paint).
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [loan_id]);
 
   // ── Build timeline ──
   const { rows, charges } = useMemo(
