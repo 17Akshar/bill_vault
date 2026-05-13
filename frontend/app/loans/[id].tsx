@@ -5,7 +5,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -79,6 +79,8 @@ export default function LoanDetailScreen() {
   const [txns, setTxns] = useState<any[]>([]);
   const [prepayments, setPrepayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -99,19 +101,19 @@ export default function LoanDetailScreen() {
 
   useFocusEffect(useCallback(() => { setLoading(true); load(); }, [id]));
 
-  const handleDelete = () => {
-    Alert.alert('Delete Loan', `Remove "${loan?.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          try {
-            await api.delete(`/loans/${id}`);
-            if (router.canGoBack()) router.back();
-            else router.replace('/loans' as any);
-          } catch { Alert.alert('Error', 'Failed to delete'); }
-        },
-      },
-    ]);
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/loans/${id}`);
+      setShowDeleteConfirm(false);
+      if (router.canGoBack()) router.back();
+      else router.replace('/loans' as any);
+    } catch {
+      setShowDeleteConfirm(false);
+      Alert.alert('Error', 'Failed to delete');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -170,7 +172,7 @@ export default function LoanDetailScreen() {
         >
           <Ionicons name="create-outline" size={22} color="#5B4FFF" />
         </TouchableOpacity>
-        <TouchableOpacity testID="loan-detail-delete" onPress={handleDelete}>
+        <TouchableOpacity testID="loan-detail-delete" onPress={() => setShowDeleteConfirm(true)}>
           <Ionicons name="trash-outline" size={22} color="#EF4444" />
         </TouchableOpacity>
       </View>
@@ -319,6 +321,46 @@ export default function LoanDetailScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !deleting && setShowDeleteConfirm(false)}
+      >
+        <View style={dcs.overlay}>
+          <View style={[dcs.box, { backgroundColor: colors.card }]}>
+            <View style={dcs.iconCircle}>
+              <Ionicons name="trash" size={26} color="#EF4444" />
+            </View>
+            <Text style={[dcs.title, { color: colors.text }]}>Delete Loan?</Text>
+            <Text style={[dcs.body, { color: colors.textSecondary }]}>
+              "{loan?.name}" and all related EMI / prepayment history will be permanently removed.
+            </Text>
+            <View style={dcs.actions}>
+              <TouchableOpacity
+                testID="detail-delete-cancel"
+                style={[dcs.btn, { borderColor: colors.border, borderWidth: 1 }]}
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                <Text style={[dcs.btnText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="detail-delete-confirm"
+                style={[dcs.btn, dcs.confirmBtn, deleting && { opacity: 0.6 }]}
+                onPress={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={[dcs.btnText, { color: '#FFF' }]}>Delete</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -374,4 +416,16 @@ const s = StyleSheet.create({
   txnTitle: { fontSize: 14, fontWeight: '600' },
   txnDate: { fontSize: 11, marginTop: 1 },
   txnAmount: { fontSize: 14, fontWeight: '700' },
+});
+
+const dcs = StyleSheet.create({
+  overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.5)', justifyContent:'center', alignItems:'center', padding:24 },
+  box:        { width:'100%', maxWidth:340, borderRadius:20, padding:24, alignItems:'center' },
+  iconCircle: { width:60, height:60, borderRadius:30, backgroundColor:'#FEE2E2', alignItems:'center', justifyContent:'center', marginBottom:14 },
+  title:      { fontSize:18, fontWeight:'800', marginBottom:6 },
+  body:       { fontSize:13, textAlign:'center', lineHeight:19, marginBottom:18 },
+  actions:    { flexDirection:'row', gap:10, width:'100%' },
+  btn:        { flex:1, paddingVertical:13, borderRadius:11, alignItems:'center' },
+  confirmBtn: { backgroundColor:'#EF4444' },
+  btnText:    { fontSize:14, fontWeight:'700' },
 });

@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration_22 — Re-verified Loans & EMIs after iteration_21 fixes. Backend regression 11/11 pass. Frontend critical regression items all pass: custom 3-dot menu Modal (not Alert) with 6 testable actions, custom delete-confirm modals on AddLoanScreen AND LoanDetailScreen, sort modal, edit-via-menu navigation, Mark EMI modal with amount input + confirm button. LoansDashboardScreen is now LIVE — pulls real data from /api/loans and /api/loans/dashboard (verified totals: ₹30,00,000 outstanding, ₹65,500 monthly EMI for 2 loans).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Auth bootstrap race on direct /loans deep-link (cold load)",
+        "issue": "When user visits /loans directly with no prior session, the loans page fires GET /api/loans and GET /api/loans/dashboard BEFORE AuthContext's single-user bootstrap completes. The 401 response triggers utils/api.ts's response interceptor which then REMOVES the auth_token from AsyncStorage. Result: dashboard shows empty state (No loans yet, ₹0 totals) on first visit even when loans exist. Reproduces 100%. Works fine on second navigation or via in-app routing.",
+        "affected_selectors": ["[data-testid='loans-empty-state']", "[data-testid^='loan-card-']"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Loans Dashboard - summary stat cards",
+        "issues": ["'Total Interest' card value can become very long (e.g. ₹1,27,20,000 across multiple loans) and gets truncated with ellipsis at viewport 420px even with adjustsFontSizeToFit. Consider switching to compact format (₹1.27Cr / ₹12.72L) for the stat strip."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_loans_api.py",
+    "/app/test_reports/pytest/iter22_loans.xml"
+  ],
+  "action_items": [
+    "Fix auth bootstrap race on /loans deep-link: either (a) gate api.ts requests on a one-shot 'auth ready' promise from AuthContext, or (b) on 401 don't immediately wipe token — re-run the single-user bootstrap once and retry the request, or (c) make the loans screen wait for `isAuthenticated` before calling load().",
+    "Optional: compact-format the Total Interest / Outstanding stat values (e.g. ₹1.27Cr) to avoid truncation at narrow viewports."
+  ],
+  "critical_code_review_comments": [
+    "utils/api.ts L48-54: 401 interceptor silently deletes auth_token+user from storage with no re-bootstrap and no navigation — this masks auth races (see integration_issue above) and can log users out on a single transient 401. Should at least attempt a single re-auth via /api/auth/single-user in single-user mode.",
+    "app/loans/index.tsx L341-346: load() swallows all errors with a bare `catch {}` — when /api/loans fails the user sees the empty state with no toast/banner indicating an error occurred. Recommend surfacing a 'Could not load loans, pull to refresh' message.",
+    "loans.py _serialize_loan: still doesn't guard against start_date/next_emi_date being a plain string (flagged in iteration_21 — confirmed still present but no failure observed in this run)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (11/11 pytest cases)",
+    "frontend": "100% on all explicitly listed regression items (3-dot menu modal, sort modal, edit-via-menu, delete-confirm modals on add+detail, Mark EMI modal, prepayment/reminder/transactions navigation). 1 separate auth-bootstrap race issue found."
+  },
+  "test_credentials": "Single-user mode — POST /api/auth/single-user returns a JWT (no creds required). Loan loan_a3a73d295218 still exists for follow-up runs.",
+  "seed_data_creation": "Created and then deleted SEED loan loan_978ce56eb628 during this iteration. Pre-existing loan loan_a3a73d295218 (Home Loan - HDFC Bank, ₹15,00,000) is preserved.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All loans regression items from iteration_21 are RESOLVED — 3-dot menu is now a custom Modal (testIDs loan-action-{view|edit|prepayment|reminder|transactions|delete}), AddLoanScreen and LoanDetailScreen both use custom delete-confirm modals (testIDs delete-cancel-btn/delete-confirm-btn and detail-delete-cancel/detail-delete-confirm respectively), Mark EMI button has clear 'Mark EMI' label with testID txn-mark-emi. The auth-bootstrap race on cold /loans deep-link is the only outstanding integration issue — easily worked around by hitting / first.",
+  "rca_of_the_issue": "Auth race RCA: AuthContext.bootstrap is async — it reads auth_token from AsyncStorage, then if empty calls POST /api/auth/single-user, then writes to AsyncStorage. Loans screen's useFocusEffect fires its load() the moment the component mounts. On cold deep-link, mount happens BEFORE bootstrap finishes, so the axios interceptor in utils/api.ts reads `null` from AsyncStorage and sends the request without Authorization. Backend returns 401, the response interceptor deletes the (now being-set) auth_token, and the UI lands on empty state. Fix: have AuthContext expose a `bootstrapPromise` and have api.ts request interceptor `await` it before reading the token."
+}

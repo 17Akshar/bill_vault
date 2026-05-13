@@ -231,6 +231,7 @@ export default function AddLoanScreen() {
   const [errors,        setErrors]        = useState<Record<string,string>>({});
   const [saving,        setSaving]        = useState(false);
   const [deleting,      setDeleting]      = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [loadingEdit,   setLoadingEdit]   = useState(isEdit);
   const [accounts,      setAccounts]      = useState<any[]>([]);
 
@@ -350,28 +351,18 @@ export default function AddLoanScreen() {
   }
 
   // ─── Delete ────────────────────────────────────────────────────────────────
-  function handleDelete() {
-    Alert.alert(
-      'Delete Loan',
-      'This will permanently remove this loan and all related data. Continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete', style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await api.delete(`/loans/${loan_id}`);
-              router.replace('/loans' as any);
-            } catch {
-              Alert.alert('Error', 'Failed to delete loan');
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await api.delete(`/loans/${loan_id}`);
+      setShowDeleteConfirm(false);
+      router.replace('/loans' as any);
+    } catch {
+      setShowDeleteConfirm(false);
+      Alert.alert('Error', 'Failed to delete loan');
+    } finally {
+      setDeleting(false);
+    }
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -628,7 +619,7 @@ export default function AddLoanScreen() {
             <TouchableOpacity
               testID="delete-loan-btn"
               style={[s.deleteBtn, deleting && { opacity: 0.6 }]}
-              onPress={handleDelete}
+              onPress={() => setShowDeleteConfirm(true)}
               disabled={deleting}
             >
               {deleting
@@ -731,6 +722,46 @@ export default function AddLoanScreen() {
         onClose={() => setActivePicker(null)}
         colors={colors}
       />
+
+      {/* Custom Delete Confirmation */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !deleting && setShowDeleteConfirm(false)}
+      >
+        <View style={dc.overlay}>
+          <View style={[dc.box, { backgroundColor: colors.card }]}>
+            <View style={dc.iconCircle}>
+              <Ionicons name="trash" size={26} color="#EF4444" />
+            </View>
+            <Text style={[dc.title, { color: colors.text }]}>Delete Loan?</Text>
+            <Text style={[dc.body, { color: colors.textSecondary }]}>
+              This will permanently remove this loan and all related data. This action cannot be undone.
+            </Text>
+            <View style={dc.actions}>
+              <TouchableOpacity
+                testID="delete-cancel-btn"
+                style={[dc.btn, { borderColor: colors.border, borderWidth: 1 }]}
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                <Text style={[dc.btnText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="delete-confirm-btn"
+                style={[dc.btn, dc.confirmBtn, deleting && { opacity: 0.6 }]}
+                onPress={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={[dc.btnText, { color: '#FFF' }]}>Delete</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -772,4 +803,16 @@ const s = StyleSheet.create({
 
   saveBtn:     { backgroundColor:'#5B4FFF', borderRadius:14, paddingVertical:16, alignItems:'center', marginBottom:12 },
   saveBtnText: { color:'#FFF', fontSize:16, fontWeight:'700' },
+});
+
+const dc = StyleSheet.create({
+  overlay:    { flex:1, backgroundColor:'rgba(0,0,0,0.5)', justifyContent:'center', alignItems:'center', padding:24 },
+  box:        { width:'100%', maxWidth:340, borderRadius:20, padding:24, alignItems:'center' },
+  iconCircle: { width:60, height:60, borderRadius:30, backgroundColor:'#FEE2E2', alignItems:'center', justifyContent:'center', marginBottom:14 },
+  title:      { fontSize:18, fontWeight:'800', marginBottom:6 },
+  body:       { fontSize:13, textAlign:'center', lineHeight:19, marginBottom:18 },
+  actions:    { flexDirection:'row', gap:10, width:'100%' },
+  btn:        { flex:1, paddingVertical:13, borderRadius:11, alignItems:'center' },
+  confirmBtn: { backgroundColor:'#EF4444' },
+  btnText:    { fontSize:14, fontWeight:'700' },
 });
