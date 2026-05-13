@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only test of redesigned LoanTransactionScreen. ALL TARGETED FLOWS PASS. 4-filter pills (All/EMI/Prepayment/Charges) render with correct count badges, summary strip shows Outstanding/EMI-per-month/Entries, EMI card breakdown (Principal green / Interest orange / Outstanding purple) matches the spec exactly, Prepayment card shows Reduce Tenure tag + Outstanding + Interest Saved, Charges filter shows processing_fee + other_charges as separate orange-tinted cards (and empty state when both are 0), Mark EMI bottom-sheet modal opens with pre-filled EMI amount, date picker, notes, and Confirm button. buildTimeline() principal/interest math verified against ground-truth values for the seed loan. Loans Dashboard regression: PASS.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "transactions.tsx L341-344: both useFocusEffect(load) AND useEffect(load) fire on mount, causing 2x parallel GETs on /loans/{id} and /loans/{id}/transactions on a cold deep-link (4 requests total). Functionally correct but wasteful - consider a ref-guard or rely on useFocusEffect alone now that the authReady gate from iteration_23 is in place.",
+    "transactions.tsx buildTimeline() — interest computation uses balance from BEFORE this EMI minus prior prepayments, which is correct for the simple amortisation model. But it does NOT account for prepayments that happen between scheduled EMIs in a way the bank actually amortises (e.g. interest for partial month). For a UI 'history' view this is acceptable; if exact reconciliation with bank statements is ever needed, server-side computation should provide the split.",
+    "transactions.tsx L334: `if (loanRes.data?.emi_amount && !emiAmount) setEmiAmount(String(loanRes.data.emi_amount));` — once the user clears the field manually, subsequent reloads will NOT re-prefill (because emiAmount becomes ''). Minor UX nit.",
+    "transactions.tsx L317: `const [showMarkEmi, setShowMarkEmi] = useState(mode === 'mark_emi');` reads `mode` once at mount; if the user re-navigates with mode=mark_emi while screen is already mounted, the modal won't re-open. Edge case only."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "not tested (frontend-only request)",
+    "frontend": "100% (filter pills, count badges, summary strip, EMI breakdown math, prepayment breakdown, charges with data, charges empty state, mark-emi modal, dashboard regression)"
+  },
+  "test_credentials": "Single-user mode - POST /api/auth/single-user → access_token (not 'token'). NOTE: test_credentials.md says the field is 'token' but the API actually returns 'access_token' - the doc is slightly stale, not a code bug.",
+  "seed_data_creation": "Created loan_41c8b302da25 (TEST_Charges Loan, processing_fee=5000, other_charges=2000) to exercise the Charges filter with non-empty data, then DELETED (deactivated) it after testing. The seed loan_a3a73d295218 untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "LoanTransactionScreen redesign is fully working. Verified math for seed loan loan_a3a73d295218 (principal ₹15L, 8.5% p.a., 1 prepay ₹1L on 15 Feb, 1 EMI ₹32,750 on 05 Mar): walking oldest→newest the prepayment first reduces balance to ₹14L, then the EMI gives Interest = ₹14L × 8.5/100/12 = ₹9,916.67 (orange), Principal = ₹32,750 − ₹9,916.67 = ₹22,833.33 (green), Outstanding = ₹14L − ₹22,833.33 = ₹13,77,166.67 (purple). All three values render exactly. Filter counts: All(2), EMI(1), Prepayment(1), Charges(0) for this loan. Use a fresh loan with processing_fee>0 and other_charges>0 to test Charges-with-data path (cleanup after).",
+  "rca_of_the_issue": "n/a - feature verification only, no regressions found"
+}
