@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { markAuthReady } from '../utils/authReady';
 
 // Force axios to use the `fetch` adapter on web (browser + expo-router SSR).
 // Without this, axios falls back to its Node-only `http` adapter which pulls in
@@ -71,6 +72,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Auth check error:', error);
     } finally {
       setIsLoading(false);
+      // Open the auth-ready gate so queued API requests can proceed —
+      // whether bootstrap succeeded, failed silently, or fell through.
+      markAuthReady();
     }
   };
 

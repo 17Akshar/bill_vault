@@ -1,0 +1,27 @@
+{
+  "summary": "Iteration_23 - Targeted re-verification of auth-bootstrap race fix on cold /loans deep-link. ALL 5 test cases PASS. Cold deep-link with cleared storage now correctly waits for AuthContext bootstrap (via waitForAuthReady gate), mints a single-user token, and renders the seeded Home Loan card with non-zero totals instead of the empty state. 401 retry path also verified: wiping auth_token then re-navigating triggers the response interceptor's single re-auth + replay, restoring data. Regression checks on 3-dot menu, delete-confirm modal, and compact INR formatting on stat cards all green.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "utils/authReady.ts: 5s safety-net timer fires at module import time, NOT when bootstrap actually starts. If the JS bundle is slow to evaluate or AuthContext mounts late, the gate could open before bootstrap even begins. In practice on this app the gap is small, but consider starting the safety-net timer from AuthContext mount instead.",
+    "utils/api.ts L66-83: _tryReauth() resets _reauthInFlight to null after 2s regardless of success. If the first call succeeded, that's fine. If multiple bursts of 401s arrive across a >2s window during a sustained outage, each window will hit /api/auth/single-user once - acceptable but worth knowing.",
+    "AuthContext.checkAuth() L56-69: 'auto-bootstrap single-user mode when no stored credentials' is single-user-mode aware as documented, BUT this means real /login + /register users will ALSO have markAuthReady() called in finally{} - which is correct (gate must open) but make sure manual-login UX still works after a logout: subsequent deep-links would now trigger useSingleUserMode() in checkAuth(), effectively re-logging the user in as the single-user identity. Probably the intended single-user-mode behavior, but worth a sanity check if multi-user mode is ever enabled."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "not tested (frontend-only request)",
+    "frontend": "100% (5/5 - cold deep-link, 401 retry, 3-dot menu modal, delete-confirm modal, compact INR stat cards)"
+  },
+  "test_credentials": "Single-user mode - POST /api/auth/single-user (no creds). Seed loan loan_a3a73d295218 (Home Loan, HDFC Bank, principal Rs.15L, EMI Rs.32,750) still present.",
+  "seed_data_creation": "None - reused existing loan_a3a73d295218.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Cold deep-link auth race is FIXED. Verified via: (1) clear localStorage + sessionStorage, (2) navigate fresh to /loans, (3) within ~8s the seeded loan card renders with Rs.15L outstanding, Rs.32,750 EMI, Rs.63.6L interest, and auth_token (len 183) is present in localStorage. Stat cards correctly show compact format (Rs.15L, Rs.63.6L) - no truncation at 420px viewport. 3-dot menu testIDs loan-action-{view,edit,prepayment,reminder,transactions,delete} all present. Delete-confirm modal testIDs confirm-delete-cancel/confirm-delete-yes both render and cancel dismisses the modal. 401 retry: wiping auth_token and re-navigating to /loans successfully re-mints a token (new len 183) via the response interceptor and the seeded card re-appears.",
+  "rca_of_the_issue": "Previous race RCA confirmed mitigated by: (a) utils/authReady.ts shared one-shot promise gate, (b) AuthContext.checkAuth() finally{} calls markAuthReady() so the gate opens on success OR failure with a 5s safety-net, (c) utils/api.ts request interceptor awaits waitForAuthReady() BEFORE reading auth_token, (d) response interceptor on 401 calls _tryReauth() (deduped in-flight) and replays original request once, only wiping creds if re-auth itself fails."
+}

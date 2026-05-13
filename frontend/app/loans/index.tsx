@@ -25,6 +25,15 @@ function fmtINR(n: number): string {
   return `₹${rest},${last3}`;
 }
 
+// Compact INR for narrow viewports: ₹1.27Cr / ₹12.7L / ₹1.5K / ₹250
+function fmtINRCompact(n: number): string {
+  const abs = Math.abs(n || 0);
+  const sign = (n || 0) < 0 ? '-' : '';
+  if (abs >= 10000000) return `${sign}₹${(abs / 10000000).toFixed(abs >= 100000000 ? 0 : 2).replace(/\.?0+$/,'')}Cr`;
+  if (abs >= 100000)   return `${sign}₹${(abs / 100000).toFixed(abs >= 1000000 ? 1 : 2).replace(/\.?0+$/,'')}L`;
+  return fmtINR(n);
+}
+
 function safeDate(v: any): string {
   if (!v) return '—';
   try {
@@ -61,7 +70,7 @@ function StatCard({
     <View style={[st.wrap, !isLast && { borderRightWidth: 1, borderRightColor: colors.border }]}>
       <Text style={[st.label, { color: colors.textSecondary }]} numberOfLines={2}>{label}</Text>
       <Text style={[st.value, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-        {fmtINR(value)}
+        {fmtINRCompact(value)}
       </Text>
       <View style={[st.iconPill, { backgroundColor: color + '18' }]}>
         <Ionicons name={iconName as any} size={12} color={color} />
