@@ -16,115 +16,79 @@ Add a new feature called "Loans & EMIs" inside the More section.
 
 ---
 
-## What's Been Implemented (2026-02-13)
+## What's Been Implemented
 
-### Backend (`/app/backend/loans.py`) — Full Enhancement
-- **Extended loan model** with new fields: `lender`, `account_number`, `interest_type` (fixed/floating), `emi_day`, `processing_fee`, `other_charges`, `linked_account_id`, `status`, `tenure_years`
-- **GET /api/loans/dashboard** — Summary stats (total outstanding, total paid, total interest, monthly EMI)
-- **POST /api/loans** — Create loan with all new fields
-- **GET /api/loans** — List all active loans
-- **GET /api/loans/{id}** — Get single loan detail
-- **PUT /api/loans/{id}** — Update loan
-- **DELETE /api/loans/{id}** — Soft-delete loan
-- **POST /api/loans/{id}/prepayment** — Record prepayment with interest savings calculation
-- **GET /api/loans/{id}/transactions** — Get EMI payments + prepayments
-- **POST /api/loans/{id}/transactions** — Mark EMI as paid
+### 2026-02-13 — Phase 1 (Initial build)
+- Backend `loans.py` with full CRUD + dashboard + prepayment + transactions
+- All 6 frontend screens (Dashboard, Add, Detail, Prepayment, Reminder, Transactions)
+- "Loans & EMIs" entry in More tab
+- Iteration_21 → backend 100%, frontend 90%
 
-### Firebase Config (`/app/backend/firebase_config.py`)
-- Added `prepay_id` and `loan_txn_id` to the doc-id preference list
+### 2026-02-13 — Phase 2 (UX hardening + live data)
+- **`loans/index.tsx`** — replaced dummy data with live `/api/loans` + `/api/loans/dashboard`. Added loading + empty state + pull-to-refresh + sort modal.
+- **Custom 3-dot menu** (`ActionMenu`) — Modal-based bottom sheet replacing the native `Alert.alert` `ActionSheet`. 6 actions: View Details · Edit Loan · Prepayment · Set Reminder · Transactions · Delete Loan. Each fully testable via Playwright (`loan-action-*` testIDs).
+- **Custom delete-confirm modals** on `loans/index.tsx`, `loans/add.tsx`, and `loans/[id].tsx` (testIDs `confirm-delete-{cancel,yes}`, `delete-{cancel,confirm}-btn`, `detail-delete-{cancel,confirm}`).
+- **Compact INR formatting** for summary stat cards (`₹1.27Cr` / `₹12.7L`) — no more truncation at 420px viewport.
+- **Auth-bootstrap race fix** — `utils/authReady.ts` shared one-shot promise gate; `api.ts` request interceptor awaits it before reading the token; 401 response now attempts a single re-auth via `/api/auth/single-user` and replays the original request before wiping the token.
+- Iteration_22 → backend 100% (11/11), frontend 100% on regression items, one race issue found.
+- Iteration_23 → race issue FIXED, frontend 100% (5/5).
 
-### Frontend Screens
+---
+
+## Screens
 | Screen | File | Status |
 |--------|------|--------|
-| LoansDashboardScreen | `app/loans/index.tsx` | ✅ Built |
-| AddLoanScreen | `app/loans/add.tsx` | ✅ Built |
-| LoanDetailScreen | `app/loans/[id].tsx` | ✅ Built |
-| PrepaymentScreen | `app/loans/prepayment.tsx` | ✅ Built |
-| EMIReminderScreen | `app/loans/reminder.tsx` | ✅ Built |
-| LoanTransactionScreen | `app/loans/transactions.tsx` | ✅ Built |
-
-### More Tab (`app/(tabs)/profile.tsx`)
-- Added **Loans & EMIs** as the first item in the Management section
+| LoansDashboardScreen | `app/loans/index.tsx` | ✅ Live data + custom action menu |
+| AddLoanScreen | `app/loans/add.tsx` | ✅ Save / Edit / custom Delete modal |
+| LoanDetailScreen | `app/loans/[id].tsx` | ✅ Custom Delete modal + edit nav |
+| PrepaymentScreen | `app/loans/prepayment.tsx` | ✅ Live calc + API |
+| EMIReminderScreen | `app/loans/reminder.tsx` | ✅ Reuses `/api/reminders` |
+| LoanTransactionScreen | `app/loans/transactions.tsx` | ✅ Mark EMI modal |
 
 ---
 
-## Screen Designs
-
-### LoansDashboardScreen
-- Header: "Loans & EMIs" + "+ Add Loan" button
-- 4 stat cards (2×2 grid): Total Outstanding (purple), Total Paid (green), Total Interest (orange), Monthly EMI (blue)
-- Sortable loan list (by Next EMI Date / Outstanding / Name)
-- Loan cards with type icon, lender, status badge (Active/Closed/Paused), outstanding balance, EMI amount, next EMI date, progress bar (% repaid)
-- 3-dot context menu: View Details, Prepayment, Set Reminder, Transactions, Delete
-- Empty state with "Add Your First Loan" CTA
-
-### AddLoanScreen
-- Loan Type chips (8 types: Home, Car, Personal, Education, Gold, Business, Property, Two-Wheeler, Other)
-- Lender/Bank modal picker (20+ Indian banks)
-- Date of Loan Taken (CrossPlatformPicker) + Loan Tenure (dropdown: 1-30 years)
-- Total Loan Amount, Interest Rate, Rate Type (Fixed/Floating)
-- EMI Amount + EMI Day (day of month picker)
-- Processing Fee, Other Charges (optional)
-- Linked Account, Notes (optional)
-- "EMI will be tracked automatically" info banner
-- Save Loan button
-
-### LoanDetailScreen
-- Hero card with type color, name, lender, status, outstanding, EMI, progress bar
-- Action buttons: Mark EMI Paid, Prepayment, Set Reminder, History
-- Loan details section (full data)
-- Repayment summary with progress bar
-- Recent activity (last 5 transactions)
-
-### PrepaymentScreen
-- Outstanding balance display
-- Prepayment Amount + Date input
-- Option: Reduce Tenure or Reduce EMI
-- Live calculation: Interest Saved, New Tenure/EMI, New End Date
-- Proceed button (calls API and updates balance)
-
-### EMIReminderScreen
-- Payment / Custom reminder type radio
-- Reminder Date (CrossPlatformPicker) + Time picker
-- Repeat: One Time / Daily / Weekly / Monthly
-- Optional recurring end date
-- Reuses existing `/api/reminders` endpoint with `loan_emi` type
-- Preview of reminder
-
-### LoanTransactionScreen
-- Tabs: All / EMI Payments / Prepayments
-- Summary strip: Outstanding, EMI/month, Transactions count
-- Transaction cards with icon, date, amount
-- "Mark EMI" button → modal with amount + date confirmation
+## Backend Endpoints (`/app/backend/loans.py`)
+- `GET /api/loans/dashboard` — Summary stats
+- `GET /api/loans` — List active loans
+- `POST /api/loans` — Create loan
+- `GET /api/loans/{id}` — Detail
+- `PUT /api/loans/{id}` — Update
+- `DELETE /api/loans/{id}` — Soft-delete
+- `POST /api/loans/{id}/prepayment` — Record prepayment + interest savings
+- `GET /api/loans/{id}/transactions` — EMI + prepayment history
+- `POST /api/loans/{id}/transactions` — Mark EMI as paid
 
 ---
 
-## Test Results (Iteration 21)
-- **Backend:** 100% (11/11 tests passed)
-- **Frontend:** 90% (all screens load + work; native alert dialogs not testable via Playwright)
-- No breaking changes to existing modules
+## Test Results
+- Iteration_21: Backend 100% (11/11), Frontend 90%
+- Iteration_22: Backend 100% (11/11), Frontend 100% (regression items) — 1 auth-race found
+- Iteration_23: Frontend 100% (5/5) — auth race fixed, no regressions
 
 ---
 
 ## Prioritized Backlog
 
-### P0 (Critical — already done)
+### P0 (Done)
 - [x] More → Loans & EMIs navigation
-- [x] All 6 screens created and functional
-- [x] Backend APIs with full CRUD + dashboard + prepayment + transactions
+- [x] All 6 screens functional
+- [x] Backend CRUD + dashboard + prepayment + transactions
+- [x] Custom 3-dot menu modal (no native Alert)
+- [x] Custom delete-confirm modals
+- [x] Live backend data on dashboard
+- [x] Auth bootstrap race fix
 
-### P1 (High value, next)
-- [ ] Edit Loan screen (update existing loan details)
-- [ ] EMI schedule calculator (show projected future EMIs)
+### P1 (Next)
+- [ ] Dashboard "Loans" widget integration on main tab
+- [ ] Loan closure flow (auto-mark closed when outstanding ≤ 0)
 - [ ] Mark multiple EMIs as paid at once
-- [ ] Dashboard Loans widget integration
+- [ ] EMI schedule calculator (project future EMIs)
 
-### P2 (Nice to have)
+### P2 (Nice-to-have)
 - [ ] Loan comparison tool
 - [ ] Export loan statement (PDF/CSV)
-- [ ] Loan closure flow (mark as closed when outstanding = 0)
 - [ ] Interest type change tracking (for floating rate loans)
-- [ ] 3-dot menu as custom modal instead of native Alert.alert for better web UX
+- [ ] Start the authReady 5s safety-net timer from AuthContext mount rather than module import (minor)
 
 ---
 
