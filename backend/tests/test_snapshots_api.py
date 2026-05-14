@@ -30,7 +30,7 @@ from firebase_config import db  # noqa: E402
 
 BASE_URL = os.environ.get(
     "REACT_APP_BACKEND_URL",
-    "https://fincare-db-redesign.preview.emergentagent.com",
+    "https://cash-flow-hub-81.preview.emergentagent.com",
 ).rstrip("/") + "/api"
 
 

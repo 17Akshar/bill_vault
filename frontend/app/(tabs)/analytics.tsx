@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Dimensions, RefreshControl, FlatList,
+  ActivityIndicator, Dimensions, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,6 +41,50 @@ const TABS = [
   { label: 'Calendar',  icon: 'calendar-outline',       activeIcon: 'calendar' },
 ];
 
+// ─── Category config helper ───────────────────────────────────────────────────
+const CAT_CONFIG: Record<string, { icon: string; color: string }> = {
+  food:          { icon: 'fast-food-outline',    color: '#FF6B6B' },
+  transport:     { icon: 'car-outline',          color: '#4DABF7' },
+  shopping:      { icon: 'bag-handle-outline',   color: '#B197FC' },
+  entertainment: { icon: 'film-outline',         color: '#FFB300' },
+  bills:         { icon: 'receipt-outline',      color: '#26C6DA' },
+  utilities:     { icon: 'flash-outline',        color: '#FFB300' },
+  health:        { icon: 'medkit-outline',       color: '#66BB6A' },
+  education:     { icon: 'school-outline',       color: '#4DABF7' },
+  investment:    { icon: 'trending-up-outline',  color: '#8E2DE2' },
+  income:        { icon: 'briefcase-outline',    color: '#51DB7A' },
+  salary:        { icon: 'briefcase-outline',    color: '#51DB7A' },
+  freelance:     { icon: 'laptop-outline',       color: '#26C6DA' },
+  travel:        { icon: 'airplane-outline',     color: '#FF9100' },
+  groceries:     { icon: 'cart-outline',         color: '#66BB6A' },
+  rent:          { icon: 'home-outline',         color: '#4DABF7' },
+  insurance:     { icon: 'shield-outline',       color: '#26C6DA' },
+  gift:          { icon: 'gift-outline',         color: '#E91E8C' },
+  other:         { icon: 'ellipsis-horizontal',  color: '#8B8B8B' },
+};
+function getCatConfig(cat: string) {
+  const key = (cat || '').toLowerCase().trim();
+  return CAT_CONFIG[key] || { icon: 'ellipsis-horizontal' as any, color: '#8B8B8B' };
+}
+
+// Account type → icon
+function getAccIcon(type: string): string {
+  const t = (type || '').toLowerCase();
+  if (t === 'bank' || t === 'savings' || t === 'current') return 'business-outline';
+  if (t === 'wallet' || t === 'cash') return 'wallet-outline';
+  if (t === 'upi') return 'phone-portrait-outline';
+  if (t === 'credit') return 'card-outline';
+  return 'ellipsis-horizontal-outline';
+}
+function getAccColor(type: string): string {
+  const t = (type || '').toLowerCase();
+  if (t === 'bank' || t === 'savings' || t === 'current') return PURPLE;
+  if (t === 'wallet' || t === 'cash') return GREEN;
+  if (t === 'upi') return PURPLE;
+  if (t === 'credit') return RED;
+  return GREY;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtPct(v: number, showPlus = true) {
   const s = Math.abs(v).toFixed(1);
@@ -71,41 +115,6 @@ function Delta({ value, inverse = false }: { value: number; inverse?: boolean })
   );
 }
 
-function SectionHeader({ title, colors, action, onAction }: any) {
-  return (
-    <View style={st.sectionHead}>
-      <Text style={[st.sectionTitle, { color: colors.text }]}>{title}</Text>
-      {action && <TouchableOpacity onPress={onAction}><Text style={[st.viewAll, { color: PURPLE }]}>{action}</Text></TouchableOpacity>}
-    </View>
-  );
-}
-
-function Chip({ label, active, onPress, color }: any) {
-  return (
-    <TouchableOpacity
-      style={[st.chip, active && { backgroundColor: color + '22', borderColor: color }]}
-      onPress={onPress}
-    >
-      <Text style={[st.chipText, { color: active ? color : '#888' }]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function MonthNav({ date, onChange, colors }: any) {
-  return (
-    <View style={st.monthNav}>
-      <TouchableOpacity onPress={() => onChange(subMonths(date, 1))} style={st.monthBtn} testID="month-prev">
-        <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
-      </TouchableOpacity>
-      <Text style={[st.monthLabel, { color: colors.text }]}>{format(date, 'MMMM yyyy')}</Text>
-      <TouchableOpacity onPress={() => onChange(addMonths(date, 1))} style={st.monthBtn} testID="month-next">
-        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-// ─── Loading & Empty states ───────────────────────────────────────────────────
 function LoadingBox({ colors }: any) {
   return (
     <View style={[st.loadBox, { backgroundColor: colors.card }]}>
@@ -113,6 +122,7 @@ function LoadingBox({ colors }: any) {
     </View>
   );
 }
+
 function EmptyBox({ icon, text, colors }: any) {
   return (
     <View style={st.emptyBox}>
@@ -123,48 +133,66 @@ function EmptyBox({ icon, text, colors }: any) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA — Overview Tab
-// ══════════════════════════════════════════════════════════════════════════════
-const DUMMY_OVERVIEW = {
-  label:    'May 2026',
-  income:   { total: 125000, vs_last_month: 15.2 },
-  expenses: { total: 75000,  vs_last_month: -5.3  },
-  savings:  { total: 50000,  rate: 40.0, vs_last_month: 20.5 },
-  net_cash_flow:     50000,
-  net_cash_flow_pct: 20.0,
-  sparkline: [22000, 35000, 28000, 42000, 47000, 50000],
-  quick_insights: [
-    { icon: 'flame-outline',         color: PURPLE,  title: 'Spending Alert', text: 'You spent 20% more on Food this month.' },
-    { icon: 'trending-up-outline',   color: GREEN,   title: 'Savings Rate',   text: 'Your savings rate is 40% this month — excellent!' },
-    { icon: 'bulb-outline',          color: YELLOW,  title: 'Opportunity',    text: 'You can save ₹20,000 with better budget planning.' },
-  ],
-  accounts: [
-    { label: 'Bank Accounts',           count: 2, balance:  332600, icon: 'business-outline',       color: PURPLE },
-    { label: 'Cash & Wallets',          count: 3, balance:   48600, icon: 'wallet-outline',          color: GREEN  },
-    { label: 'UPI Accounts',            count: 2, balance:   24800, icon: 'phone-portrait-outline',  color: PURPLE },
-    { label: 'Accounts with Overdraft', count: 1, balance:  -12600, icon: 'card-outline',            color: RED    },
-  ],
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// OVERVIEW TAB  (UI-only with dummy data)
+// OVERVIEW TAB
 // ══════════════════════════════════════════════════════════════════════════════
 function OverviewTab({ colors, isDark, date, onDateChange }: any) {
-  const d  = DUMMY_OVERVIEW;
   const CARD_BG = isDark ? '#1C1C2E' : colors.card;
-  const SECT_BG = isDark ? '#141424' : colors.background;
+  const [loading, setLoading] = useState(true);
+  const [data, setData]       = useState<any>(null);
+  const [sparkline, setSparkline] = useState<number[]>([]);
+
+  const m = date.getMonth() + 1;
+  const y = date.getFullYear();
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [ovRes, trendRes] = await Promise.all([
+        api.get(`/insights/overview?month=${m}&year=${y}`),
+        api.get(`/insights/cashflow/monthly-trend?months=6`),
+      ]);
+      setData(ovRes.data);
+      const nets = (trendRes.data?.series || []).map((s: any) => s.net || 0);
+      setSparkline(nets.length > 1 ? nets : [0, ovRes.data?.savings?.total || 0]);
+    } catch (e) {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [m, y]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  if (loading) return <LoadingBox colors={colors} />;
+  if (!data) return <EmptyBox icon="bar-chart-outline" text="No data yet. Add income & expense transactions to see your overview." colors={colors} />;
+
+  const income   = data.income   || { total: 0, vs_last_month: 0 };
+  const expenses = data.expenses || { total: 0, vs_last_month: 0 };
+  const savings  = data.savings  || { total: 0, rate: 0, vs_last_month: 0 };
+  const netCF    = income.total - expenses.total;
+  const netPct   = data.savings?.vs_last_month || 0;
+  const accounts = (data.accounts_summary || []).map((a: any) => ({
+    label:   a.label,
+    count:   a.count,
+    balance: a.balance,
+    icon:    getAccIcon(a.type),
+    color:   a.balance < 0 ? RED : getAccColor(a.type),
+  }));
+  const quickInsights = (data.quick_insights || []).map((qi: any) => ({
+    icon:  qi.icon  || 'information-circle-outline',
+    color: qi.color || PURPLE,
+    title: qi.title || '',
+    text:  qi.text  || '',
+  }));
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 32 }}
-    >
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* ── Month navigator ── */}
       <View style={ov.monthRow}>
         <TouchableOpacity onPress={() => onDateChange(subMonths(date, 1))} style={ov.monthBtn} testID="month-prev">
           <Ionicons name="chevron-back" size={20} color={GREY} />
         </TouchableOpacity>
-        <Text style={[ov.monthLabel, { color: colors.text }]}>{d.label}</Text>
+        <Text style={[ov.monthLabel, { color: colors.text }]}>{data.label || format(date, 'MMMM yyyy')}</Text>
         <TouchableOpacity onPress={() => onDateChange(addMonths(date, 1))} style={ov.monthBtn} testID="month-next">
           <Ionicons name="chevron-forward" size={20} color={GREY} />
         </TouchableOpacity>
@@ -172,46 +200,37 @@ function OverviewTab({ colors, isDark, date, onDateChange }: any) {
 
       {/* ── This Month Overview Card ── */}
       <View style={[ov.card, { backgroundColor: CARD_BG }]}>
-        {/* Card header */}
         <View style={ov.cardHead}>
           <Text style={[ov.cardTitle, { color: colors.text }]}>This Month Overview</Text>
-          <Text style={[ov.cardSub, { color: GREY }]}>{d.label}</Text>
+          <Text style={[ov.cardSub, { color: GREY }]}>{data.label}</Text>
         </View>
-
-        {/* Divider */}
         <View style={[ov.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} />
-
-        {/* 3 metric columns */}
         <View style={ov.metricsRow}>
           {[
-            { label: 'Income',   value: d.income.total,   color: GREEN,  delta: d.income.vs_last_month  },
-            { label: 'Expenses', value: d.expenses.total, color: RED,    delta: d.expenses.vs_last_month, inv: true },
-            { label: 'Savings',  value: d.savings.total,  color: GREEN,  delta: d.savings.vs_last_month },
-          ].map((m, i) => (
-            <View key={m.label} style={[ov.metricCol, i < 2 && { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
-              <Text style={[ov.metricLabel, { color: GREY }]}>{m.label}</Text>
-              <Text style={[ov.metricValue, { color: m.color }]}>{formatINR(m.value)}</Text>
+            { label: 'Income',   value: income.total,   color: GREEN, delta: income.vs_last_month,   inv: false },
+            { label: 'Expenses', value: expenses.total, color: RED,   delta: expenses.vs_last_month, inv: true  },
+            { label: 'Savings',  value: savings.total,  color: GREEN, delta: savings.vs_last_month,  inv: false },
+          ].map((m2, i) => (
+            <View key={m2.label} style={[ov.metricCol, i < 2 && { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
+              <Text style={[ov.metricLabel, { color: GREY }]}>{m2.label}</Text>
+              <Text style={[ov.metricValue, { color: m2.color }]}>{formatINR(m2.value)}</Text>
               <View style={ov.deltaRow}>
                 <Ionicons
-                  name={m.delta > 0 ? 'arrow-up' : m.delta < 0 ? 'arrow-down' : 'remove'}
+                  name={m2.delta > 0 ? 'arrow-up' : m2.delta < 0 ? 'arrow-down' : 'remove'}
                   size={10}
-                  color={m.inv ? (m.delta < 0 ? GREEN : RED) : (m.delta >= 0 ? GREEN : RED)}
+                  color={m2.inv ? (m2.delta < 0 ? GREEN : RED) : (m2.delta >= 0 ? GREEN : RED)}
                 />
-                <Text style={[ov.deltaText, {
-                  color: m.inv ? (m.delta < 0 ? GREEN : RED) : (m.delta >= 0 ? GREEN : RED)
-                }]}>
-                  {Math.abs(m.delta).toFixed(1)}%
+                <Text style={[ov.deltaText, { color: m2.inv ? (m2.delta < 0 ? GREEN : RED) : (m2.delta >= 0 ? GREEN : RED) }]}>
+                  {Math.abs(m2.delta).toFixed(1)}%
                 </Text>
               </View>
             </View>
           ))}
         </View>
-
-        {/* Savings rate badge */}
         <View style={ov.rateRow}>
           <View style={[ov.rateBadge, { backgroundColor: GREEN + '20' }]}>
             <Ionicons name="leaf-outline" size={12} color={GREEN} />
-            <Text style={[ov.rateText, { color: GREEN }]}>Savings Rate: {d.savings.rate}%</Text>
+            <Text style={[ov.rateText, { color: GREEN }]}>Savings Rate: {savings.rate}%</Text>
           </View>
         </View>
       </View>
@@ -222,118 +241,96 @@ function OverviewTab({ colors, isDark, date, onDateChange }: any) {
           <Text style={[ov.cardTitle, { color: colors.text }]}>Net Cash Flow</Text>
         </View>
         <Text style={[ov.cashSubtitle, { color: GREY }]}>This Month's Flow</Text>
-
-        {/* Big value */}
-        <Text style={[ov.cashValue, { color: GREEN }]}>{formatINR(d.net_cash_flow)}</Text>
-
-        {/* Delta indicator */}
+        <Text style={[ov.cashValue, { color: netCF >= 0 ? GREEN : RED }]}>{formatINR(netCF)}</Text>
         <View style={ov.cashDelta}>
-          <Ionicons name="arrow-up" size={13} color={GREEN} />
-          <Text style={[ov.cashDeltaText, { color: GREEN }]}>
-            {d.net_cash_flow_pct}% vs last month
+          <Ionicons name={netPct >= 0 ? 'arrow-up' : 'arrow-down'} size={13} color={netPct >= 0 ? GREEN : RED} />
+          <Text style={[ov.cashDeltaText, { color: netPct >= 0 ? GREEN : RED }]}>
+            {Math.abs(netPct).toFixed(1)}% vs last month
           </Text>
         </View>
-
-        {/* Sparkline */}
-        <View style={{ marginTop: 8 }}>
-          <LineChart
-            data={d.sparkline.map(v => ({ value: v }))}
-            width={CHART_W + 12}
-            height={72}
-            hideDataPoints
-            color={GREEN}
-            thickness={2.5}
-            curved
-            hideRules
-            hideYAxisText
-            hideAxesAndRules
-            areaChart
-            startFillColor={GREEN}
-            endFillColor="transparent"
-            startOpacity={0.35}
-            endOpacity={0}
-            initialSpacing={0}
-            endSpacing={0}
-          />
-        </View>
+        {sparkline.length > 1 && (
+          <View style={{ marginTop: 8 }}>
+            <LineChart
+              data={sparkline.map(v => ({ value: v }))}
+              width={CHART_W + 12}
+              height={72}
+              hideDataPoints
+              color={GREEN}
+              thickness={2.5}
+              curved
+              hideRules
+              hideYAxisText
+              hideAxesAndRules
+              areaChart
+              startFillColor={GREEN}
+              endFillColor="transparent"
+              startOpacity={0.35}
+              endOpacity={0}
+              initialSpacing={0}
+              endSpacing={0}
+            />
+          </View>
+        )}
       </View>
 
       {/* ── Quick Insights ── */}
-      <View style={[ov.card, { backgroundColor: CARD_BG }]}>
-        <View style={ov.sectionHead}>
-          <Text style={[ov.sectionTitle, { color: colors.text }]}>Quick Insights</Text>
-          <TouchableOpacity testID="quick-insights-view-all">
-            <Text style={[ov.viewAll, { color: PURPLE }]}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {d.quick_insights.map((ins, i) => (
-          <View
-            key={i}
-            style={[
-              ov.insightRow,
-              i < d.quick_insights.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border },
-            ]}
-          >
-            {/* Icon */}
-            <View style={[ov.insightIconWrap, { backgroundColor: ins.color + '22' }]}>
-              <Ionicons name={ins.icon as any} size={18} color={ins.color} />
-            </View>
-            {/* Text */}
-            <View style={{ flex: 1 }}>
-              <Text style={[ov.insightTitle, { color: colors.text }]}>{ins.title}</Text>
-              <Text style={[ov.insightBody, { color: GREY }]} numberOfLines={2}>{ins.text}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={14} color={GREY} />
+      {quickInsights.length > 0 && (
+        <View style={[ov.card, { backgroundColor: CARD_BG }]}>
+          <View style={ov.sectionHead}>
+            <Text style={[ov.sectionTitle, { color: colors.text }]}>Quick Insights</Text>
           </View>
-        ))}
-      </View>
+          {quickInsights.map((ins: any, i: number) => (
+            <View
+              key={i}
+              style={[ov.insightRow, i < quickInsights.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}
+            >
+              <View style={[ov.insightIconWrap, { backgroundColor: ins.color + '22' }]}>
+                <Ionicons name={ins.icon as any} size={18} color={ins.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[ov.insightTitle, { color: colors.text }]}>{ins.title}</Text>
+                <Text style={[ov.insightBody, { color: GREY }]} numberOfLines={2}>{ins.text}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={14} color={GREY} />
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* ── Accounts Summary ── */}
-      <View style={[ov.card, { backgroundColor: CARD_BG }]}>
-        <View style={ov.sectionHead}>
-          <Text style={[ov.sectionTitle, { color: colors.text }]}>Accounts Summary</Text>
-          <TouchableOpacity testID="accounts-view-all">
-            <Text style={[ov.viewAll, { color: PURPLE }]}>View All</Text>
-          </TouchableOpacity>
+      {accounts.length > 0 && (
+        <View style={[ov.card, { backgroundColor: CARD_BG }]}>
+          <View style={ov.sectionHead}>
+            <Text style={[ov.sectionTitle, { color: colors.text }]}>Accounts Summary</Text>
+          </View>
+          {accounts.map((acc: any, i: number) => (
+            <TouchableOpacity
+              key={i}
+              style={[ov.accRow, i < accounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}
+              testID={`account-row-${i}`}
+              activeOpacity={0.7}
+            >
+              <View style={[ov.accIconWrap, { backgroundColor: acc.color + '1E' }]}>
+                <Ionicons name={acc.icon as any} size={20} color={acc.color} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[ov.accName, { color: colors.text }]}>{acc.label}</Text>
+                <Text style={[ov.accCount, { color: GREY }]}>{acc.count} Account{acc.count !== 1 ? 's' : ''}</Text>
+              </View>
+              <View style={ov.accRight}>
+                <Text style={[ov.accBalance, { color: acc.balance < 0 ? RED : colors.text }]}>
+                  {acc.balance < 0 ? '-' : ''}{formatINR(Math.abs(acc.balance))}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={GREY} style={{ marginLeft: 6 }} />
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
-
-        {d.accounts.map((acc, i) => (
-          <TouchableOpacity
-            key={i}
-            style={[
-              ov.accRow,
-              i < d.accounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border },
-            ]}
-            testID={`account-row-${i}`}
-            activeOpacity={0.7}
-          >
-            {/* Icon */}
-            <View style={[ov.accIconWrap, { backgroundColor: acc.color + '1E' }]}>
-              <Ionicons name={acc.icon as any} size={20} color={acc.color} />
-            </View>
-
-            {/* Name + count */}
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={[ov.accName, { color: colors.text }]}>{acc.label}</Text>
-              <Text style={[ov.accCount, { color: GREY }]}>{acc.count} Account{acc.count !== 1 ? 's' : ''}</Text>
-            </View>
-
-            {/* Balance + arrow */}
-            <View style={ov.accRight}>
-              <Text style={[ov.accBalance, { color: acc.balance < 0 ? RED : colors.text }]}>
-                {acc.balance < 0 ? '-' : ''}{formatINR(Math.abs(acc.balance))}
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color={GREY} style={{ marginLeft: 6 }} />
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+      )}
     </ScrollView>
   );
 }
 
-// ─── Overview-specific styles ──────────────────────────────────────────────────
 const ov = StyleSheet.create({
   monthRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingHorizontal: 8 },
   monthBtn:   { padding: 8 },
@@ -378,162 +375,158 @@ const ov = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// CASH FLOW TAB
 // ══════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA — Cash Flow Tab
-// ══════════════════════════════════════════════════════════════════════════════
-const DUMMY_CASHFLOW: Record<'month' | 'quarter' | 'year', any> = {
-  month: {
-    label:       'May 2026',
-    inflow:      125000,
-    outflow:      75000,
-    net:          50000,
-    growth_pct:   20.0,
-    sparkline:   [12000, 18000, 22000, 31000, 42000, 50000],
-    bars: [
-      { m: 'May', income: 125000, expense: 75000 },
-    ],
-    in_vs_out_pct: { in: 62.5, out: 37.5 },
-  },
-  quarter: {
-    label:       'Q2 2026',
-    inflow:      358000,
-    outflow:     232000,
-    net:         126000,
-    growth_pct:   12.4,
-    sparkline:   [70000, 84000, 96000, 108000, 118000, 126000],
-    bars: [
-      { m: 'Mar', income: 110000, expense: 78000 },
-      { m: 'Apr', income: 123000, expense: 79000 },
-      { m: 'May', income: 125000, expense: 75000 },
-    ],
-    in_vs_out_pct: { in: 60.7, out: 39.3 },
-  },
-  year: {
-    label:       'FY 2026',
-    inflow:     1382000,
-    outflow:     918500,
-    net:         463500,
-    growth_pct:   28.7,
-    sparkline:   [150000, 210000, 268000, 322000, 398000, 463500],
-    bars: [
-      { m: 'Dec', income:  96000, expense: 70000 },
-      { m: 'Jan', income: 108000, expense: 74500 },
-      { m: 'Feb', income: 115000, expense: 71000 },
-      { m: 'Mar', income: 110000, expense: 78000 },
-      { m: 'Apr', income: 123000, expense: 79000 },
-      { m: 'May', income: 125000, expense: 75000 },
-    ],
-    in_vs_out_pct: { in: 60.1, out: 39.9 },
-  },
-};
-
-const DUMMY_ACCOUNT_FLOW = [
-  { name: 'HDFC Bank',    icon: 'business-outline',       color: '#005DAA', inflow: 78000,  outflow: 42000,  txns: 24 },
-  { name: 'ICICI Bank',   icon: 'business-outline',       color: '#F37920', inflow: 32000,  outflow: 18500,  txns: 16 },
-  { name: 'Wallets',      icon: 'wallet-outline',          color: GREEN,    inflow: 8500,   outflow: 9200,   txns: 11 },
-  { name: 'UPI Accounts', icon: 'phone-portrait-outline',  color: PURPLE,   inflow: 6500,   outflow: 5300,   txns: 19 },
-];
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CASH FLOW TAB  (UI-only with dummy data)
-// ══════════════════════════════════════════════════════════════════════════════
-function CashFlowTab({ colors, isDark }: any) {
-  const router = useRouter();
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
-  const d = DUMMY_CASHFLOW[period];
+function CashFlowTab({ colors, isDark, date }: any) {
+  const router  = useRouter();
   const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+  const [period,   setPeriod]   = useState<'month' | 'quarter' | 'year'>('month');
+  const [loading,  setLoading]  = useState(true);
+  const [cfData,   setCfData]   = useState<any>(null);
+  const [barSeries, setBarSeries] = useState<any[]>([]);
 
-  const barData = d.bars.flatMap((b: any) => [
-    { value: b.income,  label: b.m, frontColor: GREEN, spacing: 4,  topLabelComponent: () => null },
-    { value: b.expense,                  frontColor: RED,   spacing: 14 },
+  const m = date ? (date.getMonth() + 1) : new Date().getMonth() + 1;
+  const y = date ? date.getFullYear()     : new Date().getFullYear();
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [cfRes, trendRes] = await Promise.all([
+        api.get(`/insights/cashflow?period=${period}&month=${m}&year=${y}`),
+        api.get(`/insights/cashflow/monthly-trend?months=6`),
+      ]);
+      setCfData(cfRes.data);
+      setBarSeries(trendRes.data?.series || []);
+    } catch {
+      setCfData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [period, m, y]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  if (loading) return (
+    <View style={{ flex: 1 }}>
+      <View style={[cf.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]}>
+        {(['month', 'quarter', 'year'] as const).map((k) => (
+          <TouchableOpacity key={k} onPress={() => setPeriod(k)} style={[cf.periodBtn, period === k && { backgroundColor: PURPLE }]}>
+            <Text style={[cf.periodBtnText, { color: period === k ? '#FFF' : GREY }]}>{k === 'month' ? 'This Month' : k === 'quarter' ? 'This Quarter' : 'This Year'}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <LoadingBox colors={colors} />
+    </View>
+  );
+
+  if (!cfData) return (
+    <View>
+      <View style={[cf.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]}>
+        {(['month', 'quarter', 'year'] as const).map((k) => (
+          <TouchableOpacity key={k} onPress={() => setPeriod(k)} style={[cf.periodBtn, period === k && { backgroundColor: PURPLE }]}>
+            <Text style={[cf.periodBtnText, { color: period === k ? '#FFF' : GREY }]}>{k === 'month' ? 'This Month' : k === 'quarter' ? 'This Quarter' : 'This Year'}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <EmptyBox icon="swap-vertical-outline" text="No cash flow data yet. Add income & expense transactions to see your flow." colors={colors} />
+    </View>
+  );
+
+  const totals     = cfData.totals || {};
+  const inflow     = totals.inflow  || 0;
+  const outflow    = totals.outflow || 0;
+  const net        = totals.net     || 0;
+  const growthPct  = totals.growth_pct || 0;
+  const inSharePct = totals.in_share_pct  || 0;
+  const outSharePct= totals.out_share_pct || 0;
+
+  const sparkNets = barSeries.map((s: any) => s.net || 0);
+  const sparkData = sparkNets.length > 1 ? sparkNets : [0, net];
+
+  const barData = barSeries.flatMap((b: any) => [
+    { value: b.inflow  || 0, label: b.short_label || b.label?.split(' ')[0] || '', frontColor: GREEN, spacing: 4 },
+    { value: b.outflow || 0,                                                        frontColor: RED,   spacing: 14 },
   ]);
+
+  const accountFlow = (cfData.by_account || []).slice(0, 6).map((a: any) => ({
+    name:    a.name || 'Account',
+    icon:    getAccIcon(a.account_type),
+    color:   getAccColor(a.account_type),
+    inflow:  a.inflow  || 0,
+    outflow: a.outflow || 0,
+    net:     a.net     || 0,
+    txns:    a.txns    || 0,
+  }));
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* ── Period Tabs ─────────────────────────────────────────── */}
+      {/* ── Period Tabs ── */}
       <View style={[cf.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="cashflow-period-tabs">
         {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
           const active = period === k;
           return (
-            <TouchableOpacity
-              key={k}
-              onPress={() => setPeriod(k as any)}
-              style={[cf.periodBtn, active && { backgroundColor: PURPLE }]}
-              testID={`cashflow-period-${k}`}
-              activeOpacity={0.85}
-            >
-              <Text style={[cf.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
-                {l}
-              </Text>
+            <TouchableOpacity key={k} onPress={() => setPeriod(k as any)} style={[cf.periodBtn, active && { backgroundColor: PURPLE }]} testID={`cashflow-period-${k}`} activeOpacity={0.85}>
+              <Text style={[cf.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>{l}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* ── Net Cash Flow hero card ─────────────────────────────── */}
+      {/* ── Net Cash Flow hero card ── */}
       <View style={[cf.card, { backgroundColor: CARD_BG, padding: 0, overflow: 'hidden' }]} testID="cashflow-net-card">
-        <LinearGradient
-          colors={[PURPLE_DARK, PURPLE_LIGHT]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 14 }}
-        >
+        <LinearGradient colors={[PURPLE_DARK, PURPLE_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 14 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Net Cash Flow</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, gap: 3 }}>
-              <Ionicons name={d.growth_pct >= 0 ? 'arrow-up' : 'arrow-down'} size={11} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{Math.abs(d.growth_pct).toFixed(1)}%</Text>
+              <Ionicons name={growthPct >= 0 ? 'arrow-up' : 'arrow-down'} size={11} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{Math.abs(growthPct).toFixed(1)}%</Text>
             </View>
           </View>
-          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 }}>
-            {formatINR(d.net)}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{d.label}</Text>
-
-          {/* Trend graph (sparkline) */}
-          <View style={{ marginTop: 10, marginLeft: -16 }}>
-            <LineChart
-              data={d.sparkline.map((v: number) => ({ value: v }))}
-              width={CHART_W + 12}
-              height={70}
-              hideDataPoints
-              color="#FFF"
-              thickness={2.5}
-              curved
-              hideRules
-              hideYAxisText
-              hideAxesAndRules
-              areaChart
-              startFillColor="#FFF"
-              endFillColor="transparent"
-              startOpacity={0.35}
-              endOpacity={0}
-              initialSpacing={0}
-              endSpacing={0}
-            />
-          </View>
+          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 }}>{formatINR(net)}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{cfData.label}</Text>
+          {sparkData.length > 1 && (
+            <View style={{ marginTop: 10, marginLeft: -16 }}>
+              <LineChart
+                data={sparkData.map((v: number) => ({ value: v }))}
+                width={CHART_W + 12}
+                height={70}
+                hideDataPoints
+                color="#FFF"
+                thickness={2.5}
+                curved
+                hideRules
+                hideYAxisText
+                hideAxesAndRules
+                areaChart
+                startFillColor="#FFF"
+                endFillColor="transparent"
+                startOpacity={0.35}
+                endOpacity={0}
+                initialSpacing={0}
+                endSpacing={0}
+              />
+            </View>
+          )}
         </LinearGradient>
-
-        {/* Inflow / Outflow row */}
         <View style={cf.flowRow}>
           <View style={[cf.flowMini, { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
               <Text style={[cf.flowMiniLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
             </View>
-            <Text style={[cf.flowMiniValue, { color: GREEN }]}>{formatINR(d.inflow)}</Text>
+            <Text style={[cf.flowMiniValue, { color: GREEN }]}>{formatINR(inflow)}</Text>
           </View>
           <View style={cf.flowMini}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[cf.flowDot, { backgroundColor: RED }]} />
               <Text style={[cf.flowMiniLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
             </View>
-            <Text style={[cf.flowMiniValue, { color: RED }]}>{formatINR(d.outflow)}</Text>
+            <Text style={[cf.flowMiniValue, { color: RED }]}>{formatINR(outflow)}</Text>
           </View>
         </View>
       </View>
 
-      {/* ── Cash In vs Cash Out ─────────────────────────────────── */}
+      {/* ── Cash In vs Cash Out ── */}
       <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-in-vs-out">
         <View style={cf.sectionHead}>
           <Text style={[cf.sectionTitle, { color: colors.text }]}>Cash In vs Cash Out</Text>
@@ -541,104 +534,81 @@ function CashFlowTab({ colors, isDark }: any) {
             <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Composite stacked bar */}
         <View style={cf.stackBar}>
-          <View style={{ flex: d.in_vs_out_pct.in, backgroundColor: GREEN, height: '100%', borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }} />
-          <View style={{ flex: d.in_vs_out_pct.out, backgroundColor: RED, height: '100%', borderTopRightRadius: 6, borderBottomRightRadius: 6 }} />
+          <View style={{ flex: inSharePct  || 1, backgroundColor: GREEN, height: '100%', borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }} />
+          <View style={{ flex: outSharePct || 1, backgroundColor: RED,   height: '100%', borderTopRightRadius: 6, borderBottomRightRadius: 6 }} />
         </View>
-
-        {/* Labels */}
         <View style={cf.inOutLabelRow}>
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
               <Text style={[cf.inOutLabel, { color: colors.text }]}>Cash In</Text>
             </View>
-            <Text style={[cf.inOutAmount, { color: GREEN }]}>{formatINR(d.inflow)}</Text>
-            <Text style={[cf.inOutPct, { color: colors.textSecondary }]}>{d.in_vs_out_pct.in.toFixed(1)}%</Text>
+            <Text style={[cf.inOutAmount, { color: GREEN }]}>{formatINR(inflow)}</Text>
+            <Text style={[cf.inOutPct, { color: colors.textSecondary }]}>{inSharePct.toFixed(1)}%</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[cf.flowDot, { backgroundColor: RED }]} />
               <Text style={[cf.inOutLabel, { color: colors.text }]}>Cash Out</Text>
             </View>
-            <Text style={[cf.inOutAmount, { color: RED }]}>{formatINR(d.outflow)}</Text>
-            <Text style={[cf.inOutPct, { color: colors.textSecondary }]}>{d.in_vs_out_pct.out.toFixed(1)}%</Text>
+            <Text style={[cf.inOutAmount, { color: RED }]}>{formatINR(outflow)}</Text>
+            <Text style={[cf.inOutPct, { color: colors.textSecondary }]}>{outSharePct.toFixed(1)}%</Text>
           </View>
         </View>
       </View>
 
-      {/* ── Monthly Cash Flow Trend (bar chart) ─────────────────── */}
-      <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-monthly-trend">
-        <View style={cf.sectionHead}>
-          <Text style={[cf.sectionTitle, { color: colors.text }]}>Monthly Cash Flow Trend</Text>
-          <TouchableOpacity onPress={() => router.push('/insights/cashflow-details')} testID="cashflow-monthly-view-details">
-            <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Legend */}
-        <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
-            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cash In</Text>
+      {/* ── Monthly Cash Flow Trend ── */}
+      {barData.length > 0 && (
+        <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-monthly-trend">
+          <View style={cf.sectionHead}>
+            <Text style={[cf.sectionTitle, { color: colors.text }]}>Monthly Cash Flow Trend</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={[cf.flowDot, { backgroundColor: RED }]} />
-            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cash Out</Text>
+          <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cash In</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[cf.flowDot, { backgroundColor: RED }]} />
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cash Out</Text>
+            </View>
           </View>
+          <BarChart
+            data={barData}
+            width={CHART_W - 8}
+            height={170}
+            barWidth={12}
+            barBorderRadius={3}
+            noOfSections={4}
+            xAxisColor={colors.border}
+            yAxisColor="transparent"
+            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+            rulesColor={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
+            isAnimated
+            spacing={barSeries.length > 3 ? 14 : 26}
+          />
         </View>
+      )}
 
-        <BarChart
-          data={barData}
-          width={CHART_W - 8}
-          height={170}
-          barWidth={12}
-          barBorderRadius={3}
-          noOfSections={4}
-          xAxisColor={colors.border}
-          yAxisColor="transparent"
-          yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-          rulesColor={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
-          isAnimated
-          spacing={d.bars.length > 3 ? 14 : 26}
-        />
-      </View>
-
-      {/* ── Account-wise Cash Flow ──────────────────────────────── */}
-      <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-account-wise">
-        <View style={cf.sectionHead}>
-          <Text style={[cf.sectionTitle, { color: colors.text }]}>Account-wise Cash Flow</Text>
-          <TouchableOpacity onPress={() => router.push('/insights/cashflow-details')} testID="cashflow-accounts-view-details">
-            <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
-          </TouchableOpacity>
-        </View>
-
-        {DUMMY_ACCOUNT_FLOW.map((acc, i) => {
-          const net = acc.inflow - acc.outflow;
-          const positive = net >= 0;
-          return (
-            <View
-              key={acc.name}
-              style={[
-                cf.accRow,
-                i < DUMMY_ACCOUNT_FLOW.length - 1 && {
-                  borderBottomWidth: 1,
-                  borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-                },
-              ]}
-              testID={`cashflow-account-${i}`}
-            >
+      {/* ── Account-wise Cash Flow ── */}
+      {accountFlow.length > 0 && (
+        <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-account-wise">
+          <View style={cf.sectionHead}>
+            <Text style={[cf.sectionTitle, { color: colors.text }]}>Account-wise Cash Flow</Text>
+            <TouchableOpacity onPress={() => router.push('/insights/cashflow-details')} testID="cashflow-accounts-view-details">
+              <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
+            </TouchableOpacity>
+          </View>
+          {accountFlow.map((acc: any, i: number) => (
+            <View key={acc.name} style={[cf.accRow, i < accountFlow.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} testID={`cashflow-account-${i}`}>
               <View style={[cf.accIcon, { backgroundColor: acc.color + '22' }]}>
                 <Ionicons name={acc.icon as any} size={18} color={acc.color} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[cf.accName, { color: colors.text }]}>{acc.name}</Text>
                 <Text style={[cf.accMeta, { color: colors.textSecondary }]}>{acc.txns} transactions</Text>
-
-                {/* Mini in/out values */}
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <Ionicons name="arrow-down" size={9} color={GREEN} />
@@ -652,42 +622,36 @@ function CashFlowTab({ colors, isDark }: any) {
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '500', marginBottom: 2 }}>Net</Text>
-                <Text style={{ color: positive ? GREEN : RED, fontSize: 14, fontWeight: '800' }}>
-                  {positive ? '+' : '-'}{formatINR(Math.abs(net))}
+                <Text style={{ color: acc.net >= 0 ? GREEN : RED, fontSize: 14, fontWeight: '800' }}>
+                  {acc.net >= 0 ? '+' : '-'}{formatINR(Math.abs(acc.net))}
                 </Text>
               </View>
             </View>
-          );
-        })}
-      </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
 
-// ─── CashFlow-specific styles ─────────────────────────────────────────────────
 const cf = StyleSheet.create({
   periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
   periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
   periodBtnText: { fontSize: 12, fontWeight: '700' },
-
   card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
-
   flowRow:       { flexDirection: 'row' },
   flowMini:      { flex: 1, padding: 14, gap: 6 },
   flowMiniLabel: { fontSize: 11, fontWeight: '500' },
   flowMiniValue: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   flowDot:       { width: 8, height: 8, borderRadius: 4 },
-
   sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontWeight: '700' },
   viewDetails:   { fontSize: 12, fontWeight: '600' },
-
   stackBar:      { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
   inOutLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
   inOutLabel:    { fontSize: 12, fontWeight: '600' },
   inOutAmount:   { fontSize: 17, fontWeight: '800', marginTop: 4, letterSpacing: -0.3 },
   inOutPct:      { fontSize: 11, marginTop: 2 },
-
   accRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   accIcon:       { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   accName:       { fontSize: 14, fontWeight: '700' },
@@ -695,452 +659,338 @@ const cf = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA — Spending Tab
+// SPENDING TAB
 // ══════════════════════════════════════════════════════════════════════════════
-const DUMMY_SPENDING: Record<'month' | 'quarter' | 'year', any> = {
-  month: {
-    label:       'May 2026',
-    total:        75000,
-    vs_last_pct: -5.3,
-    avg_daily:    2500,
-    txn_count:    87,
-    categories: [
-      { name: 'Food',          amount: 22500, pct: 30.0, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport',     amount: 12000, pct: 16.0, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',      amount: 15000, pct: 20.0, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Entertainment', amount:  8500, pct: 11.3, icon: 'film-outline',        color: '#FFB300' },
-      { name: 'Bills',         amount: 11500, pct: 15.3, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',        amount:  5500, pct:  7.4, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
-    ],
-    top_expenses: [
-      { merchant: 'Amazon',        amount: 8500, pct: 11.3, icon: 'logo-amazon',       color: '#FF9100' },
-      { merchant: 'Swiggy',        amount: 6200, pct:  8.3, icon: 'fast-food-outline', color: '#FF6B6B' },
-      { merchant: 'Uber',          amount: 4800, pct:  6.4, icon: 'car-outline',       color: '#4DABF7' },
-      { merchant: 'Netflix',       amount: 3200, pct:  4.3, icon: 'tv-outline',        color: '#E50914' },
-      { merchant: 'Electricity Co.', amount: 2900, pct: 3.9, icon: 'flash-outline',    color: '#FFB300' },
-    ],
-  },
-  quarter: {
-    label:       'Q2 2026',
-    total:       232000,
-    vs_last_pct:   8.4,
-    avg_daily:    2580,
-    txn_count:   262,
-    categories: [
-      { name: 'Food',          amount: 68500, pct: 29.5, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport',     amount: 37000, pct: 16.0, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',      amount: 48000, pct: 20.7, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Entertainment', amount: 24500, pct: 10.6, icon: 'film-outline',        color: '#FFB300' },
-      { name: 'Bills',         amount: 36000, pct: 15.5, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',        amount: 18000, pct:  7.7, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
-    ],
-    top_expenses: [
-      { merchant: 'Amazon',          amount: 24500, pct: 10.6, icon: 'logo-amazon',       color: '#FF9100' },
-      { merchant: 'Swiggy',          amount: 18500, pct:  8.0, icon: 'fast-food-outline', color: '#FF6B6B' },
-      { merchant: 'Uber',            amount: 14200, pct:  6.1, icon: 'car-outline',       color: '#4DABF7' },
-      { merchant: 'Flipkart',        amount: 12800, pct:  5.5, icon: 'cart-outline',      color: '#2874F0' },
-      { merchant: 'Electricity Co.', amount:  9200, pct:  4.0, icon: 'flash-outline',     color: '#FFB300' },
-    ],
-  },
-  year: {
-    label:       'FY 2026',
-    total:       918500,
-    vs_last_pct:  12.1,
-    avg_daily:    2517,
-    txn_count:  1042,
-    categories: [
-      { name: 'Food',          amount: 268000, pct: 29.2, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport',     amount: 142000, pct: 15.5, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',      amount: 198000, pct: 21.6, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Entertainment', amount:  96000, pct: 10.5, icon: 'film-outline',        color: '#FFB300' },
-      { name: 'Bills',         amount: 142500, pct: 15.5, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',        amount:  72000, pct:  7.8, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
-    ],
-    top_expenses: [
-      { merchant: 'Amazon',          amount: 96500, pct: 10.5, icon: 'logo-amazon',       color: '#FF9100' },
-      { merchant: 'Swiggy',          amount: 72000, pct:  7.8, icon: 'fast-food-outline', color: '#FF6B6B' },
-      { merchant: 'Uber',            amount: 54200, pct:  5.9, icon: 'car-outline',       color: '#4DABF7' },
-      { merchant: 'Flipkart',        amount: 48500, pct:  5.3, icon: 'cart-outline',      color: '#2874F0' },
-      { merchant: 'Electricity Co.', amount: 36800, pct:  4.0, icon: 'flash-outline',     color: '#FFB300' },
-    ],
-  },
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SPENDING TAB  (UI-only with dummy data)
-// ══════════════════════════════════════════════════════════════════════════════
-function SpendingTab({ colors, isDark }: any) {
-  const router = useRouter();
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+function SpendingTab({ colors, isDark, date }: any) {
+  const router  = useRouter();
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+  const [period,      setPeriod]      = useState<'month' | 'quarter' | 'year'>('month');
+  const [loading,     setLoading]     = useState(true);
+  const [spData,      setSpData]      = useState<any>(null);
   const [showAllCats, setShowAllCats] = useState(false);
-  const [showAllTop, setShowAllTop]   = useState(false);
+  const [showAllTop,  setShowAllTop]  = useState(false);
 
-  const d        = DUMMY_SPENDING[period];
-  const CARD_BG  = isDark ? '#1C1C2E' : colors.card;
-  const declined = d.vs_last_pct < 0; // spending went down → green
+  const m = date ? (date.getMonth() + 1) : new Date().getMonth() + 1;
+  const y = date ? date.getFullYear()     : new Date().getFullYear();
 
-  const donutData = d.categories.map((c: any) => ({
-    value: c.amount,
-    color: c.color,
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/insights/spending?period=${period}&month=${m}&year=${y}`);
+      setSpData(res.data);
+    } catch {
+      setSpData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [period, m, y]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  const PeriodTabs = () => (
+    <View style={[sp.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="spending-period-tabs">
+      {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
+        const active = period === k;
+        return (
+          <TouchableOpacity key={k} onPress={() => { setPeriod(k as any); setShowAllCats(false); setShowAllTop(false); }} style={[sp.periodBtn, active && { backgroundColor: PURPLE }]} testID={`spending-period-${k}`} activeOpacity={0.85}>
+            <Text style={[sp.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>{l}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
+  if (loading) return <View><PeriodTabs /><LoadingBox colors={colors} /></View>;
+  if (!spData) return <View><PeriodTabs /><EmptyBox icon="pie-chart-outline" text="No spending data yet. Add expense transactions to see your spending analysis." colors={colors} /></View>;
+
+  const total     = spData.total     || 0;
+  const vsPrev    = spData.vs_previous || 0;
+  const txnCount  = spData.txn_count  || 0;
+  const avgDaily  = spData.avg_daily   || 0;
+  const declined  = vsPrev < 0;
+
+  const categories = (spData.categories || []).map((c: any, idx: number) => ({
+    name:   c.category || 'Other',
+    amount: c.amount   || 0,
+    pct:    c.percentage || 0,
+    icon:   getCatConfig(c.category).icon,
+    color:  getCatConfig(c.category).color || getCatColor(idx),
   }));
 
-  const visibleCats = showAllCats ? d.categories : d.categories.slice(0, 4);
-  const visibleTop  = showAllTop  ? d.top_expenses : d.top_expenses.slice(0, 3);
+  const topMerchants = (spData.top_merchants || []).map((m2: any, idx: number) => ({
+    merchant: m2.merchant || 'Misc',
+    amount:   m2.amount   || 0,
+    pct:      m2.percentage || 0,
+    icon:     getCatConfig(m2.category).icon,
+    color:    getCatConfig(m2.category).color || getCatColor(idx),
+  }));
+
+  const donutData = categories.map((c: any) => ({ value: c.amount, color: c.color }));
+  const visibleCats = showAllCats ? categories : categories.slice(0, 4);
+  const visibleTop  = showAllTop  ? topMerchants : topMerchants.slice(0, 3);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* ── Period Tabs ─────────────────────────────────────────── */}
-      <View style={[sp.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="spending-period-tabs">
-        {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
-          const active = period === k;
-          return (
-            <TouchableOpacity
-              key={k}
-              onPress={() => { setPeriod(k as any); setShowAllCats(false); setShowAllTop(false); }}
-              style={[sp.periodBtn, active && { backgroundColor: PURPLE }]}
-              testID={`spending-period-${k}`}
-              activeOpacity={0.85}
-            >
-              <Text style={[sp.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
-                {l}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <PeriodTabs />
 
-      {/* ── Spending Summary Card ──────────────────────────────── */}
+      {/* ── Spending Summary Card ── */}
       <View style={[sp.card, { backgroundColor: CARD_BG, padding: 0, overflow: 'hidden' }]} testID="spending-summary-card">
-        <LinearGradient
-          colors={['#7A1FA2', '#E91E8C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ padding: 18 }}
-        >
+        <LinearGradient colors={['#7A1FA2', '#E91E8C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Total Spending</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, gap: 3 }}>
               <Ionicons name={declined ? 'arrow-down' : 'arrow-up'} size={11} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{Math.abs(d.vs_last_pct).toFixed(1)}%</Text>
+              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{Math.abs(vsPrev).toFixed(1)}%</Text>
             </View>
           </View>
-          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5 }}>
-            {formatINR(d.total)}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{d.label}</Text>
+          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5 }}>{formatINR(total)}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{spData.label}</Text>
         </LinearGradient>
-
-        {/* Stat strip */}
         <View style={sp.statStrip}>
           <View style={[sp.statCell, { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
             <Text style={[sp.statLabel, { color: colors.textSecondary }]}>Avg / Day</Text>
-            <Text style={[sp.statValue, { color: colors.text }]}>{formatINR(d.avg_daily)}</Text>
+            <Text style={[sp.statValue, { color: colors.text }]}>{formatINR(avgDaily)}</Text>
           </View>
           <View style={[sp.statCell, { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
             <Text style={[sp.statLabel, { color: colors.textSecondary }]}>Transactions</Text>
-            <Text style={[sp.statValue, { color: colors.text }]}>{d.txn_count}</Text>
+            <Text style={[sp.statValue, { color: colors.text }]}>{txnCount}</Text>
           </View>
           <View style={sp.statCell}>
             <Text style={[sp.statLabel, { color: colors.textSecondary }]}>vs Last</Text>
-            <Text style={[sp.statValue, { color: declined ? GREEN : RED }]}>
-              {declined ? '↓' : '↑'} {Math.abs(d.vs_last_pct).toFixed(1)}%
-            </Text>
+            <Text style={[sp.statValue, { color: declined ? GREEN : RED }]}>{declined ? '↓' : '↑'} {Math.abs(vsPrev).toFixed(1)}%</Text>
           </View>
         </View>
       </View>
 
-      {/* ── Donut + Legend ─────────────────────────────────────── */}
-      <View style={[sp.card, { backgroundColor: CARD_BG, alignItems: 'center' }]} testID="spending-donut-card">
-        <View style={sp.sectionHead}>
-          <Text style={[sp.sectionTitle, { color: colors.text }]}>Categories</Text>
-        </View>
-
-        <View style={{ marginVertical: 8 }}>
-          <PieChart
-            data={donutData}
-            donut
-            radius={92}
-            innerRadius={62}
-            backgroundColor={CARD_BG}
-            centerLabelComponent={() => (
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '500' }}>Spent</Text>
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 2 }}>
-                  {formatINR(d.total).replace('.00', '')}
-                </Text>
+      {/* ── Donut + Legend ── */}
+      {donutData.length > 0 && (
+        <View style={[sp.card, { backgroundColor: CARD_BG, alignItems: 'center' }]} testID="spending-donut-card">
+          <View style={sp.sectionHead}>
+            <Text style={[sp.sectionTitle, { color: colors.text }]}>Categories</Text>
+          </View>
+          <View style={{ marginVertical: 8 }}>
+            <PieChart
+              data={donutData}
+              donut
+              radius={92}
+              innerRadius={62}
+              backgroundColor={CARD_BG}
+              centerLabelComponent={() => (
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '500' }}>Spent</Text>
+                  <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 2 }}>{formatINR(total)}</Text>
+                </View>
+              )}
+            />
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', marginTop: 6 }}>
+            {categories.map((c: any) => (
+              <View key={c.name} style={{ width: '50%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+                <View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: c.color }} />
+                <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 11, textTransform: 'capitalize' }}>{c.name}</Text>
+                <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700' }}>{c.pct.toFixed(1)}%</Text>
               </View>
-            )}
-          />
+            ))}
+          </View>
         </View>
+      )}
 
-        {/* Legend grid (2 cols) */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', marginTop: 6 }}>
-          {d.categories.map((c: any) => (
-            <View key={c.name} style={{ width: '50%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
-              <View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: c.color }} />
-              <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 11 }}>{c.name}</Text>
-              <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700' }}>{c.pct.toFixed(1)}%</Text>
+      {/* ── Spending by Category list ── */}
+      {visibleCats.length > 0 && (
+        <View style={[sp.card, { backgroundColor: CARD_BG }]} testID="spending-categories-list">
+          <View style={sp.sectionHead}>
+            <Text style={[sp.sectionTitle, { color: colors.text }]}>Spending by Category</Text>
+            <TouchableOpacity onPress={() => router.push('/insights/spending-by-category')} testID="spending-categories-view-all">
+              <Text style={[sp.viewAll, { color: PURPLE }]}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          {visibleCats.map((c: any, i: number) => (
+            <View key={c.name} style={[sp.catRow, i < visibleCats.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} testID={`spending-category-${i}`}>
+              <View style={[sp.catIcon, { backgroundColor: c.color + '22' }]}>
+                <Ionicons name={c.icon as any} size={18} color={c.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={[sp.catName, { color: colors.text }]}>{c.name}</Text>
+                  <Text style={[sp.catAmount, { color: colors.text }]}>{formatINR(c.amount)}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <ProgBar pct={c.pct} color={c.color} bg={isDark ? 'rgba(255,255,255,0.06)' : colors.border} height={5} />
+                  </View>
+                  <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '600', minWidth: 38, textAlign: 'right' }}>{c.pct.toFixed(1)}%</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+          {categories.length > 4 && (
+            <TouchableOpacity onPress={() => setShowAllCats(v => !v)} style={{ alignItems: 'center', paddingTop: 10 }}>
+              <Text style={{ color: PURPLE, fontSize: 12, fontWeight: '600' }}>{showAllCats ? 'Show Less' : `+${categories.length - 4} More`}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* ── Top Expenses list ── */}
+      {visibleTop.length > 0 && (
+        <View style={[sp.card, { backgroundColor: CARD_BG }]} testID="spending-top-expenses-list">
+          <View style={sp.sectionHead}>
+            <Text style={[sp.sectionTitle, { color: colors.text }]}>Top Expenses</Text>
+            <TouchableOpacity onPress={() => setShowAllTop(v => !v)} testID="spending-top-expenses-view-all">
+              <Text style={[sp.viewAll, { color: PURPLE }]}>{showAllTop ? 'Show Less' : 'View All'}</Text>
+            </TouchableOpacity>
+          </View>
+          {visibleTop.map((e: any, i: number) => (
+            <View key={e.merchant} style={[sp.merchantRow, i < visibleTop.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} testID={`spending-top-expense-${i}`}>
+              <View style={[sp.merchantBadge, { backgroundColor: e.color + '22' }]}>
+                <Text style={{ color: e.color, fontSize: 14, fontWeight: '800' }}>#{i + 1}</Text>
+              </View>
+              <View style={[sp.merchantIcon, { backgroundColor: e.color + '14' }]}>
+                <Ionicons name={e.icon as any} size={18} color={e.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[sp.merchantName, { color: colors.text }]}>{e.merchant}</Text>
+                <Text style={[sp.merchantMeta, { color: colors.textSecondary }]}>{e.pct.toFixed(1)}% of total</Text>
+              </View>
+              <Text style={[sp.merchantAmount, { color: RED }]}>{formatINR(e.amount)}</Text>
             </View>
           ))}
         </View>
-      </View>
-
-      {/* ── Spending by Category list ───────────────────────────── */}
-      <View style={[sp.card, { backgroundColor: CARD_BG }]} testID="spending-categories-list">
-        <View style={sp.sectionHead}>
-          <Text style={[sp.sectionTitle, { color: colors.text }]}>Spending by Category</Text>
-          <TouchableOpacity onPress={() => router.push('/insights/spending-by-category')} testID="spending-categories-view-all">
-            <Text style={[sp.viewAll, { color: PURPLE }]}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {visibleCats.map((c: any, i: number) => (
-          <View
-            key={c.name}
-            style={[
-              sp.catRow,
-              i < visibleCats.length - 1 && {
-                borderBottomWidth: 1,
-                borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-              },
-            ]}
-            testID={`spending-category-${i}`}
-          >
-            <View style={[sp.catIcon, { backgroundColor: c.color + '22' }]}>
-              <Ionicons name={c.icon as any} size={18} color={c.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                <Text style={[sp.catName, { color: colors.text }]}>{c.name}</Text>
-                <Text style={[sp.catAmount, { color: colors.text }]}>{formatINR(c.amount)}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ flex: 1 }}>
-                  <ProgBar pct={c.pct} color={c.color} bg={isDark ? 'rgba(255,255,255,0.06)' : colors.border} height={5} />
-                </View>
-                <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '600', minWidth: 38, textAlign: 'right' }}>
-                  {c.pct.toFixed(1)}%
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* ── Top Expenses list ───────────────────────────────────── */}
-      <View style={[sp.card, { backgroundColor: CARD_BG }]} testID="spending-top-expenses-list">
-        <View style={sp.sectionHead}>
-          <Text style={[sp.sectionTitle, { color: colors.text }]}>Top Expenses</Text>
-          <TouchableOpacity onPress={() => setShowAllTop(v => !v)} testID="spending-top-expenses-view-all">
-            <Text style={[sp.viewAll, { color: PURPLE }]}>{showAllTop ? 'Show Less' : 'View All'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {visibleTop.map((e: any, i: number) => (
-          <View
-            key={e.merchant}
-            style={[
-              sp.merchantRow,
-              i < visibleTop.length - 1 && {
-                borderBottomWidth: 1,
-                borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-              },
-            ]}
-            testID={`spending-top-expense-${i}`}
-          >
-            <View style={[sp.merchantBadge, { backgroundColor: e.color + '22' }]}>
-              <Text style={{ color: e.color, fontSize: 14, fontWeight: '800' }}>
-                #{i + 1}
-              </Text>
-            </View>
-            <View style={[sp.merchantIcon, { backgroundColor: e.color + '14' }]}>
-              <Ionicons name={e.icon as any} size={18} color={e.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[sp.merchantName, { color: colors.text }]}>{e.merchant}</Text>
-              <Text style={[sp.merchantMeta, { color: colors.textSecondary }]}>{e.pct.toFixed(1)}% of total</Text>
-            </View>
-            <Text style={[sp.merchantAmount, { color: RED }]}>{formatINR(e.amount)}</Text>
-          </View>
-        ))}
-      </View>
+      )}
     </ScrollView>
   );
 }
 
-// ─── Spending-specific styles ─────────────────────────────────────────────────
 const sp = StyleSheet.create({
   periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
   periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
   periodBtnText: { fontSize: 12, fontWeight: '700' },
-
   card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
-
   statStrip:     { flexDirection: 'row' },
   statCell:      { flex: 1, paddingVertical: 14, alignItems: 'center' },
   statLabel:     { fontSize: 11, fontWeight: '500', marginBottom: 4 },
   statValue:     { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
-
   sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, width: '100%' },
   sectionTitle:  { fontSize: 15, fontWeight: '700' },
   viewAll:       { fontSize: 12, fontWeight: '600' },
-
   catRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   catIcon:       { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  catName:       { fontSize: 13, fontWeight: '700' },
+  catName:       { fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
   catAmount:     { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
-
   merchantRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   merchantBadge: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   merchantIcon:  { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  merchantName:  { fontSize: 13, fontWeight: '700' },
+  merchantName:  { fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
   merchantMeta:  { fontSize: 11, marginTop: 2 },
   merchantAmount:{ fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA — Budget Tab
+// BUDGET TAB
 // ══════════════════════════════════════════════════════════════════════════════
-const DUMMY_BUDGET: Record<'month' | 'quarter' | 'year', any> = {
-  month: {
-    label:    'May 2026',
-    total_budget:    80000,
-    total_spent:     75000,
-    days_left:       9,
-    categories: [
-      { name: 'Food',          budget: 20000, spent: 22500, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport',     budget: 15000, spent: 12000, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',      budget: 12000, spent: 15000, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Entertainment', budget: 10000, spent:  8500, icon: 'film-outline',        color: '#FFB300' },
-      { name: 'Bills',         budget: 15000, spent: 11500, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',        budget:  8000, spent:  5500, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
-    ],
-  },
-  quarter: {
-    label:    'Q2 2026',
-    total_budget:   240000,
-    total_spent:    232000,
-    days_left:      40,
-    categories: [
-      { name: 'Food',          budget: 60000,  spent: 68500, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport',     budget: 45000,  spent: 37000, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',      budget: 36000,  spent: 48000, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Entertainment', budget: 30000,  spent: 24500, icon: 'film-outline',        color: '#FFB300' },
-      { name: 'Bills',         budget: 45000,  spent: 36000, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',        budget: 24000,  spent: 18000, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
-    ],
-  },
-  year: {
-    label:    'FY 2026',
-    total_budget:  960000,
-    total_spent:   918500,
-    days_left:      223,
-    categories: [
-      { name: 'Food',          budget: 240000, spent: 268000, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport',     budget: 180000, spent: 142000, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',      budget: 144000, spent: 198000, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Entertainment', budget: 120000, spent:  96000, icon: 'film-outline',        color: '#FFB300' },
-      { name: 'Bills',         budget: 180000, spent: 142500, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',        budget:  96000, spent:  72000, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
-    ],
-  },
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// BUDGET TAB  (UI-only with dummy data)
-// ══════════════════════════════════════════════════════════════════════════════
-function BudgetTab({ colors, isDark }: any) {
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+function BudgetTab({ colors, isDark, date }: any) {
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+  const [period,      setPeriod]      = useState<'month' | 'quarter' | 'year'>('month');
+  const [loading,     setLoading]     = useState(true);
+  const [bdData,      setBdData]      = useState<any>(null);
   const [showAllCats, setShowAllCats] = useState(false);
 
-  const d        = DUMMY_BUDGET[period];
-  const CARD_BG  = isDark ? '#1C1C2E' : colors.card;
+  const m = date ? (date.getMonth() + 1) : new Date().getMonth() + 1;
+  const y = date ? date.getFullYear()     : new Date().getFullYear();
 
-  const remaining   = d.total_budget - d.total_spent;
-  const usedPct     = d.total_budget > 0 ? (d.total_spent / d.total_budget) * 100 : 0;
-  const onTrack     = d.total_spent <= d.total_budget;
-  const overBudget  = d.categories.filter((c: any) => c.spent > c.budget);
-  const visibleCats = showAllCats ? d.categories : d.categories.slice(0, 4);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/insights/budget?period=${period}&month=${m}&year=${y}`);
+      setBdData(res.data);
+    } catch {
+      setBdData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [period, m, y]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  const PeriodTabs = () => (
+    <View style={[bd.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="budget-period-tabs">
+      {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
+        const active = period === k;
+        return (
+          <TouchableOpacity key={k} onPress={() => { setPeriod(k as any); setShowAllCats(false); }} style={[bd.periodBtn, active && { backgroundColor: PURPLE }]} testID={`budget-period-${k}`} activeOpacity={0.85}>
+            <Text style={[bd.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>{l}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
+  if (loading) return <View><PeriodTabs /><LoadingBox colors={colors} /></View>;
+  if (!bdData || (bdData.categories || []).length === 0) return (
+    <View>
+      <PeriodTabs />
+      <EmptyBox icon="wallet-outline" text="No budgets set yet. Go to Profile → Budgets to create category budgets." colors={colors} />
+    </View>
+  );
+
+  const totalBudget   = bdData.total_budget   || 0;
+  const totalSpent    = bdData.total_spent     || 0;
+  const totalRemaining= bdData.total_remaining || 0;
+  const usedPct       = bdData.usage_pct       || 0;
+  const onTrack       = bdData.on_track        ?? true;
+  const daysLeft      = bdData.days_left       || 0;
+
+  const categories = (bdData.categories || []).map((c: any) => ({
+    name:      c.category,
+    budget:    c.limit,
+    spent:     c.spent,
+    remaining: c.remaining,
+    pct:       c.percentage || 0,
+    status:    c.status,
+    icon:      getCatConfig(c.category).icon,
+    color:     getCatConfig(c.category).color,
+  }));
+
+  const overBudget  = categories.filter((c: any) => c.status === 'over');
+  const visibleCats = showAllCats ? categories : categories.slice(0, 4);
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* ── Period Tabs ─────────────────────────────────────────── */}
-      <View style={[bd.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="budget-period-tabs">
-        {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
-          const active = period === k;
-          return (
-            <TouchableOpacity
-              key={k}
-              onPress={() => { setPeriod(k as any); setShowAllCats(false); }}
-              style={[bd.periodBtn, active && { backgroundColor: PURPLE }]}
-              testID={`budget-period-${k}`}
-              activeOpacity={0.85}
-            >
-              <Text style={[bd.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
-                {l}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <PeriodTabs />
 
-      {/* ── Budget Summary Hero ─────────────────────────────────── */}
+      {/* ── Budget Summary Hero ── */}
       <View style={[bd.card, { backgroundColor: CARD_BG, padding: 0, overflow: 'hidden' }]} testID="budget-summary-card">
-        <LinearGradient
-          colors={onTrack ? [PURPLE_DARK, PURPLE_LIGHT] : ['#B71C1C', '#E91E8C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ padding: 18 }}
-        >
+        <LinearGradient colors={onTrack ? [PURPLE_DARK, PURPLE_LIGHT] : ['#B71C1C', '#E91E8C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Total Budget</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
               <Ionicons name={onTrack ? 'checkmark-circle' : 'alert-circle'} size={12} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
-                {onTrack ? 'On Track' : 'Over Budget'}
-              </Text>
+              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{onTrack ? 'On Track' : 'Over Budget'}</Text>
             </View>
           </View>
-
-          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 }}>
-            {formatINR(d.total_budget)}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>
-            {d.label} · {d.days_left} days left
-          </Text>
-
-          {/* Overall progress bar */}
+          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 }}>{formatINR(totalBudget)}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{bdData.label} · {daysLeft} days left</Text>
           <View style={{ marginTop: 14, height: 10, borderRadius: 5, overflow: 'hidden', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.18)' }} testID="budget-progress-bar">
             <View style={{ width: `${clamp(usedPct)}%`, backgroundColor: '#FFF' }} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>
-              {usedPct.toFixed(0)}% used
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>
-              {formatINR(Math.abs(remaining))} {remaining >= 0 ? 'remaining' : 'over'}
-            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>{usedPct.toFixed(0)}% used</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>{formatINR(Math.abs(totalRemaining))} {totalRemaining >= 0 ? 'remaining' : 'over'}</Text>
           </View>
         </LinearGradient>
-
-        {/* Spent / Remaining stat strip */}
         <View style={bd.statStrip}>
           <View style={[bd.statCell, { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
             <Text style={[bd.statLabel, { color: colors.textSecondary }]}>Total Spent</Text>
-            <Text style={[bd.statValue, { color: RED }]}>{formatINR(d.total_spent)}</Text>
+            <Text style={[bd.statValue, { color: RED }]}>{formatINR(totalSpent)}</Text>
           </View>
           <View style={bd.statCell}>
-            <Text style={[bd.statLabel, { color: colors.textSecondary }]}>
-              {remaining >= 0 ? 'Remaining' : 'Over Budget'}
-            </Text>
-            <Text style={[bd.statValue, { color: remaining >= 0 ? GREEN : RED }]}>
-              {formatINR(Math.abs(remaining))}
-            </Text>
+            <Text style={[bd.statLabel, { color: colors.textSecondary }]}>{totalRemaining >= 0 ? 'Remaining' : 'Over Budget'}</Text>
+            <Text style={[bd.statValue, { color: totalRemaining >= 0 ? GREEN : RED }]}>{formatINR(Math.abs(totalRemaining))}</Text>
           </View>
         </View>
       </View>
 
-      {/* ── Over Budget Section ─────────────────────────────────── */}
+      {/* ── Over Budget ── */}
       {overBudget.length > 0 && (
         <View style={[bd.card, { backgroundColor: CARD_BG, borderWidth: 1, borderColor: RED + '40' }]} testID="budget-over-section">
           <View style={bd.sectionHead}>
@@ -1154,36 +1004,21 @@ function BudgetTab({ colors, isDark }: any) {
               </View>
             </View>
           </View>
-
           {overBudget.map((c: any, i: number) => {
             const overBy    = c.spent - c.budget;
-            const overByPct = (overBy / c.budget) * 100;
+            const overByPct = c.budget > 0 ? (overBy / c.budget) * 100 : 0;
             return (
-              <View
-                key={c.name}
-                style={[
-                  bd.overRow,
-                  i < overBudget.length - 1 && {
-                    borderBottomWidth: 1,
-                    borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-                  },
-                ]}
-                testID={`budget-over-${i}`}
-              >
+              <View key={c.name} style={[bd.overRow, i < overBudget.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} testID={`budget-over-${i}`}>
                 <View style={[bd.catIcon, { backgroundColor: c.color + '22' }]}>
                   <Ionicons name={c.icon as any} size={18} color={c.color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[bd.catName, { color: colors.text }]}>{c.name}</Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
-                    {formatINR(c.spent)} of {formatINR(c.budget)}
-                  </Text>
+                  <Text style={[bd.catName, { color: colors.text, textTransform: 'capitalize' }]}>{c.name}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{formatINR(c.spent)} of {formatINR(c.budget)}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ color: RED, fontSize: 14, fontWeight: '800' }}>+{formatINR(overBy)}</Text>
-                  <Text style={{ color: RED, fontSize: 10, fontWeight: '700', marginTop: 2 }}>
-                    {overByPct.toFixed(0)}% over
-                  </Text>
+                  <Text style={{ color: RED, fontSize: 10, fontWeight: '700', marginTop: 2 }}>{overByPct.toFixed(0)}% over</Text>
                 </View>
               </View>
             );
@@ -1191,7 +1026,7 @@ function BudgetTab({ colors, isDark }: any) {
         </View>
       )}
 
-      {/* ── Budget by Category list ─────────────────────────────── */}
+      {/* ── Budget by Category ── */}
       <View style={[bd.card, { backgroundColor: CARD_BG }]} testID="budget-categories-list">
         <View style={bd.sectionHead}>
           <Text style={[bd.sectionTitle, { color: colors.text }]}>Budget by Category</Text>
@@ -1199,230 +1034,76 @@ function BudgetTab({ colors, isDark }: any) {
             <Text style={[bd.viewAll, { color: PURPLE }]}>{showAllCats ? 'Show Less' : 'View All'}</Text>
           </TouchableOpacity>
         </View>
-
         {visibleCats.map((c: any, i: number) => {
-          const pct      = c.budget > 0 ? (c.spent / c.budget) * 100 : 0;
-          const isOver   = c.spent > c.budget;
-          const warn     = pct >= 80 && !isOver;
+          const isOver   = c.status === 'over';
+          const warn     = c.pct >= 80 && !isOver;
           const barColor = isOver ? RED : warn ? ORANGE : GREEN;
-          const left     = c.budget - c.spent;
-
           return (
-            <View
-              key={c.name}
-              style={[
-                bd.catRow,
-                i < visibleCats.length - 1 && {
-                  borderBottomWidth: 1,
-                  borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-                },
-              ]}
-              testID={`budget-category-${i}`}
-            >
+            <View key={c.name} style={[bd.catRow, i < visibleCats.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} testID={`budget-category-${i}`}>
               <View style={[bd.catIcon, { backgroundColor: c.color + '22' }]}>
                 <Ionicons name={c.icon as any} size={18} color={c.color} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <Text style={[bd.catName, { color: colors.text }]}>{c.name}</Text>
-                  <Text style={[bd.catAmount, { color: colors.text }]}>
-                    {formatINR(c.spent)} / {formatINR(c.budget)}
-                  </Text>
+                  <Text style={[bd.catName, { color: colors.text, textTransform: 'capitalize' }]}>{c.name}</Text>
+                  <Text style={[bd.catAmount, { color: colors.text }]}>{formatINR(c.spent)} / {formatINR(c.budget)}</Text>
                 </View>
-
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
-                    <ProgBar
-                      pct={pct}
-                      color={barColor}
-                      bg={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
-                      height={5}
-                    />
+                    <ProgBar pct={c.pct} color={barColor} bg={isDark ? 'rgba(255,255,255,0.06)' : colors.border} height={5} />
                   </View>
-                  <Text style={{ color: barColor, fontSize: 11, fontWeight: '700', minWidth: 40, textAlign: 'right' }}>
-                    {pct.toFixed(0)}%
-                  </Text>
+                  <Text style={{ color: barColor, fontSize: 11, fontWeight: '700', minWidth: 40, textAlign: 'right' }}>{c.pct.toFixed(0)}%</Text>
                 </View>
-
                 <Text style={{ color: isOver ? RED : colors.textSecondary, fontSize: 11 }}>
-                  {isOver
-                    ? `Over by ${formatINR(c.spent - c.budget)}`
-                    : `${formatINR(left)} left`}
+                  {isOver ? `Over by ${formatINR(c.spent - c.budget)}` : `${formatINR(c.remaining)} left`}
                 </Text>
               </View>
             </View>
           );
         })}
+        {categories.length > 4 && (
+          <TouchableOpacity onPress={() => setShowAllCats(v => !v)} style={{ alignItems: 'center', paddingTop: 10 }}>
+            <Text style={{ color: PURPLE, fontSize: 12, fontWeight: '600' }}>{showAllCats ? 'Show Less' : `+${categories.length - 4} More`}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
 }
 
-// ─── Budget-specific styles ───────────────────────────────────────────────────
 const bd = StyleSheet.create({
   periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
   periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
   periodBtnText: { fontSize: 12, fontWeight: '700' },
-
   card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
-
   statStrip:     { flexDirection: 'row' },
   statCell:      { flex: 1, paddingVertical: 14, alignItems: 'center' },
   statLabel:     { fontSize: 11, fontWeight: '500', marginBottom: 4 },
   statValue:     { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
-
   sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sectionTitle:  { fontSize: 15, fontWeight: '700' },
   viewAll:       { fontSize: 12, fontWeight: '600' },
-
   catRow:        { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 13 },
   catIcon:       { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   catName:       { fontSize: 13, fontWeight: '700' },
   catAmount:     { fontSize: 12, fontWeight: '700' },
-
   overRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA — Trends Tab (Income / Expense / Investment)
+// TRENDS TAB
 // ══════════════════════════════════════════════════════════════════════════════
-type TrendSeries = { label: string; value: number };
-type TrendCardData = { total: number; change_pct: number; series: TrendSeries[] };
-type TrendsPeriod = 'month' | '6m' | 'year';
+type TrendCardData = { total: number; change_pct: number; series: { label: string; value: number }[] };
 
-const DUMMY_TRENDS: Record<TrendsPeriod, { income: TrendCardData; expense: TrendCardData; investment: TrendCardData }> = {
-  month: {
-    income: {
-      total: 125000,
-      change_pct: 15.2,
-      series: [
-        { label: 'W1', value: 28000 },
-        { label: 'W2', value: 31000 },
-        { label: 'W3', value: 32500 },
-        { label: 'W4', value: 33500 },
-      ],
-    },
-    expense: {
-      total: 75000,
-      change_pct: -5.3,
-      series: [
-        { label: 'W1', value: 22000 },
-        { label: 'W2', value: 19500 },
-        { label: 'W3', value: 17800 },
-        { label: 'W4', value: 15700 },
-      ],
-    },
-    investment: {
-      total: 812500,
-      change_pct: 3.1,
-      series: [
-        { label: 'W1', value: 788000 },
-        { label: 'W2', value: 795000 },
-        { label: 'W3', value: 802000 },
-        { label: 'W4', value: 812500 },
-      ],
-    },
-  },
-  '6m': {
-    income: {
-      total: 685000,
-      change_pct: 12.4,
-      series: [
-        { label: 'Dec', value: 96000  },
-        { label: 'Jan', value: 108000 },
-        { label: 'Feb', value: 115000 },
-        { label: 'Mar', value: 118000 },
-        { label: 'Apr', value: 123000 },
-        { label: 'May', value: 125000 },
-      ],
-    },
-    expense: {
-      total: 442500,
-      change_pct: 8.6,
-      series: [
-        { label: 'Dec', value: 70000 },
-        { label: 'Jan', value: 74500 },
-        { label: 'Feb', value: 71000 },
-        { label: 'Mar', value: 78000 },
-        { label: 'Apr', value: 79000 },
-        { label: 'May', value: 75000 },
-      ],
-    },
-    investment: {
-      total: 812500,
-      change_pct: 23.1,
-      series: [
-        { label: 'Dec', value: 660000 },
-        { label: 'Jan', value: 682000 },
-        { label: 'Feb', value: 705000 },
-        { label: 'Mar', value: 762000 },
-        { label: 'Apr', value: 788000 },
-        { label: 'May', value: 812500 },
-      ],
-    },
-  },
-  year: {
-    income: {
-      total: 1382000,
-      change_pct: 28.7,
-      series: [
-        { label: 'Jun', value:  82000 },
-        { label: 'Aug', value:  90000 },
-        { label: 'Oct', value:  98000 },
-        { label: 'Dec', value: 108000 },
-        { label: 'Feb', value: 115000 },
-        { label: 'Apr', value: 123000 },
-      ],
-    },
-    expense: {
-      total: 918500,
-      change_pct: 12.1,
-      series: [
-        { label: 'Jun', value: 62000 },
-        { label: 'Aug', value: 65000 },
-        { label: 'Oct', value: 68000 },
-        { label: 'Dec', value: 74500 },
-        { label: 'Feb', value: 71000 },
-        { label: 'Apr', value: 79000 },
-      ],
-    },
-    investment: {
-      total: 812500,
-      change_pct: 35.8,
-      series: [
-        { label: 'Jun', value: 598000 },
-        { label: 'Aug', value: 620000 },
-        { label: 'Oct', value: 645000 },
-        { label: 'Dec', value: 682000 },
-        { label: 'Feb', value: 750000 },
-        { label: 'Apr', value: 812500 },
-      ],
-    },
-  },
-};
-
-// Reusable card
-function TrendCard({
-  title, icon, accent, data, colors, isDark, inverseDelta = false, testID, valuePrefix = '',
-}: {
-  title: string;
-  icon: any;
-  accent: string;
-  data: TrendCardData;
-  colors: any;
-  isDark: boolean;
-  inverseDelta?: boolean; // for expense: down is good (green)
-  testID: string;
-  valuePrefix?: string;
+function TrendCard({ title, icon, accent, data, colors, isDark, inverseDelta = false, testID }: {
+  title: string; icon: any; accent: string; data: TrendCardData; colors: any; isDark: boolean; inverseDelta?: boolean; testID: string;
 }) {
-  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
-  const positive = inverseDelta ? data.change_pct < 0 : data.change_pct > 0;
+  const CARD_BG   = isDark ? '#1C1C2E' : colors.card;
+  const positive  = inverseDelta ? data.change_pct < 0 : data.change_pct > 0;
   const deltaColor = data.change_pct === 0 ? colors.textSecondary : positive ? GREEN : RED;
-  const deltaIcon = data.change_pct > 0 ? 'arrow-up' : data.change_pct < 0 ? 'arrow-down' : 'remove';
-
+  const deltaIcon  = data.change_pct > 0 ? 'arrow-up' : data.change_pct < 0 ? 'arrow-down' : 'remove';
   return (
     <View style={[tr.card, { backgroundColor: CARD_BG }]} testID={testID}>
-      {/* Header */}
       <View style={tr.cardHead}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
           <View style={[tr.iconWrap, { backgroundColor: accent + '22' }]}>
@@ -1430,131 +1111,106 @@ function TrendCard({
           </View>
           <Text style={[tr.cardTitle, { color: colors.text }]}>{title}</Text>
         </View>
-        <TouchableOpacity testID={`${testID}-view-all`}>
-          <Text style={[tr.viewAll, { color: PURPLE }]}>View All</Text>
-        </TouchableOpacity>
       </View>
-
-      {/* Total + Delta */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>
-        <Text style={[tr.cardValue, { color: accent }]}>
-          {valuePrefix}{formatINR(data.total)}
-        </Text>
+        <Text style={[tr.cardValue, { color: accent }]}>{formatINR(data.total)}</Text>
         <View style={[tr.deltaPill, { backgroundColor: deltaColor + '1E' }]}>
           <Ionicons name={deltaIcon as any} size={11} color={deltaColor} />
-          <Text style={[tr.deltaText, { color: deltaColor }]}>
-            {Math.abs(data.change_pct).toFixed(1)}%
-          </Text>
+          <Text style={[tr.deltaText, { color: deltaColor }]}>{Math.abs(data.change_pct).toFixed(1)}%</Text>
         </View>
       </View>
-
-      {/* Trend graph */}
-      <LineChart
-        data={data.series.map(p => ({ value: p.value, label: p.label }))}
-        width={CHART_W - 8}
-        height={110}
-        color={accent}
-        thickness={2.5}
-        curved
-        hideDataPoints={false}
-        dataPointsColor={accent}
-        dataPointsRadius={3}
-        xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-        yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-        rulesColor={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
-        xAxisColor={colors.border}
-        yAxisColor="transparent"
-        areaChart
-        startFillColor={accent}
-        endFillColor="transparent"
-        startOpacity={0.3}
-        endOpacity={0}
-        isAnimated
-        initialSpacing={6}
-      />
+      {data.series.length > 1 && (
+        <LineChart
+          data={data.series.map(p => ({ value: p.value, label: p.label }))}
+          width={CHART_W - 8}
+          height={110}
+          color={accent}
+          thickness={2.5}
+          curved
+          hideDataPoints={false}
+          dataPointsColor={accent}
+          dataPointsRadius={3}
+          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+          yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+          rulesColor={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
+          xAxisColor={colors.border}
+          yAxisColor="transparent"
+          areaChart
+          startFillColor={accent}
+          endFillColor="transparent"
+          startOpacity={0.3}
+          endOpacity={0}
+          isAnimated
+          initialSpacing={6}
+        />
+      )}
     </View>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// TRENDS TAB  (UI-only with dummy data)
-// ══════════════════════════════════════════════════════════════════════════════
 function TrendsTab({ colors, isDark }: any) {
-  const [period, setPeriod] = useState<TrendsPeriod>('6m');
-  const d = DUMMY_TRENDS[period];
+  const [period,  setPeriod]  = useState<'month' | '6m' | 'year'>('6m');
+  const [loading, setLoading] = useState(true);
+  const [trData,  setTrData]  = useState<any>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/insights/trends?period=${period}`);
+      setTrData(res.data);
+    } catch {
+      setTrData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [period]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  const emptyTrend: TrendCardData = { total: 0, change_pct: 0, series: [] };
+
+  const income     = trData?.income     ? { total: trData.income.total,     change_pct: trData.income.change_pct,     series: trData.income.series     } : emptyTrend;
+  const expense    = trData?.expense    ? { total: trData.expense.total,    change_pct: trData.expense.change_pct,    series: trData.expense.series    } : emptyTrend;
+  const investment = trData?.investment ? { total: trData.investment.total, change_pct: trData.investment.change_pct, series: trData.investment.series } : emptyTrend;
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* ── Period Tabs ─────────────────────────────────────────── */}
+      {/* ── Period Tabs ── */}
       <View style={[tr.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="trends-period-tabs">
         {([['month', 'This Month'], ['6m', 'Last 6 Months'], ['year', 'This Year']] as const).map(([k, l]) => {
           const active = period === k;
           return (
-            <TouchableOpacity
-              key={k}
-              onPress={() => setPeriod(k as TrendsPeriod)}
-              style={[tr.periodBtn, active && { backgroundColor: PURPLE }]}
-              testID={`trends-period-${k}`}
-              activeOpacity={0.85}
-            >
-              <Text style={[tr.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
-                {l}
-              </Text>
+            <TouchableOpacity key={k} onPress={() => setPeriod(k as any)} style={[tr.periodBtn, active && { backgroundColor: PURPLE }]} testID={`trends-period-${k}`} activeOpacity={0.85}>
+              <Text style={[tr.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>{l}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* ── Income Trend Card ───────────────────────────────────── */}
-      <TrendCard
-        title="Income Trend"
-        icon="arrow-down-circle"
-        accent={GREEN}
-        data={d.income}
-        colors={colors}
-        isDark={isDark}
-        testID="trends-income-card"
-      />
-
-      {/* ── Expense Trend Card ──────────────────────────────────── */}
-      <TrendCard
-        title="Expense Trend"
-        icon="arrow-up-circle"
-        accent={RED}
-        data={d.expense}
-        colors={colors}
-        isDark={isDark}
-        inverseDelta
-        testID="trends-expense-card"
-      />
-
-      {/* ── Investment Trend Card ───────────────────────────────── */}
-      <TrendCard
-        title="Investment Trend"
-        icon="trending-up"
-        accent={PURPLE}
-        data={d.investment}
-        colors={colors}
-        isDark={isDark}
-        testID="trends-investment-card"
-      />
+      {loading ? (
+        <LoadingBox colors={colors} />
+      ) : !trData ? (
+        <EmptyBox icon="trending-up-outline" text="No trend data yet. Add transactions over multiple months to see trends." colors={colors} />
+      ) : (
+        <>
+          <TrendCard title="Income Trend"    icon="arrow-down-circle" accent={GREEN}  data={income}     colors={colors} isDark={isDark} testID="trends-income-card" />
+          <TrendCard title="Expense Trend"   icon="arrow-up-circle"   accent={RED}    data={expense}    colors={colors} isDark={isDark} inverseDelta testID="trends-expense-card" />
+          <TrendCard title="Investment Trend" icon="trending-up"       accent={PURPLE} data={investment}  colors={colors} isDark={isDark} testID="trends-investment-card" />
+        </>
+      )}
     </ScrollView>
   );
 }
 
-// ─── Trends-specific styles ───────────────────────────────────────────────────
 const tr = StyleSheet.create({
   periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
   periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
   periodBtnText: { fontSize: 12, fontWeight: '700' },
-
   card:          { borderRadius: 16, padding: 16, marginBottom: 14 },
   cardHead:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconWrap:      { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   cardTitle:     { fontSize: 14, fontWeight: '700' },
   cardValue:     { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
-  viewAll:       { fontSize: 12, fontWeight: '600' },
-
   deltaPill:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   deltaText:     { fontSize: 11, fontWeight: '700' },
 });
@@ -1562,173 +1218,103 @@ const tr = StyleSheet.create({
 // ══════════════════════════════════════════════════════════════════════════════
 // CALENDAR TAB
 // ══════════════════════════════════════════════════════════════════════════════
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS        = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// ── Dummy transactions keyed by day-of-month ────────────────────────────────
-type CalTxn = {
-  name:     string;
-  category: string;
-  amount:   number;
-  type:     'credit' | 'debit';
-  icon:     any;
-  color:    string;
-  time:     string;
-};
-
-const DUMMY_CAL_TXNS: Record<number, CalTxn[]> = {
-  1: [
-    { name: 'Salary',         category: 'Income',        amount: 85000, type: 'credit', icon: 'briefcase-outline',    color: GREEN,    time: '09:30 AM' },
-    { name: 'Rent',           category: 'Bills',         amount: 22000, type: 'debit',  icon: 'home-outline',         color: '#26C6DA', time: '10:15 AM' },
-  ],
-  3: [
-    { name: 'Swiggy',         category: 'Food',          amount:   650, type: 'debit',  icon: 'fast-food-outline',    color: '#FF6B6B', time: '01:42 PM' },
-    { name: 'Uber',           category: 'Transport',     amount:   280, type: 'debit',  icon: 'car-outline',          color: '#4DABF7', time: '07:20 PM' },
-  ],
-  5: [
-    { name: 'Amazon',         category: 'Shopping',      amount:  3200, type: 'debit',  icon: 'bag-handle-outline',   color: '#B197FC', time: '11:05 AM' },
-  ],
-  8: [
-    { name: 'Freelance',      category: 'Income',        amount: 18000, type: 'credit', icon: 'laptop-outline',       color: GREEN,    time: '04:11 PM' },
-    { name: 'Netflix',        category: 'Entertainment', amount:   499, type: 'debit',  icon: 'tv-outline',           color: '#E50914', time: '08:30 PM' },
-  ],
-  10: [
-    { name: 'Electricity',    category: 'Bills',         amount:  2900, type: 'debit',  icon: 'flash-outline',        color: '#FFB300', time: '10:20 AM' },
-    { name: 'Internet',       category: 'Bills',         amount:   999, type: 'debit',  icon: 'wifi-outline',         color: '#26C6DA', time: '10:25 AM' },
-  ],
-  12: [
-    { name: 'Big Bazaar',     category: 'Shopping',      amount:  4200, type: 'debit',  icon: 'cart-outline',         color: '#B197FC', time: '06:45 PM' },
-  ],
-  14: [
-    { name: 'Refund - Myntra', category: 'Shopping',     amount:  1450, type: 'credit', icon: 'refresh-outline',      color: GREEN,    time: '11:00 AM' },
-    { name: 'Zomato',         category: 'Food',          amount:   820, type: 'debit',  icon: 'fast-food-outline',    color: '#FF6B6B', time: '09:15 PM' },
-  ],
-  17: [
-    { name: 'Petrol',         category: 'Transport',     amount:  2500, type: 'debit',  icon: 'car-outline',          color: '#4DABF7', time: '08:30 AM' },
-    { name: 'Coffee',         category: 'Food',          amount:   320, type: 'debit',  icon: 'cafe-outline',         color: '#FF6B6B', time: '10:45 AM' },
-  ],
-  20: [
-    { name: 'BookMyShow',     category: 'Entertainment', amount:   850, type: 'debit',  icon: 'film-outline',         color: '#FFB300', time: '07:00 PM' },
-  ],
-  22: [
-    { name: 'Dividend',       category: 'Income',        amount:  3200, type: 'credit', icon: 'trending-up-outline',  color: GREEN,    time: '02:15 PM' },
-  ],
-  25: [
-    { name: 'Gym Subscription', category: 'Health',      amount:  1500, type: 'debit',  icon: 'barbell-outline',      color: '#26C6DA', time: '07:30 AM' },
-    { name: 'Pharmacy',       category: 'Health',        amount:   680, type: 'debit',  icon: 'medkit-outline',       color: '#FF6B6B', time: '06:20 PM' },
-  ],
-  28: [
-    { name: 'Mom (Gift)',     category: 'Family',        amount:  5000, type: 'debit',  icon: 'gift-outline',         color: PURPLE,   time: '11:30 AM' },
-  ],
-  30: [
-    { name: 'Mutual Fund SIP', category: 'Investment',   amount:  10000, type: 'debit', icon: 'trending-up-outline',  color: PURPLE,   time: '09:00 AM' },
-  ],
-};
-
 function CalendarTab({ colors, isDark }: any) {
-  const [calDate, setCalDate] = useState(new Date());
-  const [selectedDay, setSelDay] = useState<number | null>(new Date().getDate());
-
   const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+  const [calDate,    setCalDate]    = useState(new Date());
+  const [selectedDay, setSelDay]   = useState<number | null>(new Date().getDate());
+  const [loading,    setLoading]   = useState(true);
+  const [calData,    setCalData]   = useState<any>(null);
 
-  // Build calendar grid (using current viewed month)
-  const year        = calDate.getFullYear();
-  const month       = calDate.getMonth();
+  const year  = calDate.getFullYear();
+  const month = calDate.getMonth();
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/insights/calendar?month=${month + 1}&year=${year}`);
+      setCalData(res.data);
+    } catch {
+      setCalData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [month, year]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today       = new Date();
+  const isCurMon    = today.getFullYear() === year && today.getMonth() === month;
 
-  const today    = new Date();
-  const isCurMon = today.getFullYear() === year && today.getMonth() === month;
-
-  // Compute day-level totals from dummy data
+  // Build day totals from API data
+  const dailyData = calData?.daily_data || {};
   const dayTotals: Record<number, { credit: number; debit: number }> = {};
-  Object.entries(DUMMY_CAL_TXNS).forEach(([d, list]) => {
-    const dn = Number(d);
-    const credit = list.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
-    const debit  = list.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
-    dayTotals[dn] = { credit, debit };
+  Object.entries(dailyData).forEach(([d, v]: [string, any]) => {
+    dayTotals[Number(d)] = { credit: v.income || 0, debit: v.expense || 0 };
   });
 
-  // Currently selected day's transactions
-  const dayTxns = selectedDay ? (DUMMY_CAL_TXNS[selectedDay] || []) : [];
+  // All transactions for selected day
+  const allTxns: any[] = calData?.transactions || [];
+  const dayTxns = selectedDay
+    ? allTxns.filter(t => {
+        try {
+          const d = new Date(t.date);
+          return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selectedDay;
+        } catch { return false; }
+      })
+    : [];
+
   const dayCredit = dayTxns.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
   const dayDebit  = dayTxns.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
+
+  const totalTxns = allTxns.length;
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
-        {/* ── Month navigator ─────────────────────────────────── */}
+        {/* ── Month navigator ── */}
         <View style={[cl.monthNav, { backgroundColor: CARD_BG }]} testID="calendar-month-nav">
           <TouchableOpacity onPress={() => { setCalDate(subMonths(calDate, 1)); setSelDay(null); }} style={cl.navBtn} testID="calendar-prev-month">
             <Ionicons name="chevron-back" size={20} color={PURPLE} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[cl.monthTitle, { color: colors.text }]}>{MONTHS_SHORT[month]} {year}</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
-              {Object.values(DUMMY_CAL_TXNS).flat().length} transactions
-            </Text>
+            {loading
+              ? <ActivityIndicator size="small" color={PURPLE} style={{ marginTop: 4 }} />
+              : <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{totalTxns} transactions</Text>
+            }
           </View>
           <TouchableOpacity onPress={() => { setCalDate(addMonths(calDate, 1)); setSelDay(null); }} style={cl.navBtn} testID="calendar-next-month">
             <Ionicons name="chevron-forward" size={20} color={PURPLE} />
           </TouchableOpacity>
         </View>
 
-        {/* ── Calendar grid ──────────────────────────────────── */}
+        {/* ── Calendar grid ── */}
         <View style={[cl.gridCard, { backgroundColor: CARD_BG }]} testID="calendar-grid">
-          {/* Day header */}
           <View style={cl.dayHeaderRow}>
-            {DAYS.map(d => (
-              <Text key={d} style={[cl.dayHeader, { color: colors.textSecondary }]}>{d}</Text>
-            ))}
+            {DAYS.map(d => <Text key={d} style={[cl.dayHeader, { color: colors.textSecondary }]}>{d}</Text>)}
           </View>
-
-          {/* Day cells */}
           <View style={cl.grid}>
-            {Array.from({ length: firstDay }).map((_, i) => (
-              <View key={`e${i}`} style={cl.cell} />
-            ))}
+            {Array.from({ length: firstDay }).map((_, i) => <View key={`e${i}`} style={cl.cell} />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day        = i + 1;
-              const totals     = dayTotals[day];
-              const hasCredit  = (totals?.credit || 0) > 0;
-              const hasDebit   = (totals?.debit  || 0) > 0;
-              const isToday    = isCurMon && today.getDate() === day;
-              const isSelected = selectedDay === day;
-
+              const day       = i + 1;
+              const totals    = dayTotals[day];
+              const hasCredit = (totals?.credit || 0) > 0;
+              const hasDebit  = (totals?.debit  || 0) > 0;
+              const isToday   = isCurMon && today.getDate() === day;
+              const isSelected= selectedDay === day;
               return (
-                <TouchableOpacity
-                  key={day}
-                  onPress={() => setSelDay(isSelected ? null : day)}
-                  style={cl.cell}
-                  activeOpacity={0.7}
-                  testID={`calendar-day-${day}`}
-                >
-                  <View
-                    style={[
-                      cl.cellInner,
-                      isSelected && { backgroundColor: PURPLE },
-                      !isSelected && isToday && { borderWidth: 1.5, borderColor: PURPLE },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        cl.dayNum,
-                        { color: isSelected ? '#FFF' : (isToday ? PURPLE : colors.text) },
-                        (isSelected || isToday) && { fontWeight: '800' },
-                      ]}
-                    >
-                      {day}
-                    </Text>
-
-                    {/* Indicators */}
+                <TouchableOpacity key={day} onPress={() => setSelDay(isSelected ? null : day)} style={cl.cell} activeOpacity={0.7} testID={`calendar-day-${day}`}>
+                  <View style={[cl.cellInner, isSelected && { backgroundColor: PURPLE }, !isSelected && isToday && { borderWidth: 1.5, borderColor: PURPLE }]}>
+                    <Text style={[cl.dayNum, { color: isSelected ? '#FFF' : (isToday ? PURPLE : colors.text) }, (isSelected || isToday) && { fontWeight: '800' }]}>{day}</Text>
                     {(hasCredit || hasDebit) && (
                       <View style={cl.dotRow}>
-                        {hasCredit && (
-                          <View style={[cl.dot, { backgroundColor: isSelected ? '#FFF' : GREEN }]} />
-                        )}
-                        {hasDebit && (
-                          <View style={[cl.dot, { backgroundColor: isSelected ? '#FFF' : RED }]} />
-                        )}
+                        {hasCredit && <View style={[cl.dot, { backgroundColor: isSelected ? '#FFF' : GREEN }]} />}
+                        {hasDebit  && <View style={[cl.dot, { backgroundColor: isSelected ? '#FFF' : RED   }]} />}
                       </View>
                     )}
                   </View>
@@ -1736,8 +1322,6 @@ function CalendarTab({ colors, isDark }: any) {
               );
             })}
           </View>
-
-          {/* Legend */}
           <View style={cl.legendRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[cl.dot, { backgroundColor: GREEN }]} />
@@ -1754,7 +1338,7 @@ function CalendarTab({ colors, isDark }: any) {
           </View>
         </View>
 
-        {/* ── Daily summary header ───────────────────────────── */}
+        {/* ── Daily summary header ── */}
         <View style={cl.summaryHead} testID="calendar-day-summary">
           <View>
             <Text style={[cl.summaryTitle, { color: colors.text }]}>
@@ -1772,62 +1356,35 @@ function CalendarTab({ colors, isDark }: any) {
           )}
         </View>
 
-        {/* ── Transactions list ──────────────────────────────── */}
+        {/* ── Transactions list ── */}
         {dayTxns.length === 0 ? (
           <View style={[cl.emptyCard, { backgroundColor: CARD_BG }]}>
             <Ionicons name="calendar-clear-outline" size={36} color={colors.textSecondary} />
             <Text style={{ color: colors.textSecondary, marginTop: 10, fontSize: 13 }}>
-              No transactions on this day
-            </Text>
-            <Text style={{ color: colors.textSecondary, marginTop: 4, fontSize: 11 }}>
-              Tap "+" below to add one
+              {selectedDay ? 'No transactions on this day' : 'Select a day to view transactions'}
             </Text>
           </View>
         ) : (
           <View style={[cl.txnCard, { backgroundColor: CARD_BG }]} testID="calendar-txn-list">
-            {dayTxns.map((t, i) => {
-              const credit = t.type === 'credit';
+            {dayTxns.map((t: any, i: number) => {
+              const credit  = t.type === 'credit';
+              const catConf = getCatConfig(t.category);
               return (
-                <View
-                  key={i}
-                  style={[
-                    cl.txnRow,
-                    i < dayTxns.length - 1 && {
-                      borderBottomWidth: 1,
-                      borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-                    },
-                  ]}
-                  testID={`calendar-txn-${i}`}
-                >
-                  {/* Category icon */}
-                  <View style={[cl.txnIcon, { backgroundColor: t.color + '22' }]}>
-                    <Ionicons name={t.icon} size={18} color={t.color} />
+                <View key={i} style={[cl.txnRow, i < dayTxns.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} testID={`calendar-txn-${i}`}>
+                  <View style={[cl.txnIcon, { backgroundColor: catConf.color + '22' }]}>
+                    <Ionicons name={catConf.icon as any} size={18} color={catConf.color} />
                   </View>
-
-                  {/* Name + category + time */}
                   <View style={{ flex: 1 }}>
                     <Text style={[cl.txnName, { color: colors.text }]} numberOfLines={1}>{t.name}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                      <Text style={[cl.txnCat, { color: colors.textSecondary }]}>{t.category}</Text>
-                      <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textSecondary }} />
-                      <Text style={[cl.txnCat, { color: colors.textSecondary }]}>{t.time}</Text>
-                    </View>
+                    <Text style={[cl.txnCat, { color: colors.textSecondary }]}>{t.category}</Text>
                   </View>
-
-                  {/* Amount + credit/debit indicator */}
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={[cl.txnAmount, { color: credit ? GREEN : RED }]}>
                       {credit ? '+' : '-'}{formatINR(t.amount)}
                     </Text>
                     <View style={[cl.txnBadge, { backgroundColor: credit ? GREEN + '1E' : RED + '1E' }]}>
-                      <Ionicons
-                        name={credit ? 'arrow-down' : 'arrow-up'}
-                        size={9}
-                        color={credit ? GREEN : RED}
-                      />
-                      <Text style={{ color: credit ? GREEN : RED, fontSize: 9, fontWeight: '800' }}>
-                        {credit ? 'CREDIT' : 'DEBIT'}
-                      </Text>
+                      <Ionicons name={credit ? 'arrow-down' : 'arrow-up'} size={9} color={credit ? GREEN : RED} />
+                      <Text style={{ color: credit ? GREEN : RED, fontSize: 9, fontWeight: '800' }}>{credit ? 'CREDIT' : 'DEBIT'}</Text>
                     </View>
                   </View>
                 </View>
@@ -1837,18 +1394,9 @@ function CalendarTab({ colors, isDark }: any) {
         )}
       </ScrollView>
 
-      {/* ── Floating Add button (FAB) ──────────────────────────── */}
-      <TouchableOpacity
-        style={cl.fabWrap}
-        activeOpacity={0.85}
-        testID="calendar-add-fab"
-      >
-        <LinearGradient
-          colors={[PURPLE_DARK, PURPLE_LIGHT]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={cl.fab}
-        >
+      {/* ── FAB ── */}
+      <TouchableOpacity style={cl.fabWrap} activeOpacity={0.85} testID="calendar-add-fab">
+        <LinearGradient colors={[PURPLE_DARK, PURPLE_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cl.fab}>
           <Ionicons name="add" size={28} color="#FFF" />
         </LinearGradient>
       </TouchableOpacity>
@@ -1856,12 +1404,10 @@ function CalendarTab({ colors, isDark }: any) {
   );
 }
 
-// ─── Calendar-specific styles ──────────────────────────────────────────────────
 const cl = StyleSheet.create({
   monthNav:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, marginBottom: 12 },
   navBtn:       { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   monthTitle:   { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-
   gridCard:     { borderRadius: 16, padding: 12, marginBottom: 14 },
   dayHeaderRow: { flexDirection: 'row', marginBottom: 8 },
   dayHeader:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
@@ -1871,22 +1417,17 @@ const cl = StyleSheet.create({
   dayNum:       { fontSize: 13, fontWeight: '600' },
   dotRow:       { flexDirection: 'row', gap: 3 },
   dot:          { width: 5, height: 5, borderRadius: 2.5 },
-
   legendRow:    { flexDirection: 'row', gap: 18, justifyContent: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
-
   summaryHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 10 },
   summaryTitle: { fontSize: 15, fontWeight: '700' },
-
   emptyCard:    { borderRadius: 14, padding: 28, alignItems: 'center' },
   txnCard:      { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 4, marginBottom: 14 },
-
   txnRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   txnIcon:      { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   txnName:      { fontSize: 13, fontWeight: '700' },
-  txnCat:       { fontSize: 11 },
+  txnCat:       { fontSize: 11, textTransform: 'capitalize', marginTop: 2 },
   txnAmount:    { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   txnBadge:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
-
   fabWrap:      { position: 'absolute', right: 18, bottom: 24, shadowColor: PURPLE, shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   fab:          { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
 });
@@ -1901,7 +1442,6 @@ export default function InsightsScreen() {
 
   const tabScrollRef = useRef<ScrollView>(null);
 
-  // Re-scroll tab bar to active tab when it changes
   useEffect(() => {
     tabScrollRef.current?.scrollTo({ x: Math.max(0, activeTab - 1) * 80, animated: true });
   }, [activeTab]);
@@ -1936,19 +1476,9 @@ export default function InsightsScreen() {
           {TABS.map((tab, i) => {
             const active = activeTab === i;
             return (
-              <TouchableOpacity
-                key={tab.label}
-                onPress={() => setActiveTab(i)}
-                style={st.tabTouch}
-                testID={`insights-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
-              >
+              <TouchableOpacity key={tab.label} onPress={() => setActiveTab(i)} style={st.tabTouch} testID={`insights-tab-${tab.label.toLowerCase().replace(' ', '-')}`}>
                 {active ? (
-                  <LinearGradient
-                    colors={[PURPLE_DARK, PURPLE_LIGHT]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={st.tabItemActive}
-                  >
+                  <LinearGradient colors={[PURPLE_DARK, PURPLE_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.tabItemActive}>
                     <Ionicons name={tab.activeIcon as any} size={15} color="#FFF" />
                     <Text style={[st.tabLabel, { color: '#FFF' }]}>{tab.label}</Text>
                   </LinearGradient>
@@ -1972,116 +1502,18 @@ export default function InsightsScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const st = StyleSheet.create({
-  root:   { flex: 1 },
-
-  // Header
+  root:        { flex: 1 },
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
   headerTitle: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
   headerBtn:   { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-
-  // Tabs
-  tabWrap:        { borderBottomWidth: 1 },
-  tabScroll:      { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
-  tabTouch:       { },
-  tabItemActive:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
-  tabItemInactive:{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
-  tabLabel:       { fontSize: 12, fontWeight: '600' },
-
-  // Common
-  card:        { borderRadius: 14, padding: 14, marginBottom: 14, overflow: 'hidden' },
-  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, marginTop: 4 },
-  sectionTitle:{ fontSize: 14, fontWeight: '700', letterSpacing: -0.2 },
-  viewAll:     { fontSize: 12, fontWeight: '600' },
-  bigAmount:   { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-
-  // Month nav
-  monthNav:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 14, gap: 12 },
-  monthBtn:   { padding: 6 },
-  monthLabel: { fontSize: 15, fontWeight: '700', minWidth: 130, textAlign: 'center' },
-
-  // Chips
-  chip:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)' },
-  chipText: { fontSize: 12, fontWeight: '600' },
-
-  // Loading / Empty
-  loadBox:  { alignItems: 'center', justifyContent: 'center', height: 120, borderRadius: 14, marginTop: 8 },
-  emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 12 },
-  emptyText:{ fontSize: 13, textAlign: 'center', maxWidth: 260 },
-
-  // Overview
-  overviewCard:       { borderRadius: 18, padding: 18, marginBottom: 14 },
-  overviewCardHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  overviewCardTitle:  { fontSize: 14, fontWeight: '700' },
-  overviewMetrics:    { flexDirection: 'row', justifyContent: 'space-between' },
-  overviewMetric:     { alignItems: 'center', flex: 1 },
-  overviewMetricLabel:{ fontSize: 11, fontWeight: '500', marginBottom: 4 },
-  overviewMetricValue:{ fontSize: 16, fontWeight: '800', marginBottom: 4 },
-  savingsRatePill:    { alignSelf: 'center', marginTop: 14, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-
-  // Insights
-  insightRow:   { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 11 },
-  insightIcon:  { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  insightTitle: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
-  insightText:  { fontSize: 12, lineHeight: 17 },
-
-  // Accounts
-  accTotalRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 4, borderBottomWidth: 1 },
-  accTotalLabel:  { fontSize: 13, fontWeight: '500' },
-  accTotalValue:  { fontSize: 16, fontWeight: '800' },
-  accRow:         { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-  accIcon:        { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  accLabel:       { flex: 1, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
-  accCount:       { fontSize: 11 },
-  accBalance:     { fontSize: 13, fontWeight: '700' },
-
-  // Cash flow
-  cashHero:       { borderRadius: 16, padding: 18, marginBottom: 14 },
-  cashHeroLabel:  { fontSize: 12, marginBottom: 6 },
-  cashHeroValue:  { fontSize: 28, fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 },
-  inflowRow:      { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  flowCard:       { borderRadius: 14, padding: 14, alignItems: 'center', gap: 6 },
-  flowLabel:      { fontSize: 11, fontWeight: '500' },
-  flowValue:      { fontSize: 16, fontWeight: '800' },
-  chartLegend:    { flexDirection: 'row', gap: 16, marginBottom: 10 },
-  cfMonthRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  cfMonthLabel:   { fontSize: 13, fontWeight: '600' },
-
-  // Spending
-  catRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11 },
-  catIcon:  { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  catName:  { fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
-  catAmt:   { fontSize: 13, fontWeight: '700' },
-
-  // Budget
-  statusBadge:     { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  budgetTotalRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  budgetTotalVal:  { fontSize: 16, fontWeight: '800' },
-  budgetTotalLabel:{ fontSize: 11, marginTop: 2 },
-  budgetRow:       { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 11 },
-  budgetIconWrap:  { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-
-  // Trends
-  trendMetrics:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-  trendMetricCard:   { borderRadius: 12, padding: 12, flex: 1, minWidth: (SW - 48) / 2 - 4 },
-  trendMetricLabel:  { fontSize: 11, fontWeight: '500', marginBottom: 4 },
-  trendMetricValue:  { fontSize: 15, fontWeight: '800' },
-
-  // Calendar
-  calHeader:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderBottomWidth: 1, gap: 20, marginBottom: 8 },
-  calMonthTitle: { fontSize: 17, fontWeight: '700', minWidth: 130, textAlign: 'center' },
-  calDayHeaders: { flexDirection: 'row', marginBottom: 4 },
-  calDayHeader:  { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600' },
-  calGrid:       { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
-  calCell:       { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 4, paddingHorizontal: 1, minHeight: 52 },
-  calDayNum:     { fontSize: 13, fontWeight: '600', marginBottom: 2 },
-  calDot:        { width: 16, height: 4, borderRadius: 2, marginBottom: 1 },
-  calAmt:        { fontSize: 7, textAlign: 'center', width: '100%' },
-  calLegend:     { flexDirection: 'row', gap: 16, justifyContent: 'center', marginBottom: 8, flexWrap: 'wrap' },
-  calTxnRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-  calTxnIcon:    { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  calTxnDesc:    { fontSize: 13, fontWeight: '600' },
-  calTxnCat:     { fontSize: 11, marginTop: 1, textTransform: 'capitalize' },
-  calTxnAmt:     { fontSize: 13, fontWeight: '700' },
+  tabWrap:     { borderBottomWidth: 1 },
+  tabScroll:   { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
+  tabTouch:    {},
+  tabItemActive:   { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
+  tabItemInactive: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
+  tabLabel:    { fontSize: 12, fontWeight: '600' },
+  loadBox:     { alignItems: 'center', justifyContent: 'center', height: 120, borderRadius: 14, marginTop: 8 },
+  emptyBox:    { alignItems: 'center', paddingVertical: 48, gap: 12 },
+  emptyText:   { fontSize: 13, textAlign: 'center', maxWidth: 260 },
 });

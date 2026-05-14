@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = "https://fincare-db-redesign.preview.emergentagent.com"
+BASE_URL = "https://cash-flow-hub-81.preview.emergentagent.com"
 
 
 @pytest.fixture(scope="module")

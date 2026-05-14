@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timezone
 
 # Configuration
-BASE_URL = "https://fincare-db-redesign.preview.emergentagent.com/api"
+BASE_URL = "https://cash-flow-hub-81.preview.emergentagent.com/api"
 TEST_USER = {
     "email": "fulltest@test.com",
     "password": "FullTest123!",

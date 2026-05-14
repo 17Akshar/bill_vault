@@ -4,13 +4,13 @@ Deploy-Verify Smoke Test for the user_id-as-doc-id overwrite bug fix.
 Creates a fresh user on the LIVE Firebase-backed backend, writes 3+ records to
 each multi-record collection, and asserts they all persist.
 
-Runs against https://fincare-db-redesign.preview.emergentagent.com/api
+Runs against https://cash-flow-hub-81.preview.emergentagent.com/api
 """
 import requests
 import sys
 import time
 
-BASE = "https://fincare-db-redesign.preview.emergentagent.com/api"
+BASE = "https://cash-flow-hub-81.preview.emergentagent.com/api"
 
 def ok(msg): print(f"  ✅ {msg}")
 def fail(msg): print(f"  ❌ {msg}"); sys.exit(1)

@@ -8,7 +8,7 @@ import json
 import sys
 from datetime import datetime
 
-BASE_URL = "https://fincare-db-redesign.preview.emergentagent.com/api"
+BASE_URL = "https://cash-flow-hub-81.preview.emergentagent.com/api"
 
 def _print(msg):
     print(msg, flush=True)
