@@ -3513,6 +3513,16 @@ app.include_router(loans_router)
 from lending import lending_router
 app.include_router(lending_router)
 
+# Loans EMI — three new scalable modules
+from loan_transactions import loan_transactions_router
+app.include_router(loan_transactions_router)
+
+from emi_reminders import emi_reminders_router
+app.include_router(emi_reminders_router)
+
+from loan_prepayments import loan_prepayments_router
+app.include_router(loan_prepayments_router)
+
 @app.on_event("startup")
 async def _start_snapshot_scheduler():
     start_scheduler()
