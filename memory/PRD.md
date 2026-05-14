@@ -36,6 +36,39 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
+### Session 20 — Scalable Insights Analytics Backend (2026-05-14)
+**Refactored `/app/backend/insights.py` (346 lines, monolithic) into a modular package `/app/backend/insights/`.**
+
+#### New structure
+```
+/app/backend/insights/
+├── __init__.py             — combines all 6 routers into `insights_router`
+├── periods.py              — DateRange, Period (month/quarter/year), helpers
+├── service.py              — shared data-access + math helpers
+├── financial_summary.py    — /api/insights/financial-summary  + /overview (legacy)
+├── cashflow.py             — /api/insights/cashflow  + /cashflow/monthly-trend
+├── spending.py             — /api/insights/spending  + /spending/category/{cat}  + /spending-trend (legacy)
+├── budget.py               — /api/insights/budget  + /budget-status (legacy)
+├── trends.py               — /api/insights/trends
+└── calendar.py             — /api/insights/calendar
+```
+
+#### What changed
+- **Zero new collections.** Reuses `db.income`, `db.expenses`, `db.budgets`, `db.investments`, `db.accounts`.
+- **Period-aware endpoints** — every analytics endpoint now accepts `period=month|quarter|year` with proper date-range math (quarter = 3 calendar months, year = full calendar year).
+- **Previous-period comparison** (`previous_range`) — automatic %-change computation against the same-length prior window.
+- **All 4 legacy endpoints preserved** (`/insights/overview`, `/insights/budget-status`, `/insights/spending-trend`, `/insights/calendar`) — zero frontend breakage.
+- **6 new endpoints** added matching the 6 analytics types the redesigned Insights tabs need:
+  - `/insights/financial-summary` — period income / expenses / savings / accounts / over-budget
+  - `/insights/cashflow` — inflow by source, outflow by category, per-account flow
+  - `/insights/cashflow/monthly-trend` — N-month series for bar chart
+  - `/insights/spending` — categories + top merchants + avg/day
+  - `/insights/spending/category/{cat}` — drill-down: every txn + merchant subtotals
+  - `/insights/budget` — period-scaled limits (×3 quarter, ×12 year), over-budget list, days-left
+  - `/insights/trends` — Income/Expense/Investment 3-series for the Trends-tab cards
+- All 10 endpoints verified live (HTTP 401 unauth, 200 with token) — backend running.
+- Lint clean (ruff). No frontend changes — all `/api/insights/*` callers continue to work.
+
 ### Session 19 — Drill-down Screens (2026-05-14)
 **New drill-down screens for Insights tab "View Details" / "View All" CTAs**
 
