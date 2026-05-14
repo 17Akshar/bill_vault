@@ -147,6 +147,35 @@ const DUMMY_OVERVIEW = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+// DUMMY DATA — Trends Tab → Investment Returns
+// ══════════════════════════════════════════════════════════════════════════════
+const DUMMY_INVESTMENTS = {
+  total_invested:   650000,
+  current_value:    812500,
+  absolute_return:  162500,
+  return_pct:       25.0,
+  xirr:             18.4,
+  best_month_label: 'Mar 2026',
+  best_month_pct:   8.2,
+  // 6 months of portfolio value (₹)
+  value_series: [
+    { label: 'Dec', value: 660000 },
+    { label: 'Jan', value: 682000 },
+    { label: 'Feb', value: 705000 },
+    { label: 'Mar', value: 762000 },
+    { label: 'Apr', value: 788000 },
+    { label: 'May', value: 812500 },
+  ],
+  // Per-asset returns breakdown
+  breakdown: [
+    { name: 'Mutual Funds', invested: 280000, current: 358000, color: PURPLE,    icon: 'trending-up-outline' },
+    { name: 'Stocks',       invested: 180000, current: 234500, color: TEAL,      icon: 'analytics-outline'   },
+    { name: 'Gold (Digital)', invested: 90000,  current: 105200, color: YELLOW,  icon: 'medal-outline'       },
+    { name: 'Fixed Deposits', invested: 100000, current: 114800, color: GREEN,   icon: 'lock-closed-outline' },
+  ],
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 // OVERVIEW TAB  (UI-only with dummy data)
 // ══════════════════════════════════════════════════════════════════════════════
 function OverviewTab({ colors, isDark, date, onDateChange }: any) {
@@ -761,17 +790,8 @@ function TrendsTab({ colors, isDark }: any) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  if (loading) return <LoadingBox colors={colors} />;
-  if (!data?.monthly?.length) return <EmptyBox icon="trending-up-outline" text="No trend data available" colors={colors} />;
-
-  const monthly = data.monthly as any[];
-
-  const mkLine = (key: string, color: string) => ({
-    data: monthly.map((m: any) => ({ value: m[key] || 0, label: m.short_label })),
-    color,
-    thickness: 2,
-    curved: true,
-  });
+  const hasData = !loading && data?.monthly?.length;
+  const monthly: any[] = hasData ? (data.monthly as any[]) : [];
 
   const incTotal  = monthly.reduce((s: number, m: any) => s + m.income, 0);
   const expTotal  = monthly.reduce((s: number, m: any) => s + m.expense, 0);
@@ -793,11 +813,21 @@ function TrendsTab({ colors, isDark }: any) {
         </View>
       </ScrollView>
 
-      {/* Summary metrics */}
-      <View style={st.trendMetrics}>
-        {[
-          { label: 'Total Income',  value: incTotal, color: GREEN },
-          { label: 'Total Expense', value: expTotal, color: RED   },
+      {loading && <LoadingBox colors={colors} />}
+      {!loading && !hasData && (
+        <View style={[st.card, { backgroundColor: colors.card, alignItems: 'center', paddingVertical: 32 }]}>
+          <Ionicons name="trending-up-outline" size={36} color={colors.textSecondary} />
+          <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 13 }}>No income/expense trend data yet</Text>
+        </View>
+      )}
+
+      {hasData && (
+        <>
+          {/* Summary metrics */}
+          <View style={st.trendMetrics}>
+            {[
+              { label: 'Total Income',  value: incTotal, color: GREEN },
+              { label: 'Total Expense', value: expTotal, color: RED   },
           { label: 'Net Savings',   value: netTotal, color: netTotal >= 0 ? GREEN : RED },
           { label: 'Avg Save Rate', value: null, display: `${avgRate.toFixed(1)}%`, color: PURPLE },
         ].map(m => (
@@ -894,6 +924,139 @@ function TrendsTab({ colors, isDark }: any) {
           endOpacity={0}
           isAnimated
         />
+      </View>
+        </>
+      )}
+
+      {/* ── Investment Returns (dummy data) ───────────────────────────────── */}
+      <View style={{ marginTop: 6 }}>
+        <View style={st.sectionHead}>
+          <Text style={[st.sectionTitle, { color: colors.text }]}>Investment Returns</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="trending-up" size={12} color={GREEN} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: GREEN }}>
+              +{DUMMY_INVESTMENTS.return_pct.toFixed(1)}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Portfolio hero card with gradient */}
+        <View style={[st.card, { backgroundColor: colors.card, padding: 0, overflow: 'hidden' }]} testID="trends-investment-card">
+          <LinearGradient
+            colors={[PURPLE_DARK, PURPLE_LIGHT]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 16 }}
+          >
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '500', marginBottom: 4 }}>
+              Portfolio Value
+            </Text>
+            <Text style={{ color: '#FFF', fontSize: 26, fontWeight: '800', letterSpacing: -0.5 }}>
+              {formatINR(DUMMY_INVESTMENTS.current_value)}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, gap: 3 }}>
+                <Ionicons name="arrow-up" size={11} color="#FFF" />
+                <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
+                  {formatINR(DUMMY_INVESTMENTS.absolute_return)}
+                </Text>
+              </View>
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11 }}>
+                from {formatINR(DUMMY_INVESTMENTS.total_invested)} invested
+              </Text>
+            </View>
+          </LinearGradient>
+
+          {/* Portfolio value line chart */}
+          <View style={{ padding: 14, paddingTop: 10 }}>
+            <LineChart
+              data={DUMMY_INVESTMENTS.value_series.map(p => ({ value: p.value, label: p.label }))}
+              width={CHART_W}
+              height={110}
+              color={PURPLE}
+              thickness={2.5}
+              curved
+              hideDataPoints={false}
+              dataPointsColor={PURPLE}
+              dataPointsRadius={3}
+              xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+              yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+              rulesColor={colors.border}
+              xAxisColor={colors.border}
+              yAxisColor="transparent"
+              areaChart
+              startFillColor={PURPLE}
+              endFillColor="transparent"
+              startOpacity={0.3}
+              endOpacity={0}
+              isAnimated
+            />
+          </View>
+        </View>
+
+        {/* XIRR + Best month stat row */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+          <View style={[st.card, { backgroundColor: colors.card, flex: 1, marginBottom: 0, padding: 14 }]} testID="trends-xirr-stat">
+            <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '500', marginBottom: 4 }}>XIRR</Text>
+            <Text style={{ color: GREEN, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 }}>
+              {DUMMY_INVESTMENTS.xirr.toFixed(1)}%
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>annualised</Text>
+          </View>
+          <View style={[st.card, { backgroundColor: colors.card, flex: 1, marginBottom: 0, padding: 14 }]} testID="trends-best-month-stat">
+            <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '500', marginBottom: 4 }}>Best Month</Text>
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '800' }}>
+              {DUMMY_INVESTMENTS.best_month_label}
+            </Text>
+            <Text style={{ color: GREEN, fontSize: 11, fontWeight: '700', marginTop: 2 }}>
+              +{DUMMY_INVESTMENTS.best_month_pct}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Asset-class breakdown */}
+        <View style={[st.card, { backgroundColor: colors.card }]} testID="trends-investment-breakdown">
+          <Text style={[st.sectionTitle, { color: colors.text, marginBottom: 10 }]}>By Asset Class</Text>
+          {DUMMY_INVESTMENTS.breakdown.map((b, i) => {
+            const gain    = b.current - b.invested;
+            const gainPct = (gain / b.invested) * 100;
+            const positive = gain >= 0;
+            return (
+              <View
+                key={b.name}
+                style={[
+                  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+                  i < DUMMY_INVESTMENTS.breakdown.length - 1 && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
+                  },
+                ]}
+                testID={`trends-asset-${i}`}
+              >
+                <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: b.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={b.icon as any} size={18} color={b.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>{b.name}</Text>
+                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                    {formatINR(b.invested)} → {formatINR(b.current)}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: positive ? GREEN : RED }}>
+                    {positive ? '+' : ''}{formatINR(gain)}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                    <Ionicons name={positive ? 'arrow-up' : 'arrow-down'} size={9} color={positive ? GREEN : RED} />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: positive ? GREEN : RED }}>
+                      {Math.abs(gainPct).toFixed(1)}%
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
       </View>
     </ScrollView>
   );

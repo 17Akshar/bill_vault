@@ -25,6 +25,14 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 ### Session 16 — Loan Detail Full-Page Screen
 `loans/[id].tsx`: hero card, 3 tabs (Overview / EMI Schedule / Prepayments), amortization modal (paginated), Record EMI Payment modal, Add Prepayment modal.
 
+### Session 18 — Insights UI Redesign (2026-05-14)
+**Overview tab + Trends tab redesigned with dummy data per reference design**
+- `OverviewTab` now renders: month navigator → This Month Overview card (3-column Income/Expenses/Savings + savings rate pill) → Net Cash Flow card (big value + delta + sparkline) → Quick Insights list (3 rows, icon-tinted) → Accounts Summary (Bank / Cash & Wallets / UPI / Overdraft)
+- `TrendsTab` now includes new **Investment Returns** section: purple gradient Portfolio Value hero, 6-month value line chart, XIRR + Best Month stat row, By Asset Class breakdown (Mutual Funds, Stocks, Gold, Fixed Deposits) with per-asset gain & %.
+- Tab pill bar now uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
+- Investment Returns renders independently of the cashflow API state (always visible).
+- Constraint honoured: UI-only, dummy data, no new backend logic.
+
 ### Session 17 — Insights Module (2026-05-14)
 **6-tab Insights screen replacing placeholder analytics tab**
 
@@ -75,7 +83,9 @@ GET /api/analytics/expense-breakdown           Category breakdown for spending t
 - [ ] Overdue EMI auto-detection (mark pending past due_date as overdue)
 
 ### P1 — Insights
-- [ ] Insights: Connect real investment data to Trends tab (investment returns over time)
+- [x] Insights: Connect real investment data to Trends tab (investment returns over time) — *dummy UI shipped 2026-05-14; backend wiring pending*
+- [ ] Insights: Wire dummy Overview UI + Investment Returns to real backend data
+- [ ] Insights: Refactor `analytics.tsx` (~1400 lines) → split tabs into `components/analytics/*.tsx`
 - [ ] Insights: "What if" savings rate simulator (increase income by X% → savings?)
 - [ ] Insights: Export month summary as PDF/image
 
