@@ -407,148 +407,320 @@ const ov = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CASH FLOW TAB
+// ══════════════════════════════════════════════════════════════════════════════
+// DUMMY DATA — Cash Flow Tab
+// ══════════════════════════════════════════════════════════════════════════════
+const DUMMY_CASHFLOW: Record<'month' | 'quarter' | 'year', any> = {
+  month: {
+    label:       'May 2026',
+    inflow:      125000,
+    outflow:      75000,
+    net:          50000,
+    growth_pct:   20.0,
+    sparkline:   [12000, 18000, 22000, 31000, 42000, 50000],
+    bars: [
+      { m: 'May', income: 125000, expense: 75000 },
+    ],
+    in_vs_out_pct: { in: 62.5, out: 37.5 },
+  },
+  quarter: {
+    label:       'Q2 2026',
+    inflow:      358000,
+    outflow:     232000,
+    net:         126000,
+    growth_pct:   12.4,
+    sparkline:   [70000, 84000, 96000, 108000, 118000, 126000],
+    bars: [
+      { m: 'Mar', income: 110000, expense: 78000 },
+      { m: 'Apr', income: 123000, expense: 79000 },
+      { m: 'May', income: 125000, expense: 75000 },
+    ],
+    in_vs_out_pct: { in: 60.7, out: 39.3 },
+  },
+  year: {
+    label:       'FY 2026',
+    inflow:     1382000,
+    outflow:     918500,
+    net:         463500,
+    growth_pct:   28.7,
+    sparkline:   [150000, 210000, 268000, 322000, 398000, 463500],
+    bars: [
+      { m: 'Dec', income:  96000, expense: 70000 },
+      { m: 'Jan', income: 108000, expense: 74500 },
+      { m: 'Feb', income: 115000, expense: 71000 },
+      { m: 'Mar', income: 110000, expense: 78000 },
+      { m: 'Apr', income: 123000, expense: 79000 },
+      { m: 'May', income: 125000, expense: 75000 },
+    ],
+    in_vs_out_pct: { in: 60.1, out: 39.9 },
+  },
+};
+
+const DUMMY_ACCOUNT_FLOW = [
+  { name: 'HDFC Bank',    icon: 'business-outline',       color: '#005DAA', inflow: 78000,  outflow: 42000,  txns: 24 },
+  { name: 'ICICI Bank',   icon: 'business-outline',       color: '#F37920', inflow: 32000,  outflow: 18500,  txns: 16 },
+  { name: 'Wallets',      icon: 'wallet-outline',          color: GREEN,    inflow: 8500,   outflow: 9200,   txns: 11 },
+  { name: 'UPI Accounts', icon: 'phone-portrait-outline',  color: PURPLE,   inflow: 6500,   outflow: 5300,   txns: 19 },
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CASH FLOW TAB  (UI-only with dummy data)
 // ══════════════════════════════════════════════════════════════════════════════
 function CashFlowTab({ colors, isDark }: any) {
-  const [data, setData]    = useState<any>(null);
-  const [loading, setLoad] = useState(true);
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const d = DUMMY_CASHFLOW[period];
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
 
-  const MONTHS_MAP = { month: 1, quarter: 3, year: 12 };
-
-  const load = useCallback(async () => {
-    setLoad(true);
-    try {
-      const r = await api.get('/analytics/cashflow', { params: { months: 6 } });
-      setData(r.data);
-    } catch { setData(null); }
-    finally { setLoad(false); }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  if (loading) return <LoadingBox colors={colors} />;
-  if (!data?.monthly?.length) return <EmptyBox icon="swap-vertical-outline" text="No cash flow data available" colors={colors} />;
-
-  const monthly = data.monthly as any[];
-  const summary = data.summary;
-
-  // Filter by period
-  const nMonths = MONTHS_MAP[period];
-  const display = monthly.slice(-nMonths);
-
-  const latest  = display[display.length - 1] || {};
-  const prev    = display[display.length - 2] || {};
-  const cashFlowChg = prev.savings ? ((latest.savings - prev.savings) / Math.abs(prev.savings)) * 100 : 0;
-
-  // Bar chart data
-  const barData = display.flatMap((m: any) => [
-    { value: m.income,  label: m.short_label, frontColor: GREEN  + 'CC', spacing: 4 },
-    { value: m.expense, frontColor: RED + 'CC', spacing: 14 },
+  const barData = d.bars.flatMap((b: any) => [
+    { value: b.income,  label: b.m, frontColor: GREEN, spacing: 4,  topLabelComponent: () => null },
+    { value: b.expense,                  frontColor: RED,   spacing: 14 },
   ]);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-      {/* Period tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {(['month', 'quarter', 'year'] as const).map(p => (
-            <Chip key={p} label={p === 'month' ? 'This Month' : p === 'quarter' ? 'Quarter' : 'This Year'} active={period === p} color={PURPLE} onPress={() => setPeriod(p)} />
-          ))}
-        </View>
-      </ScrollView>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      {/* ── Period Tabs ─────────────────────────────────────────── */}
+      <View style={[cf.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="cashflow-period-tabs">
+        {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
+          const active = period === k;
+          return (
+            <TouchableOpacity
+              key={k}
+              onPress={() => setPeriod(k as any)}
+              style={[cf.periodBtn, active && { backgroundColor: PURPLE }]}
+              testID={`cashflow-period-${k}`}
+              activeOpacity={0.85}
+            >
+              <Text style={[cf.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
+                {l}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-      {/* Net Cash Flow hero */}
-      <View style={[st.cashHero, { backgroundColor: isDark ? '#0D1E3D' : colors.card }]}>
-        <Text style={[st.cashHeroLabel, { color: 'rgba(255,255,255,0.65)' }]}>Net Cash Flow · {latest.label || ''}</Text>
-        <Text style={[st.cashHeroValue, { color: latest.savings >= 0 ? GREEN : RED }]}>{formatINR(latest.savings || 0)}</Text>
-        <Delta value={cashFlowChg} />
-        {/* Mini sparkline */}
-        {display.length > 1 && (
-          <View style={{ marginTop: 12 }}>
+      {/* ── Net Cash Flow hero card ─────────────────────────────── */}
+      <View style={[cf.card, { backgroundColor: CARD_BG, padding: 0, overflow: 'hidden' }]} testID="cashflow-net-card">
+        <LinearGradient
+          colors={[PURPLE_DARK, PURPLE_LIGHT]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 14 }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Net Cash Flow</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, gap: 3 }}>
+              <Ionicons name={d.growth_pct >= 0 ? 'arrow-up' : 'arrow-down'} size={11} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>{Math.abs(d.growth_pct).toFixed(1)}%</Text>
+            </View>
+          </View>
+          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 }}>
+            {formatINR(d.net)}
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{d.label}</Text>
+
+          {/* Trend graph (sparkline) */}
+          <View style={{ marginTop: 10, marginLeft: -16 }}>
             <LineChart
-              data={display.map((m: any) => ({ value: m.savings }))}
-              width={CHART_W - 40}
-              height={60}
+              data={d.sparkline.map((v: number) => ({ value: v }))}
+              width={CHART_W + 12}
+              height={70}
               hideDataPoints
-              color={latest.savings >= 0 ? GREEN : RED}
-              thickness={2}
+              color="#FFF"
+              thickness={2.5}
               curved
               hideRules
               hideYAxisText
               hideAxesAndRules
               areaChart
-              startFillColor={latest.savings >= 0 ? GREEN : RED}
+              startFillColor="#FFF"
               endFillColor="transparent"
-              startOpacity={0.3}
+              startOpacity={0.35}
               endOpacity={0}
+              initialSpacing={0}
+              endSpacing={0}
             />
           </View>
-        )}
-      </View>
+        </LinearGradient>
 
-      {/* Inflow / Outflow cards */}
-      <View style={st.inflowRow}>
-        {[
-          { label: 'Total Inflow',  value: display.reduce((s: number, m: any) => s + m.income,  0), color: GREEN, icon: 'arrow-down-circle-outline' },
-          { label: 'Total Outflow', value: display.reduce((s: number, m: any) => s + m.expense, 0), color: RED,   icon: 'arrow-up-circle-outline' },
-        ].map(c => (
-          <View key={c.label} style={[st.flowCard, { backgroundColor: colors.card, flex: 1 }]}>
-            <Ionicons name={c.icon as any} size={22} color={c.color} />
-            <Text style={[st.flowLabel, { color: colors.textSecondary }]}>{c.label}</Text>
-            <Text style={[st.flowValue, { color: c.color }]}>{formatINR(c.value)}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Bar chart */}
-      <SectionHeader title="Monthly Cash Flow Trend" colors={colors} />
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        <View style={st.chartLegend}>
-          {[{ color: GREEN, label: 'Inflow' }, { color: RED, label: 'Outflow' }].map(l => (
-            <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: l.color }} />
-              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{l.label}</Text>
+        {/* Inflow / Outflow row */}
+        <View style={cf.flowRow}>
+          <View style={[cf.flowMini, { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
+              <Text style={[cf.flowMiniLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
             </View>
-          ))}
+            <Text style={[cf.flowMiniValue, { color: GREEN }]}>{formatINR(d.inflow)}</Text>
+          </View>
+          <View style={cf.flowMini}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[cf.flowDot, { backgroundColor: RED }]} />
+              <Text style={[cf.flowMiniLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
+            </View>
+            <Text style={[cf.flowMiniValue, { color: RED }]}>{formatINR(d.outflow)}</Text>
+          </View>
         </View>
+      </View>
+
+      {/* ── Cash In vs Cash Out ─────────────────────────────────── */}
+      <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-in-vs-out">
+        <View style={cf.sectionHead}>
+          <Text style={[cf.sectionTitle, { color: colors.text }]}>Cash In vs Cash Out</Text>
+          <TouchableOpacity testID="cashflow-in-vs-out-view-details">
+            <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Composite stacked bar */}
+        <View style={cf.stackBar}>
+          <View style={{ flex: d.in_vs_out_pct.in, backgroundColor: GREEN, height: '100%', borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }} />
+          <View style={{ flex: d.in_vs_out_pct.out, backgroundColor: RED, height: '100%', borderTopRightRadius: 6, borderBottomRightRadius: 6 }} />
+        </View>
+
+        {/* Labels */}
+        <View style={cf.inOutLabelRow}>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
+              <Text style={[cf.inOutLabel, { color: colors.text }]}>Cash In</Text>
+            </View>
+            <Text style={[cf.inOutAmount, { color: GREEN }]}>{formatINR(d.inflow)}</Text>
+            <Text style={[cf.inOutPct, { color: colors.textSecondary }]}>{d.in_vs_out_pct.in.toFixed(1)}%</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[cf.flowDot, { backgroundColor: RED }]} />
+              <Text style={[cf.inOutLabel, { color: colors.text }]}>Cash Out</Text>
+            </View>
+            <Text style={[cf.inOutAmount, { color: RED }]}>{formatINR(d.outflow)}</Text>
+            <Text style={[cf.inOutPct, { color: colors.textSecondary }]}>{d.in_vs_out_pct.out.toFixed(1)}%</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Monthly Cash Flow Trend (bar chart) ─────────────────── */}
+      <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-monthly-trend">
+        <View style={cf.sectionHead}>
+          <Text style={[cf.sectionTitle, { color: colors.text }]}>Monthly Cash Flow Trend</Text>
+          <TouchableOpacity testID="cashflow-monthly-view-details">
+            <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Legend */}
+        <View style={{ flexDirection: 'row', gap: 14, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={[cf.flowDot, { backgroundColor: GREEN }]} />
+            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cash In</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={[cf.flowDot, { backgroundColor: RED }]} />
+            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Cash Out</Text>
+          </View>
+        </View>
+
         <BarChart
           data={barData}
-          width={CHART_W}
-          height={150}
-          barWidth={14}
+          width={CHART_W - 8}
+          height={170}
+          barWidth={12}
+          barBorderRadius={3}
           noOfSections={4}
           xAxisColor={colors.border}
           yAxisColor="transparent"
           yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          rulesColor={colors.border}
-          showLine={false}
+          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+          rulesColor={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
           isAnimated
+          spacing={d.bars.length > 3 ? 14 : 26}
         />
       </View>
 
-      {/* Monthly breakdown list */}
-      <SectionHeader title="Month-by-Month" colors={colors} />
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        {display.slice().reverse().map((m: any, i: number) => (
-          <View key={i} style={[st.cfMonthRow, i < display.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-            <Text style={[st.cfMonthLabel, { color: colors.text }]}>{m.label}</Text>
-            <View style={{ alignItems: 'flex-end' }}>
-              <View style={{ flexDirection: 'row', gap: 16 }}>
-                <Text style={{ color: GREEN, fontSize: 12, fontWeight: '600' }}>{formatINR(m.income)}</Text>
-                <Text style={{ color: RED,   fontSize: 12, fontWeight: '600' }}>{formatINR(m.expense)}</Text>
+      {/* ── Account-wise Cash Flow ──────────────────────────────── */}
+      <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-account-wise">
+        <View style={cf.sectionHead}>
+          <Text style={[cf.sectionTitle, { color: colors.text }]}>Account-wise Cash Flow</Text>
+          <TouchableOpacity testID="cashflow-accounts-view-details">
+            <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+
+        {DUMMY_ACCOUNT_FLOW.map((acc, i) => {
+          const net = acc.inflow - acc.outflow;
+          const positive = net >= 0;
+          return (
+            <View
+              key={acc.name}
+              style={[
+                cf.accRow,
+                i < DUMMY_ACCOUNT_FLOW.length - 1 && {
+                  borderBottomWidth: 1,
+                  borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
+                },
+              ]}
+              testID={`cashflow-account-${i}`}
+            >
+              <View style={[cf.accIcon, { backgroundColor: acc.color + '22' }]}>
+                <Ionicons name={acc.icon as any} size={18} color={acc.color} />
               </View>
-              <Text style={{ color: m.savings >= 0 ? GREEN : RED, fontSize: 11, marginTop: 2 }}>
-                Net: {formatINR(m.savings)} · {m.savings_rate}%
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[cf.accName, { color: colors.text }]}>{acc.name}</Text>
+                <Text style={[cf.accMeta, { color: colors.textSecondary }]}>{acc.txns} transactions</Text>
+
+                {/* Mini in/out values */}
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Ionicons name="arrow-down" size={9} color={GREEN} />
+                    <Text style={{ fontSize: 11, color: GREEN, fontWeight: '600' }}>{formatINR(acc.inflow)}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Ionicons name="arrow-up" size={9} color={RED} />
+                    <Text style={{ fontSize: 11, color: RED, fontWeight: '600' }}>{formatINR(acc.outflow)}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '500', marginBottom: 2 }}>Net</Text>
+                <Text style={{ color: positive ? GREEN : RED, fontSize: 14, fontWeight: '800' }}>
+                  {positive ? '+' : '-'}{formatINR(Math.abs(net))}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </ScrollView>
   );
 }
+
+// ─── CashFlow-specific styles ─────────────────────────────────────────────────
+const cf = StyleSheet.create({
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
+  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
+  periodBtnText: { fontSize: 12, fontWeight: '700' },
+
+  card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
+
+  flowRow:       { flexDirection: 'row' },
+  flowMini:      { flex: 1, padding: 14, gap: 6 },
+  flowMiniLabel: { fontSize: 11, fontWeight: '500' },
+  flowMiniValue: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  flowDot:       { width: 8, height: 8, borderRadius: 4 },
+
+  sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle:  { fontSize: 15, fontWeight: '700' },
+  viewDetails:   { fontSize: 12, fontWeight: '600' },
+
+  stackBar:      { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
+  inOutLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  inOutLabel:    { fontSize: 12, fontWeight: '600' },
+  inOutAmount:   { fontSize: 17, fontWeight: '800', marginTop: 4, letterSpacing: -0.3 },
+  inOutPct:      { fontSize: 11, marginTop: 2 },
+
+  accRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  accIcon:       { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  accName:       { fontSize: 14, fontWeight: '700' },
+  accMeta:       { fontSize: 11, marginTop: 2 },
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SPENDING TAB
