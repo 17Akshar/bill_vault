@@ -1026,131 +1026,289 @@ const sp = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// BUDGET TAB
+// DUMMY DATA — Budget Tab
 // ══════════════════════════════════════════════════════════════════════════════
-function BudgetTab({ colors, isDark, date, onDateChange }: any) {
-  const [data, setData]    = useState<any>(null);
-  const [loading, setLoad] = useState(true);
+const DUMMY_BUDGET: Record<'month' | 'quarter' | 'year', any> = {
+  month: {
+    label:    'May 2026',
+    total_budget:    80000,
+    total_spent:     75000,
+    days_left:       9,
+    categories: [
+      { name: 'Food',          budget: 20000, spent: 22500, icon: 'fast-food-outline',   color: '#FF6B6B' },
+      { name: 'Transport',     budget: 15000, spent: 12000, icon: 'car-outline',         color: '#4DABF7' },
+      { name: 'Shopping',      budget: 12000, spent: 15000, icon: 'bag-handle-outline',  color: '#B197FC' },
+      { name: 'Entertainment', budget: 10000, spent:  8500, icon: 'film-outline',        color: '#FFB300' },
+      { name: 'Bills',         budget: 15000, spent: 11500, icon: 'receipt-outline',     color: '#26C6DA' },
+      { name: 'Others',        budget:  8000, spent:  5500, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
+    ],
+  },
+  quarter: {
+    label:    'Q2 2026',
+    total_budget:   240000,
+    total_spent:    232000,
+    days_left:      40,
+    categories: [
+      { name: 'Food',          budget: 60000,  spent: 68500, icon: 'fast-food-outline',   color: '#FF6B6B' },
+      { name: 'Transport',     budget: 45000,  spent: 37000, icon: 'car-outline',         color: '#4DABF7' },
+      { name: 'Shopping',      budget: 36000,  spent: 48000, icon: 'bag-handle-outline',  color: '#B197FC' },
+      { name: 'Entertainment', budget: 30000,  spent: 24500, icon: 'film-outline',        color: '#FFB300' },
+      { name: 'Bills',         budget: 45000,  spent: 36000, icon: 'receipt-outline',     color: '#26C6DA' },
+      { name: 'Others',        budget: 24000,  spent: 18000, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
+    ],
+  },
+  year: {
+    label:    'FY 2026',
+    total_budget:  960000,
+    total_spent:   918500,
+    days_left:      223,
+    categories: [
+      { name: 'Food',          budget: 240000, spent: 268000, icon: 'fast-food-outline',   color: '#FF6B6B' },
+      { name: 'Transport',     budget: 180000, spent: 142000, icon: 'car-outline',         color: '#4DABF7' },
+      { name: 'Shopping',      budget: 144000, spent: 198000, icon: 'bag-handle-outline',  color: '#B197FC' },
+      { name: 'Entertainment', budget: 120000, spent:  96000, icon: 'film-outline',        color: '#FFB300' },
+      { name: 'Bills',         budget: 180000, spent: 142500, icon: 'receipt-outline',     color: '#26C6DA' },
+      { name: 'Others',        budget:  96000, spent:  72000, icon: 'ellipsis-horizontal', color: '#8B8B8B' },
+    ],
+  },
+};
 
-  const load = useCallback(async () => {
-    setLoad(true);
-    try {
-      const res = await api.get('/insights/budget-status', {
-        params: { month: date.getMonth() + 1, year: date.getFullYear() },
-      });
-      setData(res.data);
-    } catch { setData(null); }
-    finally { setLoad(false); }
-  }, [date]);
+// ══════════════════════════════════════════════════════════════════════════════
+// BUDGET TAB  (UI-only with dummy data)
+// ══════════════════════════════════════════════════════════════════════════════
+function BudgetTab({ colors, isDark }: any) {
+  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const [showAllCats, setShowAllCats] = useState(false);
 
-  useEffect(() => { load(); }, [load]);
+  const d        = DUMMY_BUDGET[period];
+  const CARD_BG  = isDark ? '#1C1C2E' : colors.card;
 
-  if (loading) return <LoadingBox colors={colors} />;
-  if (!data?.budget_status?.length) return (
-    <>
-      <MonthNav date={date} onChange={onDateChange} colors={colors} />
-      <EmptyBox icon="wallet-outline" text="No budgets set. Create budgets to track progress." colors={colors} />
-    </>
-  );
-
-  const budgets        = data.budget_status as any[];
-  const overBudget     = budgets.filter((b: any) => b.percentage > 100);
-  const totalBudgeted  = data.total_budgeted || 0;
-  const totalSpent     = data.total_spent    || 0;
-  const totalRemaining = data.total_remaining || 0;
-  const overallPct     = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
-  const onTrack        = overallPct <= 100;
+  const remaining   = d.total_budget - d.total_spent;
+  const usedPct     = d.total_budget > 0 ? (d.total_spent / d.total_budget) * 100 : 0;
+  const onTrack     = d.total_spent <= d.total_budget;
+  const overBudget  = d.categories.filter((c: any) => c.spent > c.budget);
+  const visibleCats = showAllCats ? d.categories : d.categories.slice(0, 4);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-      <MonthNav date={date} onChange={onDateChange} colors={colors} />
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      {/* ── Period Tabs ─────────────────────────────────────────── */}
+      <View style={[bd.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="budget-period-tabs">
+        {([['month', 'This Month'], ['quarter', 'This Quarter'], ['year', 'This Year']] as const).map(([k, l]) => {
+          const active = period === k;
+          return (
+            <TouchableOpacity
+              key={k}
+              onPress={() => { setPeriod(k as any); setShowAllCats(false); }}
+              style={[bd.periodBtn, active && { backgroundColor: PURPLE }]}
+              testID={`budget-period-${k}`}
+              activeOpacity={0.85}
+            >
+              <Text style={[bd.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
+                {l}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-      {/* Total budget card */}
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-          <Text style={[st.sectionTitle, { color: colors.text }]}>Total Budget</Text>
-          <View style={[st.statusBadge, { backgroundColor: onTrack ? GREEN + '22' : RED + '22' }]}>
-            <Text style={{ color: onTrack ? GREEN : RED, fontSize: 11, fontWeight: '700' }}>
-              {onTrack ? 'On Track' : 'Over Budget'}
+      {/* ── Budget Summary Hero ─────────────────────────────────── */}
+      <View style={[bd.card, { backgroundColor: CARD_BG, padding: 0, overflow: 'hidden' }]} testID="budget-summary-card">
+        <LinearGradient
+          colors={onTrack ? [PURPLE_DARK, PURPLE_LIGHT] : ['#B71C1C', '#E91E8C']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ padding: 18 }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Total Budget</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+              <Ionicons name={onTrack ? 'checkmark-circle' : 'alert-circle'} size={12} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
+                {onTrack ? 'On Track' : 'Over Budget'}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={{ color: '#FFF', fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 6 }}>
+            {formatINR(d.total_budget)}
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>
+            {d.label} · {d.days_left} days left
+          </Text>
+
+          {/* Overall progress bar */}
+          <View style={{ marginTop: 14, height: 10, borderRadius: 5, overflow: 'hidden', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.18)' }} testID="budget-progress-bar">
+            <View style={{ width: `${clamp(usedPct)}%`, backgroundColor: '#FFF' }} />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>
+              {usedPct.toFixed(0)}% used
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>
+              {formatINR(Math.abs(remaining))} {remaining >= 0 ? 'remaining' : 'over'}
+            </Text>
+          </View>
+        </LinearGradient>
+
+        {/* Spent / Remaining stat strip */}
+        <View style={bd.statStrip}>
+          <View style={[bd.statCell, { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
+            <Text style={[bd.statLabel, { color: colors.textSecondary }]}>Total Spent</Text>
+            <Text style={[bd.statValue, { color: RED }]}>{formatINR(d.total_spent)}</Text>
+          </View>
+          <View style={bd.statCell}>
+            <Text style={[bd.statLabel, { color: colors.textSecondary }]}>
+              {remaining >= 0 ? 'Remaining' : 'Over Budget'}
+            </Text>
+            <Text style={[bd.statValue, { color: remaining >= 0 ? GREEN : RED }]}>
+              {formatINR(Math.abs(remaining))}
             </Text>
           </View>
         </View>
-        <View style={st.budgetTotalRow}>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[st.budgetTotalVal, { color: colors.text }]}>{formatINR(totalBudgeted)}</Text>
-            <Text style={[st.budgetTotalLabel, { color: colors.textSecondary }]}>Budgeted</Text>
-          </View>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[st.budgetTotalVal, { color: RED }]}>{formatINR(totalSpent)}</Text>
-            <Text style={[st.budgetTotalLabel, { color: colors.textSecondary }]}>Spent</Text>
-          </View>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[st.budgetTotalVal, { color: totalRemaining >= 0 ? GREEN : RED }]}>{formatINR(totalRemaining)}</Text>
-            <Text style={[st.budgetTotalLabel, { color: colors.textSecondary }]}>Remaining</Text>
-          </View>
-        </View>
-        <View style={{ marginTop: 10, height: 10, borderRadius: 5, overflow: 'hidden', flexDirection: 'row' }}>
-          <View style={{ flex: Math.min(overallPct, 100), backgroundColor: totalSpent > totalBudgeted ? RED : GREEN }} />
-          <View style={{ flex: 100 - Math.min(overallPct, 100), backgroundColor: colors.border }} />
-        </View>
-        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>
-          {overallPct.toFixed(0)}% of total budget used
-        </Text>
       </View>
 
-      {/* Budget by category */}
-      <SectionHeader title="Budget by Category" colors={colors} />
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        {budgets.map((b: any, i: number) => {
-          const pctV = clamp(b.percentage);
-          const bColor = b.percentage > 100 ? RED : b.percentage > 80 ? ORANGE : GREEN;
+      {/* ── Over Budget Section ─────────────────────────────────── */}
+      {overBudget.length > 0 && (
+        <View style={[bd.card, { backgroundColor: CARD_BG, borderWidth: 1, borderColor: RED + '40' }]} testID="budget-over-section">
+          <View style={bd.sectionHead}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: RED + '22', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="alert-circle" size={16} color={RED} />
+              </View>
+              <Text style={[bd.sectionTitle, { color: colors.text }]}>Over Budget</Text>
+              <View style={{ backgroundColor: RED + '22', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 }}>
+                <Text style={{ color: RED, fontSize: 10, fontWeight: '800' }}>{overBudget.length}</Text>
+              </View>
+            </View>
+          </View>
+
+          {overBudget.map((c: any, i: number) => {
+            const overBy    = c.spent - c.budget;
+            const overByPct = (overBy / c.budget) * 100;
+            return (
+              <View
+                key={c.name}
+                style={[
+                  bd.overRow,
+                  i < overBudget.length - 1 && {
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
+                  },
+                ]}
+                testID={`budget-over-${i}`}
+              >
+                <View style={[bd.catIcon, { backgroundColor: c.color + '22' }]}>
+                  <Ionicons name={c.icon as any} size={18} color={c.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[bd.catName, { color: colors.text }]}>{c.name}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+                    {formatINR(c.spent)} of {formatINR(c.budget)}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ color: RED, fontSize: 14, fontWeight: '800' }}>+{formatINR(overBy)}</Text>
+                  <Text style={{ color: RED, fontSize: 10, fontWeight: '700', marginTop: 2 }}>
+                    {overByPct.toFixed(0)}% over
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ── Budget by Category list ─────────────────────────────── */}
+      <View style={[bd.card, { backgroundColor: CARD_BG }]} testID="budget-categories-list">
+        <View style={bd.sectionHead}>
+          <Text style={[bd.sectionTitle, { color: colors.text }]}>Budget by Category</Text>
+          <TouchableOpacity onPress={() => setShowAllCats(v => !v)} testID="budget-categories-view-all">
+            <Text style={[bd.viewAll, { color: PURPLE }]}>{showAllCats ? 'Show Less' : 'View All'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {visibleCats.map((c: any, i: number) => {
+          const pct      = c.budget > 0 ? (c.spent / c.budget) * 100 : 0;
+          const isOver   = c.spent > c.budget;
+          const warn     = pct >= 80 && !isOver;
+          const barColor = isOver ? RED : warn ? ORANGE : GREEN;
+          const left     = c.budget - c.spent;
+
           return (
-            <View key={i} style={[st.budgetRow, i < budgets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-              <View style={[st.budgetIconWrap, { backgroundColor: bColor + '20' }]}>
-                <Ionicons name="pricetag-outline" size={14} color={bColor} />
+            <View
+              key={c.name}
+              style={[
+                bd.catRow,
+                i < visibleCats.length - 1 && {
+                  borderBottomWidth: 1,
+                  borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
+                },
+              ]}
+              testID={`budget-category-${i}`}
+            >
+              <View style={[bd.catIcon, { backgroundColor: c.color + '22' }]}>
+                <Ionicons name={c.icon as any} size={18} color={c.color} />
               </View>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={[st.catName, { color: colors.text }]}>{b.category}</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ color: bColor, fontSize: 12, fontWeight: '700' }}>
-                      {formatINR(b.spent)} / {formatINR(b.limit)}
-                    </Text>
-                    <Text style={{ color: bColor, fontSize: 10 }}>{b.percentage.toFixed(0)}% used</Text>
-                  </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <Text style={[bd.catName, { color: colors.text }]}>{c.name}</Text>
+                  <Text style={[bd.catAmount, { color: colors.text }]}>
+                    {formatINR(c.spent)} / {formatINR(c.budget)}
+                  </Text>
                 </View>
-                <ProgBar pct={pctV} color={bColor} bg={colors.border} height={5} />
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <View style={{ flex: 1 }}>
+                    <ProgBar
+                      pct={pct}
+                      color={barColor}
+                      bg={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
+                      height={5}
+                    />
+                  </View>
+                  <Text style={{ color: barColor, fontSize: 11, fontWeight: '700', minWidth: 40, textAlign: 'right' }}>
+                    {pct.toFixed(0)}%
+                  </Text>
+                </View>
+
+                <Text style={{ color: isOver ? RED : colors.textSecondary, fontSize: 11 }}>
+                  {isOver
+                    ? `Over by ${formatINR(c.spent - c.budget)}`
+                    : `${formatINR(left)} left`}
+                </Text>
               </View>
             </View>
           );
         })}
       </View>
-
-      {/* Over budget section */}
-      {overBudget.length > 0 && (
-        <>
-          <SectionHeader title="Over Budget" colors={colors} />
-          <View style={[st.card, { backgroundColor: colors.card }]}>
-            {overBudget.map((b: any, i: number) => (
-              <View key={i} style={[st.budgetRow, { alignItems: 'center' }, i < overBudget.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <View style={[st.budgetIconWrap, { backgroundColor: RED + '20' }]}>
-                  <Ionicons name="alert-circle-outline" size={16} color={RED} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[st.catName, { color: colors.text }]}>{b.category}</Text>
-                  <Text style={{ color: RED, fontSize: 11 }}>
-                    Spent {formatINR(b.spent)} of {formatINR(b.limit)} ({b.percentage.toFixed(0)}%)
-                  </Text>
-                </View>
-                <Text style={{ color: RED, fontWeight: '700', fontSize: 13 }}>+{formatINR(b.spent - b.limit)}</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
     </ScrollView>
   );
 }
+
+// ─── Budget-specific styles ───────────────────────────────────────────────────
+const bd = StyleSheet.create({
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
+  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
+  periodBtnText: { fontSize: 12, fontWeight: '700' },
+
+  card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
+
+  statStrip:     { flexDirection: 'row' },
+  statCell:      { flex: 1, paddingVertical: 14, alignItems: 'center' },
+  statLabel:     { fontSize: 11, fontWeight: '500', marginBottom: 4 },
+  statValue:     { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+
+  sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle:  { fontSize: 15, fontWeight: '700' },
+  viewAll:       { fontSize: 12, fontWeight: '600' },
+
+  catRow:        { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 13 },
+  catIcon:       { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  catName:       { fontSize: 13, fontWeight: '700' },
+  catAmount:     { fontSize: 12, fontWeight: '700' },
+
+  overRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TRENDS TAB
