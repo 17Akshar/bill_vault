@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import api from '../../utils/api';
 import { formatINR } from '../../utils/formatINR';
@@ -438,6 +438,7 @@ const DUMMY_ACCOUNT_FLOW = [
 // CASH FLOW TAB  (UI-only with dummy data)
 // ══════════════════════════════════════════════════════════════════════════════
 function CashFlowTab({ colors, isDark }: any) {
+  const router = useRouter();
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
   const d = DUMMY_CASHFLOW[period];
   const CARD_BG = isDark ? '#1C1C2E' : colors.card;
@@ -536,7 +537,7 @@ function CashFlowTab({ colors, isDark }: any) {
       <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-in-vs-out">
         <View style={cf.sectionHead}>
           <Text style={[cf.sectionTitle, { color: colors.text }]}>Cash In vs Cash Out</Text>
-          <TouchableOpacity testID="cashflow-in-vs-out-view-details">
+          <TouchableOpacity onPress={() => router.push('/insights/cashflow-details')} testID="cashflow-in-vs-out-view-details">
             <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
           </TouchableOpacity>
         </View>
@@ -572,7 +573,7 @@ function CashFlowTab({ colors, isDark }: any) {
       <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-monthly-trend">
         <View style={cf.sectionHead}>
           <Text style={[cf.sectionTitle, { color: colors.text }]}>Monthly Cash Flow Trend</Text>
-          <TouchableOpacity testID="cashflow-monthly-view-details">
+          <TouchableOpacity onPress={() => router.push('/insights/cashflow-details')} testID="cashflow-monthly-view-details">
             <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
           </TouchableOpacity>
         </View>
@@ -610,7 +611,7 @@ function CashFlowTab({ colors, isDark }: any) {
       <View style={[cf.card, { backgroundColor: CARD_BG }]} testID="cashflow-account-wise">
         <View style={cf.sectionHead}>
           <Text style={[cf.sectionTitle, { color: colors.text }]}>Account-wise Cash Flow</Text>
-          <TouchableOpacity testID="cashflow-accounts-view-details">
+          <TouchableOpacity onPress={() => router.push('/insights/cashflow-details')} testID="cashflow-accounts-view-details">
             <Text style={[cf.viewDetails, { color: PURPLE }]}>View Details</Text>
           </TouchableOpacity>
         </View>

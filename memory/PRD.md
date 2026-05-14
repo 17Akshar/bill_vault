@@ -36,6 +36,20 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
+### Session 19 — Cash Flow Details Screen (2026-05-14)
+**New drill-down screen for Cash Flow tab "View Details" CTAs**
+- Created `/app/frontend/app/insights/cashflow-details.tsx` and registered the route in `_layout.tsx`.
+- All 3 "View Details" CTAs on the Cash Flow tab (`cashflow-in-vs-out-view-details`, `cashflow-monthly-view-details`, `cashflow-accounts-view-details`) now navigate to it via `router.push('/insights/cashflow-details')`.
+- Screen layout:
+  - Header with back button + screen title + period label
+  - **Period Tabs** (This Month / This Quarter / This Year) — values update everywhere
+  - **Net Cash Flow gradient hero** (purple if positive, red if negative) with stacked Inflow/Outflow ratio bar + % split
+  - **Total Inflow / Total Outflow stat row** (2 cards with icon, label, value, source count)
+  - **Cash In group card**: Salary, Freelance, Other Income — each row shows tinted icon, name, +₹ amount, color-coded progress bar, % of inflow + txn count.
+  - **Cash Out group card**: Food, Transport, Shopping, Bills, Others — same row structure with red amounts and per-category color bars.
+  - **Footer summary card**: Total Inflow, Total Outflow, divider, big Net Cash Flow row.
+- Constraint honoured: UI-only, dummy data per period, zero backend changes.
+
 ### Session 17 — Insights Module (2026-05-14)
 **6-tab Insights screen replacing placeholder analytics tab**
 

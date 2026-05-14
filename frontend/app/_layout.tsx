@@ -49,6 +49,7 @@ export default function RootLayout() {
             <Stack.Screen name="calendar/index" />
             <Stack.Screen name="notes/index" />
             <Stack.Screen name="profile/dashboard-settings" />
+            <Stack.Screen name="insights/cashflow-details" />
           </Stack>
         </AuthProvider>
       </ThemeProvider>
