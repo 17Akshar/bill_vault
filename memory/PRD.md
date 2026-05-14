@@ -36,18 +36,16 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
-### Session 19 — Cash Flow Details Screen (2026-05-14)
-**New drill-down screen for Cash Flow tab "View Details" CTAs**
-- Created `/app/frontend/app/insights/cashflow-details.tsx` and registered the route in `_layout.tsx`.
-- All 3 "View Details" CTAs on the Cash Flow tab (`cashflow-in-vs-out-view-details`, `cashflow-monthly-view-details`, `cashflow-accounts-view-details`) now navigate to it via `router.push('/insights/cashflow-details')`.
-- Screen layout:
-  - Header with back button + screen title + period label
-  - **Period Tabs** (This Month / This Quarter / This Year) — values update everywhere
-  - **Net Cash Flow gradient hero** (purple if positive, red if negative) with stacked Inflow/Outflow ratio bar + % split
-  - **Total Inflow / Total Outflow stat row** (2 cards with icon, label, value, source count)
-  - **Cash In group card**: Salary, Freelance, Other Income — each row shows tinted icon, name, +₹ amount, color-coded progress bar, % of inflow + txn count.
-  - **Cash Out group card**: Food, Transport, Shopping, Bills, Others — same row structure with red amounts and per-category color bars.
-  - **Footer summary card**: Total Inflow, Total Outflow, divider, big Net Cash Flow row.
+### Session 19 — Drill-down Screens (2026-05-14)
+**New drill-down screens for Insights tab "View Details" / "View All" CTAs**
+
+#### Cash Flow Details — `/app/frontend/app/insights/cashflow-details.tsx`
+- Wired from all 3 "View Details" CTAs on the Cash Flow tab.
+- Header → Period Tabs (Month/Quarter/Year) → Net Cash Flow gradient hero with Inflow/Outflow ratio bar → Total Inflow & Outflow stat row → Cash In group (Salary, Freelance, Other Income) → Cash Out group (Food, Transport, Shopping, Bills, Others) → Footer summary (totals + Net).
+
+#### Spending by Category — `/app/frontend/app/insights/spending-by-category.tsx`
+- Wired from the "View All" CTA on the Spending tab's category list.
+- Header → Period Tabs → Big donut card (108r/74ir) with center "Total Spending ₹X" + vs-last delta + 2-col legend → "Category Breakdown" section header → 6 category cards (Food / Transport / Shopping / Entertainment / Bills / Others). Each card shows: tinted icon, name, txns count + avg, amount, color-tinted % pill, color-coded progress bar, and top-merchants pill row. Footer: purple-gradient summary card with total, category count, txn count.
 - Constraint honoured: UI-only, dummy data per period, zero backend changes.
 
 ### Session 17 — Insights Module (2026-05-14)

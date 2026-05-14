@@ -770,6 +770,7 @@ const DUMMY_SPENDING: Record<'month' | 'quarter' | 'year', any> = {
 // SPENDING TAB  (UI-only with dummy data)
 // ══════════════════════════════════════════════════════════════════════════════
 function SpendingTab({ colors, isDark }: any) {
+  const router = useRouter();
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
   const [showAllCats, setShowAllCats] = useState(false);
   const [showAllTop, setShowAllTop]   = useState(false);
@@ -888,8 +889,8 @@ function SpendingTab({ colors, isDark }: any) {
       <View style={[sp.card, { backgroundColor: CARD_BG }]} testID="spending-categories-list">
         <View style={sp.sectionHead}>
           <Text style={[sp.sectionTitle, { color: colors.text }]}>Spending by Category</Text>
-          <TouchableOpacity onPress={() => setShowAllCats(v => !v)} testID="spending-categories-view-all">
-            <Text style={[sp.viewAll, { color: PURPLE }]}>{showAllCats ? 'Show Less' : 'View All'}</Text>
+          <TouchableOpacity onPress={() => router.push('/insights/spending-by-category')} testID="spending-categories-view-all">
+            <Text style={[sp.viewAll, { color: PURPLE }]}>View All</Text>
           </TouchableOpacity>
         </View>
 
