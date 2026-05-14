@@ -95,10 +95,14 @@ function fmtPct(v: number, showPlus = true) {
 function clamp(v: number, lo = 0, hi = 100) { return Math.min(Math.max(v, lo), hi); }
 
 // ─── Micro-components ─────────────────────────────────────────────────────────
-function ProgBar({ pct, color, height = 6, bg }: any) {
+function ProgBar({ pct, color, height = 7, bg }: any) {
+  const w = clamp(pct);
   return (
     <View style={{ height, borderRadius: height / 2, backgroundColor: bg || 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-      <View style={{ height, width: `${clamp(pct)}%`, borderRadius: height / 2, backgroundColor: color }} />
+      <View style={{ height, width: `${w}%`, borderRadius: height / 2, backgroundColor: color, overflow: 'hidden' }}>
+        {/* subtle top highlight for depth */}
+        <View style={{ height: Math.max(1, Math.floor(height / 3)), backgroundColor: 'rgba(255,255,255,0.22)' }} />
+      </View>
     </View>
   );
 }
@@ -332,46 +336,46 @@ function OverviewTab({ colors, isDark, date, onDateChange }: any) {
 }
 
 const ov = StyleSheet.create({
-  monthRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingHorizontal: 8 },
-  monthBtn:   { padding: 8 },
-  monthLabel: { fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
+  monthRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, paddingHorizontal: 8 },
+  monthBtn:   { padding: 10, borderRadius: 12 },
+  monthLabel: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3, flex: 1, textAlign: 'center' },
 
-  card:       { borderRadius: 16, padding: 18, marginBottom: 14, overflow: 'hidden' },
+  card:       { borderRadius: 18, padding: 18, marginBottom: 16, overflow: 'hidden' },
   cardHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  cardTitle:  { fontSize: 16, fontWeight: '700' },
-  cardSub:    { fontSize: 12 },
-  divider:    { height: 1, marginBottom: 14 },
+  cardTitle:  { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+  cardSub:    { fontSize: 12, fontWeight: '500' },
+  divider:    { height: 1, marginBottom: 16 },
 
   metricsRow: { flexDirection: 'row' },
   metricCol:  { flex: 1, alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6 },
-  metricLabel:{ fontSize: 12, marginBottom: 6, fontWeight: '500' },
-  metricValue:{ fontSize: 18, fontWeight: '800', letterSpacing: -0.3, marginBottom: 6 },
+  metricLabel:{ fontSize: 11, marginBottom: 6, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase' },
+  metricValue:{ fontSize: 19, fontWeight: '800', letterSpacing: -0.4, marginBottom: 6 },
   deltaRow:   { flexDirection: 'row', alignItems: 'center', gap: 3 },
   deltaText:  { fontSize: 11, fontWeight: '700' },
-  rateRow:    { marginTop: 14, alignItems: 'flex-start' },
-  rateBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  rateText:   { fontSize: 12, fontWeight: '700' },
+  rateRow:    { marginTop: 16, alignItems: 'flex-start' },
+  rateBadge:  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
+  rateText:   { fontSize: 12, fontWeight: '800', letterSpacing: 0.1 },
 
-  cashSubtitle: { fontSize: 12, marginBottom: 6 },
-  cashValue:    { fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 },
+  cashSubtitle: { fontSize: 12, marginBottom: 6, fontWeight: '500' },
+  cashValue:    { fontSize: 32, fontWeight: '800', letterSpacing: -0.6, marginBottom: 4 },
   cashDelta:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
   cashDeltaText:{ fontSize: 13, fontWeight: '700' },
 
   sectionHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { fontSize: 16, fontWeight: '700' },
-  viewAll:      { fontSize: 13, fontWeight: '600' },
+  sectionTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+  viewAll:      { fontSize: 12, fontWeight: '700', letterSpacing: 0.2 },
 
-  insightRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
-  insightIconWrap:{ width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  insightTitle:   { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  insightRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  insightIconWrap:{ width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  insightTitle:   { fontSize: 13, fontWeight: '800', marginBottom: 3, letterSpacing: -0.1 },
   insightBody:    { fontSize: 12, lineHeight: 17 },
 
   accRow:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
   accIconWrap:{ width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  accName:    { fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  accCount:   { fontSize: 12 },
+  accName:    { fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  accCount:   { fontSize: 11, fontWeight: '500' },
   accRight:   { flexDirection: 'row', alignItems: 'center' },
-  accBalance: { fontSize: 15, fontWeight: '700' },
+  accBalance: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -635,19 +639,19 @@ function CashFlowTab({ colors, isDark, date }: any) {
 }
 
 const cf = StyleSheet.create({
-  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
-  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
-  periodBtnText: { fontSize: 12, fontWeight: '700' },
-  card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  periodBtn:     { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  periodBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
+  card:          { borderRadius: 18, padding: 18, marginBottom: 16, overflow: 'hidden' },
   flowRow:       { flexDirection: 'row' },
   flowMini:      { flex: 1, padding: 14, gap: 6 },
   flowMiniLabel: { fontSize: 11, fontWeight: '500' },
   flowMiniValue: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   flowDot:       { width: 8, height: 8, borderRadius: 4 },
   sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle:  { fontSize: 15, fontWeight: '700' },
-  viewDetails:   { fontSize: 12, fontWeight: '600' },
-  stackBar:      { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
+  sectionTitle:  { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  viewDetails:   { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
+  stackBar:      { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', marginBottom: 14 },
   inOutLabelRow: { flexDirection: 'row', justifyContent: 'space-between' },
   inOutLabel:    { fontSize: 12, fontWeight: '600' },
   inOutAmount:   { fontSize: 17, fontWeight: '800', marginTop: 4, letterSpacing: -0.3 },
@@ -862,17 +866,17 @@ function SpendingTab({ colors, isDark, date }: any) {
 }
 
 const sp = StyleSheet.create({
-  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
-  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
-  periodBtnText: { fontSize: 12, fontWeight: '700' },
-  card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  periodBtn:     { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  periodBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
+  card:          { borderRadius: 18, padding: 18, marginBottom: 16, overflow: 'hidden' },
   statStrip:     { flexDirection: 'row' },
   statCell:      { flex: 1, paddingVertical: 14, alignItems: 'center' },
   statLabel:     { fontSize: 11, fontWeight: '500', marginBottom: 4 },
   statValue:     { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, width: '100%' },
-  sectionTitle:  { fontSize: 15, fontWeight: '700' },
-  viewAll:       { fontSize: 12, fontWeight: '600' },
+  sectionTitle:  { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  viewAll:       { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
   catRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   catIcon:       { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   catName:       { fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
@@ -1072,17 +1076,17 @@ function BudgetTab({ colors, isDark, date }: any) {
 }
 
 const bd = StyleSheet.create({
-  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
-  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
-  periodBtnText: { fontSize: 12, fontWeight: '700' },
-  card:          { borderRadius: 16, padding: 16, marginBottom: 14, overflow: 'hidden' },
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  periodBtn:     { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  periodBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
+  card:          { borderRadius: 18, padding: 18, marginBottom: 16, overflow: 'hidden' },
   statStrip:     { flexDirection: 'row' },
   statCell:      { flex: 1, paddingVertical: 14, alignItems: 'center' },
   statLabel:     { fontSize: 11, fontWeight: '500', marginBottom: 4 },
   statValue:     { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
   sectionHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle:  { fontSize: 15, fontWeight: '700' },
-  viewAll:       { fontSize: 12, fontWeight: '600' },
+  sectionTitle:  { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  viewAll:       { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
   catRow:        { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 13 },
   catIcon:       { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   catName:       { fontSize: 13, fontWeight: '700' },
@@ -1203,16 +1207,16 @@ function TrendsTab({ colors, isDark }: any) {
 }
 
 const tr = StyleSheet.create({
-  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
-  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
-  periodBtnText: { fontSize: 12, fontWeight: '700' },
-  card:          { borderRadius: 16, padding: 16, marginBottom: 14 },
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  periodBtn:     { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  periodBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
+  card:          { borderRadius: 18, padding: 18, marginBottom: 16 },
   cardHead:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconWrap:      { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  cardTitle:     { fontSize: 14, fontWeight: '700' },
-  cardValue:     { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
-  deltaPill:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  deltaText:     { fontSize: 11, fontWeight: '700' },
+  cardTitle:     { fontSize: 14, fontWeight: '800', letterSpacing: -0.1 },
+  cardValue:     { fontSize: 24, fontWeight: '800', letterSpacing: -0.6 },
+  deltaPill:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
+  deltaText:     { fontSize: 11, fontWeight: '800', letterSpacing: 0.1 },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1405,31 +1409,31 @@ function CalendarTab({ colors, isDark }: any) {
 }
 
 const cl = StyleSheet.create({
-  monthNav:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, marginBottom: 12 },
-  navBtn:       { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  monthTitle:   { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-  gridCard:     { borderRadius: 16, padding: 12, marginBottom: 14 },
-  dayHeaderRow: { flexDirection: 'row', marginBottom: 8 },
-  dayHeader:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
+  monthNav:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, marginBottom: 14 },
+  navBtn:       { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  monthTitle:   { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  gridCard:     { borderRadius: 18, padding: 14, marginBottom: 16 },
+  dayHeaderRow: { flexDirection: 'row', marginBottom: 10 },
+  dayHeader:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
   grid:         { flexDirection: 'row', flexWrap: 'wrap' },
   cell:         { width: `${100 / 7}%`, aspectRatio: 1, padding: 3 },
-  cellInner:    { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, gap: 3 },
-  dayNum:       { fontSize: 13, fontWeight: '600' },
+  cellInner:    { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 11, gap: 3 },
+  dayNum:       { fontSize: 13, fontWeight: '700' },
   dotRow:       { flexDirection: 'row', gap: 3 },
   dot:          { width: 5, height: 5, borderRadius: 2.5 },
-  legendRow:    { flexDirection: 'row', gap: 18, justifyContent: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
-  summaryHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 10 },
-  summaryTitle: { fontSize: 15, fontWeight: '700' },
-  emptyCard:    { borderRadius: 14, padding: 28, alignItems: 'center' },
-  txnCard:      { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 4, marginBottom: 14 },
-  txnRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  legendRow:    { flexDirection: 'row', gap: 18, justifyContent: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+  summaryHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 12 },
+  summaryTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+  emptyCard:    { borderRadius: 16, padding: 32, alignItems: 'center' },
+  txnCard:      { borderRadius: 18, paddingHorizontal: 14, paddingVertical: 4, marginBottom: 16 },
+  txnRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   txnIcon:      { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  txnName:      { fontSize: 13, fontWeight: '700' },
+  txnName:      { fontSize: 13, fontWeight: '800', letterSpacing: -0.1 },
   txnCat:       { fontSize: 11, textTransform: 'capitalize', marginTop: 2 },
   txnAmount:    { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
-  txnBadge:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
-  fabWrap:      { position: 'absolute', right: 18, bottom: 24, shadowColor: PURPLE, shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
-  fab:          { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
+  txnBadge:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, marginTop: 4 },
+  fabWrap:      { position: 'absolute', right: 18, bottom: 24, shadowColor: PURPLE, shadowOpacity: 0.45, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+  fab:          { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1462,7 +1466,12 @@ export default function InsightsScreen() {
     <SafeAreaView style={[st.root, { backgroundColor: colors.background }]} edges={['top']}>
       {/* ── Screen header ── */}
       <View style={[st.header, { borderBottomColor: colors.border }]}>
-        <Text style={[st.headerTitle, { color: colors.text }]}>Insights</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[st.headerTitle, { color: colors.text }]}>Insights</Text>
+          <Text style={[st.headerSub, { color: colors.textSecondary }]}>
+            {format(date, 'MMMM yyyy')} · your money at a glance
+          </Text>
+        </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity style={[st.headerBtn, { backgroundColor: colors.card }]} testID="insights-settings-btn">
             <Ionicons name="options-outline" size={18} color={colors.textSecondary} />
@@ -1476,16 +1485,16 @@ export default function InsightsScreen() {
           {TABS.map((tab, i) => {
             const active = activeTab === i;
             return (
-              <TouchableOpacity key={tab.label} onPress={() => setActiveTab(i)} style={st.tabTouch} testID={`insights-tab-${tab.label.toLowerCase().replace(' ', '-')}`}>
+              <TouchableOpacity key={tab.label} onPress={() => setActiveTab(i)} style={st.tabTouch} testID={`insights-tab-${tab.label.toLowerCase().replace(' ', '-')}`} activeOpacity={0.8}>
                 {active ? (
                   <LinearGradient colors={[PURPLE_DARK, PURPLE_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.tabItemActive}>
                     <Ionicons name={tab.activeIcon as any} size={15} color="#FFF" />
                     <Text style={[st.tabLabel, { color: '#FFF' }]}>{tab.label}</Text>
                   </LinearGradient>
                 ) : (
-                  <View style={st.tabItemInactive}>
-                    <Ionicons name={tab.icon as any} size={15} color={GREY} />
-                    <Text style={[st.tabLabel, { color: GREY }]}>{tab.label}</Text>
+                  <View style={[st.tabItemInactive, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }]}>
+                    <Ionicons name={tab.icon as any} size={15} color={isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary} />
+                    <Text style={[st.tabLabel, { color: isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary }]}>{tab.label}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -1504,16 +1513,17 @@ export default function InsightsScreen() {
 
 const st = StyleSheet.create({
   root:        { flex: 1 },
-  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
-  headerTitle: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
-  headerBtn:   { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
+  headerTitle: { fontSize: 28, fontWeight: '800', letterSpacing: -0.6 },
+  headerSub:   { fontSize: 12, fontWeight: '500', marginTop: 2, letterSpacing: 0.1 },
+  headerBtn:   { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   tabWrap:     { borderBottomWidth: 1 },
-  tabScroll:   { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
+  tabScroll:   { paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
   tabTouch:    {},
-  tabItemActive:   { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
-  tabItemInactive: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
-  tabLabel:    { fontSize: 12, fontWeight: '600' },
+  tabItemActive:   { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, shadowColor: PURPLE_DARK, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
+  tabItemInactive: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999 },
+  tabLabel:    { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
   loadBox:     { alignItems: 'center', justifyContent: 'center', height: 120, borderRadius: 14, marginTop: 8 },
   emptyBox:    { alignItems: 'center', paddingVertical: 48, gap: 12 },
-  emptyText:   { fontSize: 13, textAlign: 'center', maxWidth: 260 },
+  emptyText:   { fontSize: 13, textAlign: 'center', maxWidth: 260, lineHeight: 19 },
 });

@@ -36,6 +36,22 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
+### Session 22 — Insights UI Polish (2026-02)
+**User asked: improve UI of Insights module only (card spacing, charts, typography, tabs, progress bars, responsive). Maintain existing theme + navigation + structure. Do not touch backend / dashboard / navigation.**
+
+Changes (style-only, no logic changes):
+- **Main tab bar** (`(tabs)/analytics.tsx` `st.*` + render): active pill fully rounded (`borderRadius: 999`) with `shadowColor: PURPLE_DARK` drop shadow + `elevation: 4`; inactive pill gets a soft background tint so it reads as a ghost-button; bigger label (12 → 13, weight 700, letter-spacing 0.1); larger horizontal padding (14 → 16) and bigger gap (6 → 8). Added a subtle subtitle below the "Insights" title showing the current period ("May 2026 · your money at a glance").
+- **Period chips** (all 4 tabs cf/sp/bd/tr + both detail screens): `paddingVertical 9 → 10`, `borderRadius 10 → 11`, label `12 → 13` with letter-spacing 0.1, `marginBottom 14 → 16`.
+- **Cards** (all 4 tabs + 2 detail screens): standardized `borderRadius 16 → 18`, `padding 16 → 18`, `marginBottom 14 → 16` so every card breathes the same way and headlines line up across tabs. `cl.gridCard` calendar card padding 12 → 14.
+- **Typography**: `sectionTitle` weight 700 → 800 with `letter-spacing: -0.2`; `cashValue` 30 → 32 with `-0.6` tracking; `metricValue` 18 → 19 with `-0.4` tracking; `metricLabel` becomes uppercase 11px tracking-0.4 for clearer hierarchy; trend `cardValue` 22 → 24 / `-0.6`; calendar `summaryTitle` 15 → 16 / 800; "View All" / "View Details" buttons go to weight 800 + letter-spacing 0.2 for affordance.
+- **Progress bars**: `ProgBar` default height 6 → 7 with a thin `rgba(255,255,255,0.22)` highlight strip across the top of the fill for soft 3-D depth. Cash-flow In-vs-Out stacked bar 12 → 14. Detail-screen hero stacked bar 8 → 10.
+- **Pills**: deltaPill, txnBadge, ratePill all switched to full-round (`borderRadius: 999`) for a more modern look.
+- **Header**: Insights screen header height 14 → 16; title 26 → 28; settings button 34 → 38.
+- Webpack rebundled cleanly after every edit. No backend / navigation / dashboard touched.
+
+⚠️ Visual validation against real Insights data **blocked** — Firebase Firestore Spark-plan daily quota still exhausted (every protected API returns 500). Landing page renders. Polish edits are pure CSS-token tweaks, so they will appear automatically when the quota resets at midnight Pacific.
+
+
 ### Session 21 — Insights Detail Screens Wired to Real Data (2026-02)
 **User asked: connect Insights screens (Transactions / Budget / Investments) and add calculations for monthly income, monthly expenses, savings rate, net cash flow, category spending, budget utilization, trend analysis. No external APIs, no unrelated module changes.**
 

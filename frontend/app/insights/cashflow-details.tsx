@@ -337,36 +337,36 @@ export default function CashFlowDetailsScreen() {
 const s = StyleSheet.create({
   root:        { flex: 1 },
 
-  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, gap: 10 },
-  headerTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-  iconBtn:     { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
+  headerTitle: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  iconBtn:     { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
-  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
-  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
-  periodBtnText: { fontSize: 12, fontWeight: '700' },
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  periodBtn:     { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  periodBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
 
-  heroCard:    { borderRadius: 16, padding: 18, marginBottom: 14, overflow: 'hidden' },
-  stackBarWrap:{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.15)', marginTop: 16 },
+  heroCard:    { borderRadius: 18, padding: 20, marginBottom: 16, overflow: 'hidden' },
+  stackBarWrap:{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.15)', marginTop: 16 },
 
-  statCard:    { flex: 1, borderRadius: 14, padding: 14, gap: 8 },
-  statLabel:   { fontSize: 11, fontWeight: '600' },
-  statValue:   { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+  statCard:    { flex: 1, borderRadius: 16, padding: 14, gap: 8 },
+  statLabel:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.3, textTransform: 'uppercase' },
+  statValue:   { fontSize: 19, fontWeight: '800', letterSpacing: -0.4 },
 
-  groupCard:   { borderRadius: 16, padding: 14, marginBottom: 14 },
+  groupCard:   { borderRadius: 18, padding: 16, marginBottom: 16 },
   groupHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  groupTitle:  { fontSize: 15, fontWeight: '700' },
-  groupTotal:  { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  groupTitle:  { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
+  groupTotal:  { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
 
-  row:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  rowIcon:     { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  rowName:     { fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
+  row:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  rowIcon:     { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  rowName:     { fontSize: 13, fontWeight: '800', textTransform: 'capitalize', letterSpacing: -0.1 },
   rowAmt:      { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
 
-  footerCard:  { borderRadius: 16, padding: 16 },
-  footerRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
+  footerCard:  { borderRadius: 18, padding: 18 },
+  footerRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7 },
   footerLabel: { fontSize: 13, fontWeight: '600' },
   footerVal:   { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  footerDivider:{ height: 1, marginVertical: 6 },
+  footerDivider:{ height: 1, marginVertical: 8 },
 
-  emptyCard:   { padding: 28, borderRadius: 16, alignItems: 'center', marginTop: 10 },
+  emptyCard:   { padding: 32, borderRadius: 18, alignItems: 'center', marginTop: 10 },
 });

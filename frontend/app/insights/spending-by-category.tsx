@@ -266,33 +266,33 @@ export default function SpendingByCategoryScreen() {
 const s = StyleSheet.create({
   root:        { flex: 1 },
 
-  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, gap: 10 },
-  headerTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-  iconBtn:     { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
+  headerTitle: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  iconBtn:     { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
-  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
-  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
-  periodBtnText: { fontSize: 12, fontWeight: '700' },
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  periodBtn:     { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  periodBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.1 },
 
-  donutCard:   { borderRadius: 16, padding: 18, marginBottom: 14, alignItems: 'center' },
+  donutCard:   { borderRadius: 18, padding: 20, marginBottom: 16, alignItems: 'center' },
   legendGrid:  { flexDirection: 'row', flexWrap: 'wrap', width: '100%', marginTop: 18 },
-  legendItem:  { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
+  legendItem:  { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 7 },
 
-  sectionHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10, paddingHorizontal: 2 },
-  sectionTitle: { fontSize: 15, fontWeight: '700' },
+  sectionHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12, paddingHorizontal: 2 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
 
-  catCard:     { borderRadius: 14, padding: 14, marginBottom: 10 },
+  catCard:     { borderRadius: 16, padding: 16, marginBottom: 12 },
   catTop:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  catIcon:     { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  catName:     { fontSize: 14, fontWeight: '700', textTransform: 'capitalize' },
-  catMeta:     { fontSize: 11, marginTop: 2 },
-  catAmt:      { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
-  pctPill:     { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 4 },
+  catIcon:     { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  catName:     { fontSize: 14, fontWeight: '800', textTransform: 'capitalize', letterSpacing: -0.1 },
+  catMeta:     { fontSize: 11, marginTop: 3 },
+  catAmt:      { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
+  pctPill:     { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, marginTop: 5 },
 
-  merchantsRow:{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, flexWrap: 'wrap' },
-  merchantPill:{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  merchantsRow:{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 13, flexWrap: 'wrap' },
+  merchantPill:{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
 
-  footerCard:  { borderRadius: 16, padding: 18, marginTop: 8, marginBottom: 4 },
+  footerCard:  { borderRadius: 18, padding: 20, marginTop: 8, marginBottom: 4 },
 
-  emptyCard:   { padding: 28, borderRadius: 16, alignItems: 'center', marginTop: 10 },
+  emptyCard:   { padding: 32, borderRadius: 18, alignItems: 'center', marginTop: 10 },
 });
