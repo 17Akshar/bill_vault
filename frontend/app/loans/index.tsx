@@ -458,7 +458,7 @@ function AnalyticsPanel({ data, lt, colors, isDark }: any) {
         <AnalyticsRow
           label="Interest Saved"
           value={`${formatINR(data.interest_saved || 0)}`}
-          sub={data.interest_saved > 0 ? 'via prepayments' : 'no prepayments yet'}
+          sub={prepayInfo.total_prepayments_count > 0 ? 'via prepayments' : 'no prepayments yet'}
           color={data.interest_saved > 0 ? colors.success : colors.textSecondary}
         />
       </View>
