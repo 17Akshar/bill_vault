@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
+import api from '../../utils/api';
 import { formatINR } from '../../utils/formatINR';
-
-const { width: SW } = Dimensions.get('window');
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const GREEN       = '#51DB7A';
@@ -20,60 +19,36 @@ const GREY        = '#8B8B8B';
 
 type Period = 'month' | 'quarter' | 'year';
 
-// ─── Dummy data ───────────────────────────────────────────────────────────────
-type Row = { name: string; amount: number; txns: number; icon: any; color: string };
-
-const DUMMY: Record<Period, { label: string; inflow: Row[]; outflow: Row[] }> = {
-  month: {
-    label: 'May 2026',
-    inflow: [
-      { name: 'Salary',       amount: 85000, txns:  1, icon: 'briefcase-outline',   color: GREEN  },
-      { name: 'Freelance',    amount: 28000, txns:  3, icon: 'laptop-outline',      color: '#26C6DA' },
-      { name: 'Other Income', amount: 12000, txns:  4, icon: 'cash-outline',        color: '#FFB300' },
-    ],
-    outflow: [
-      { name: 'Food',      amount: 22500, txns: 28, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport', amount: 12000, txns: 19, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',  amount: 15000, txns: 11, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Bills',     amount: 11500, txns:  8, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',    amount: 14000, txns: 21, icon: 'ellipsis-horizontal', color: GREY     },
-    ],
-  },
-  quarter: {
-    label: 'Q2 2026',
-    inflow: [
-      { name: 'Salary',       amount: 255000, txns:  3, icon: 'briefcase-outline',   color: GREEN  },
-      { name: 'Freelance',    amount:  72000, txns:  8, icon: 'laptop-outline',      color: '#26C6DA' },
-      { name: 'Other Income', amount:  31000, txns: 11, icon: 'cash-outline',        color: '#FFB300' },
-    ],
-    outflow: [
-      { name: 'Food',      amount: 68500, txns:  85, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport', amount: 37000, txns:  58, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',  amount: 48000, txns:  32, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Bills',     amount: 36000, txns:  24, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',    amount: 42500, txns:  63, icon: 'ellipsis-horizontal', color: GREY     },
-    ],
-  },
-  year: {
-    label: 'FY 2026',
-    inflow: [
-      { name: 'Salary',       amount: 1020000, txns: 12, icon: 'briefcase-outline',   color: GREEN  },
-      { name: 'Freelance',    amount:  248000, txns: 32, icon: 'laptop-outline',      color: '#26C6DA' },
-      { name: 'Other Income', amount:  114000, txns: 41, icon: 'cash-outline',        color: '#FFB300' },
-    ],
-    outflow: [
-      { name: 'Food',      amount: 268000, txns: 342, icon: 'fast-food-outline',   color: '#FF6B6B' },
-      { name: 'Transport', amount: 142000, txns: 234, icon: 'car-outline',         color: '#4DABF7' },
-      { name: 'Shopping',  amount: 198000, txns: 124, icon: 'bag-handle-outline',  color: '#B197FC' },
-      { name: 'Bills',     amount: 142500, txns:  96, icon: 'receipt-outline',     color: '#26C6DA' },
-      { name: 'Others',    amount: 168000, txns: 246, icon: 'ellipsis-horizontal', color: GREY     },
-    ],
-  },
+// ─── Category / source icon + color map ───────────────────────────────────────
+const CAT_CONFIG: Record<string, { icon: string; color: string }> = {
+  food:          { icon: 'fast-food-outline',    color: '#FF6B6B' },
+  transport:     { icon: 'car-outline',          color: '#4DABF7' },
+  shopping:      { icon: 'bag-handle-outline',   color: '#B197FC' },
+  entertainment: { icon: 'film-outline',         color: '#FFB300' },
+  bills:         { icon: 'receipt-outline',      color: '#26C6DA' },
+  utilities:     { icon: 'flash-outline',        color: '#FFB300' },
+  health:        { icon: 'medkit-outline',       color: '#66BB6A' },
+  education:     { icon: 'school-outline',       color: '#4DABF7' },
+  investment:    { icon: 'trending-up-outline',  color: '#8E2DE2' },
+  income:        { icon: 'briefcase-outline',    color: '#51DB7A' },
+  salary:        { icon: 'briefcase-outline',    color: '#51DB7A' },
+  freelance:     { icon: 'laptop-outline',       color: '#26C6DA' },
+  travel:        { icon: 'airplane-outline',     color: '#FF9100' },
+  groceries:     { icon: 'cart-outline',         color: '#66BB6A' },
+  rent:          { icon: 'home-outline',         color: '#4DABF7' },
+  insurance:     { icon: 'shield-outline',       color: '#26C6DA' },
+  gift:          { icon: 'gift-outline',         color: '#E91E8C' },
+  other:         { icon: 'ellipsis-horizontal',  color: GREY      },
 };
-
-const sum = (rows: Row[]) => rows.reduce((s, r) => s + r.amount, 0);
+const FALLBACK_COLORS = [PURPLE, '#26C6DA', GREEN, '#FF9100', '#FFB300', '#E91E8C', RED, '#448AFF', '#66BB6A'];
+function configFor(name: string, idx: number) {
+  const key = (name || '').toLowerCase().trim();
+  return CAT_CONFIG[key] || { icon: 'ellipsis-horizontal' as any, color: FALLBACK_COLORS[idx % FALLBACK_COLORS.length] };
+}
 
 // ─── Reusable category row ────────────────────────────────────────────────────
+type Row = { name: string; amount: number; txns: number; icon: any; color: string };
+
 function CategoryRow({
   row, total, isLast, isInflow, colors, isDark, testID,
 }: {
@@ -81,7 +56,6 @@ function CategoryRow({
   colors: any; isDark: boolean; testID: string;
 }) {
   const pct = total > 0 ? (row.amount / total) * 100 : 0;
-
   return (
     <View
       style={[
@@ -96,15 +70,13 @@ function CategoryRow({
       <View style={[s.rowIcon, { backgroundColor: row.color + '22' }]}>
         <Ionicons name={row.icon} size={18} color={row.color} />
       </View>
-
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-          <Text style={[s.rowName, { color: colors.text }]}>{row.name}</Text>
+          <Text style={[s.rowName, { color: colors.text }]} numberOfLines={1}>{row.name}</Text>
           <Text style={[s.rowAmt, { color: isInflow ? GREEN : RED }]}>
             {isInflow ? '+' : '-'}{formatINR(row.amount)}
           </Text>
         </View>
-
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border, overflow: 'hidden' }}>
             <View style={{ width: `${Math.min(pct, 100)}%`, height: '100%', backgroundColor: row.color }} />
@@ -123,16 +95,46 @@ export default function CashFlowDetailsScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('month');
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
 
-  const d           = DUMMY[period];
-  const totalIn     = sum(d.inflow);
-  const totalOut    = sum(d.outflow);
-  const net         = totalIn - totalOut;
-  const positive    = net >= 0;
-  const inOutRatio  = totalIn + totalOut;
-  const inPct       = inOutRatio > 0 ? (totalIn  / inOutRatio) * 100 : 0;
-  const outPct      = inOutRatio > 0 ? (totalOut / inOutRatio) * 100 : 0;
-  const CARD_BG     = isDark ? '#1C1C2E' : colors.card;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const now = new Date();
+      const m = now.getMonth() + 1;
+      const y = now.getFullYear();
+      const res = await api.get(`/insights/cashflow?period=${period}&month=${m}&year=${y}`);
+      setData(res.data);
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [period]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+
+  // ── Derived UI rows ──
+  const totals    = data?.totals || {};
+  const totalIn   = Number(totals.inflow  || 0);
+  const totalOut  = Number(totals.outflow || 0);
+  const net       = Number(totals.net     || 0);
+  const positive  = net >= 0;
+  const inPct     = Number(totals.in_share_pct  || 0);
+  const outPct    = Number(totals.out_share_pct || 0);
+  const label     = data?.label || '';
+
+  const inflowRows: Row[] = (data?.inflow_by_source || []).map((r: any, i: number) => {
+    const cfg = configFor(r.source, i);
+    return { name: r.source || 'Other Income', amount: Number(r.amount || 0), txns: Number(r.count || 0), icon: cfg.icon, color: cfg.color };
+  });
+  const outflowRows: Row[] = (data?.outflow_by_category || []).map((r: any, i: number) => {
+    const cfg = configFor(r.category, i);
+    return { name: r.category || 'Other', amount: Number(r.amount || 0), txns: Number(r.count || 0), icon: cfg.icon, color: cfg.color };
+  });
 
   return (
     <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={['top']}>
@@ -147,7 +149,7 @@ export default function CashFlowDetailsScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={[s.headerTitle, { color: colors.text }]}>Cash Flow Details</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{d.label}</Text>
+          {!!label && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{label}</Text>}
         </View>
         <View style={[s.iconBtn, { backgroundColor: 'transparent' }]} />
       </View>
@@ -173,143 +175,159 @@ export default function CashFlowDetailsScreen() {
           })}
         </View>
 
-        {/* ── Net Cash Flow Hero ───────────────────────── */}
-        <LinearGradient
-          colors={positive ? [PURPLE_DARK, PURPLE] : ['#B71C1C', '#E91E8C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.heroCard}
-          testID="cashflow-details-net-hero"
-        >
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Net Cash Flow</Text>
-          <Text style={{ color: '#FFF', fontSize: 32, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 }}>
-            {positive ? '+' : '-'}{formatINR(Math.abs(net))}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{d.label}</Text>
-
-          {/* In vs Out stacked bar */}
-          <View style={s.stackBarWrap}>
-            <View style={{ flex: inPct || 1, height: '100%', backgroundColor: 'rgba(255,255,255,0.85)' }} />
-            <View style={{ flex: outPct || 1, height: '100%', backgroundColor: 'rgba(255,255,255,0.35)' }} />
+        {loading ? (
+          <View style={{ paddingVertical: 60, alignItems: 'center' }} testID="cashflow-details-loading">
+            <ActivityIndicator size="large" color={PURPLE} />
           </View>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.85)' }} />
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>Inflow {inPct.toFixed(1)}%</Text>
-              </View>
-            </View>
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.35)' }} />
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>Outflow {outPct.toFixed(1)}%</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* ── Total Inflow / Outflow stat row ──────────── */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-          <View style={[s.statCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-total-inflow">
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: GREEN + '22', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="arrow-down" size={15} color={GREEN} />
-              </View>
-              <Text style={[s.statLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
-            </View>
-            <Text style={[s.statValue, { color: GREEN }]}>{formatINR(totalIn)}</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{d.inflow.length} sources</Text>
-          </View>
-
-          <View style={[s.statCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-total-outflow">
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: RED + '22', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="arrow-up" size={15} color={RED} />
-              </View>
-              <Text style={[s.statLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
-            </View>
-            <Text style={[s.statValue, { color: RED }]}>{formatINR(totalOut)}</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{d.outflow.length} categories</Text>
-          </View>
-        </View>
-
-        {/* ── Cash In (Inflow) ─────────────────────────── */}
-        <View style={[s.groupCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-inflow-group">
-          <View style={s.groupHead}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: GREEN + '22', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="trending-down" size={16} color={GREEN} />
-              </View>
-              <View>
-                <Text style={[s.groupTitle, { color: colors.text }]}>Cash In</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 1 }}>Money received</Text>
-              </View>
-            </View>
-            <Text style={[s.groupTotal, { color: GREEN }]}>{formatINR(totalIn)}</Text>
-          </View>
-
-          {d.inflow.map((row, i) => (
-            <CategoryRow
-              key={row.name}
-              row={row}
-              total={totalIn}
-              isLast={i === d.inflow.length - 1}
-              isInflow
-              colors={colors}
-              isDark={isDark}
-              testID={`cashflow-details-inflow-${i}`}
-            />
-          ))}
-        </View>
-
-        {/* ── Cash Out (Outflow) ───────────────────────── */}
-        <View style={[s.groupCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-outflow-group">
-          <View style={s.groupHead}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: RED + '22', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="trending-up" size={16} color={RED} />
-              </View>
-              <View>
-                <Text style={[s.groupTitle, { color: colors.text }]}>Cash Out</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 1 }}>Money spent</Text>
-              </View>
-            </View>
-            <Text style={[s.groupTotal, { color: RED }]}>{formatINR(totalOut)}</Text>
-          </View>
-
-          {d.outflow.map((row, i) => (
-            <CategoryRow
-              key={row.name}
-              row={row}
-              total={totalOut}
-              isLast={i === d.outflow.length - 1}
-              isInflow={false}
-              colors={colors}
-              isDark={isDark}
-              testID={`cashflow-details-outflow-${i}`}
-            />
-          ))}
-        </View>
-
-        {/* ── Footer summary ───────────────────────────── */}
-        <View style={[s.footerCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-footer-summary">
-          <View style={s.footerRow}>
-            <Text style={[s.footerLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
-            <Text style={[s.footerVal, { color: GREEN }]}>+{formatINR(totalIn)}</Text>
-          </View>
-          <View style={s.footerRow}>
-            <Text style={[s.footerLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
-            <Text style={[s.footerVal, { color: RED }]}>-{formatINR(totalOut)}</Text>
-          </View>
-          <View style={[s.footerDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} />
-          <View style={s.footerRow}>
-            <Text style={[s.footerLabel, { color: colors.text, fontWeight: '700' }]}>Net Cash Flow</Text>
-            <Text style={[s.footerVal, { color: positive ? GREEN : RED, fontSize: 18 }]}>
-              {positive ? '+' : '-'}{formatINR(Math.abs(net))}
+        ) : !data ? (
+          <View style={[s.emptyCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-empty">
+            <Ionicons name="swap-vertical-outline" size={40} color={colors.textSecondary} />
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700', marginTop: 10 }}>No cash flow data</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              Add income & expense transactions to see your cash flow breakdown.
             </Text>
           </View>
-        </View>
+        ) : (
+          <>
+            {/* ── Net Cash Flow Hero ───────────────────────── */}
+            <LinearGradient
+              colors={positive ? [PURPLE_DARK, PURPLE] : ['#B71C1C', '#E91E8C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.heroCard}
+              testID="cashflow-details-net-hero"
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Net Cash Flow</Text>
+              <Text style={{ color: '#FFF', fontSize: 32, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 }}>
+                {positive ? '+' : '-'}{formatINR(Math.abs(net))}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>{label}</Text>
+
+              {/* In vs Out stacked bar */}
+              <View style={s.stackBarWrap}>
+                <View style={{ flex: inPct || 1, height: '100%', backgroundColor: 'rgba(255,255,255,0.85)' }} />
+                <View style={{ flex: outPct || 1, height: '100%', backgroundColor: 'rgba(255,255,255,0.35)' }} />
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.85)' }} />
+                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>Inflow {inPct.toFixed(1)}%</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.35)' }} />
+                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '600' }}>Outflow {outPct.toFixed(1)}%</Text>
+                </View>
+              </View>
+            </LinearGradient>
+
+            {/* ── Total Inflow / Outflow stat row ──────────── */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+              <View style={[s.statCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-total-inflow">
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: GREEN + '22', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="arrow-down" size={15} color={GREEN} />
+                  </View>
+                  <Text style={[s.statLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
+                </View>
+                <Text style={[s.statValue, { color: GREEN }]}>{formatINR(totalIn)}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{inflowRows.length} sources</Text>
+              </View>
+
+              <View style={[s.statCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-total-outflow">
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: RED + '22', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="arrow-up" size={15} color={RED} />
+                  </View>
+                  <Text style={[s.statLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
+                </View>
+                <Text style={[s.statValue, { color: RED }]}>{formatINR(totalOut)}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{outflowRows.length} categories</Text>
+              </View>
+            </View>
+
+            {/* ── Cash In (Inflow) ─────────────────────────── */}
+            <View style={[s.groupCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-inflow-group">
+              <View style={s.groupHead}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: GREEN + '22', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="trending-down" size={16} color={GREEN} />
+                  </View>
+                  <View>
+                    <Text style={[s.groupTitle, { color: colors.text }]}>Cash In</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 1 }}>Money received</Text>
+                  </View>
+                </View>
+                <Text style={[s.groupTotal, { color: GREEN }]}>{formatINR(totalIn)}</Text>
+              </View>
+
+              {inflowRows.length === 0 ? (
+                <Text style={{ color: colors.textSecondary, fontSize: 12, paddingVertical: 14, textAlign: 'center' }}>No inflow this period.</Text>
+              ) : inflowRows.map((row, i) => (
+                <CategoryRow
+                  key={row.name + i}
+                  row={row}
+                  total={totalIn}
+                  isLast={i === inflowRows.length - 1}
+                  isInflow
+                  colors={colors}
+                  isDark={isDark}
+                  testID={`cashflow-details-inflow-${i}`}
+                />
+              ))}
+            </View>
+
+            {/* ── Cash Out (Outflow) ───────────────────────── */}
+            <View style={[s.groupCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-outflow-group">
+              <View style={s.groupHead}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: RED + '22', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="trending-up" size={16} color={RED} />
+                  </View>
+                  <View>
+                    <Text style={[s.groupTitle, { color: colors.text }]}>Cash Out</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 1 }}>Money spent</Text>
+                  </View>
+                </View>
+                <Text style={[s.groupTotal, { color: RED }]}>{formatINR(totalOut)}</Text>
+              </View>
+
+              {outflowRows.length === 0 ? (
+                <Text style={{ color: colors.textSecondary, fontSize: 12, paddingVertical: 14, textAlign: 'center' }}>No outflow this period.</Text>
+              ) : outflowRows.map((row, i) => (
+                <CategoryRow
+                  key={row.name + i}
+                  row={row}
+                  total={totalOut}
+                  isLast={i === outflowRows.length - 1}
+                  isInflow={false}
+                  colors={colors}
+                  isDark={isDark}
+                  testID={`cashflow-details-outflow-${i}`}
+                />
+              ))}
+            </View>
+
+            {/* ── Footer summary ───────────────────────────── */}
+            <View style={[s.footerCard, { backgroundColor: CARD_BG }]} testID="cashflow-details-footer-summary">
+              <View style={s.footerRow}>
+                <Text style={[s.footerLabel, { color: colors.textSecondary }]}>Total Inflow</Text>
+                <Text style={[s.footerVal, { color: GREEN }]}>+{formatINR(totalIn)}</Text>
+              </View>
+              <View style={s.footerRow}>
+                <Text style={[s.footerLabel, { color: colors.textSecondary }]}>Total Outflow</Text>
+                <Text style={[s.footerVal, { color: RED }]}>-{formatINR(totalOut)}</Text>
+              </View>
+              <View style={[s.footerDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} />
+              <View style={s.footerRow}>
+                <Text style={[s.footerLabel, { color: colors.text, fontWeight: '700' }]}>Net Cash Flow</Text>
+                <Text style={[s.footerVal, { color: positive ? GREEN : RED, fontSize: 18 }]}>
+                  {positive ? '+' : '-'}{formatINR(Math.abs(net))}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -341,7 +359,7 @@ const s = StyleSheet.create({
 
   row:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rowIcon:     { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  rowName:     { fontSize: 13, fontWeight: '700' },
+  rowName:     { fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
   rowAmt:      { fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
 
   footerCard:  { borderRadius: 16, padding: 16 },
@@ -349,4 +367,6 @@ const s = StyleSheet.create({
   footerLabel: { fontSize: 13, fontWeight: '600' },
   footerVal:   { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
   footerDivider:{ height: 1, marginVertical: 6 },
+
+  emptyCard:   { padding: 28, borderRadius: 16, alignItems: 'center', marginTop: 10 },
 });

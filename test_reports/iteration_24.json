@@ -1,0 +1,56 @@
+{
+  "summary": "BLOCKED: Firebase Firestore quota exceeded (429 RESOURCE_EXHAUSTED). All backend authentication and data queries fail with HTTP 500. Cannot test the 7 new /api/insights/* endpoints (financial-summary, cashflow, cashflow/monthly-trend, spending, budget, trends, calendar) end-to-end because POST /api/auth/single-user fails before a token can be obtained. Frontend landing page (/) renders correctly (Fintracker hero + 4 cards + Get Started/Create Account buttons), but any data-bound screen fails because every backend call returns 500. Wrote a brand-new pytest suite covering the v2 endpoint shapes (18 tests, all SKIPPED at the auth fixture due to quota). Existing iteration_23 file /app/backend/tests/test_insights_analytics.py targets the OLD endpoint paths (/api/analytics/* and /api/insights/overview, /api/insights/calendar) — the new package endpoints under /api/insights/financial-summary, /api/insights/cashflow, /api/insights/spending, /api/insights/budget, /api/insights/trends were NOT covered there and are now covered in test_insights_v2_endpoints.py.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/auth/single-user (and every protected /api/insights/* endpoint downstream)",
+        "issue": "Firestore returns 429 RESOURCE_EXHAUSTED 'Quota exceeded'. Stack trace in /var/log/supervisor/backend.err.log shows google.api_core.exceptions.ResourceExhausted raised from db.users.find_one in server.py:811 (single_user_mode). This is a Firebase free-tier daily-quota issue (50K reads / 20K writes / day on Spark plan) — it resets at midnight America/Los_Angeles time. Until it resets, NO backend endpoint that touches Firestore can be exercised.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Initial landing → app boot",
+        "issue": "Browser console shows 'Failed to load resource: 500' (the auth/single-user call) — landing page itself renders but any deeper navigation will fail until Firestore quota resets.",
+        "affected_selectors": ["all /api/* network calls"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_insights_v2_endpoints.py",
+    "/app/test_reports/pytest/insights_v2_results.xml"
+  ],
+  "action_items": [
+    "Wait for Firebase Firestore daily quota to reset (resets at midnight Pacific Time) and re-run pytest /app/backend/tests/test_insights_v2_endpoints.py -v",
+    "Strongly consider upgrading the Firebase project from Spark (free) → Blaze (pay-as-you-go) — the app makes many reads per page load (auth, accounts, income, expenses, budgets, investments) and will keep hitting the 50K-read/day cap during development & testing",
+    "Add caching / batched reads in /app/backend/insights/service.py (fetch_income / fetch_expenses) — currently every period change (month/quarter/year) and every monthly-trend endpoint loops fetch_income+fetch_expenses up to 6× per request, multiplying Firestore reads",
+    "Once quota is healthy: seed at least 1 income, 2–3 expenses (different categories), 1–2 accounts, 1 budget so empty-state vs populated-state can both be validated for analytics.tsx (6 tabs) + /insights/cashflow-details + /insights/spending-by-category",
+    "Re-run frontend playwright flow: bottom-nav Insights → switch all 6 tabs → tap 'View Details' on Cash Flow → tap 'View All' on Spending. Confirm period chips (month/quarter/year) refetch and re-render without crash"
+  ],
+  "critical_code_review_comments": [
+    "insights/service.py fetch_income / fetch_expenses appear to do un-cached Firestore reads on every request; cashflow/monthly-trend issues 6× sequential fetches per call which is wasteful and a big contributor to quota burn",
+    "insights/financial_summary.py and insights/cashflow.py each independently re-fetch income+expenses for the same period instead of sharing a single fetch — opportunity to add a per-request memoization decorator or pass pre-fetched lists down",
+    "insights/budget.py _scale_factor() scales monthly_limit linearly by 3 (quarter) / 12 (year) but `days_left` is computed from the actual calendar range — fine, but worth a UX note: a quarter limit of 3× monthly may not match how users mentally budget for a quarter",
+    "insights/spending.py top_merchants_limit is not validated against zero/negative beyond max(1, …) — acceptable but could be a Query(ge=1, le=50)",
+    "All new insights routes rely on get_user_from_request(request) — there is no rate limiting or per-user quota guard. Combined with no caching, a single user hammering tab-switches in analytics.tsx can blow the Firestore quota (current incident likely a symptom of this)",
+    "test_insights_analytics.py (from iteration_23) was written for OLD endpoints (/api/analytics/cashflow, /api/analytics/expense-breakdown, /api/analytics/spending, /api/insights/overview, /api/insights/calendar). The NEW endpoint paths (/api/insights/cashflow, /api/insights/spending, /api/insights/budget, /api/insights/trends, /api/insights/financial-summary, /api/insights/cashflow/monthly-trend) were NOT covered there — now covered by /app/backend/tests/test_insights_v2_endpoints.py created in this iteration"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_insights_v2_endpoints.py"
+  ],
+  "success_rate": {
+    "backend": "0% executed — 18/18 SKIPPED due to Firestore 429 quota error at auth fixture (no test could obtain a token)",
+    "frontend": "Landing page renders (1/1) — deeper screens NOT testable because backend is down"
+  },
+  "test_credentials": "/app/memory/test_credentials.md does NOT exist. App uses POST /api/auth/single-user to mint a JWT for the single configured user — currently fails with 500.",
+  "seed_data_creation": "None — could not authenticate to create seed data. Existing data (from iteration_23: 1 expense ₹50 Groceries May 5 2026 + 2 bank accounts ₹65000 + 3 cash accounts ₹14950) presumably still in Firestore.",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Firebase Firestore quota was exhausted at the time of iteration_24. The new pytest file /app/backend/tests/test_insights_v2_endpoints.py is READY — when quota resets, just run: EXPO_PUBLIC_BACKEND_URL=https://cash-flow-hub-81.preview.emergentagent.com python -m pytest backend/tests/test_insights_v2_endpoints.py -v --junitxml=/app/test_reports/pytest/insights_v2_results.xml. The 18 tests validate response shape for financial-summary (month/quarter/year), cashflow (month/quarter/year), cashflow/monthly-trend (6 series points), spending (month/quarter/year, including categories[] with category/amount/count/percentage and top_merchants[] with merchant/amount/count), budget (month/quarter/year with categories/over_budget/total_budget/total_spent/usage_pct/on_track/days_left), trends (month/6m/year, three series), calendar (default + month=5 year=2026). After backend passes, do frontend playwright: tap bottom-nav 4th icon → analytics.tsx → cycle 6 tabs (Overview, Cash Flow, Spending, Budget, Trends, Calendar) → tap 'View Details' on Cash Flow card → confirm /insights/cashflow-details period tabs work → back → Spending tab 'View All' → confirm /insights/spending-by-category period tabs work. Use data-testid attributes if present; otherwise role/text selectors.",
+  "rca of the issue": "ROOT CAUSE: Firebase Firestore project 'bill-vault-a24ad' is on the Spark (free) plan with a 50K read/day quota. The quota has been exhausted (likely by repeated tab-switching during prior iterations + the unoptimised insights endpoints that re-fetch income/expenses per period and 6× in the monthly-trend loop). REPRODUCTION: curl -X POST https://cash-flow-hub-81.preview.emergentagent.com/api/auth/single-user → 500; backend log shows google.api_core.exceptions.ResourceExhausted: 429 Quota exceeded raised from firebase_config.py:272 (run_query). MITIGATION: (1) Wait for daily quota reset (midnight PT) and rerun tests, (2) upgrade Firebase project to Blaze plan, (3) add request-level caching in insights/service.py so a single page load doesn't issue 30+ Firestore reads, (4) consider an in-memory aggregate table updated on write rather than full collection scans on every analytics call."
+}

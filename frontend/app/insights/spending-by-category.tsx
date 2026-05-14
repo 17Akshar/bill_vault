@@ -1,93 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { PieChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../contexts/ThemeContext';
+import api from '../../utils/api';
 import { formatINR } from '../../utils/formatINR';
-
-const { width: SW } = Dimensions.get('window');
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const PURPLE      = '#8E2DE2';
 const PURPLE_DARK = '#4A00E0';
 const RED         = '#FF4A4A';
+const GREEN       = '#51DB7A';
 const GREY        = '#8B8B8B';
 
 type Period = 'month' | 'quarter' | 'year';
 
-// ─── Dummy data ───────────────────────────────────────────────────────────────
-type Cat = {
-  name: string;
-  amount: number;
-  pct: number;
-  txns: number;
-  avg: number;
-  icon: any;
-  color: string;
-  top_merchants: string[];
+// ─── Category icon + color map ────────────────────────────────────────────────
+const CAT_CONFIG: Record<string, { icon: string; color: string }> = {
+  food:          { icon: 'fast-food-outline',    color: '#FF6B6B' },
+  transport:     { icon: 'car-outline',          color: '#4DABF7' },
+  shopping:      { icon: 'bag-handle-outline',   color: '#B197FC' },
+  entertainment: { icon: 'film-outline',         color: '#FFB300' },
+  bills:         { icon: 'receipt-outline',      color: '#26C6DA' },
+  utilities:     { icon: 'flash-outline',        color: '#FFB300' },
+  health:        { icon: 'medkit-outline',       color: '#66BB6A' },
+  education:     { icon: 'school-outline',       color: '#4DABF7' },
+  travel:        { icon: 'airplane-outline',     color: '#FF9100' },
+  groceries:     { icon: 'cart-outline',         color: '#66BB6A' },
+  rent:          { icon: 'home-outline',         color: '#4DABF7' },
+  insurance:     { icon: 'shield-outline',       color: '#26C6DA' },
+  gift:          { icon: 'gift-outline',         color: '#E91E8C' },
+  other:         { icon: 'ellipsis-horizontal',  color: GREY      },
 };
-
-const DUMMY: Record<Period, { label: string; total: number; vs_last_pct: number; categories: Cat[] }> = {
-  month: {
-    label: 'May 2026',
-    total: 75000,
-    vs_last_pct: -5.3,
-    categories: [
-      { name: 'Food',          amount: 22500, pct: 30.0, txns: 28, avg:   803, icon: 'fast-food-outline',   color: '#FF6B6B', top_merchants: ['Swiggy', 'Zomato', 'Cafe'] },
-      { name: 'Transport',     amount: 12000, pct: 16.0, txns: 19, avg:   631, icon: 'car-outline',         color: '#4DABF7', top_merchants: ['Uber', 'Petrol', 'Metro'] },
-      { name: 'Shopping',      amount: 15000, pct: 20.0, txns: 11, avg:  1363, icon: 'bag-handle-outline',  color: '#B197FC', top_merchants: ['Amazon', 'Flipkart', 'Big Bazaar'] },
-      { name: 'Entertainment', amount:  8500, pct: 11.3, txns:  7, avg:  1214, icon: 'film-outline',        color: '#FFB300', top_merchants: ['Netflix', 'BookMyShow', 'Spotify'] },
-      { name: 'Bills',         amount: 11500, pct: 15.3, txns:  8, avg:  1438, icon: 'receipt-outline',     color: '#26C6DA', top_merchants: ['Electricity', 'Internet', 'Mobile'] },
-      { name: 'Others',        amount:  5500, pct:  7.4, txns: 14, avg:   392, icon: 'ellipsis-horizontal', color: GREY,     top_merchants: ['Gift', 'Pharmacy', 'Misc'] },
-    ],
-  },
-  quarter: {
-    label: 'Q2 2026',
-    total: 232000,
-    vs_last_pct: 8.4,
-    categories: [
-      { name: 'Food',          amount: 68500, pct: 29.5, txns: 85, avg:  806, icon: 'fast-food-outline',   color: '#FF6B6B', top_merchants: ['Swiggy', 'Zomato', 'Cafe'] },
-      { name: 'Transport',     amount: 37000, pct: 16.0, txns: 58, avg:  638, icon: 'car-outline',         color: '#4DABF7', top_merchants: ['Uber', 'Petrol', 'Metro'] },
-      { name: 'Shopping',      amount: 48000, pct: 20.7, txns: 32, avg: 1500, icon: 'bag-handle-outline',  color: '#B197FC', top_merchants: ['Amazon', 'Flipkart', 'Myntra'] },
-      { name: 'Entertainment', amount: 24500, pct: 10.6, txns: 22, avg: 1114, icon: 'film-outline',        color: '#FFB300', top_merchants: ['Netflix', 'BookMyShow', 'Spotify'] },
-      { name: 'Bills',         amount: 36000, pct: 15.5, txns: 24, avg: 1500, icon: 'receipt-outline',     color: '#26C6DA', top_merchants: ['Electricity', 'Internet', 'Mobile'] },
-      { name: 'Others',        amount: 18000, pct:  7.7, txns: 41, avg:  439, icon: 'ellipsis-horizontal', color: GREY,     top_merchants: ['Gift', 'Pharmacy', 'Misc'] },
-    ],
-  },
-  year: {
-    label: 'FY 2026',
-    total: 918500,
-    vs_last_pct: 12.1,
-    categories: [
-      { name: 'Food',          amount: 268000, pct: 29.2, txns: 342, avg:  784, icon: 'fast-food-outline',   color: '#FF6B6B', top_merchants: ['Swiggy', 'Zomato', 'Cafe'] },
-      { name: 'Transport',     amount: 142000, pct: 15.5, txns: 234, avg:  607, icon: 'car-outline',         color: '#4DABF7', top_merchants: ['Uber', 'Petrol', 'Metro'] },
-      { name: 'Shopping',      amount: 198000, pct: 21.6, txns: 124, avg: 1597, icon: 'bag-handle-outline',  color: '#B197FC', top_merchants: ['Amazon', 'Flipkart', 'Myntra'] },
-      { name: 'Entertainment', amount:  96000, pct: 10.5, txns:  86, avg: 1116, icon: 'film-outline',        color: '#FFB300', top_merchants: ['Netflix', 'BookMyShow', 'Spotify'] },
-      { name: 'Bills',         amount: 142500, pct: 15.5, txns:  96, avg: 1484, icon: 'receipt-outline',     color: '#26C6DA', top_merchants: ['Electricity', 'Internet', 'Mobile'] },
-      { name: 'Others',        amount:  72000, pct:  7.8, txns: 160, avg:  450, icon: 'ellipsis-horizontal', color: GREY,     top_merchants: ['Gift', 'Pharmacy', 'Misc'] },
-    ],
-  },
-};
+const FALLBACK_COLORS = [PURPLE, '#26C6DA', GREEN, '#FF9100', '#FFB300', '#E91E8C', RED, '#448AFF', '#66BB6A'];
+function configFor(name: string, idx: number) {
+  const key = (name || '').toLowerCase().trim();
+  return CAT_CONFIG[key] || { icon: 'ellipsis-horizontal' as any, color: FALLBACK_COLORS[idx % FALLBACK_COLORS.length] };
+}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function SpendingByCategoryScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const [period, setPeriod] = useState<Period>('month');
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
 
-  const d        = DUMMY[period];
-  const declined = d.vs_last_pct < 0;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const now = new Date();
+      const m = now.getMonth() + 1;
+      const y = now.getFullYear();
+      const res = await api.get(`/insights/spending?period=${period}&month=${m}&year=${y}`);
+      setData(res.data);
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [period]);
+
+  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+
   const CARD_BG  = isDark ? '#1C1C2E' : colors.card;
 
-  const donutData = d.categories.map(c => ({
-    value: c.amount,
-    color: c.color,
-  }));
+  const label     = data?.label || '';
+  const total     = Number(data?.total || 0);
+  const vsLastPct = Number(data?.vs_previous || 0);
+  const declined  = vsLastPct < 0;
+  const txnCount  = Number(data?.txn_count || 0);
+
+  // ── Build category cards ──
+  const merchants: any[] = data?.top_merchants || [];
+  const categories = (data?.categories || []).map((c: any, i: number) => {
+    const name = c.category || 'Other';
+    const cfg  = configFor(name, i);
+    const amt  = Number(c.amount || 0);
+    const txns = Number(c.count  || 0);
+    const pct  = Number(c.percentage || 0);
+    const avg  = txns > 0 ? Math.round(amt / txns) : 0;
+    const topMerchants = merchants
+      .filter((m: any) => (m.category || '').toLowerCase() === name.toLowerCase())
+      .slice(0, 3)
+      .map((m: any) => m.merchant);
+    return { name, amount: amt, pct, txns, avg, icon: cfg.icon, color: cfg.color, top_merchants: topMerchants };
+  });
+
+  const donutData = categories.map((c: any) => ({ value: c.amount, color: c.color }));
 
   return (
     <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={['top']}>
@@ -102,7 +107,7 @@ export default function SpendingByCategoryScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={[s.headerTitle, { color: colors.text }]}>Spending by Category</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{d.label}</Text>
+          {!!label && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{label}</Text>}
         </View>
         <View style={[s.iconBtn, { backgroundColor: 'transparent' }]} />
       </View>
@@ -128,111 +133,130 @@ export default function SpendingByCategoryScreen() {
           })}
         </View>
 
-        {/* ── Donut + Total Spending ─────────────────────── */}
-        <View style={[s.donutCard, { backgroundColor: CARD_BG }]} testID="spending-cat-donut">
-          <View style={{ alignItems: 'center' }}>
-            <PieChart
-              data={donutData}
-              donut
-              radius={108}
-              innerRadius={74}
-              backgroundColor={CARD_BG}
-              centerLabelComponent={() => (
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '500' }}>Total Spending</Text>
-                  <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800', marginTop: 4, letterSpacing: -0.3 }}>
-                    {formatINR(d.total).replace('.00', '')}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
-                    <Ionicons name={declined ? 'arrow-down' : 'arrow-up'} size={10} color={declined ? '#51DB7A' : RED} />
-                    <Text style={{ color: declined ? '#51DB7A' : RED, fontSize: 11, fontWeight: '700' }}>
-                      {Math.abs(d.vs_last_pct).toFixed(1)}%
+        {loading ? (
+          <View style={{ paddingVertical: 60, alignItems: 'center' }} testID="spending-cat-loading">
+            <ActivityIndicator size="large" color={PURPLE} />
+          </View>
+        ) : !data || total === 0 ? (
+          <View style={[s.emptyCard, { backgroundColor: CARD_BG }]} testID="spending-cat-empty">
+            <Ionicons name="pie-chart-outline" size={40} color={colors.textSecondary} />
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700', marginTop: 10 }}>No spending yet</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              Add expense transactions to see your spending breakdown by category.
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* ── Donut + Total Spending ─────────────────────── */}
+            <View style={[s.donutCard, { backgroundColor: CARD_BG }]} testID="spending-cat-donut">
+              <View style={{ alignItems: 'center' }}>
+                <PieChart
+                  data={donutData}
+                  donut
+                  radius={108}
+                  innerRadius={74}
+                  backgroundColor={CARD_BG}
+                  centerLabelComponent={() => (
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '500' }}>Total Spending</Text>
+                      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800', marginTop: 4, letterSpacing: -0.3 }}>
+                        {formatINR(total).replace('.00', '')}
+                      </Text>
+                      {vsLastPct !== 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                          <Ionicons name={declined ? 'arrow-down' : 'arrow-up'} size={10} color={declined ? GREEN : RED} />
+                          <Text style={{ color: declined ? GREEN : RED, fontSize: 11, fontWeight: '700' }}>
+                            {Math.abs(vsLastPct).toFixed(1)}%
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                />
+              </View>
+
+              {/* Legend - 2 col */}
+              <View style={s.legendGrid}>
+                {categories.map((c: any) => (
+                  <View key={c.name} style={s.legendItem}>
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.color }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 11, textTransform: 'capitalize' }} numberOfLines={1}>{c.name}</Text>
+                    <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700' }}>{c.pct.toFixed(1)}%</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* ── Section title ─────────────────────────────── */}
+            <View style={s.sectionHead}>
+              <Text style={[s.sectionTitle, { color: colors.text }]}>Category Breakdown</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{categories.length} categories</Text>
+            </View>
+
+            {/* ── Category cards ────────────────────────────── */}
+            {categories.map((c: any, i: number) => (
+              <View
+                key={c.name + i}
+                style={[s.catCard, { backgroundColor: CARD_BG }]}
+                testID={`spending-cat-row-${i}`}
+              >
+                <View style={s.catTop}>
+                  <View style={[s.catIcon, { backgroundColor: c.color + '22' }]}>
+                    <Ionicons name={c.icon} size={20} color={c.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.catName, { color: colors.text }]} numberOfLines={1}>{c.name}</Text>
+                    <Text style={[s.catMeta, { color: colors.textSecondary }]}>
+                      {c.txns} txns · avg {formatINR(c.avg)}
                     </Text>
                   </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[s.catAmt, { color: colors.text }]}>{formatINR(c.amount)}</Text>
+                    <View style={[s.pctPill, { backgroundColor: c.color + '22' }]}>
+                      <Text style={{ color: c.color, fontSize: 11, fontWeight: '800' }}>{c.pct.toFixed(1)}%</Text>
+                    </View>
+                  </View>
                 </View>
-              )}
-            />
-          </View>
 
-          {/* Legend - 2 col */}
-          <View style={s.legendGrid}>
-            {d.categories.map(c => (
-              <View key={c.name} style={s.legendItem}>
-                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c.color }} />
-                <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 11 }} numberOfLines={1}>{c.name}</Text>
-                <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700' }}>{c.pct.toFixed(1)}%</Text>
+                {/* Progress bar */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                  <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border, overflow: 'hidden' }}>
+                    <View style={{ width: `${Math.min(c.pct, 100)}%`, height: '100%', backgroundColor: c.color, borderRadius: 3 }} />
+                  </View>
+                </View>
+
+                {/* Top merchants pills */}
+                {c.top_merchants.length > 0 && (
+                  <View style={s.merchantsRow}>
+                    <Ionicons name="storefront-outline" size={11} color={colors.textSecondary} />
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginRight: 4 }}>Top:</Text>
+                    {c.top_merchants.map((m: string, mi: number) => (
+                      <View key={m + mi} style={[s.merchantPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.border }]}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '600' }}>{m}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ))}
-          </View>
-        </View>
 
-        {/* ── Section title ─────────────────────────────── */}
-        <View style={s.sectionHead}>
-          <Text style={[s.sectionTitle, { color: colors.text }]}>Category Breakdown</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{d.categories.length} categories</Text>
-        </View>
-
-        {/* ── Category cards ────────────────────────────── */}
-        {d.categories.map((c, i) => (
-          <View
-            key={c.name}
-            style={[s.catCard, { backgroundColor: CARD_BG }]}
-            testID={`spending-cat-row-${i}`}
-          >
-            {/* Top row: icon + name + amount */}
-            <View style={s.catTop}>
-              <View style={[s.catIcon, { backgroundColor: c.color + '22' }]}>
-                <Ionicons name={c.icon} size={20} color={c.color} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.catName, { color: colors.text }]}>{c.name}</Text>
-                <Text style={[s.catMeta, { color: colors.textSecondary }]}>
-                  {c.txns} txns · avg {formatINR(c.avg)}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[s.catAmt, { color: colors.text }]}>{formatINR(c.amount)}</Text>
-                <View style={[s.pctPill, { backgroundColor: c.color + '22' }]}>
-                  <Text style={{ color: c.color, fontSize: 11, fontWeight: '800' }}>{c.pct.toFixed(1)}%</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Progress bar */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
-              <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border, overflow: 'hidden' }}>
-                <View style={{ width: `${Math.min(c.pct, 100)}%`, height: '100%', backgroundColor: c.color, borderRadius: 3 }} />
-              </View>
-            </View>
-
-            {/* Top merchants pills */}
-            <View style={s.merchantsRow}>
-              <Ionicons name="storefront-outline" size={11} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 11, marginRight: 4 }}>Top:</Text>
-              {c.top_merchants.map((m, mi) => (
-                <View key={m} style={[s.merchantPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.border }]}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '600' }}>{m}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ))}
-
-        {/* ── Footer total ──────────────────────────────── */}
-        <LinearGradient
-          colors={[PURPLE_DARK, PURPLE]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.footerCard}
-        >
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Total Spending · {d.label}</Text>
-          <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 }}>
-            {formatINR(d.total)}
-          </Text>
-          <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>
-            across {d.categories.length} categories ·  {d.categories.reduce((s, c) => s + c.txns, 0)} transactions
-          </Text>
-        </LinearGradient>
+            {/* ── Footer total ──────────────────────────────── */}
+            <LinearGradient
+              colors={[PURPLE_DARK, PURPLE]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.footerCard}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Total Spending · {label}</Text>
+              <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 }}>
+                {formatINR(total)}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 2 }}>
+                across {categories.length} categories ·  {txnCount} transactions
+              </Text>
+            </LinearGradient>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -260,7 +284,7 @@ const s = StyleSheet.create({
   catCard:     { borderRadius: 14, padding: 14, marginBottom: 10 },
   catTop:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
   catIcon:     { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  catName:     { fontSize: 14, fontWeight: '700' },
+  catName:     { fontSize: 14, fontWeight: '700', textTransform: 'capitalize' },
   catMeta:     { fontSize: 11, marginTop: 2 },
   catAmt:      { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
   pctPill:     { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 4 },
@@ -269,4 +293,6 @@ const s = StyleSheet.create({
   merchantPill:{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
 
   footerCard:  { borderRadius: 16, padding: 18, marginTop: 8, marginBottom: 4 },
+
+  emptyCard:   { padding: 28, borderRadius: 16, alignItems: 'center', marginTop: 10 },
 });
