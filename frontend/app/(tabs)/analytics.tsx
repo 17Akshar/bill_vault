@@ -467,11 +467,10 @@ function BudgetTab({ colors, isDark, date, onDateChange }: any) {
   const load = useCallback(async () => {
     setLoad(true);
     try {
-      const [budgetRes, expRes] = await Promise.all([
-        api.get('/analytics/spending', { params: { month: date.getMonth() + 1, year: date.getFullYear() } }),
-        api.get('/analytics/expense-breakdown', { params: { month: date.getMonth() + 1, year: date.getFullYear() } }),
-      ]);
-      setData({ budget: budgetRes.data, expenses: expRes.data });
+      const res = await api.get('/insights/budget-status', {
+        params: { month: date.getMonth() + 1, year: date.getFullYear() },
+      });
+      setData(res.data);
     } catch { setData(null); }
     finally { setLoad(false); }
   }, [date]);
@@ -479,20 +478,20 @@ function BudgetTab({ colors, isDark, date, onDateChange }: any) {
   useEffect(() => { load(); }, [load]);
 
   if (loading) return <LoadingBox colors={colors} />;
-  if (!data?.budget?.budget_status?.length) return (
+  if (!data?.budget_status?.length) return (
     <>
       <MonthNav date={date} onChange={onDateChange} colors={colors} />
       <EmptyBox icon="wallet-outline" text="No budgets set. Create budgets to track progress." colors={colors} />
     </>
   );
 
-  const budgets   = data.budget.budget_status as any[];
-  const overBudget = budgets.filter((b: any) => b.percentage > 100);
-  const totalBudgeted = budgets.reduce((s: number, b: any) => s + b.limit, 0);
-  const totalSpent    = budgets.reduce((s: number, b: any) => s + b.spent, 0);
-  const totalRemaining = totalBudgeted - totalSpent;
-  const overallPct    = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
-  const onTrack       = overallPct <= 100;
+  const budgets        = data.budget_status as any[];
+  const overBudget     = budgets.filter((b: any) => b.percentage > 100);
+  const totalBudgeted  = data.total_budgeted || 0;
+  const totalSpent     = data.total_spent    || 0;
+  const totalRemaining = data.total_remaining || 0;
+  const overallPct     = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
+  const onTrack        = overallPct <= 100;
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>

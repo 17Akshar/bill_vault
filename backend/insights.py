@@ -234,6 +234,61 @@ async def insights_calendar(
     }
 
 
+@insights_router.get("/insights/budget-status")
+async def insights_budget_status(
+    request: Request,
+    month: Optional[int] = None,
+    year:  Optional[int] = None,
+):
+    """Budget status using actual expense transactions (not bills)."""
+    user = await _get_user(request)
+    now   = datetime.now(timezone.utc)
+    m     = month or now.month
+    y     = year  or now.year
+    start, end = _month_range(y, m)
+
+    budgets  = await db.budgets.find({"user_id": user.user_id}, {"_id": 0}).to_list(100)
+    expenses = await db.expenses.find({"user_id": user.user_id, "date": {"$gte": start, "$lt": end}}, {"_id": 0}).to_list(10000)
+
+    # Group expenses by category
+    exp_by_cat: dict = {}
+    for e in expenses:
+        cat = e.get("category", "other")
+        exp_by_cat[cat] = exp_by_cat.get(cat, 0) + e.get("amount", 0)
+
+    total_expense = sum(exp_by_cat.values())
+
+    budget_status = []
+    for b in budgets:
+        cat   = b.get("category", "other")
+        limit = float(b.get("monthly_limit", b.get("amount", 0)))
+        spent = float(exp_by_cat.get(cat, 0))
+        remaining = limit - spent
+        pct   = round(spent / limit * 100, 1) if limit > 0 else 0
+        budget_status.append({
+            "category": cat,
+            "limit": limit,
+            "spent": spent,
+            "remaining": remaining,
+            "percentage": pct,
+            "status": "over" if pct > 100 else "warning" if pct > 80 else "ok",
+        })
+
+    budget_status.sort(key=lambda b: b["percentage"], reverse=True)
+
+    total_budgeted = sum(b["limit"] for b in budget_status)
+    total_spent    = sum(b["spent"] for b in budget_status)
+
+    return {
+        "month": m, "year": y,
+        "budget_status": budget_status,
+        "total_budgeted": total_budgeted,
+        "total_spent": total_spent,
+        "total_remaining": total_budgeted - total_spent,
+        "total_expense_this_month": total_expense,
+    }
+
+
 # ─── Spending trend (category over N months) ──────────────────────────────────
 
 @insights_router.get("/insights/spending-trend")

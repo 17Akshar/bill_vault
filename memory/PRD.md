@@ -11,116 +11,75 @@ Personal finance management mobile app (React Native / Expo) with FastAPI + Fire
 
 ---
 
-### Session 16 — P0/P1 Loan Detail Features (2026-05-14)
-**Full loan detail screen + all core action flows**
+## What's Been Implemented
 
-New screen: `loans/[id].tsx` with hero card, 3-tab navigation (Overview / EMI Schedule / Prepayments), amortization modal (paginated 24/page), EMI Payment modal (bottom-sheet with method chips), Prepayment modal (Part/Full toggle, adjustment type toggle, penalty calculator). Navigation updated: index cards navigate to detail screen. `_layout.tsx` registers `loans/[id]` route.
+### Sessions 1–13 (pre-existing)
+Auth, Dashboard, Income/Expense, Bills, Investments, Budget, Credit Cards, Rentals, Lending, Reports, Family, Push Notifications.
 
----
+### Session 14 — Loans & EMIs Schema
+Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `loan_prepayments`.
 
-### Session 1–13 (pre-existing)
-- Auth (Firebase + JWT)
-- Dashboard with net worth, accounts, transactions
-- Income & Expense tracking
-- Bills & reminders
-- Investments module
-- Budget module
-- Credit cards, Rentals, Lending
-- Reports & Insights
-- Family members
-- Push notifications (expo-notifications)
+### Session 15 — Loans Calculations + UI Redesign
+`GET /api/loans/{id}/analytics` (7 live metrics). `loans/index.tsx` redesigned with portfolio card, animated progress bars, stat pills.
 
-### Session 14 — Loans & EMIs Schema (2026-05-14)
-**Scalable database architecture for Loans & EMIs feature**
+### Session 16 — Loan Detail Full-Page Screen
+`loans/[id].tsx`: hero card, 3 tabs (Overview / EMI Schedule / Prepayments), amortization modal (paginated), Record EMI Payment modal, Add Prepayment modal.
 
-#### New Collections
-| Collection | Module | Purpose |
-|---|---|---|
-| `loans` | `loans.py` | Enhanced loan records with amortization metadata |
-| `loan_transactions` | `loan_transactions.py` | Per-payment history (principal + interest split) |
-| `emi_reminders` | `emi_reminders.py` | Per-EMI schedule rows + bridge to reminders |
-| `loan_prepayments` | `loan_prepayments.py` | Part-prepayment / full-closure records |
+### Session 17 — Insights Module (2026-05-14)
+**6-tab Insights screen replacing placeholder analytics tab**
 
-#### Key Features
-- EMI auto-computation (reducing balance & flat rate)
-- Full amortization schedule generation
-- Loan status lifecycle: active → closed / prepaid / transferred
-- EMI reminders bridged to existing `reminders` collection (no notification duplication)
-- Prepayment impact: penalty, new EMI, revised tenure
-- Firestore ID registry updated with `loan_transaction_id`, `emi_reminder_id`, `prepayment_id`
+#### Backend: `insights.py`
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/insights/overview` | Monthly income/expense/savings, accounts summary, quick insights (5 auto-generated), over-budget categories |
+| `GET /api/insights/calendar` | Daily income/expense map + recent transactions for calendar heatmap |
+| `GET /api/insights/budget-status` | Budget limits vs actual expense transactions (fixes pre-existing bug in `/api/analytics/spending` which used bills not expenses) |
+| `GET /api/insights/spending-trend` | Top-N category spending over M months |
 
-### Session 15 — Loans & EMIs Calculations + UI Redesign (2026-05-14)
-**Analytics engine + polished UI for Loans & EMIs module**
+#### Frontend: `(tabs)/analytics.tsx` — Complete rewrite
+6 sub-tabs accessible via horizontal scrollable pill bar:
 
-#### Backend: `GET /api/loans/{loan_id}/analytics`
-Returns 7 live calculations from actual transaction data:
-1. **Outstanding balance** — from loan record (updated by each transaction)
-2. **EMI tracking** — emis_paid, emis_remaining, next_emi_date, tenure
-3. **Interest paid** — sum of `interest_component` from EMI transactions
-4. **Interest remaining** — projected via amortization on current balance
-5. **Loan completion %** — `principal_paid / principal_amount × 100`
-6. **Prepayment impact** — total_prepaid, penalty_paid, tenure_saved_months
-7. **Interest saved** — `original_total_interest − (interest_paid + interest_remaining)`
-- Also returns: payment_breakdown (principal vs interest %), total loan cost
+| Tab | Key Features |
+|---|---|
+| **Overview** | Month navigator, This Month card (income/expense/savings + delta%), savings rate pill, quick insights rows (icon + color + text), accounts summary |
+| **Cash Flow** | Period chips (Month/Quarter/Year), net cash flow hero with sparkline, inflow/outflow cards, 6-month bar chart, month-by-month table |
+| **Spending** | Month navigator, total spending, donut chart (top 7 categories), category list with progress bars and % |
+| **Budget** | Month navigator, total budget summary card (On Track/Over Budget badge), per-category progress bars (color-coded: ok/warning/over), over-budget section |
+| **Trends** | Period chips, 4 metric cards (Total Income/Expense/Net Savings/Avg Rate), Income/Expense/Savings Rate line chart area charts |
+| **Calendar** | Month navigator, 7-col calendar grid with expense heat dots (intensity = spend amount), income dots, today highlight, day tap → filtered transaction list |
 
-#### Frontend: `loans/index.tsx` — Complete redesign
-- **Portfolio summary card** (purple gradient) — Total Outstanding, Monthly EMI, Total Principal, Avg. Repaid %
-- **Loan cards** — Type icon + status badge, stat pills (Outstanding / EMI / Repaid %), animated progress bar, Next EMI date + Remind button
-- **Expandable analytics panel** — 4 sections: Loan Completion, Interest Analytics, EMI Tracking, Payment Breakdown (+ Prepayment Impact when applicable)
-- **Add Loan modal** — 9 loan type chips, auto-compute EMI hint, full form with validation
-- Existing app theme (dark/light), navigation, and architecture fully preserved
+#### Navigation
+- `_layout.tsx`: Insights tab now points to `analytics` (was pointing to `bills`)
+- `bills` tab hidden from nav (`href: null`) — route still accessible
 
 ---
 
-## API Surface — Loans Module
+## API Surface — Insights Module
 ```
-POST   /api/loans                              Create loan
-GET    /api/loans                              List loans (with optional ?status= filter)
-GET    /api/loans/summary                      Portfolio summary
-GET    /api/loans/{loan_id}                    Single loan
-GET    /api/loans/{loan_id}/analytics          7 live calculations
-GET    /api/loans/{loan_id}/amortization       Full schedule
-PUT    /api/loans/{loan_id}                    Update mutable fields
-POST   /api/loans/{loan_id}/close              Close / mark prepaid
-DELETE /api/loans/{loan_id}                    Soft-delete
+GET /api/insights/overview?month=&year=        Monthly financial overview
+GET /api/insights/calendar?month=&year=        Daily data for calendar heatmap
+GET /api/insights/budget-status?month=&year=   Budget vs actual expenses
+GET /api/insights/spending-trend?months=       Category trend over N months
 
-POST   /api/loans/{loan_id}/transactions       Record EMI / prepayment
-GET    /api/loans/{loan_id}/transactions       Loan payment history
-GET    /api/loan-transactions                  All transactions across loans
-PUT    /api/loan-transactions/{txn_id}         Correct notes / reference
-DELETE /api/loan-transactions/{txn_id}         Delete + reverse counters
-
-POST   /api/loans/{loan_id}/emi-schedule       Generate / regenerate EMI schedule
-GET    /api/loans/{loan_id}/emi-schedule       List EMI schedule rows
-GET    /api/loans/{loan_id}/emi-schedule/{n}   Single EMI row
-PUT    /api/emi-reminders/{id}                 Mark EMI paid / overdue / skipped
-DELETE /api/emi-reminders/{id}                 Remove EMI row
-GET    /api/emi-reminders/upcoming             Upcoming EMIs across all loans
-
-POST   /api/loans/{loan_id}/prepayments        Record prepayment
-GET    /api/loans/{loan_id}/prepayments        Loan prepayment history
-GET    /api/loan-prepayments                   All prepayments across loans
-GET    /api/loan-prepayments/{id}              Single prepayment
-PUT    /api/loan-prepayments/{id}              Correct notes / reference
-DELETE /api/loan-prepayments/{id}              Delete + reverse balance
+# Pre-existing analytics (reused by Insights)
+GET /api/analytics/cashflow?months=            Monthly income/expense trend
+GET /api/analytics/expense-breakdown           Category breakdown for spending tab
 ```
 
 ---
 
 ## Prioritized Backlog
 
-### P0 — Core flows remaining
-- [ ] EMI schedule UI (list view per loan showing all 240 rows with status)
-- [ ] Record EMI payment from UI (mark EMI as paid, link to transaction)
-- [ ] Prepayment entry form in UI
+### P0 — Loans
+- [ ] "Generate EMI Schedule" button in EMI Schedule tab empty state
+- [ ] Overdue EMI auto-detection (mark pending past due_date as overdue)
 
-### P1 — Enhancements
-- [ ] Loan detail screen (full-page) vs modal expand
-- [ ] Amortization schedule viewer (paginated table)
-- [ ] Loan comparison tool (two loans side by side)
-- [ ] Overdue EMI detection and badge on dashboard
+### P1 — Insights
+- [ ] Insights: Connect real investment data to Trends tab (investment returns over time)
+- [ ] Insights: "What if" savings rate simulator (increase income by X% → savings?)
+- [ ] Insights: Export month summary as PDF/image
 
 ### P2 — Future
-- [ ] Bank statement import for automatic EMI matching
-- [ ] Refinancing calculator (what if I switch lender?)
-- [ ] Loan foreclosure date estimator
+- [ ] Loans: Foreclosure date estimator
+- [ ] Loans: Refinancing calculator
+- [ ] Bills: Re-expose in navigation (currently hidden — only accessible via direct route)
