@@ -57,7 +57,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="bills"
+        name="analytics"
         options={{
           title: 'Insights',
           tabBarIcon: ({ color, focused }) => (
@@ -67,6 +67,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* Hide bills from tab bar — accessible via More / direct route */}
+      <Tabs.Screen name="bills" options={{ href: null }} />
       <Tabs.Screen
         name="profile"
         options={{
@@ -79,7 +81,6 @@ export default function TabsLayout() {
         }}
       />
       {/* Hide analytics from tab bar but keep route accessible */}
-      <Tabs.Screen name="analytics" options={{ href: null }} />
     </Tabs>
   );
 }

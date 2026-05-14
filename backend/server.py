@@ -3523,6 +3523,10 @@ app.include_router(emi_reminders_router)
 from loan_prepayments import loan_prepayments_router
 app.include_router(loan_prepayments_router)
 
+# Insights module
+from insights import insights_router
+app.include_router(insights_router)
+
 @app.on_event("startup")
 async def _start_snapshot_scheduler():
     start_scheduler()

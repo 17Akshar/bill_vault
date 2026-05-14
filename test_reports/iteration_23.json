@@ -1,0 +1,44 @@
+{
+  "summary": "Full backend + frontend testing of Insights feature (6-tab analytics screen). All 22 backend tests passed (100%). Frontend UI fully functional: Insights tab (4th item in bottom nav) correctly navigates to analytics screen. All 6 tab pills present and switch without crashing. Overview shows month navigator, income/expenses/savings card, quick insights (Top Category), accounts summary (Cash 3 acc ₹14,950 + Bank 2 acc ₹65,000 = ₹79,950 total). Cash Flow shows net cash flow hero card, bar chart, month-by-month list. Spending shows donut chart with ₹50 Groceries. Budget shows empty state (no budgets set). Trends shows 4 metric cards + Income/Expense/Savings line charts. Calendar shows 7-column grid with May 5 expense dot, transaction list with 'Smoke test - Groceries'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/analytics/spending",
+        "issue": "Uses db.bills (bill payment amounts) instead of db.expenses to calculate 'spent' in budget_status. This means budget spending is compared against bill amounts rather than actual expense transactions. For this app the Budget tab shows empty when no budgets are set, hiding the bug, but if budgets exist the spent amounts will reflect bills not expenses."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Cash Flow tab — period filter",
+        "issues": ["Period chip says 'This Month' but only shows 1 month of data (sparse data). Functionally correct."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_insights_analytics.py",
+    "/app/test_reports/pytest/insights_results.xml"
+  ],
+  "action_items": [
+    "Consider fixing /api/analytics/spending to use db.expenses instead of db.bills for budget_status 'spent' calculation — currently bills are used which may not match expense transaction data"
+  ],
+  "critical_code_review_comments": [
+    "/api/analytics/spending queries db.bills for budget 'spent' amounts but the Budget tab in insights is supposed to show actual expense spending vs budget limits. Should query db.expenses grouped by category to match how expense-breakdown works.",
+    "insights.py and server.py both define analytics endpoints (cashflow, expense-breakdown in server.py; insights/overview, insights/calendar in insights.py) — consistent but worth noting the split."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_insights_analytics.py"
+  ],
+  "success_rate": {
+    "backend": "100% (22/22 passed)",
+    "frontend": "100% — all 6 tabs functional, navigation correct, charts rendering"
+  },
+  "seed_data_creation": "None — used existing test data (1 expense ₹50 Groceries May 5 2026, 2 bank accounts ₹65000, 3 cash accounts ₹14950)",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Insights screen fully tested. analytics.tsx has 6 tabs all working. Backend: /api/insights/overview, /api/insights/calendar, /api/analytics/cashflow, /api/analytics/expense-breakdown all pass. Minor bug: /api/analytics/spending uses db.bills not db.expenses for budget_status spending amounts. Bills route still accessible (not tested as it's hidden from nav). The app uses react-native-gifted-charts for charts which render correctly in web view."
+}
