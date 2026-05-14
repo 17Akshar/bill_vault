@@ -1563,166 +1563,331 @@ const tr = StyleSheet.create({
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+// ── Dummy transactions keyed by day-of-month ────────────────────────────────
+type CalTxn = {
+  name:     string;
+  category: string;
+  amount:   number;
+  type:     'credit' | 'debit';
+  icon:     any;
+  color:    string;
+  time:     string;
+};
+
+const DUMMY_CAL_TXNS: Record<number, CalTxn[]> = {
+  1: [
+    { name: 'Salary',         category: 'Income',        amount: 85000, type: 'credit', icon: 'briefcase-outline',    color: GREEN,    time: '09:30 AM' },
+    { name: 'Rent',           category: 'Bills',         amount: 22000, type: 'debit',  icon: 'home-outline',         color: '#26C6DA', time: '10:15 AM' },
+  ],
+  3: [
+    { name: 'Swiggy',         category: 'Food',          amount:   650, type: 'debit',  icon: 'fast-food-outline',    color: '#FF6B6B', time: '01:42 PM' },
+    { name: 'Uber',           category: 'Transport',     amount:   280, type: 'debit',  icon: 'car-outline',          color: '#4DABF7', time: '07:20 PM' },
+  ],
+  5: [
+    { name: 'Amazon',         category: 'Shopping',      amount:  3200, type: 'debit',  icon: 'bag-handle-outline',   color: '#B197FC', time: '11:05 AM' },
+  ],
+  8: [
+    { name: 'Freelance',      category: 'Income',        amount: 18000, type: 'credit', icon: 'laptop-outline',       color: GREEN,    time: '04:11 PM' },
+    { name: 'Netflix',        category: 'Entertainment', amount:   499, type: 'debit',  icon: 'tv-outline',           color: '#E50914', time: '08:30 PM' },
+  ],
+  10: [
+    { name: 'Electricity',    category: 'Bills',         amount:  2900, type: 'debit',  icon: 'flash-outline',        color: '#FFB300', time: '10:20 AM' },
+    { name: 'Internet',       category: 'Bills',         amount:   999, type: 'debit',  icon: 'wifi-outline',         color: '#26C6DA', time: '10:25 AM' },
+  ],
+  12: [
+    { name: 'Big Bazaar',     category: 'Shopping',      amount:  4200, type: 'debit',  icon: 'cart-outline',         color: '#B197FC', time: '06:45 PM' },
+  ],
+  14: [
+    { name: 'Refund - Myntra', category: 'Shopping',     amount:  1450, type: 'credit', icon: 'refresh-outline',      color: GREEN,    time: '11:00 AM' },
+    { name: 'Zomato',         category: 'Food',          amount:   820, type: 'debit',  icon: 'fast-food-outline',    color: '#FF6B6B', time: '09:15 PM' },
+  ],
+  17: [
+    { name: 'Petrol',         category: 'Transport',     amount:  2500, type: 'debit',  icon: 'car-outline',          color: '#4DABF7', time: '08:30 AM' },
+    { name: 'Coffee',         category: 'Food',          amount:   320, type: 'debit',  icon: 'cafe-outline',         color: '#FF6B6B', time: '10:45 AM' },
+  ],
+  20: [
+    { name: 'BookMyShow',     category: 'Entertainment', amount:   850, type: 'debit',  icon: 'film-outline',         color: '#FFB300', time: '07:00 PM' },
+  ],
+  22: [
+    { name: 'Dividend',       category: 'Income',        amount:  3200, type: 'credit', icon: 'trending-up-outline',  color: GREEN,    time: '02:15 PM' },
+  ],
+  25: [
+    { name: 'Gym Subscription', category: 'Health',      amount:  1500, type: 'debit',  icon: 'barbell-outline',      color: '#26C6DA', time: '07:30 AM' },
+    { name: 'Pharmacy',       category: 'Health',        amount:   680, type: 'debit',  icon: 'medkit-outline',       color: '#FF6B6B', time: '06:20 PM' },
+  ],
+  28: [
+    { name: 'Mom (Gift)',     category: 'Family',        amount:  5000, type: 'debit',  icon: 'gift-outline',         color: PURPLE,   time: '11:30 AM' },
+  ],
+  30: [
+    { name: 'Mutual Fund SIP', category: 'Investment',   amount:  10000, type: 'debit', icon: 'trending-up-outline',  color: PURPLE,   time: '09:00 AM' },
+  ],
+};
+
 function CalendarTab({ colors, isDark }: any) {
   const [calDate, setCalDate] = useState(new Date());
-  const [data, setData]       = useState<any>(null);
-  const [loading, setLoad]    = useState(true);
-  const [selectedDay, setSelDay] = useState<number | null>(null);
+  const [selectedDay, setSelDay] = useState<number | null>(new Date().getDate());
 
-  const load = useCallback(async () => {
-    setLoad(true);
-    try {
-      const r = await api.get('/insights/calendar', { params: { month: calDate.getMonth() + 1, year: calDate.getFullYear() } });
-      setData(r.data);
-    } catch { setData(null); }
-    finally { setLoad(false); }
-  }, [calDate]);
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
 
-  useEffect(() => { load(); }, [load]);
-
-  const daily: Record<string, any> = data?.daily_data || {};
-  const txns: any[]               = data?.transactions || [];
-
-  // Build calendar grid
-  const year  = calDate.getFullYear();
-  const month = calDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
+  // Build calendar grid (using current viewed month)
+  const year        = calDate.getFullYear();
+  const month       = calDate.getMonth();
+  const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Max expense in month (for color intensity)
-  const maxExp = Math.max(...Object.values(daily).map((d: any) => d.expense || 0), 1);
+  const today    = new Date();
+  const isCurMon = today.getFullYear() === year && today.getMonth() === month;
 
-  const filteredTxns = selectedDay
-    ? txns.filter((t: any) => {
-        try { return new Date(t.date).getDate() === selectedDay; }
-        catch { return false; }
-      })
-    : txns.slice(0, 30);
+  // Compute day-level totals from dummy data
+  const dayTotals: Record<number, { credit: number; debit: number }> = {};
+  Object.entries(DUMMY_CAL_TXNS).forEach(([d, list]) => {
+    const dn = Number(d);
+    const credit = list.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
+    const debit  = list.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
+    dayTotals[dn] = { credit, debit };
+  });
+
+  // Currently selected day's transactions
+  const dayTxns = selectedDay ? (DUMMY_CAL_TXNS[selectedDay] || []) : [];
+  const dayCredit = dayTxns.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
+  const dayDebit  = dayTxns.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
-      {/* Month navigator */}
-      <View style={[st.calHeader, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => setCalDate(subMonths(calDate, 1))} testID="cal-prev">
-          <Ionicons name="chevron-back" size={22} color={PURPLE} />
-        </TouchableOpacity>
-        <Text style={[st.calMonthTitle, { color: colors.text }]}>
-          {MONTHS_SHORT[month]} {year}
-        </Text>
-        <TouchableOpacity onPress={() => setCalDate(addMonths(calDate, 1))} testID="cal-next">
-          <Ionicons name="chevron-forward" size={22} color={PURPLE} />
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
+        {/* ── Month navigator ─────────────────────────────────── */}
+        <View style={[cl.monthNav, { backgroundColor: CARD_BG }]} testID="calendar-month-nav">
+          <TouchableOpacity onPress={() => { setCalDate(subMonths(calDate, 1)); setSelDay(null); }} style={cl.navBtn} testID="calendar-prev-month">
+            <Ionicons name="chevron-back" size={20} color={PURPLE} />
+          </TouchableOpacity>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={[cl.monthTitle, { color: colors.text }]}>{MONTHS_SHORT[month]} {year}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+              {Object.values(DUMMY_CAL_TXNS).flat().length} transactions
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => { setCalDate(addMonths(calDate, 1)); setSelDay(null); }} style={cl.navBtn} testID="calendar-next-month">
+            <Ionicons name="chevron-forward" size={20} color={PURPLE} />
+          </TouchableOpacity>
+        </View>
 
-      {loading ? <LoadingBox colors={colors} /> : (
-        <>
-          {/* Day headers */}
-          <View style={st.calDayHeaders}>
+        {/* ── Calendar grid ──────────────────────────────────── */}
+        <View style={[cl.gridCard, { backgroundColor: CARD_BG }]} testID="calendar-grid">
+          {/* Day header */}
+          <View style={cl.dayHeaderRow}>
             {DAYS.map(d => (
-              <Text key={d} style={[st.calDayHeader, { color: colors.textSecondary }]}>{d}</Text>
+              <Text key={d} style={[cl.dayHeader, { color: colors.textSecondary }]}>{d}</Text>
             ))}
           </View>
 
-          {/* Calendar grid */}
-          <View style={st.calGrid}>
-            {/* Empty cells */}
-            {Array.from({ length: firstDay }).map((_, i) => <View key={`e${i}`} style={st.calCell} />)}
-            {/* Day cells */}
+          {/* Day cells */}
+          <View style={cl.grid}>
+            {Array.from({ length: firstDay }).map((_, i) => (
+              <View key={`e${i}`} style={cl.cell} />
+            ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day     = i + 1;
-              const dayData = daily[String(day)];
-              const hasInc  = dayData?.income > 0;
-              const hasExp  = dayData?.expense > 0;
-              const expInt  = dayData ? Math.min((dayData.expense / maxExp) * 0.7 + 0.1, 0.8) : 0;
-              const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year;
+              const day        = i + 1;
+              const totals     = dayTotals[day];
+              const hasCredit  = (totals?.credit || 0) > 0;
+              const hasDebit   = (totals?.debit  || 0) > 0;
+              const isToday    = isCurMon && today.getDate() === day;
               const isSelected = selectedDay === day;
 
               return (
                 <TouchableOpacity
                   key={day}
-                  style={[st.calCell, isSelected && { backgroundColor: PURPLE + '30', borderRadius: 8 }]}
-                  onPress={() => setSelDay(selectedDay === day ? null : day)}
-                  testID={`cal-day-${day}`}
+                  onPress={() => setSelDay(isSelected ? null : day)}
+                  style={cl.cell}
+                  activeOpacity={0.7}
+                  testID={`calendar-day-${day}`}
                 >
-                  <Text style={[
-                    st.calDayNum,
-                    { color: isToday ? PURPLE : colors.text },
-                    isToday && { fontWeight: '800' },
-                  ]}>{day}</Text>
-                  {/* Expense heat dot */}
-                  {hasExp && (
-                    <View style={[st.calDot, { backgroundColor: `rgba(255,82,82,${expInt})` }]} />
-                  )}
-                  {/* Income dot */}
-                  {hasInc && !hasExp && (
-                    <View style={[st.calDot, { backgroundColor: GREEN + '80' }]} />
-                  )}
-                  {/* Tiny amount */}
-                  {dayData?.expense > 0 && (
-                    <Text style={[st.calAmt, { color: RED }]} numberOfLines={1}>
-                      {formatINR(dayData.expense, false)}
+                  <View
+                    style={[
+                      cl.cellInner,
+                      isSelected && { backgroundColor: PURPLE },
+                      !isSelected && isToday && { borderWidth: 1.5, borderColor: PURPLE },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        cl.dayNum,
+                        { color: isSelected ? '#FFF' : (isToday ? PURPLE : colors.text) },
+                        (isSelected || isToday) && { fontWeight: '800' },
+                      ]}
+                    >
+                      {day}
                     </Text>
-                  )}
+
+                    {/* Indicators */}
+                    {(hasCredit || hasDebit) && (
+                      <View style={cl.dotRow}>
+                        {hasCredit && (
+                          <View style={[cl.dot, { backgroundColor: isSelected ? '#FFF' : GREEN }]} />
+                        )}
+                        {hasDebit && (
+                          <View style={[cl.dot, { backgroundColor: isSelected ? '#FFF' : RED }]} />
+                        )}
+                      </View>
+                    )}
+                  </View>
                 </TouchableOpacity>
               );
             })}
           </View>
 
           {/* Legend */}
-          <View style={[st.calLegend]}>
+          <View style={cl.legendRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: RED + 'AA' }} />
-              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Expense</Text>
+              <View style={[cl.dot, { backgroundColor: GREEN }]} />
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Credit</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN + '80' }} />
-              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Income (no expense)</Text>
+              <View style={[cl.dot, { backgroundColor: RED }]} />
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Debit</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PURPLE + '80' }} />
+              <View style={{ width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: PURPLE }} />
               <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Today</Text>
             </View>
           </View>
+        </View>
 
-          {/* Transaction list */}
-          <SectionHeader
-            title={selectedDay ? `${MONTHS_SHORT[month]} ${selectedDay} Transactions` : 'Recent Transactions'}
-            colors={colors}
-            action={selectedDay ? 'Clear' : undefined}
-            onAction={() => setSelDay(null)}
-          />
-          {filteredTxns.length === 0 ? (
-            <View style={st.emptyBox}>
-              <Text style={[st.emptyText, { color: colors.textSecondary }]}>No transactions{selectedDay ? ` on ${MONTHS_SHORT[month]} ${selectedDay}` : ''}</Text>
-            </View>
-          ) : (
-            <View style={[st.card, { backgroundColor: colors.card }]}>
-              {filteredTxns.map((t: any, i: number) => (
-                <View key={i} style={[st.calTxnRow, i < filteredTxns.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                  <View style={[st.calTxnIcon, { backgroundColor: t.type === 'income' ? GREEN + '22' : RED + '22' }]}>
-                    <Ionicons name={t.type === 'income' ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'} size={18} color={t.type === 'income' ? GREEN : RED} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[st.calTxnDesc, { color: colors.text }]} numberOfLines={1}>{t.description}</Text>
-                    <Text style={[st.calTxnCat, { color: colors.textSecondary }]}>{t.category}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[st.calTxnAmt, { color: t.type === 'income' ? GREEN : RED }]}>
-                      {t.type === 'income' ? '+' : '-'}{formatINR(t.amount)}
-                    </Text>
-                    <Text style={[{ color: colors.textSecondary, fontSize: 10 }]}>
-                      {(() => { try { return format(new Date(t.date), 'd MMM'); } catch { return ''; } })()}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+        {/* ── Daily summary header ───────────────────────────── */}
+        <View style={cl.summaryHead} testID="calendar-day-summary">
+          <View>
+            <Text style={[cl.summaryTitle, { color: colors.text }]}>
+              {selectedDay ? `${MONTHS_SHORT[month]} ${selectedDay}, ${year}` : 'Pick a day'}
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+              {dayTxns.length} transaction{dayTxns.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          {dayTxns.length > 0 && (
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: GREEN, fontSize: 12, fontWeight: '700' }}>+{formatINR(dayCredit)}</Text>
+              <Text style={{ color: RED,   fontSize: 12, fontWeight: '700', marginTop: 2 }}>-{formatINR(dayDebit)}</Text>
             </View>
           )}
-        </>
-      )}
-    </ScrollView>
+        </View>
+
+        {/* ── Transactions list ──────────────────────────────── */}
+        {dayTxns.length === 0 ? (
+          <View style={[cl.emptyCard, { backgroundColor: CARD_BG }]}>
+            <Ionicons name="calendar-clear-outline" size={36} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, marginTop: 10, fontSize: 13 }}>
+              No transactions on this day
+            </Text>
+            <Text style={{ color: colors.textSecondary, marginTop: 4, fontSize: 11 }}>
+              Tap "+" below to add one
+            </Text>
+          </View>
+        ) : (
+          <View style={[cl.txnCard, { backgroundColor: CARD_BG }]} testID="calendar-txn-list">
+            {dayTxns.map((t, i) => {
+              const credit = t.type === 'credit';
+              return (
+                <View
+                  key={i}
+                  style={[
+                    cl.txnRow,
+                    i < dayTxns.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
+                    },
+                  ]}
+                  testID={`calendar-txn-${i}`}
+                >
+                  {/* Category icon */}
+                  <View style={[cl.txnIcon, { backgroundColor: t.color + '22' }]}>
+                    <Ionicons name={t.icon} size={18} color={t.color} />
+                  </View>
+
+                  {/* Name + category + time */}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[cl.txnName, { color: colors.text }]} numberOfLines={1}>{t.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <Text style={[cl.txnCat, { color: colors.textSecondary }]}>{t.category}</Text>
+                      <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textSecondary }} />
+                      <Text style={[cl.txnCat, { color: colors.textSecondary }]}>{t.time}</Text>
+                    </View>
+                  </View>
+
+                  {/* Amount + credit/debit indicator */}
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[cl.txnAmount, { color: credit ? GREEN : RED }]}>
+                      {credit ? '+' : '-'}{formatINR(t.amount)}
+                    </Text>
+                    <View style={[cl.txnBadge, { backgroundColor: credit ? GREEN + '1E' : RED + '1E' }]}>
+                      <Ionicons
+                        name={credit ? 'arrow-down' : 'arrow-up'}
+                        size={9}
+                        color={credit ? GREEN : RED}
+                      />
+                      <Text style={{ color: credit ? GREEN : RED, fontSize: 9, fontWeight: '800' }}>
+                        {credit ? 'CREDIT' : 'DEBIT'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* ── Floating Add button (FAB) ──────────────────────────── */}
+      <TouchableOpacity
+        style={cl.fabWrap}
+        activeOpacity={0.85}
+        testID="calendar-add-fab"
+      >
+        <LinearGradient
+          colors={[PURPLE_DARK, PURPLE_LIGHT]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={cl.fab}
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 }
+
+// ─── Calendar-specific styles ──────────────────────────────────────────────────
+const cl = StyleSheet.create({
+  monthNav:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, marginBottom: 12 },
+  navBtn:       { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  monthTitle:   { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+
+  gridCard:     { borderRadius: 16, padding: 12, marginBottom: 14 },
+  dayHeaderRow: { flexDirection: 'row', marginBottom: 8 },
+  dayHeader:    { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
+  grid:         { flexDirection: 'row', flexWrap: 'wrap' },
+  cell:         { width: `${100 / 7}%`, aspectRatio: 1, padding: 3 },
+  cellInner:    { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, gap: 3 },
+  dayNum:       { fontSize: 13, fontWeight: '600' },
+  dotRow:       { flexDirection: 'row', gap: 3 },
+  dot:          { width: 5, height: 5, borderRadius: 2.5 },
+
+  legendRow:    { flexDirection: 'row', gap: 18, justifyContent: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
+
+  summaryHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 4, marginBottom: 10 },
+  summaryTitle: { fontSize: 15, fontWeight: '700' },
+
+  emptyCard:    { borderRadius: 14, padding: 28, alignItems: 'center' },
+  txnCard:      { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 4, marginBottom: 14 },
+
+  txnRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  txnIcon:      { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  txnName:      { fontSize: 13, fontWeight: '700' },
+  txnCat:       { fontSize: 11 },
+  txnAmount:    { fontSize: 14, fontWeight: '800', letterSpacing: -0.2 },
+  txnBadge:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
+
+  fabWrap:      { position: 'absolute', right: 18, bottom: 24, shadowColor: PURPLE, shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+  fab:          { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN INSIGHTS SCREEN

@@ -26,14 +26,15 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 `loans/[id].tsx`: hero card, 3 tabs (Overview / EMI Schedule / Prepayments), amortization modal (paginated), Record EMI Payment modal, Add Prepayment modal.
 
 ### Session 18 — Insights UI Redesign (2026-05-14)
-**All Insights tabs (Overview, Cash Flow, Spending, Budget, Trends) redesigned with dummy data per reference design**
+**Every Insights tab (Overview, Cash Flow, Spending, Budget, Trends, Calendar) redesigned with dummy data per reference design**
 - `OverviewTab` now renders: month navigator → This Month Overview card (3-column Income/Expenses/Savings + savings rate pill) → Net Cash Flow card (big value + delta + sparkline) → Quick Insights list (3 rows, icon-tinted) → Accounts Summary (Bank / Cash & Wallets / UPI / Overdraft)
 - `CashFlowTab` rebuilt: segmented Period Tabs (This Month / This Quarter / This Year) → Net Cash Flow gradient hero (value + growth % + white sparkline) → Total Inflow/Outflow row → Cash In vs Cash Out stacked bar → Monthly Cash Flow Trend paired bar chart → Account-wise Cash Flow list (HDFC, ICICI, Wallets, UPI). "View Details" CTAs on every section.
 - `SpendingTab` rebuilt: segmented Period Tabs → Spending Summary card (purple→pink gradient hero + Avg/Day, Txns, vs-Last stat strip) → 6-slice donut with center "Spent" label and 2-col legend → Spending by Category list (Food / Transport / Shopping / Entertainment / Bills / Others) with progress bars → Top Expenses list (Amazon, Swiggy, Uber, Netflix, Electricity) with rank badges. "View All" toggles expand/collapse.
 - `BudgetTab` rebuilt: segmented Period Tabs → Budget Summary hero (status-aware purple/red gradient, total budget, On Track/Over Budget badge, days-left, white progress bar with % used + remaining/over) → Total Spent / Remaining stat strip → Over Budget callout card (red-bordered, badge count, per-cat over-by ₹ & %) → Budget by Category list (6 cats with budget/spent, color-coded progress bar (green/orange/red), and "₹X left" or "Over by ₹X" sub-line). "View All" toggle expand/collapse.
 - `TrendsTab` rebuilt: segmented Period Tabs (This Month / Last 6 Months / This Year) → 3 trend cards (Income / Expense / Investment), each card has tinted accent icon + title + "View All" CTA, big colored total, delta pill (with inverse semantics for expense), and an animated area-line chart. Period switch rewires all 3 cards.
+- `CalendarTab` rebuilt: month-navigator card (with prev/next + total-txns subtitle) → 7×N calendar grid with green/red dots per day (credit/debit), selected-day purple pill + today purple-border, legend → Daily summary header (title + txn count + day's credit/debit totals) → Transactions list per selected day (icon-tinted, name, category · time, amount, CREDIT/DEBIT badge) → empty state when no txns → **floating gradient FAB "+"** for quick-add (UI only).
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
-- Constraint honoured throughout: UI-only, dummy data, no new backend logic.
+- Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
 ### Session 17 — Insights Module (2026-05-14)
 **6-tab Insights screen replacing placeholder analytics tab**
