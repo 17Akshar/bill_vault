@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import api from '../../utils/api';
@@ -16,13 +17,16 @@ const { width: SW } = Dimensions.get('window');
 const CHART_W = SW - 64;
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
-const GREEN  = '#22C55E';
-const RED    = '#FF5252';
-const PURPLE = '#7C4DFF';
-const ORANGE = '#FF9100';
-const YELLOW = '#FFB300';
-const TEAL   = '#26C6DA';
-const PINK   = '#E91E8C';
+const GREEN        = '#51DB7A';
+const RED          = '#FF4A4A';
+const PURPLE       = '#8E2DE2';
+const PURPLE_DARK  = '#4A00E0';
+const PURPLE_LIGHT = '#8E2DE2';
+const ORANGE       = '#FF9100';
+const YELLOW       = '#FFB300';
+const TEAL         = '#26C6DA';
+const PINK         = '#E91E8C';
+const GREY         = '#8B8B8B';
 
 const CAT_COLORS = [PURPLE, TEAL, GREEN, ORANGE, YELLOW, PINK, RED, '#448AFF', '#66BB6A'];
 const getCatColor = (idx: number) => CAT_COLORS[idx % CAT_COLORS.length];
@@ -119,106 +123,259 @@ function EmptyBox({ icon, text, colors }: any) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// OVERVIEW TAB
+// DUMMY DATA — Overview Tab
+// ══════════════════════════════════════════════════════════════════════════════
+const DUMMY_OVERVIEW = {
+  label:    'May 2026',
+  income:   { total: 125000, vs_last_month: 15.2 },
+  expenses: { total: 75000,  vs_last_month: -5.3  },
+  savings:  { total: 50000,  rate: 40.0, vs_last_month: 20.5 },
+  net_cash_flow:     50000,
+  net_cash_flow_pct: 20.0,
+  sparkline: [22000, 35000, 28000, 42000, 47000, 50000],
+  quick_insights: [
+    { icon: 'flame-outline',         color: PURPLE,  title: 'Spending Alert', text: 'You spent 20% more on Food this month.' },
+    { icon: 'trending-up-outline',   color: GREEN,   title: 'Savings Rate',   text: 'Your savings rate is 40% this month — excellent!' },
+    { icon: 'bulb-outline',          color: YELLOW,  title: 'Opportunity',    text: 'You can save ₹20,000 with better budget planning.' },
+  ],
+  accounts: [
+    { label: 'Bank Accounts',           count: 2, balance:  332600, icon: 'business-outline',       color: PURPLE },
+    { label: 'Cash & Wallets',          count: 3, balance:   48600, icon: 'wallet-outline',          color: GREEN  },
+    { label: 'UPI Accounts',            count: 2, balance:   24800, icon: 'phone-portrait-outline',  color: PURPLE },
+    { label: 'Accounts with Overdraft', count: 1, balance:  -12600, icon: 'card-outline',            color: RED    },
+  ],
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OVERVIEW TAB  (UI-only with dummy data)
 // ══════════════════════════════════════════════════════════════════════════════
 function OverviewTab({ colors, isDark, date, onDateChange }: any) {
-  const [data, setData]     = useState<any>(null);
-  const [loading, setLoad]  = useState(true);
-
-  const load = useCallback(async () => {
-    setLoad(true);
-    try {
-      const r = await api.get('/insights/overview', { params: { month: date.getMonth() + 1, year: date.getFullYear() } });
-      setData(r.data);
-    } catch { setData(null); }
-    finally { setLoad(false); }
-  }, [date]);
-
-  useEffect(() => { load(); }, [load]);
-
-  if (loading) return <LoadingBox colors={colors} />;
-  if (!data)   return <EmptyBox icon="stats-chart-outline" text="No data for this period" colors={colors} />;
-
-  const { income, expenses, savings, accounts_summary, quick_insights } = data;
-  const totalBalance = data.total_balance || 0;
+  const d  = DUMMY_OVERVIEW;
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+  const SECT_BG = isDark ? '#141424' : colors.background;
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-      {/* Month navigator */}
-      <MonthNav date={date} onChange={onDateChange} colors={colors} />
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 32 }}
+    >
+      {/* ── Month navigator ── */}
+      <View style={ov.monthRow}>
+        <TouchableOpacity onPress={() => onDateChange(subMonths(date, 1))} style={ov.monthBtn} testID="month-prev">
+          <Ionicons name="chevron-back" size={20} color={GREY} />
+        </TouchableOpacity>
+        <Text style={[ov.monthLabel, { color: colors.text }]}>{d.label}</Text>
+        <TouchableOpacity onPress={() => onDateChange(addMonths(date, 1))} style={ov.monthBtn} testID="month-next">
+          <Ionicons name="chevron-forward" size={20} color={GREY} />
+        </TouchableOpacity>
+      </View>
 
-      {/* This Month Overview card */}
-      <View style={[st.overviewCard, { backgroundColor: isDark ? '#1A1040' : colors.card }]}>
-        <View style={st.overviewCardHead}>
-          <Text style={[st.overviewCardTitle, { color: 'rgba(255,255,255,0.8)' }]}>This Month Overview</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{data.label}</Text>
+      {/* ── This Month Overview Card ── */}
+      <View style={[ov.card, { backgroundColor: CARD_BG }]}>
+        {/* Card header */}
+        <View style={ov.cardHead}>
+          <Text style={[ov.cardTitle, { color: colors.text }]}>This Month Overview</Text>
+          <Text style={[ov.cardSub, { color: GREY }]}>{d.label}</Text>
         </View>
-        <View style={st.overviewMetrics}>
+
+        {/* Divider */}
+        <View style={[ov.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]} />
+
+        {/* 3 metric columns */}
+        <View style={ov.metricsRow}>
           {[
-            { label: 'Income',   value: income.total,   color: GREEN, delta: income.vs_last_month },
-            { label: 'Expenses', value: expenses.total, color: RED,   delta: expenses.vs_last_month, inverse: true },
-            { label: 'Savings',  value: savings.total,  color: savings.total >= 0 ? GREEN : RED, delta: savings.vs_last_month },
-          ].map(m => (
-            <View key={m.label} style={st.overviewMetric}>
-              <Text style={[st.overviewMetricLabel, { color: 'rgba(255,255,255,0.6)' }]}>{m.label}</Text>
-              <Text style={[st.overviewMetricValue, { color: m.color }]}>{formatINR(m.value)}</Text>
-              <Delta value={m.delta} inverse={m.inverse} />
+            { label: 'Income',   value: d.income.total,   color: GREEN,  delta: d.income.vs_last_month  },
+            { label: 'Expenses', value: d.expenses.total, color: RED,    delta: d.expenses.vs_last_month, inv: true },
+            { label: 'Savings',  value: d.savings.total,  color: GREEN,  delta: d.savings.vs_last_month },
+          ].map((m, i) => (
+            <View key={m.label} style={[ov.metricCol, i < 2 && { borderRightWidth: 1, borderRightColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}>
+              <Text style={[ov.metricLabel, { color: GREY }]}>{m.label}</Text>
+              <Text style={[ov.metricValue, { color: m.color }]}>{formatINR(m.value)}</Text>
+              <View style={ov.deltaRow}>
+                <Ionicons
+                  name={m.delta > 0 ? 'arrow-up' : m.delta < 0 ? 'arrow-down' : 'remove'}
+                  size={10}
+                  color={m.inv ? (m.delta < 0 ? GREEN : RED) : (m.delta >= 0 ? GREEN : RED)}
+                />
+                <Text style={[ov.deltaText, {
+                  color: m.inv ? (m.delta < 0 ? GREEN : RED) : (m.delta >= 0 ? GREEN : RED)
+                }]}>
+                  {Math.abs(m.delta).toFixed(1)}%
+                </Text>
+              </View>
             </View>
           ))}
         </View>
-        {/* Savings rate pill */}
-        <View style={[st.savingsRatePill, { backgroundColor: GREEN + '28' }]}>
-          <Text style={{ color: GREEN, fontSize: 12, fontWeight: '700' }}>
-            Savings Rate: {savings.rate}%
-          </Text>
+
+        {/* Savings rate badge */}
+        <View style={ov.rateRow}>
+          <View style={[ov.rateBadge, { backgroundColor: GREEN + '20' }]}>
+            <Ionicons name="leaf-outline" size={12} color={GREEN} />
+            <Text style={[ov.rateText, { color: GREEN }]}>Savings Rate: {d.savings.rate}%</Text>
+          </View>
         </View>
       </View>
 
-      {/* Quick Insights */}
-      {quick_insights?.length > 0 && (
-        <>
-          <SectionHeader title="Quick Insights" colors={colors} />
-          <View style={[st.card, { backgroundColor: colors.card }]}>
-            {quick_insights.map((ins: any, i: number) => (
-              <View key={i} style={[st.insightRow, i < quick_insights.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <View style={[st.insightIcon, { backgroundColor: ins.color + '22' }]}>
-                  <Ionicons name={ins.icon as any} size={18} color={ins.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[st.insightTitle, { color: colors.text }]}>{ins.title}</Text>
-                  <Text style={[st.insightText, { color: colors.textSecondary }]}>{ins.text}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
+      {/* ── Net Cash Flow Card ── */}
+      <View style={[ov.card, { backgroundColor: CARD_BG }]}>
+        <View style={ov.cardHead}>
+          <Text style={[ov.cardTitle, { color: colors.text }]}>Net Cash Flow</Text>
+        </View>
+        <Text style={[ov.cashSubtitle, { color: GREY }]}>This Month's Flow</Text>
 
-      {/* Accounts Summary */}
-      {accounts_summary?.length > 0 && (
-        <>
-          <SectionHeader title="Accounts Summary" colors={colors} />
-          <View style={[st.card, { backgroundColor: colors.card }]}>
-            <View style={[st.accTotalRow, { borderBottomColor: colors.border }]}>
-              <Text style={[st.accTotalLabel, { color: colors.textSecondary }]}>Total Balance</Text>
-              <Text style={[st.accTotalValue, { color: PURPLE }]}>{formatINR(totalBalance)}</Text>
+        {/* Big value */}
+        <Text style={[ov.cashValue, { color: GREEN }]}>{formatINR(d.net_cash_flow)}</Text>
+
+        {/* Delta indicator */}
+        <View style={ov.cashDelta}>
+          <Ionicons name="arrow-up" size={13} color={GREEN} />
+          <Text style={[ov.cashDeltaText, { color: GREEN }]}>
+            {d.net_cash_flow_pct}% vs last month
+          </Text>
+        </View>
+
+        {/* Sparkline */}
+        <View style={{ marginTop: 8 }}>
+          <LineChart
+            data={d.sparkline.map(v => ({ value: v }))}
+            width={CHART_W + 12}
+            height={72}
+            hideDataPoints
+            color={GREEN}
+            thickness={2.5}
+            curved
+            hideRules
+            hideYAxisText
+            hideAxesAndRules
+            areaChart
+            startFillColor={GREEN}
+            endFillColor="transparent"
+            startOpacity={0.35}
+            endOpacity={0}
+            initialSpacing={0}
+            endSpacing={0}
+          />
+        </View>
+      </View>
+
+      {/* ── Quick Insights ── */}
+      <View style={[ov.card, { backgroundColor: CARD_BG }]}>
+        <View style={ov.sectionHead}>
+          <Text style={[ov.sectionTitle, { color: colors.text }]}>Quick Insights</Text>
+          <TouchableOpacity testID="quick-insights-view-all">
+            <Text style={[ov.viewAll, { color: PURPLE }]}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {d.quick_insights.map((ins, i) => (
+          <View
+            key={i}
+            style={[
+              ov.insightRow,
+              i < d.quick_insights.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border },
+            ]}
+          >
+            {/* Icon */}
+            <View style={[ov.insightIconWrap, { backgroundColor: ins.color + '22' }]}>
+              <Ionicons name={ins.icon as any} size={18} color={ins.color} />
             </View>
-            {accounts_summary.map((acc: any, i: number) => (
-              <View key={i} style={[st.accRow, i < accounts_summary.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <View style={[st.accIcon, { backgroundColor: PURPLE + '22' }]}>
-                  <Ionicons name="wallet-outline" size={16} color={PURPLE} />
-                </View>
-                <Text style={[st.accLabel, { color: colors.text }]}>{acc.label}</Text>
-                <Text style={[st.accCount, { color: colors.textSecondary }]}>{acc.count} acc</Text>
-                <Text style={[st.accBalance, { color: colors.text }]}>{formatINR(acc.balance)}</Text>
-              </View>
-            ))}
+            {/* Text */}
+            <View style={{ flex: 1 }}>
+              <Text style={[ov.insightTitle, { color: colors.text }]}>{ins.title}</Text>
+              <Text style={[ov.insightBody, { color: GREY }]} numberOfLines={2}>{ins.text}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={GREY} />
           </View>
-        </>
-      )}
+        ))}
+      </View>
+
+      {/* ── Accounts Summary ── */}
+      <View style={[ov.card, { backgroundColor: CARD_BG }]}>
+        <View style={ov.sectionHead}>
+          <Text style={[ov.sectionTitle, { color: colors.text }]}>Accounts Summary</Text>
+          <TouchableOpacity testID="accounts-view-all">
+            <Text style={[ov.viewAll, { color: PURPLE }]}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {d.accounts.map((acc, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[
+              ov.accRow,
+              i < d.accounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border },
+            ]}
+            testID={`account-row-${i}`}
+            activeOpacity={0.7}
+          >
+            {/* Icon */}
+            <View style={[ov.accIconWrap, { backgroundColor: acc.color + '1E' }]}>
+              <Ionicons name={acc.icon as any} size={20} color={acc.color} />
+            </View>
+
+            {/* Name + count */}
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[ov.accName, { color: colors.text }]}>{acc.label}</Text>
+              <Text style={[ov.accCount, { color: GREY }]}>{acc.count} Account{acc.count !== 1 ? 's' : ''}</Text>
+            </View>
+
+            {/* Balance + arrow */}
+            <View style={ov.accRight}>
+              <Text style={[ov.accBalance, { color: acc.balance < 0 ? RED : colors.text }]}>
+                {acc.balance < 0 ? '-' : ''}{formatINR(Math.abs(acc.balance))}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={GREY} style={{ marginLeft: 6 }} />
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
     </ScrollView>
   );
 }
+
+// ─── Overview-specific styles ──────────────────────────────────────────────────
+const ov = StyleSheet.create({
+  monthRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingHorizontal: 8 },
+  monthBtn:   { padding: 8 },
+  monthLabel: { fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
+
+  card:       { borderRadius: 16, padding: 18, marginBottom: 14, overflow: 'hidden' },
+  cardHead:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  cardTitle:  { fontSize: 16, fontWeight: '700' },
+  cardSub:    { fontSize: 12 },
+  divider:    { height: 1, marginBottom: 14 },
+
+  metricsRow: { flexDirection: 'row' },
+  metricCol:  { flex: 1, alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6 },
+  metricLabel:{ fontSize: 12, marginBottom: 6, fontWeight: '500' },
+  metricValue:{ fontSize: 18, fontWeight: '800', letterSpacing: -0.3, marginBottom: 6 },
+  deltaRow:   { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  deltaText:  { fontSize: 11, fontWeight: '700' },
+  rateRow:    { marginTop: 14, alignItems: 'flex-start' },
+  rateBadge:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  rateText:   { fontSize: 12, fontWeight: '700' },
+
+  cashSubtitle: { fontSize: 12, marginBottom: 6 },
+  cashValue:    { fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 },
+  cashDelta:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  cashDeltaText:{ fontSize: 13, fontWeight: '700' },
+
+  sectionHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle: { fontSize: 16, fontWeight: '700' },
+  viewAll:      { fontSize: 13, fontWeight: '600' },
+
+  insightRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  insightIconWrap:{ width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  insightTitle:   { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  insightBody:    { fontSize: 12, lineHeight: 17 },
+
+  accRow:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  accIconWrap:{ width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  accName:    { fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  accCount:   { fontSize: 12 },
+  accRight:   { flexDirection: 'row', alignItems: 'center' },
+  accBalance: { fontSize: 15, fontWeight: '700' },
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CASH FLOW TAB
@@ -949,25 +1106,33 @@ export default function InsightsScreen() {
       </View>
 
       {/* ── Tab row ── */}
-      <View style={[st.tabWrap, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <View style={[st.tabWrap, { backgroundColor: isDark ? '#111120' : colors.card, borderBottomColor: colors.border }]}>
         <ScrollView ref={tabScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.tabScroll}>
           {TABS.map((tab, i) => {
             const active = activeTab === i;
             return (
               <TouchableOpacity
                 key={tab.label}
-                style={[st.tabItem, active && { backgroundColor: PURPLE + '22' }]}
                 onPress={() => setActiveTab(i)}
+                style={st.tabTouch}
                 testID={`insights-tab-${tab.label.toLowerCase().replace(' ', '-')}`}
               >
-                <Ionicons
-                  name={(active ? tab.activeIcon : tab.icon) as any}
-                  size={16}
-                  color={active ? PURPLE : colors.textSecondary}
-                />
-                <Text style={[st.tabLabel, { color: active ? PURPLE : colors.textSecondary }]}>
-                  {tab.label}
-                </Text>
+                {active ? (
+                  <LinearGradient
+                    colors={[PURPLE_DARK, PURPLE_LIGHT]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={st.tabItemActive}
+                  >
+                    <Ionicons name={tab.activeIcon as any} size={15} color="#FFF" />
+                    <Text style={[st.tabLabel, { color: '#FFF' }]}>{tab.label}</Text>
+                  </LinearGradient>
+                ) : (
+                  <View style={st.tabItemInactive}>
+                    <Ionicons name={tab.icon as any} size={15} color={GREY} />
+                    <Text style={[st.tabLabel, { color: GREY }]}>{tab.label}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -992,10 +1157,12 @@ const st = StyleSheet.create({
   headerBtn:   { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
 
   // Tabs
-  tabWrap:   { borderBottomWidth: 1 },
-  tabScroll: { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
-  tabItem:   { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-  tabLabel:  { fontSize: 12, fontWeight: '600' },
+  tabWrap:        { borderBottomWidth: 1 },
+  tabScroll:      { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
+  tabTouch:       { },
+  tabItemActive:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
+  tabItemInactive:{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 22 },
+  tabLabel:       { fontSize: 12, fontWeight: '600' },
 
   // Common
   card:        { borderRadius: 14, padding: 14, marginBottom: 14, overflow: 'hidden' },
