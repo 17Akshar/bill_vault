@@ -26,9 +26,10 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 `loans/[id].tsx`: hero card, 3 tabs (Overview / EMI Schedule / Prepayments), amortization modal (paginated), Record EMI Payment modal, Add Prepayment modal.
 
 ### Session 18 — Insights UI Redesign (2026-05-14)
-**Overview, Cash Flow & Trends tabs redesigned with dummy data per reference design**
+**Overview, Cash Flow, Spending & Trends tabs redesigned with dummy data per reference design**
 - `OverviewTab` now renders: month navigator → This Month Overview card (3-column Income/Expenses/Savings + savings rate pill) → Net Cash Flow card (big value + delta + sparkline) → Quick Insights list (3 rows, icon-tinted) → Accounts Summary (Bank / Cash & Wallets / UPI / Overdraft)
 - `CashFlowTab` rebuilt: segmented Period Tabs (This Month / This Quarter / This Year) → Net Cash Flow gradient hero (value + growth % + white sparkline) → Total Inflow/Outflow row → Cash In vs Cash Out stacked bar → Monthly Cash Flow Trend paired bar chart → Account-wise Cash Flow list (HDFC, ICICI, Wallets, UPI). "View Details" CTAs on every section.
+- `SpendingTab` rebuilt: segmented Period Tabs → Spending Summary card (purple→pink gradient hero + Avg/Day, Txns, vs-Last stat strip) → 6-slice donut with center "Spent" label and 2-col legend → Spending by Category list (Food / Transport / Shopping / Entertainment / Bills / Others) with progress bars → Top Expenses list (Amazon, Swiggy, Uber, Netflix, Electricity) with rank badges. "View All" toggles expand/collapse.
 - `TrendsTab` now includes new **Investment Returns** section: purple gradient Portfolio Value hero, 6-month value line chart, XIRR + Best Month stat row, By Asset Class breakdown (Mutual Funds, Stocks, Gold, Fixed Deposits) with per-asset gain & %.
 - Tab pill bar now uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Investment Returns renders independently of the cashflow API state (always visible).
