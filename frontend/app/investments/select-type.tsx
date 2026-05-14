@@ -194,13 +194,6 @@ const INVESTMENT_GROUPS = [
         icon: 'color-palette',
         iconColor: '#F59E0B',
       },
-      {
-        id: 'p2p_lending',
-        name: 'Peer to Peer Lending',
-        description: 'Faircent, LenDenClub, Liquiloans & other P2P platforms',
-        icon: 'people-circle',
-        iconColor: '#26C6A8',
-      },
     ],
   },
 ];
