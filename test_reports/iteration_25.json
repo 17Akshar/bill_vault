@@ -1,0 +1,57 @@
+{
+  "summary": "Income module testing (frontend + backend). BACKEND BLOCKED: Firebase Firestore quota STILL exhausted (429 RESOURCE_EXHAUSTED) — same root cause as iteration_24, has NOT auto-recovered. POST /api/auth/single-user returns HTTP 500, so all 14 pytest tests in the new test_income_module.py were SKIPPED at the auth fixture. FRONTEND RENDERED: Tested /income (Dashboard) and /income/add (Add form) on mobile viewport — both screens render the static UI shell correctly with all data-testids present, purple gradient theme applied, all 4 action shortcut cards (Add/Recurring/Sources/Analytics), all 8 INCOME_CATEGORIES chips with dynamic sub-category chips reactive to Salary selection (Base Salary/Bonus/Overtime/Arrears), Recurring toggle, sticky Save Income button. /income shows correct empty state ('No income this month' with CTA). Data-bound flows (POST/GET/PUT/DELETE income, balance adjustment, recurring labels filter, donut + recent list, analytics 6-month bar chart, sources progress bars, recurring next-due pills) could NOT be exercised because backend is down. The new pytest suite IS READY for one-button retest once quota resets at midnight America/Los_Angeles (in ~10 hours from test time).",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/auth/single-user (and every downstream /api/income, /api/accounts, /api/family-members, /api/analytics/income-breakdown call)",
+        "issue": "google.api_core.exceptions.ResourceExhausted: 429 Quota exceeded — Firestore Spark plan 50K reads/day quota burned. Identical incident as iteration_24. Confirmed via /var/log/supervisor/backend.err.log and direct curl to /api/auth/single-user returning HTTP 500. No backend endpoint can be exercised end-to-end.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "All income screens → backend data loads",
+        "issue": "Console shows 401s on /api/accounts and 500 on /api/auth/single-user. Frontend renders empty/default state gracefully (no crash) but no data-bound flow can be validated until quota resets. /income/add 'Deposit to Account' section correctly falls back to 'No accounts yet — create one to track income.'",
+        "affected_selectors": ["[data-testid=\"add-income-amount-input\"]", "[data-testid=\"income-hero\"]", "all /api/* network calls"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_income_module.py",
+    "/app/test_reports/pytest/income_results.xml"
+  ],
+  "action_items": [
+    "WAIT for Firestore quota reset (midnight America/Los_Angeles; ~10h from now at test time 13:58 PT) and re-run: pytest /app/backend/tests/test_income_module.py -v --junitxml=/app/test_reports/pytest/income_results.xml",
+    "STRONGLY upgrade Firebase project to Blaze (pay-as-you-go) — this is the 2nd consecutive iteration blocked by the same 50K-read/day cap. Iteration_24 already flagged this and it recurred.",
+    "Add per-request caching in /app/backend/insights/service.py fetch_income/fetch_expenses so a single page-load doesn't issue 30+ Firestore reads (see iteration_24 critical_code_review_comments).",
+    "After quota healthy: re-run playwright on /income → tap each of 4 action cards → /income/add fill+save → /income/analytics period tabs (month/quarter/year) → /income/sources progress bars → /income/recurring monthly-equivalent hero. Verify backend balance adjustment on POST/PUT/DELETE /api/income.",
+    "Regression check (after quota): Dashboard 'Income' quick action → /transactions/add?type=income still routes correctly; /transactions/add 'income' toggle still functional; Insights Trends tab Income Trend 'View All →' pushes to /income."
+  ],
+  "critical_code_review_comments": [
+    "/app/frontend/app/income/index.tsx (331 lines): well-structured, all data-testids in place. Minor: line 196 uses formatINR(total).replace('.00','') for donut center — works but a dedicated rounded-integer helper would be cleaner.",
+    "/app/frontend/app/income/add.tsx (391 lines): line 99 builds labels=['recurring','freq:<frequency>'] correctly matching backend IncomeCreate labels[] contract. line 112 sends labels:null when empty — backend will accept; OK. EDGE CASE: when editing an income that previously had labels and user toggles recurring OFF, the new payload sends labels:null which CORRECTLY clears the labels in PUT.",
+    "/app/frontend/app/income/add.tsx line 109: sends date as date.toISOString() (full ISO datetime). Verify backend IncomeCreate.date accepts ISO datetime vs date-only — could be a silent compatibility issue if backend strips time portion.",
+    "/app/frontend/app/income/index.tsx line 70: pctVsLast = Math.round(((total - prevTotal) / prevTotal) * 1000) / 10 — division by zero is guarded (prevTotal > 0 check) but the formatted display uses .toFixed(1) which is fine.",
+    "All 5 new income files use Promise.all for parallel fetches — good. Error handling uses empty-catch / fallback to empty arrays — acceptable for read-only screens but PUT/POST/DELETE paths DO surface backend errors via Alert.alert, good.",
+    "/app/backend/tests/test_income_module.py (NEW, 14 tests) covers full CRUD + balance-adjust deltas + label persistence + analytics/income-breakdown shape + supporting endpoints regression. Cleanup test_cleanup_test_income removes TEST_-prefixed rows. Ready to run.",
+    "RECURRING ISSUE (iteration_24 → iteration_25): Same Firestore quota exhaustion. The insights endpoints' un-cached repeated reads (cashflow/monthly-trend loops 6× per call) are almost certainly the root cause. Caching MUST be added before the next major test cycle or quota will keep blocking testing."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_income_module.py"
+  ],
+  "success_rate": {
+    "backend": "0% executed — 14/14 SKIPPED due to Firestore 429 at auth fixture (same as iteration_24)",
+    "frontend": "UI shell: 100% for /income and /income/add (rendered, all data-testids present, layouts correct, theme applied). Data-bound flows: 0% testable due to backend outage."
+  },
+  "test_credentials": "/app/memory/test_credentials.md present — uses POST /api/auth/single-user (no email/password). Currently returns 500.",
+  "seed_data_creation": "None — could not authenticate. test_income_module.py contains test_account fixture that will create a TEST_IncomeAcc bank account on first run (idempotent: reuses if already present) and self-clean test income rows via test_cleanup_test_income.",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "BACKEND: When Firestore quota resets (midnight PT), simply run `cd /app && python -m pytest backend/tests/test_income_module.py -v --junitxml=/app/test_reports/pytest/income_results.xml`. The 14 tests cover: 8 CRUD (create basic / create with recurring labels / list / month-year filter / date-range filter / get-by-id / update + balance delta / delete + balance reverse) + 2 analytics shape & total-match + 1 recurring labels persistence + 2 supporting endpoints (accounts, family-members) + 1 cleanup. The suite is idempotent and auto-creates the test_account fixture. FRONTEND: /income & /income/add UI shell already validated and rendering correctly with all data-testids (income-back, income-hero, income-empty, income-analytics-btn, income-fab, add-income-back, add-income-amount-hero, add-income-amount-input). After backend recovers: playwright-test the 3 still-unexplored screens (/income/analytics, /income/sources, /income/recurring), then exercise full Add → Save → list refresh → Edit → Delete flow, then click each of the 4 action shortcut cards on /income to verify routing, then verify analytics period tabs (month/quarter/year) refetch and aggregate, then verify Insights Trends 'View All →' on Income Trend card pushes to /income. REGRESSION: confirm Dashboard 'Income' quick-action still goes to /transactions/add?type=income and /transactions/add income toggle still works.",
+  "rca of the issue": "ROOT CAUSE: Firestore project bill-vault-a24ad on Spark (free) plan — 50K reads/day quota burned again, same as iteration_24. Iteration_24 already documented this and recommended Blaze upgrade + caching in insights/service.py — neither has been applied, so the quota burns again the next day. REPRO: curl -X POST https://cash-flow-hub-81.preview.emergentagent.com/api/auth/single-user → HTTP 500; backend.err.log shows google.api_core.exceptions.ResourceExhausted: 429 Quota exceeded raised from firebase_config.py:272 (run_query). MITIGATION (in order): (1) Wait for daily quota reset at midnight PT, (2) UPGRADE Firebase project to Blaze plan — this is now blocking 2 consecutive testing iterations, (3) ADD request-level memoization in insights/service.py fetch_income/fetch_expenses (cashflow/monthly-trend currently loops 6× sequential collection scans per request — biggest quota drainer), (4) consider an aggregate-cache collection updated on write so analytics reads are O(1) instead of O(n_rows)."
+}

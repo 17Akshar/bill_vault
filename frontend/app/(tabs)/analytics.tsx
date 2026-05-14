@@ -1099,8 +1099,8 @@ const bd = StyleSheet.create({
 // ══════════════════════════════════════════════════════════════════════════════
 type TrendCardData = { total: number; change_pct: number; series: { label: string; value: number }[] };
 
-function TrendCard({ title, icon, accent, data, colors, isDark, inverseDelta = false, testID }: {
-  title: string; icon: any; accent: string; data: TrendCardData; colors: any; isDark: boolean; inverseDelta?: boolean; testID: string;
+function TrendCard({ title, icon, accent, data, colors, isDark, inverseDelta = false, testID, onViewAll }: {
+  title: string; icon: any; accent: string; data: TrendCardData; colors: any; isDark: boolean; inverseDelta?: boolean; testID: string; onViewAll?: () => void;
 }) {
   const CARD_BG   = isDark ? '#1C1C2E' : colors.card;
   const positive  = inverseDelta ? data.change_pct < 0 : data.change_pct > 0;
@@ -1115,6 +1115,11 @@ function TrendCard({ title, icon, accent, data, colors, isDark, inverseDelta = f
           </View>
           <Text style={[tr.cardTitle, { color: colors.text }]}>{title}</Text>
         </View>
+        {onViewAll && (
+          <TouchableOpacity onPress={onViewAll} testID={`${testID}-view-all`}>
+            <Text style={{ color: PURPLE, fontSize: 12, fontWeight: '800', letterSpacing: 0.2 }}>View All →</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>
         <Text style={[tr.cardValue, { color: accent }]}>{formatINR(data.total)}</Text>
@@ -1153,6 +1158,7 @@ function TrendCard({ title, icon, accent, data, colors, isDark, inverseDelta = f
 }
 
 function TrendsTab({ colors, isDark }: any) {
+  const router = useRouter();
   const [period,  setPeriod]  = useState<'month' | '6m' | 'year'>('6m');
   const [loading, setLoading] = useState(true);
   const [trData,  setTrData]  = useState<any>(null);
@@ -1197,7 +1203,7 @@ function TrendsTab({ colors, isDark }: any) {
         <EmptyBox icon="trending-up-outline" text="No trend data yet. Add transactions over multiple months to see trends." colors={colors} />
       ) : (
         <>
-          <TrendCard title="Income Trend"    icon="arrow-down-circle" accent={GREEN}  data={income}     colors={colors} isDark={isDark} testID="trends-income-card" />
+          <TrendCard title="Income Trend"    icon="arrow-down-circle" accent={GREEN}  data={income}     colors={colors} isDark={isDark} testID="trends-income-card" onViewAll={() => router.push('/income')} />
           <TrendCard title="Expense Trend"   icon="arrow-up-circle"   accent={RED}    data={expense}    colors={colors} isDark={isDark} inverseDelta testID="trends-expense-card" />
           <TrendCard title="Investment Trend" icon="trending-up"       accent={PURPLE} data={investment}  colors={colors} isDark={isDark} testID="trends-investment-card" />
         </>
