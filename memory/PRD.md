@@ -36,6 +36,53 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
+### Session 24 — Income Module Rebuild to Match Reference Design (2026-02)
+**User uploaded actual reference design** (Cash Flow dashboard + Add Income form, both dark-theme with purple/green accents). Rebuilt Dashboard + Add screens to match pixel-by-pixel; other 3 screens kept.
+
+#### `/app/frontend/app/income/index.tsx` — fully rebuilt
+- Title: **"Cash Flow"** (matching reference)
+- Period tabs at top: This Month / This Quarter / This Year (purple-filled active)
+- **Total Income card**: white-on-dark card with green ₹value + delta-pill ("↑20% vs last month") + mini line sparkline on right
+- **Total Inflow / Total Outflow row**: 2 cards side-by-side; green circle ↓ icon (inflow), red circle ↑ icon (outflow). Outflow comes from `/api/expenses` for the same period.
+- **Income Trend bar chart**: 6-month BarChart with current-month bars (solid green) + planned dashed-overlay for "vs Last Month" comparison; legend with both swatches
+- **Income Sources** list: top 4 categories with category icon + label + frequency ("Monthly") + amount + entry count + chevron
+- **CTA row**: purple "+ Add Income" (primary) + outlined "View All Income"
+- **Recent Income** list: account name + "•••• 1234" account-number masking + date + green amount; tap row → edit
+- Empty state when no income.
+
+#### `/app/frontend/app/income/add.tsx` — fully rebuilt to list-row pattern
+- Header: ← / "Add Income" / **"Save"** link top-right (purple)
+- **Amount card**: "Amount" label + green ₹ + 0 input + green camera button on right (receipt attach hook)
+- **BASIC DETAILS** group card (rounded green-tint row icons):
+  - Member · Who received this income? · "Select Member" → bottom-sheet picker
+  - Account · Where this income is received? · "Select Account" → picker (reuses `/api/accounts`, shows balance)
+  - Category · What is the source of income? · "Select Category" → picker (reuses `INCOME_CATEGORIES`)
+  - Date · When did you receive this? · "14 May 2026" → date input modal
+- **MORE DETAILS (OPTIONAL)** group:
+  - Notes · "Add a note (optional)" → multiline modal
+  - Location · "Add location (optional)" → text modal
+  - Attach File · "Upload receipt or document" → stub (UI ready, file pipeline future)
+- **ADDITIONAL DETAILS (OPTIONAL)** group:
+  - Income Type · picker
+  - Payment Mode · picker (Bank Transfer / Cash / UPI / Cheque / Card)
+  - Taxable Income · inline Switch
+  - Recurring Income · inline Switch
+  - Frequency · picker (enabled only when Recurring is ON)
+  - Next Expected Date · auto-suggested from `date + frequency`, editable
+- **Trust banner**: purple-tinted card with shield-checkmark "Keep your data secure / Your income details are encrypted and 100% secure."
+- **Sticky bottom**: Save Income purple gradient button + Delete icon button (edit mode only)
+- Data persistence: maps all optional fields into `labels[]` array (`taxable`, `recurring`, `freq:<x>`, `mode:<x>`, `loc:<x>`, `next:<iso>`) so **zero backend schema changes** required. Re-loaded correctly on edit.
+
+#### Pickers
+- Custom bottom-sheet modal component handles Member / Account / Category / Type / Mode / Frequency. Notes / Location / Date use lightweight inline text modals.
+
+#### Validation
+- Webpack rebundled cleanly. Live screenshots confirm both screens match the reference: empty-state Cash Flow dashboard and full Add Income form rendered correctly with all rows, sections, toggles, and sticky save bar.
+- Backend appears responsive (forms loaded `/api/accounts` data without 500).
+- Existing flows untouched: Dashboard "Income" quick-action, /transactions/add income mode, navigation, all other modules.
+
+
+
 ### Session 23 — New Income Module (2026-02)
 **User asked: remove old Income flow + build new Income module (Dashboard / Add / Analytics / Sources / Recurring). Reuse existing backend, accounts, categories, members, reminders. Do not modify Dashboard, Transactions, Investments, Budget, Loans or navigation structure.**
 
