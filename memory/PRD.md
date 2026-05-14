@@ -36,6 +36,17 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
+### Session 21 — Insights Detail Screens Wired to Real Data (2026-02)
+**User asked: connect Insights screens (Transactions / Budget / Investments) and add calculations for monthly income, monthly expenses, savings rate, net cash flow, category spending, budget utilization, trend analysis. No external APIs, no unrelated module changes.**
+
+- Main Insights screen (`/app/frontend/app/(tabs)/analytics.tsx`) was overwritten by a prior session to wire all 6 tabs (Overview, Cash Flow, Spending, Budget, Trends, Calendar) to `/api/insights/*` — webpack compiled cleanly. End-to-end runtime validation pending (see below).
+- **Rewrote** `/app/frontend/app/insights/cashflow-details.tsx` — was 100% dummy, now calls `GET /api/insights/cashflow?period=month|quarter|year`, maps `inflow_by_source` + `outflow_by_category` to category rows with icon/color from a shared `CAT_CONFIG`, period tabs refetch, hero card uses real `totals.net / in_share_pct / out_share_pct`, graceful loading + empty states.
+- **Rewrote** `/app/frontend/app/insights/spending-by-category.tsx` — was 100% dummy, now calls `GET /api/insights/spending?period=...`, donut + 6-category breakdown + per-category top-merchants (filtered from `top_merchants[]` by category) all from real data, period tabs refetch, loading + empty states.
+- Backend (no changes) already exposes all 7 calculations the user asked for via the `insights_router` package shipped in Session 20.
+- New pytest suite `/app/backend/tests/test_insights_v2_endpoints.py` covers the v2 endpoint shapes (18 tests) — **BLOCKED** at run-time by Firebase Firestore Spark-plan daily quota (429 RESOURCE_EXHAUSTED). Resets midnight Pacific Time. Re-run command stored in `test_credentials.md`.
+
+
+
 ### Session 20 — Scalable Insights Analytics Backend (2026-05-14)
 **Refactored `/app/backend/insights.py` (346 lines, monolithic) into a modular package `/app/backend/insights/`.**
 
@@ -132,8 +143,9 @@ GET /api/analytics/expense-breakdown           Category breakdown for spending t
 
 ### P1 — Insights
 - [x] Insights: Connect real investment data to Trends tab (investment returns over time) — *dummy UI shipped 2026-05-14; backend wiring pending*
-- [ ] Insights: Wire dummy Overview UI + Investment Returns to real backend data
-- [ ] Insights: Refactor `analytics.tsx` (~1400 lines) → split tabs into `components/analytics/*.tsx`
+- [x] Insights: Wire dummy Overview UI + Investment Returns to real backend data — *analytics.tsx all 6 tabs wired to `/api/insights/*`, plus both detail screens (cashflow-details, spending-by-category) rewired this session (2026-02)*
+- [ ] Insights: Refactor `analytics.tsx` (~1500 lines) → split tabs into `components/analytics/*.tsx`
+- [ ] Insights: Firestore read caching in `/app/backend/insights/service.py` — `cashflow/monthly-trend` issues 12 reads/call, full Insights page-load can hit 30+ Firestore reads and burns Spark-plan quota
 - [ ] Insights: "What if" savings rate simulator (increase income by X% → savings?)
 - [ ] Insights: Export month summary as PDF/image
 
