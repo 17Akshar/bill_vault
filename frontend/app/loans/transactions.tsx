@@ -115,9 +115,18 @@ function buildTimeline(
   for (const ev of events) {
     if (ev.type === 'emi') {
       const amt       = parseFloat(ev.raw.amount) || 0;
-      const interest  = Math.max(0, Math.min(amt, balance * monthlyRate));
-      const principalPaid = Math.max(0, amt - interest);
-      balance = Math.max(0, balance - principalPaid);
+      // Prefer server-computed split (new schema). Fall back to local
+      // amortisation walk for legacy rows that lack these fields.
+      const serverHas = ev.raw.principal_paid != null && ev.raw.interest_paid != null;
+      const interest      = serverHas
+        ? Math.max(0, parseFloat(ev.raw.interest_paid) || 0)
+        : Math.max(0, Math.min(amt, balance * monthlyRate));
+      const principalPaid = serverHas
+        ? Math.max(0, parseFloat(ev.raw.principal_paid) || 0)
+        : Math.max(0, amt - interest);
+      balance = ev.raw.outstanding_after != null
+        ? Math.max(0, parseFloat(ev.raw.outstanding_after) || 0)
+        : Math.max(0, balance - principalPaid);
       computed.push({
         kind: 'emi',
         id:   ev.raw.loan_txn_id || ev.raw.id || `emi-${ev.raw.payment_date}`,

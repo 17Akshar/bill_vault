@@ -1,0 +1,77 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "loans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id",   "order": "ASCENDING" },
+        { "fieldPath": "is_active", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "status",  "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id",       "order": "ASCENDING" },
+        { "fieldPath": "next_emi_date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loan_transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "loan_id",      "order": "ASCENDING" },
+        { "fieldPath": "payment_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loan_transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id",      "order": "ASCENDING" },
+        { "fieldPath": "payment_date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loan_prepayments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "loan_id", "order": "ASCENDING" },
+        { "fieldPath": "date",    "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "loan_prepayments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "date",    "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reminders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id",       "order": "ASCENDING" },
+        { "fieldPath": "reminder_type", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reminders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "related_id",    "order": "ASCENDING" },
+        { "fieldPath": "reminder_type", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

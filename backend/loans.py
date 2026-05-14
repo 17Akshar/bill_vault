@@ -11,6 +11,13 @@ Endpoints:
   POST   /api/loans/{loan_id}/prepayment  Record prepayment
   GET    /api/loans/{loan_id}/transactions  EMI + prepayment history
   POST   /api/loans/{loan_id}/transactions  Mark EMI paid
+
+Schema
+------
+The authoritative shape of every document is defined in
+`backend/models/loans.py` (LoanRecord / LoanTransactionRecord /
+LoanPrepaymentRecord). EMI reminders REUSE the existing `reminders`
+collection — see EMIReminderView in the same module.
 """
 from __future__ import annotations
 
@@ -99,7 +106,10 @@ async def _get_user(request: Request):
 
 def _serialize_loan(loan: dict) -> dict:
     """Convert datetime fields to ISO strings for JSON response."""
-    for k in ["start_date", "next_emi_date", "created_at", "updated_at"]:
+    for k in [
+        "start_date", "next_emi_date", "last_payment_date", "closed_date",
+        "created_at", "updated_at",
+    ]:
         v = loan.get(k)
         if v and isinstance(v, datetime):
             loan[k] = v.isoformat()
@@ -209,6 +219,12 @@ async def create_loan(data: LoanCreate, request: Request):
         "notes": data.notes,
         "status": data.status or "active",
         "is_active": True,
+        # ── scalability tracking fields (kept in-sync by EMI / prepayment writes) ──
+        "total_paid": 0.0,
+        "total_principal_paid": 0.0,
+        "total_interest_paid": 0.0,
+        "last_payment_date": None,
+        "closed_date": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -322,9 +338,17 @@ async def add_prepayment(loan_id: str, data: PrepaymentCreate, request: Request)
     }
     await db.loan_prepayments.insert_one(prepayment_doc)
 
-    update_fields = {"outstanding_amount": new_outstanding, "updated_at": now}
+    update_fields = {
+        "outstanding_amount": new_outstanding,
+        "total_paid": round(float(loan.get("total_paid") or 0) + data.amount, 2),
+        "updated_at": now,
+    }
     if data.prepayment_type == "reduce_emi":
         update_fields["emi_amount"] = round(new_emi, 2)
+    # Auto-close loan when fully repaid via prepayment
+    if new_outstanding <= 0.0:
+        update_fields["status"]      = "closed"
+        update_fields["closed_date"] = now
     await db.loans.update_one({"loan_id": loan_id}, {"$set": update_fields})
 
     prepayment_doc.pop("_id", None)
@@ -375,7 +399,14 @@ async def get_loan_transactions(loan_id: str, request: Request):
 
 @loans_router.post("/loans/{loan_id}/transactions")
 async def add_loan_transaction(loan_id: str, data: EMITransactionCreate, request: Request):
-    """Mark an EMI as paid."""
+    """Mark an EMI as paid.
+
+    Computes the principal / interest split server-side and persists it
+    on the transaction row so clients never re-derive it. Also keeps the
+    loan's aggregate tracking fields (`outstanding_amount`, `total_paid`,
+    `total_principal_paid`, `total_interest_paid`, `last_payment_date`,
+    `next_emi_date`, `status`, `closed_date`) in sync.
+    """
     user = await _get_user(request)
     loan = await db.loans.find_one(
         {"loan_id": loan_id, "user_id": user.user_id, "is_active": True}
@@ -383,19 +414,66 @@ async def add_loan_transaction(loan_id: str, data: EMITransactionCreate, request
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
 
+    # ── Compute principal / interest split ─────────────────────────────
+    current_outstanding = float(loan.get("outstanding_amount") or 0)
+    monthly_rate        = (float(loan.get("interest_rate") or 0) / 100.0) / 12.0
+    amount              = float(data.amount)
+
+    interest_paid  = max(0.0, min(amount, current_outstanding * monthly_rate))
+    principal_paid = max(0.0, amount - interest_paid)
+    # Cap principal at the remaining balance — payments cannot drive balance negative.
+    principal_paid = min(principal_paid, current_outstanding)
+    new_outstanding = max(0.0, current_outstanding - principal_paid)
+
     loan_txn_id = f"ltxn_{uuid.uuid4().hex[:10]}"
     now = datetime.now(timezone.utc)
+    payment_date = datetime.fromisoformat(data.payment_date.replace("Z", "+00:00"))
     txn = {
         "loan_txn_id": loan_txn_id,
         "loan_id": loan_id,
         "user_id": user.user_id,
-        "amount": data.amount,
-        "payment_date": datetime.fromisoformat(data.payment_date.replace("Z", "+00:00")),
+        "amount": round(amount, 2),
+        "principal_paid": round(principal_paid, 2),
+        "interest_paid":  round(interest_paid, 2),
+        "outstanding_after": round(new_outstanding, 2),
+        "payment_date": payment_date,
         "payment_type": data.payment_type,
         "notes": data.notes,
         "created_at": now,
     }
     await db.loan_transactions.insert_one(txn)
+
+    # ── Update loan aggregates ─────────────────────────────────────────
+    update_fields = {
+        "outstanding_amount": round(new_outstanding, 2),
+        "total_paid":           round(float(loan.get("total_paid") or 0) + amount, 2),
+        "total_principal_paid": round(float(loan.get("total_principal_paid") or 0) + principal_paid, 2),
+        "total_interest_paid":  round(float(loan.get("total_interest_paid")  or 0) + interest_paid, 2),
+        "last_payment_date":    payment_date,
+        "updated_at":           now,
+    }
+    # Roll next_emi_date forward to the same day next month
+    next_emi = loan.get("next_emi_date")
+    if next_emi:
+        try:
+            d = next_emi if isinstance(next_emi, datetime) else datetime.fromisoformat(
+                str(next_emi).replace("Z", "+00:00")
+            )
+            try:
+                from dateutil.relativedelta import relativedelta
+                update_fields["next_emi_date"] = d + relativedelta(months=1)
+            except Exception:
+                from datetime import timedelta
+                update_fields["next_emi_date"] = d + timedelta(days=30)
+        except Exception:
+            pass
+    # Auto-close the loan when fully paid
+    if new_outstanding <= 0.0:
+        update_fields["status"]      = "closed"
+        update_fields["closed_date"] = now
+
+    await db.loans.update_one({"loan_id": loan_id}, {"$set": update_fields})
+
     txn.pop("_id", None)
     for k in ["payment_date", "created_at"]:
         if txn.get(k) and isinstance(txn[k], datetime):
