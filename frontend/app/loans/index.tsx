@@ -102,11 +102,8 @@ export default function LoansScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const [loans, setLoans] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState<Record<string, boolean>>({});
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -127,25 +124,8 @@ export default function LoansScreen() {
 
   useEffect(() => { load(); }, []);
 
-  const loadAnalytics = useCallback(async (loanId: string) => {
-    if (analytics[loanId]) return; // already loaded
-    setAnalyticsLoading(p => ({ ...p, [loanId]: true }));
-    try {
-      const res = await api.get(`/loans/${loanId}/analytics`);
-      setAnalytics(p => ({ ...p, [loanId]: res.data }));
-    } catch (e) { console.error(e); }
-    finally { setAnalyticsLoading(p => ({ ...p, [loanId]: false })); }
-  }, [analytics]);
-
-  const toggleExpand = (loanId: string) => {
-    if (expandedId === loanId) { setExpandedId(null); return; }
-    setExpandedId(loanId);
-    loadAnalytics(loanId);
-  };
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setAnalytics({});
     load();
   }, [load]);
 
@@ -275,11 +255,8 @@ export default function LoansScreen() {
           loan={item}
           colors={colors}
           isDark={isDark}
-          isExpanded={expandedId === item.loan_id}
-          analyticsData={analytics[item.loan_id]}
-          analyticsLoading={!!analyticsLoading[item.loan_id]}
-          onToggle={() => toggleExpand(item.loan_id)}
           onDelete={() => handleDelete(item)}
+          onViewDetail={() => router.push(`/loans/${item.loan_id}` as any)}
           onRemind={() => router.push({ pathname: '/reminders', params: { type: 'loan_emi', related_id: item.loan_id, title: `${item.name} EMI`, description: `EMI: ${formatINR(item.emi_amount)}` } } as any)}
         />}
         ListEmptyComponent={
@@ -313,7 +290,7 @@ export default function LoansScreen() {
 }
 
 // ─── Loan Card Component ──────────────────────────────────────────────────────
-function LoanCard({ loan, colors, isDark, isExpanded, analyticsData, analyticsLoading, onToggle, onDelete, onRemind }: any) {
+function LoanCard({ loan, colors, isDark, onDelete, onViewDetail, onRemind }: any) {
   const lt = getLoanType(loan.loan_type);
   const principal = loan.principal_amount || 0;
   const outstanding = loan.outstanding_amount || 0;
@@ -321,9 +298,14 @@ function LoanCard({ loan, colors, isDark, isExpanded, analyticsData, analyticsLo
   const progress = pct(paid, principal);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, shadowColor: isDark ? '#000' : '#bbb' }]}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.card, shadowColor: isDark ? '#000' : '#bbb' }]}
+      onPress={onViewDetail}
+      activeOpacity={0.88}
+      testID={`loan-card-${loan.loan_id}`}
+    >
       {/* Card Header */}
-      <TouchableOpacity style={styles.cardHeader} onPress={onToggle} activeOpacity={0.8} data-testid={`loan-card-${loan.loan_id}`}>
+      <View style={styles.cardHeader}>
         <View style={[styles.loanIcon, { backgroundColor: lt.color + '22' }]}>
           <Ionicons name={lt.icon as any} size={22} color={lt.color} />
         </View>
@@ -337,9 +319,9 @@ function LoanCard({ loan, colors, isDark, isExpanded, analyticsData, analyticsLo
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(loan.status, lt.color) + '22' }]}>
             <Text style={[styles.statusText, { color: getStatusColor(loan.status, lt.color) }]}>{loan.status || 'active'}</Text>
           </View>
-          <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
         </View>
-      </TouchableOpacity>
+      </View>
 
       {/* Primary metrics row */}
       <View style={styles.metricsRow}>
@@ -351,12 +333,8 @@ function LoanCard({ loan, colors, isDark, isExpanded, analyticsData, analyticsLo
       {/* Progress bar */}
       <View style={{ marginTop: 12, marginBottom: 6 }}>
         <View style={styles.progressLabels}>
-          <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
-            Paid {formatINR(paid)}
-          </Text>
-          <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
-            {loan.tenure_months - (loan.emis_paid || 0)} months left
-          </Text>
+          <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Paid {formatINR(paid)}</Text>
+          <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>{loan.tenure_months - (loan.emis_paid || 0)} months left</Text>
         </View>
         <ProgressBar progress={progress} color={lt.color} height={7} />
       </View>
@@ -369,44 +347,26 @@ function LoanCard({ loan, colors, isDark, isExpanded, analyticsData, analyticsLo
             Next EMI: <Text style={{ color: colors.text, fontWeight: '600' }}>{fmtDate(loan.next_emi_date)}</Text>
           </Text>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={onRemind} style={[styles.remindBtn, { borderColor: colors.primary + '55' }]} data-testid={`loan-remind-${loan.loan_id}`}>
+          <TouchableOpacity onPress={e => { e.stopPropagation?.(); onRemind(); }} style={[styles.remindBtn, { borderColor: colors.primary + '55' }]} testID={`loan-remind-${loan.loan_id}`}>
             <Ionicons name="notifications-outline" size={12} color={colors.primary} />
             <Text style={[styles.remindText, { color: colors.primary }]}>Remind</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* ── Expanded analytics ── */}
-      {isExpanded && (
-        <View style={[styles.analyticsPanel, { borderTopColor: colors.border }]}>
-          {analyticsLoading ? (
-            <View style={styles.analyticsLoading}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[{ color: colors.textSecondary, fontSize: 13, marginLeft: 8 }]}>Loading analytics…</Text>
-            </View>
-          ) : analyticsData ? (
-            <AnalyticsPanel data={analyticsData} lt={lt} colors={colors} isDark={isDark} />
-          ) : (
-            <Text style={[{ color: colors.textSecondary, textAlign: 'center', padding: 16, fontSize: 13 }]}>
-              No analytics data available
-            </Text>
-          )}
-        </View>
-      )}
-
       {/* Card actions */}
       <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
-        <TouchableOpacity style={styles.cardAction} onPress={onDelete} data-testid={`loan-delete-${loan.loan_id}`}>
+        <TouchableOpacity style={styles.cardAction} onPress={e => { e.stopPropagation?.(); onDelete(); }} testID={`loan-delete-${loan.loan_id}`}>
           <Ionicons name="trash-outline" size={15} color={colors.danger} />
           <Text style={[styles.cardActionText, { color: colors.danger }]}>Delete</Text>
         </TouchableOpacity>
         <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
-        <TouchableOpacity style={styles.cardAction} onPress={onToggle}>
-          <Ionicons name={isExpanded ? 'analytics' : 'analytics-outline'} size={15} color={colors.primary} />
-          <Text style={[styles.cardActionText, { color: colors.primary }]}>{isExpanded ? 'Hide Details' : 'View Details'}</Text>
+        <TouchableOpacity style={styles.cardAction} onPress={onViewDetail}>
+          <Ionicons name="analytics-outline" size={15} color={colors.primary} />
+          <Text style={[styles.cardActionText, { color: colors.primary }]}>View Details</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

@@ -34,6 +34,7 @@ export default function RootLayout() {
             <Stack.Screen name="bills/edit" />
             <Stack.Screen name="credit-cards/index" />
             <Stack.Screen name="loans/index" />
+            <Stack.Screen name="loans/[id]" />
             <Stack.Screen name="lending/index" />
             <Stack.Screen name="investments/index" />
             <Stack.Screen name="net-worth/index" />
