@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timezone
 
 # Configuration
-BASE_URL = "https://competent-haslett-9.preview.emergentagent.com/api"
+BASE_URL = "https://fincare-db-redesign.preview.emergentagent.com/api"
 HEADERS = {"Content-Type": "application/json"}
 
 class Phase3Tester:
