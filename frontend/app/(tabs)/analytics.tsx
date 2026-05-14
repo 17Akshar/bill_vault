@@ -147,35 +147,6 @@ const DUMMY_OVERVIEW = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DUMMY DATA — Trends Tab → Investment Returns
-// ══════════════════════════════════════════════════════════════════════════════
-const DUMMY_INVESTMENTS = {
-  total_invested:   650000,
-  current_value:    812500,
-  absolute_return:  162500,
-  return_pct:       25.0,
-  xirr:             18.4,
-  best_month_label: 'Mar 2026',
-  best_month_pct:   8.2,
-  // 6 months of portfolio value (₹)
-  value_series: [
-    { label: 'Dec', value: 660000 },
-    { label: 'Jan', value: 682000 },
-    { label: 'Feb', value: 705000 },
-    { label: 'Mar', value: 762000 },
-    { label: 'Apr', value: 788000 },
-    { label: 'May', value: 812500 },
-  ],
-  // Per-asset returns breakdown
-  breakdown: [
-    { name: 'Mutual Funds', invested: 280000, current: 358000, color: PURPLE,    icon: 'trending-up-outline' },
-    { name: 'Stocks',       invested: 180000, current: 234500, color: TEAL,      icon: 'analytics-outline'   },
-    { name: 'Gold (Digital)', invested: 90000,  current: 105200, color: YELLOW,  icon: 'medal-outline'       },
-    { name: 'Fixed Deposits', invested: 100000, current: 114800, color: GREEN,   icon: 'lock-closed-outline' },
-  ],
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
 // OVERVIEW TAB  (UI-only with dummy data)
 // ══════════════════════════════════════════════════════════════════════════════
 function OverviewTab({ colors, isDark, date, onDateChange }: any) {
@@ -1311,296 +1282,280 @@ const bd = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TRENDS TAB
+// DUMMY DATA — Trends Tab (Income / Expense / Investment)
 // ══════════════════════════════════════════════════════════════════════════════
-function TrendsTab({ colors, isDark }: any) {
-  const [data, setData]    = useState<any>(null);
-  const [loading, setLoad] = useState(true);
-  const [period, setPeriod] = useState<'month' | '6m' | 'year'>('6m');
+type TrendSeries = { label: string; value: number };
+type TrendCardData = { total: number; change_pct: number; series: TrendSeries[] };
+type TrendsPeriod = 'month' | '6m' | 'year';
 
-  const loadData = useCallback(async () => {
-    setLoad(true);
-    try {
-      const months = period === 'month' ? 1 : period === '6m' ? 6 : 12;
-      const r = await api.get('/analytics/cashflow', { params: { months } });
-      setData(r.data);
-    } catch { setData(null); }
-    finally { setLoad(false); }
-  }, [period]);
+const DUMMY_TRENDS: Record<TrendsPeriod, { income: TrendCardData; expense: TrendCardData; investment: TrendCardData }> = {
+  month: {
+    income: {
+      total: 125000,
+      change_pct: 15.2,
+      series: [
+        { label: 'W1', value: 28000 },
+        { label: 'W2', value: 31000 },
+        { label: 'W3', value: 32500 },
+        { label: 'W4', value: 33500 },
+      ],
+    },
+    expense: {
+      total: 75000,
+      change_pct: -5.3,
+      series: [
+        { label: 'W1', value: 22000 },
+        { label: 'W2', value: 19500 },
+        { label: 'W3', value: 17800 },
+        { label: 'W4', value: 15700 },
+      ],
+    },
+    investment: {
+      total: 812500,
+      change_pct: 3.1,
+      series: [
+        { label: 'W1', value: 788000 },
+        { label: 'W2', value: 795000 },
+        { label: 'W3', value: 802000 },
+        { label: 'W4', value: 812500 },
+      ],
+    },
+  },
+  '6m': {
+    income: {
+      total: 685000,
+      change_pct: 12.4,
+      series: [
+        { label: 'Dec', value: 96000  },
+        { label: 'Jan', value: 108000 },
+        { label: 'Feb', value: 115000 },
+        { label: 'Mar', value: 118000 },
+        { label: 'Apr', value: 123000 },
+        { label: 'May', value: 125000 },
+      ],
+    },
+    expense: {
+      total: 442500,
+      change_pct: 8.6,
+      series: [
+        { label: 'Dec', value: 70000 },
+        { label: 'Jan', value: 74500 },
+        { label: 'Feb', value: 71000 },
+        { label: 'Mar', value: 78000 },
+        { label: 'Apr', value: 79000 },
+        { label: 'May', value: 75000 },
+      ],
+    },
+    investment: {
+      total: 812500,
+      change_pct: 23.1,
+      series: [
+        { label: 'Dec', value: 660000 },
+        { label: 'Jan', value: 682000 },
+        { label: 'Feb', value: 705000 },
+        { label: 'Mar', value: 762000 },
+        { label: 'Apr', value: 788000 },
+        { label: 'May', value: 812500 },
+      ],
+    },
+  },
+  year: {
+    income: {
+      total: 1382000,
+      change_pct: 28.7,
+      series: [
+        { label: 'Jun', value:  82000 },
+        { label: 'Aug', value:  90000 },
+        { label: 'Oct', value:  98000 },
+        { label: 'Dec', value: 108000 },
+        { label: 'Feb', value: 115000 },
+        { label: 'Apr', value: 123000 },
+      ],
+    },
+    expense: {
+      total: 918500,
+      change_pct: 12.1,
+      series: [
+        { label: 'Jun', value: 62000 },
+        { label: 'Aug', value: 65000 },
+        { label: 'Oct', value: 68000 },
+        { label: 'Dec', value: 74500 },
+        { label: 'Feb', value: 71000 },
+        { label: 'Apr', value: 79000 },
+      ],
+    },
+    investment: {
+      total: 812500,
+      change_pct: 35.8,
+      series: [
+        { label: 'Jun', value: 598000 },
+        { label: 'Aug', value: 620000 },
+        { label: 'Oct', value: 645000 },
+        { label: 'Dec', value: 682000 },
+        { label: 'Feb', value: 750000 },
+        { label: 'Apr', value: 812500 },
+      ],
+    },
+  },
+};
 
-  useEffect(() => { loadData(); }, [loadData]);
-
-  const hasData = !loading && data?.monthly?.length;
-  const monthly: any[] = hasData ? (data.monthly as any[]) : [];
-
-  const incTotal  = monthly.reduce((s: number, m: any) => s + m.income, 0);
-  const expTotal  = monthly.reduce((s: number, m: any) => s + m.expense, 0);
-  const netTotal  = incTotal - expTotal;
-  const avgRate   = monthly.length ? monthly.reduce((s: number, m: any) => s + m.savings_rate, 0) / monthly.length : 0;
-
-  // Latest vs prev
-  const latest = monthly[monthly.length - 1] || {};
-  const prev   = monthly[monthly.length - 2] || {};
+// Reusable card
+function TrendCard({
+  title, icon, accent, data, colors, isDark, inverseDelta = false, testID, valuePrefix = '',
+}: {
+  title: string;
+  icon: any;
+  accent: string;
+  data: TrendCardData;
+  colors: any;
+  isDark: boolean;
+  inverseDelta?: boolean; // for expense: down is good (green)
+  testID: string;
+  valuePrefix?: string;
+}) {
+  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
+  const positive = inverseDelta ? data.change_pct < 0 : data.change_pct > 0;
+  const deltaColor = data.change_pct === 0 ? colors.textSecondary : positive ? GREEN : RED;
+  const deltaIcon = data.change_pct > 0 ? 'arrow-up' : data.change_pct < 0 ? 'arrow-down' : 'remove';
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-      {/* Period selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {([['month', 'This Month'], ['6m', 'Last 6 Months'], ['year', 'This Year']] as any[]).map(([k, l]) => (
-            <Chip key={k} label={l} active={period === k} color={PURPLE} onPress={() => setPeriod(k)} />
-          ))}
-        </View>
-      </ScrollView>
-
-      {loading && <LoadingBox colors={colors} />}
-      {!loading && !hasData && (
-        <View style={[st.card, { backgroundColor: colors.card, alignItems: 'center', paddingVertical: 32 }]}>
-          <Ionicons name="trending-up-outline" size={36} color={colors.textSecondary} />
-          <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 13 }}>No income/expense trend data yet</Text>
-        </View>
-      )}
-
-      {hasData && (
-        <>
-          {/* Summary metrics */}
-          <View style={st.trendMetrics}>
-            {[
-              { label: 'Total Income',  value: incTotal, color: GREEN },
-              { label: 'Total Expense', value: expTotal, color: RED   },
-          { label: 'Net Savings',   value: netTotal, color: netTotal >= 0 ? GREEN : RED },
-          { label: 'Avg Save Rate', value: null, display: `${avgRate.toFixed(1)}%`, color: PURPLE },
-        ].map(m => (
-          <View key={m.label} style={[st.trendMetricCard, { backgroundColor: colors.card }]}>
-            <Text style={[st.trendMetricLabel, { color: colors.textSecondary }]}>{m.label}</Text>
-            <Text style={[st.trendMetricValue, { color: m.color }]}>
-              {m.display || formatINR(m.value || 0)}
-            </Text>
+    <View style={[tr.card, { backgroundColor: CARD_BG }]} testID={testID}>
+      {/* Header */}
+      <View style={tr.cardHead}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View style={[tr.iconWrap, { backgroundColor: accent + '22' }]}>
+            <Ionicons name={icon} size={18} color={accent} />
           </View>
-        ))}
-      </View>
-
-      {/* Income Trend */}
-      <SectionHeader title="Income Trend" colors={colors} />
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={[st.bigAmount, { color: GREEN, fontSize: 20 }]}>{formatINR(latest.income || 0)}</Text>
-          <Delta value={prev.income ? ((latest.income - prev.income) / Math.abs(prev.income)) * 100 : 0} />
+          <Text style={[tr.cardTitle, { color: colors.text }]}>{title}</Text>
         </View>
-        <LineChart
-          data={monthly.map((m: any) => ({ value: m.income, label: m.short_label }))}
-          width={CHART_W}
-          height={100}
-          color={GREEN}
-          thickness={2}
-          curved
-          hideDataPoints={monthly.length > 4}
-          dataPointsColor={GREEN}
-          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          rulesColor={colors.border}
-          xAxisColor={colors.border}
-          yAxisColor="transparent"
-          areaChart
-          startFillColor={GREEN}
-          endFillColor="transparent"
-          startOpacity={0.25}
-          endOpacity={0}
-          isAnimated
-        />
+        <TouchableOpacity testID={`${testID}-view-all`}>
+          <Text style={[tr.viewAll, { color: PURPLE }]}>View All</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Expense Trend */}
-      <SectionHeader title="Expense Trend" colors={colors} />
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={[st.bigAmount, { color: RED, fontSize: 20 }]}>{formatINR(latest.expense || 0)}</Text>
-          <Delta value={prev.expense ? ((latest.expense - prev.expense) / Math.abs(prev.expense)) * 100 : 0} inverse />
+      {/* Total + Delta */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>
+        <Text style={[tr.cardValue, { color: accent }]}>
+          {valuePrefix}{formatINR(data.total)}
+        </Text>
+        <View style={[tr.deltaPill, { backgroundColor: deltaColor + '1E' }]}>
+          <Ionicons name={deltaIcon as any} size={11} color={deltaColor} />
+          <Text style={[tr.deltaText, { color: deltaColor }]}>
+            {Math.abs(data.change_pct).toFixed(1)}%
+          </Text>
         </View>
-        <LineChart
-          data={monthly.map((m: any) => ({ value: m.expense, label: m.short_label }))}
-          width={CHART_W}
-          height={100}
-          color={RED}
-          thickness={2}
-          curved
-          hideDataPoints={monthly.length > 4}
-          dataPointsColor={RED}
-          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          rulesColor={colors.border}
-          xAxisColor={colors.border}
-          yAxisColor="transparent"
-          areaChart
-          startFillColor={RED}
-          endFillColor="transparent"
-          startOpacity={0.2}
-          endOpacity={0}
-          isAnimated
-        />
       </View>
 
-      {/* Savings Rate Trend */}
-      <SectionHeader title="Savings Rate Trend" colors={colors} />
-      <View style={[st.card, { backgroundColor: colors.card }]}>
-        <Text style={[{ color: PURPLE, fontSize: 20, fontWeight: '800', marginBottom: 8 }]}>{latest.savings_rate?.toFixed(1)}%</Text>
-        <LineChart
-          data={monthly.map((m: any) => ({ value: Math.max(m.savings_rate, 0), label: m.short_label }))}
-          width={CHART_W}
-          height={100}
-          color={PURPLE}
-          thickness={2}
-          curved
-          dataPointsColor={PURPLE}
-          xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-          rulesColor={colors.border}
-          xAxisColor={colors.border}
-          yAxisColor="transparent"
-          areaChart
-          startFillColor={PURPLE}
-          endFillColor="transparent"
-          startOpacity={0.25}
-          endOpacity={0}
-          isAnimated
-        />
-      </View>
-        </>
-      )}
+      {/* Trend graph */}
+      <LineChart
+        data={data.series.map(p => ({ value: p.value, label: p.label }))}
+        width={CHART_W - 8}
+        height={110}
+        color={accent}
+        thickness={2.5}
+        curved
+        hideDataPoints={false}
+        dataPointsColor={accent}
+        dataPointsRadius={3}
+        xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+        yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
+        rulesColor={isDark ? 'rgba(255,255,255,0.06)' : colors.border}
+        xAxisColor={colors.border}
+        yAxisColor="transparent"
+        areaChart
+        startFillColor={accent}
+        endFillColor="transparent"
+        startOpacity={0.3}
+        endOpacity={0}
+        isAnimated
+        initialSpacing={6}
+      />
+    </View>
+  );
+}
 
-      {/* ── Investment Returns (dummy data) ───────────────────────────────── */}
-      <View style={{ marginTop: 6 }}>
-        <View style={st.sectionHead}>
-          <Text style={[st.sectionTitle, { color: colors.text }]}>Investment Returns</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="trending-up" size={12} color={GREEN} />
-            <Text style={{ fontSize: 12, fontWeight: '700', color: GREEN }}>
-              +{DUMMY_INVESTMENTS.return_pct.toFixed(1)}%
-            </Text>
-          </View>
-        </View>
+// ══════════════════════════════════════════════════════════════════════════════
+// TRENDS TAB  (UI-only with dummy data)
+// ══════════════════════════════════════════════════════════════════════════════
+function TrendsTab({ colors, isDark }: any) {
+  const [period, setPeriod] = useState<TrendsPeriod>('6m');
+  const d = DUMMY_TRENDS[period];
 
-        {/* Portfolio hero card with gradient */}
-        <View style={[st.card, { backgroundColor: colors.card, padding: 0, overflow: 'hidden' }]} testID="trends-investment-card">
-          <LinearGradient
-            colors={[PURPLE_DARK, PURPLE_LIGHT]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ padding: 16 }}
-          >
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '500', marginBottom: 4 }}>
-              Portfolio Value
-            </Text>
-            <Text style={{ color: '#FFF', fontSize: 26, fontWeight: '800', letterSpacing: -0.5 }}>
-              {formatINR(DUMMY_INVESTMENTS.current_value)}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, gap: 3 }}>
-                <Ionicons name="arrow-up" size={11} color="#FFF" />
-                <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
-                  {formatINR(DUMMY_INVESTMENTS.absolute_return)}
-                </Text>
-              </View>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11 }}>
-                from {formatINR(DUMMY_INVESTMENTS.total_invested)} invested
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      {/* ── Period Tabs ─────────────────────────────────────────── */}
+      <View style={[tr.periodWrap, { backgroundColor: isDark ? '#141424' : colors.background, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} testID="trends-period-tabs">
+        {([['month', 'This Month'], ['6m', 'Last 6 Months'], ['year', 'This Year']] as const).map(([k, l]) => {
+          const active = period === k;
+          return (
+            <TouchableOpacity
+              key={k}
+              onPress={() => setPeriod(k as TrendsPeriod)}
+              style={[tr.periodBtn, active && { backgroundColor: PURPLE }]}
+              testID={`trends-period-${k}`}
+              activeOpacity={0.85}
+            >
+              <Text style={[tr.periodBtnText, { color: active ? '#FFF' : (isDark ? 'rgba(255,255,255,0.55)' : colors.textSecondary) }]}>
+                {l}
               </Text>
-            </View>
-          </LinearGradient>
-
-          {/* Portfolio value line chart */}
-          <View style={{ padding: 14, paddingTop: 10 }}>
-            <LineChart
-              data={DUMMY_INVESTMENTS.value_series.map(p => ({ value: p.value, label: p.label }))}
-              width={CHART_W}
-              height={110}
-              color={PURPLE}
-              thickness={2.5}
-              curved
-              hideDataPoints={false}
-              dataPointsColor={PURPLE}
-              dataPointsRadius={3}
-              xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-              yAxisTextStyle={{ color: colors.textSecondary, fontSize: 9 }}
-              rulesColor={colors.border}
-              xAxisColor={colors.border}
-              yAxisColor="transparent"
-              areaChart
-              startFillColor={PURPLE}
-              endFillColor="transparent"
-              startOpacity={0.3}
-              endOpacity={0}
-              isAnimated
-            />
-          </View>
-        </View>
-
-        {/* XIRR + Best month stat row */}
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-          <View style={[st.card, { backgroundColor: colors.card, flex: 1, marginBottom: 0, padding: 14 }]} testID="trends-xirr-stat">
-            <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '500', marginBottom: 4 }}>XIRR</Text>
-            <Text style={{ color: GREEN, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 }}>
-              {DUMMY_INVESTMENTS.xirr.toFixed(1)}%
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2 }}>annualised</Text>
-          </View>
-          <View style={[st.card, { backgroundColor: colors.card, flex: 1, marginBottom: 0, padding: 14 }]} testID="trends-best-month-stat">
-            <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '500', marginBottom: 4 }}>Best Month</Text>
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '800' }}>
-              {DUMMY_INVESTMENTS.best_month_label}
-            </Text>
-            <Text style={{ color: GREEN, fontSize: 11, fontWeight: '700', marginTop: 2 }}>
-              +{DUMMY_INVESTMENTS.best_month_pct}%
-            </Text>
-          </View>
-        </View>
-
-        {/* Asset-class breakdown */}
-        <View style={[st.card, { backgroundColor: colors.card }]} testID="trends-investment-breakdown">
-          <Text style={[st.sectionTitle, { color: colors.text, marginBottom: 10 }]}>By Asset Class</Text>
-          {DUMMY_INVESTMENTS.breakdown.map((b, i) => {
-            const gain    = b.current - b.invested;
-            const gainPct = (gain / b.invested) * 100;
-            const positive = gain >= 0;
-            return (
-              <View
-                key={b.name}
-                style={[
-                  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-                  i < DUMMY_INVESTMENTS.breakdown.length - 1 && {
-                    borderBottomWidth: 1,
-                    borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
-                  },
-                ]}
-                testID={`trends-asset-${i}`}
-              >
-                <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: b.color + '22', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={b.icon as any} size={18} color={b.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>{b.name}</Text>
-                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
-                    {formatINR(b.invested)} → {formatINR(b.current)}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: positive ? GREEN : RED }}>
-                    {positive ? '+' : ''}{formatINR(gain)}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
-                    <Ionicons name={positive ? 'arrow-up' : 'arrow-down'} size={9} color={positive ? GREEN : RED} />
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: positive ? GREEN : RED }}>
-                      {Math.abs(gainPct).toFixed(1)}%
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
+
+      {/* ── Income Trend Card ───────────────────────────────────── */}
+      <TrendCard
+        title="Income Trend"
+        icon="arrow-down-circle"
+        accent={GREEN}
+        data={d.income}
+        colors={colors}
+        isDark={isDark}
+        testID="trends-income-card"
+      />
+
+      {/* ── Expense Trend Card ──────────────────────────────────── */}
+      <TrendCard
+        title="Expense Trend"
+        icon="arrow-up-circle"
+        accent={RED}
+        data={d.expense}
+        colors={colors}
+        isDark={isDark}
+        inverseDelta
+        testID="trends-expense-card"
+      />
+
+      {/* ── Investment Trend Card ───────────────────────────────── */}
+      <TrendCard
+        title="Investment Trend"
+        icon="trending-up"
+        accent={PURPLE}
+        data={d.investment}
+        colors={colors}
+        isDark={isDark}
+        testID="trends-investment-card"
+      />
     </ScrollView>
   );
 }
+
+// ─── Trends-specific styles ───────────────────────────────────────────────────
+const tr = StyleSheet.create({
+  periodWrap:    { flexDirection: 'row', padding: 4, borderRadius: 14, borderWidth: 1, marginBottom: 14 },
+  periodBtn:     { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
+  periodBtnText: { fontSize: 12, fontWeight: '700' },
+
+  card:          { borderRadius: 16, padding: 16, marginBottom: 14 },
+  cardHead:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  iconWrap:      { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  cardTitle:     { fontSize: 14, fontWeight: '700' },
+  cardValue:     { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  viewAll:       { fontSize: 12, fontWeight: '600' },
+
+  deltaPill:     { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  deltaText:     { fontSize: 11, fontWeight: '700' },
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CALENDAR TAB
