@@ -158,7 +158,7 @@ async def generate_emi_schedule(
     # Determine already-generated EMI numbers
     existing_emis = await db.emi_reminders.find(
         {"loan_id": loan_id, "user_id": user.user_id}, {"_id": 0}
-    ).to_list(500)
+    ).to_list(2000)  # increased from 500 to handle long-tenure loans (up to 360 months)
     existing_emi_numbers = {int(r.get("emi_number", 0)) for r in existing_emis}
 
     created = []

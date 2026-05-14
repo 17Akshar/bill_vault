@@ -11,7 +11,12 @@ Personal finance management mobile app (React Native / Expo) with FastAPI + Fire
 
 ---
 
-## What's Been Implemented
+### Session 16 — P0/P1 Loan Detail Features (2026-05-14)
+**Full loan detail screen + all core action flows**
+
+New screen: `loans/[id].tsx` with hero card, 3-tab navigation (Overview / EMI Schedule / Prepayments), amortization modal (paginated 24/page), EMI Payment modal (bottom-sheet with method chips), Prepayment modal (Part/Full toggle, adjustment type toggle, penalty calculator). Navigation updated: index cards navigate to detail screen. `_layout.tsx` registers `loans/[id]` route.
+
+---
 
 ### Session 1–13 (pre-existing)
 - Auth (Firebase + JWT)
