@@ -20,7 +20,6 @@ export interface CategoryConfig {
   iconColor: string;     // brand color
   iconBg: string;        // background tint behind icon
   subtitleKey?: string;  // dot path inside investment for the card subtitle
-  subtitleKeys?: string[]; // optional multiple paths joined with " • "
   fields: FieldDef[];
   bottomSection: 'sale' | 'maturity' | 'withdrawal' | 'none';
   // Optional per-category overrides for the sub-sections.
@@ -30,37 +29,9 @@ export interface CategoryConfig {
   withdrawalFields?: FieldDef[];
   // Set true for investment types where Gain/Loss is not meaningful (e.g. insurance).
   hideGainLoss?: boolean;
-  // Optional informational banner shown at the bottom of the form (e.g. tax note for shares).
-  footerNote?: string;
 }
 
 export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
-  stocks: {
-    name: 'Shares',
-    iconName: 'trending-up',
-    iconColor: '#00E676',
-    iconBg: '#00E67620',
-    subtitleKeys: ['type_specific_data.sector', 'type_specific_data.exchange'],
-    footerNote: 'Long term capital gains on equity shares are taxed as per applicable tax slab.',
-    fields: [
-      { key: 'type_specific_data.folio_number', label: 'Folio Number', type: 'text', placeholder: '123456789012' },
-      { key: 'type_specific_data.dp_client_id', label: 'DP ID / Client ID', type: 'text', placeholder: 'IN300214 / 98765432' },
-      { key: 'invested_amount', label: 'Invested Amount', type: 'currency' },
-      { key: 'purchase_date', label: 'Invested Date', type: 'date' },
-      { key: 'type_specific_data.shares', label: 'Number of Shares', type: 'number' },
-      { key: 'type_specific_data.buy_price', label: 'Buy Price per Share', type: 'currency' },
-      { key: 'type_specific_data.current_price', label: 'Current Price per Share', type: 'currency' },
-      { key: 'current_value', label: 'Current Value', type: 'currency' },
-    ],
-    bottomSection: 'sale',
-    saleFields: [
-      { key: 'sale_details.date_of_sale', label: 'Date of Sale', type: 'date' },
-      { key: 'sale_details.units_sold', label: 'Shares Sold', type: 'number' },
-      { key: 'sale_details.sale_price', label: 'Price at which Sold', type: 'currency' },
-      { key: 'sale_details.amount_received', label: 'Amount Received', type: 'currency' },
-    ],
-  },
-
   mutual_funds: {
     name: 'Mutual Funds',
     iconName: 'pie-chart',
