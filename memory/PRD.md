@@ -36,6 +36,42 @@ Scalable 4-collection schema: `loans`, `loan_transactions`, `emi_reminders`, `lo
 - Tab pill bar uses `LinearGradient` (PURPLE_DARK→PURPLE_LIGHT) for the active state.
 - Constraint honoured throughout: UI-only, dummy data, no new backend logic. `analytics.tsx` is now ~100% dummy-data-driven UI.
 
+### Session 23 — New Income Module (2026-02)
+**User asked: remove old Income flow + build new Income module (Dashboard / Add / Analytics / Sources / Recurring). Reuse existing backend, accounts, categories, members, reminders. Do not modify Dashboard, Transactions, Investments, Budget, Loans or navigation structure.**
+
+User's uploaded "reference designs" were all Insights screens — no actual Income references existed. After clarifying via ask_human and user said "Continue", I built Income module from scratch matching the existing dark-purple theme + the polished card/tabs language from Insights.
+
+#### Backend (zero changes — reused existing)
+- `POST/GET/PUT/DELETE /api/income` (server.py lines 1258-1450)
+- `GET /api/analytics/income-breakdown?month=&year=` (server.py lines 2184-2214)
+- `IncomeCreate` already supports `labels: List[str]` — used as `["recurring", "freq:<frequency>"]` to mark recurring entries (no schema changes needed)
+- Account-balance auto-adjust on POST/PUT/DELETE is preserved
+
+#### Frontend — 5 net-new screens under `/app/frontend/app/income/`
+- `index.tsx` (~340 lines) — Income Dashboard: month navigator → purple-gradient Total Income hero with Entries/Avg-per-Entry/Sources stat strip → 4 action shortcut cards (Add/Recurring/Sources/Analytics) → By-Source donut chart with legend → Recent Entries list (5 rows, tap → edit). Pull-to-refresh + FAB.
+- `add.tsx` (~390 lines) — Standalone Add / Edit Income flow: purple gradient amount hero with rupee input → Source/Payer text → horizontal-scrollable Category chips (8 INCOME_CATEGORIES) → dynamic sub-category chips per selected category → Account selector (chips from `/api/accounts` with account-type color tint + balance) → optional Family Member chips (from `/api/family-members`) → Recurring toggle revealing frequency chips (monthly/weekly/bi-weekly/quarterly/yearly) → notes textarea → sticky gradient Save button. Edit mode via `?id=<income_id>` loads existing income, shows Delete button. Recurring stored as `labels: ['recurring', 'freq:monthly']`.
+- `analytics.tsx` (~290 lines) — Income Analytics: period tabs (month/quarter/year) → purple-gradient hero with growth-% pill vs previous period → 6-month BarChart (gifted-charts) of monthly income → By-Source donut + category list with percent pills → Top Sources list with rank badges (#1, #2…). Aggregation is client-side from `/api/income?start_date=&end_date=`.
+- `sources.tsx` (~180 lines) — Income Sources view: green-gradient This Month summary card → all 8 INCOME_CATEGORIES listed with current-month total / entry count / avg-per-entry + last-entry date + animated progress bar showing share of total. Empty categories rendered dimmed for affordance to add.
+- `recurring.tsx` (~190 lines) — Recurring Income: filters `/api/income` (last 180 days) by `labels.includes('recurring')`, groups by source, computes next-due date per frequency. Hero shows Monthly Equivalent (normalizes weekly → ×4.33, biweekly → ×2.17, quarterly → ÷3, yearly → ÷12). Each row has a colored due-pill (red overdue / orange ≤7 days / green future).
+
+#### Single line modified outside `/app/frontend/app/income/` (in scope per user rules)
+- `/app/frontend/app/(tabs)/analytics.tsx` — added optional `onViewAll` prop to `TrendCard` and wired the Income Trend card's "View All →" to `router.push('/income')`. Expense / Investment cards unchanged. (Insights is NOT in the user's do-not-modify list.)
+
+#### Constraints honoured
+- ✅ Dashboard `Income` quick-action **not touched** (still routes to legacy `/transactions/add?type=income` — needs user permission to repoint).
+- ✅ `/transactions/add` `income` mode toggle **not touched** (still functional for legacy entry).
+- ✅ Bottom-tab navigation **not touched**.
+- ✅ Investments / Budget / Loans **not touched**.
+- ✅ Backend / Firestore schema **not touched**.
+
+#### Validation status
+- Webpack bundles cleanly. `/income` and `/income/add` screens rendered correctly in screenshot (purple gradient, all chips, empty states, sticky save bar).
+- Testing agent created `/app/backend/tests/test_income_module.py` (14 tests covering full CRUD + balance adjustments + recurring labels persistence + analytics shape).
+- ⚠️ **Tests SKIPPED** — Firebase Firestore Spark-plan quota exhausted (recurring blocker, same as iteration_24). Auto-resets midnight Pacific.
+- ⚠️ Earlier screenshot-test of `/income/add` showed account chips fetching correctly — quota burned again during testing-agent's heavy probing.
+
+
+
 ### Session 22 — Insights UI Polish (2026-02)
 **User asked: improve UI of Insights module only (card spacing, charts, typography, tabs, progress bars, responsive). Maintain existing theme + navigation + structure. Do not touch backend / dashboard / navigation.**
 
