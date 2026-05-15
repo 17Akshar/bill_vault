@@ -155,10 +155,11 @@ export default function ProfileScreen() {
             { icon: 'stats-chart-outline', label: 'Analytics', color: '#22C55E', route: '/(tabs)/analytics' },
             { icon: 'pricetag-outline', label: 'Manage Categories', color: '#EC4899', route: '/profile/categories' },
             { icon: 'wallet-outline', label: 'Budget', color: '#6366F1', route: '/budget' },
+            { icon: 'home-outline', label: 'Rental Tracker', color: '#14B8A6', route: '/rental-tracker' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.actionItem, index === 8 && { borderBottomWidth: 0 }]}
+              style={[styles.actionItem, index === 9 && { borderBottomWidth: 0 }]}
               onPress={() => router.push(item.route as any)}
             >
               <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
