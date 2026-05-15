@@ -52,6 +52,14 @@ class CreditCardUpdate(BaseModel):
     emis: Optional[List[Dict]] = None
 
 
+class CCTransactionCreate(BaseModel):
+    merchant: str
+    amount: float
+    category: str = "other"
+    notes: Optional[str] = None
+    date: Optional[str] = None
+
+
 # ==================== HELPERS ====================
 
 async def _get_user(request: Request):
@@ -161,6 +169,46 @@ async def update_credit_card(card_id: str, data: CreditCardUpdate, request: Requ
     update_data["updated_at"] = datetime.now(timezone.utc)
     await db.credit_cards.update_one({"card_id": card_id}, {"$set": update_data})
     return await db.credit_cards.find_one({"card_id": card_id}, {"_id": 0})
+
+
+@credit_cards_router.post("/credit-cards/{card_id}/transactions")
+async def add_cc_transaction(card_id: str, data: CCTransactionCreate, request: Request):
+    user = await _get_user(request)
+    card = await db.credit_cards.find_one({"card_id": card_id, "user_id": user.user_id, "is_active": True})
+    if not card:
+        raise HTTPException(status_code=404, detail="Credit card not found")
+    now = datetime.now(timezone.utc)
+    txn_id = f"cct_{uuid.uuid4().hex[:12]}"
+    txn = {
+        "transaction_id": txn_id,
+        "card_id": card_id,
+        "user_id": user.user_id,
+        "merchant": data.merchant,
+        "amount": data.amount,
+        "category": data.category,
+        "notes": data.notes or "",
+        "date": data.date or now.date().isoformat(),
+        "created_at": now,
+    }
+    await db.cc_transactions.insert_one(txn)
+    await db.credit_cards.update_one(
+        {"card_id": card_id},
+        {"$set": {"current_outstanding": card.get("current_outstanding", 0) + data.amount,
+                  "updated_at": now}},
+    )
+    txn.pop("_id", None)
+    return txn
+
+
+@credit_cards_router.get("/credit-cards/{card_id}/transactions")
+async def get_cc_transactions(card_id: str, request: Request, limit: int = 50):
+    user = await _get_user(request)
+    card = await db.credit_cards.find_one({"card_id": card_id, "user_id": user.user_id, "is_active": True})
+    if not card:
+        raise HTTPException(status_code=404, detail="Credit card not found")
+    return await db.cc_transactions.find(
+        {"card_id": card_id, "user_id": user.user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
 
 
 @credit_cards_router.delete("/credit-cards/{card_id}")

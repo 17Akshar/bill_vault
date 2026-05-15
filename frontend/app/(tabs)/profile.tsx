@@ -147,6 +147,7 @@ export default function ProfileScreen() {
           
           {[
             { icon: 'trending-up-outline', label: 'Investments', color: '#00E676', route: '/investments' },
+            { icon: 'card-outline', label: 'Credit Cards', color: '#FF9100', route: '/credit-cards' },
             { icon: 'grid-outline', label: 'Dashboard Widgets', color: '#0EA5E9', route: '/profile/dashboard-settings' },
             { icon: 'lock-closed-outline', label: 'MPIN Security', color: '#EF4444', route: '/security/mpin' },
             { icon: 'calendar-outline', label: 'Calendar', color: '#0EA5E9', route: '/calendar' },
@@ -157,7 +158,7 @@ export default function ProfileScreen() {
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.actionItem, index === 7 && { borderBottomWidth: 0 }]}
+              style={[styles.actionItem, index === 8 && { borderBottomWidth: 0 }]}
               onPress={() => router.push(item.route as any)}
             >
               <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
