@@ -157,10 +157,11 @@ export default function ProfileScreen() {
             { icon: 'wallet-outline', label: 'Budget', color: '#6366F1', route: '/budget' },
             { icon: 'home-outline', label: 'Rental Tracker', color: '#14B8A6', route: '/rental-tracker' },
             { icon: 'swap-horizontal-outline', label: 'Lend & Borrowed', color: '#8B5CF6', route: '/lend-borrow' },
+            { icon: 'calendar-number-outline', label: 'Planned Payments', color: '#F59E0B', route: '/planned-payments' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.actionItem, index === 10 && { borderBottomWidth: 0 }]}
+              style={[styles.actionItem, index === 11 && { borderBottomWidth: 0 }]}
               onPress={() => router.push(item.route as any)}
             >
               <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
