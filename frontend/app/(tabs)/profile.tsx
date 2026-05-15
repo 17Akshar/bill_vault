@@ -154,7 +154,7 @@ export default function ProfileScreen() {
             { icon: 'people-outline', label: 'Family Members', color: '#3B82F6', route: '/profile/family' },
             { icon: 'stats-chart-outline', label: 'Analytics', color: '#22C55E', route: '/(tabs)/analytics' },
             { icon: 'pricetag-outline', label: 'Manage Categories', color: '#EC4899', route: '/profile/categories' },
-            { icon: 'wallet-outline', label: 'Budget Limits', color: '#6366F1', route: '/profile/budgets' },
+            { icon: 'wallet-outline', label: 'Budget', color: '#6366F1', route: '/budget' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
