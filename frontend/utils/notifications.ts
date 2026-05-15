@@ -6,6 +6,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -58,7 +60,10 @@ export const scheduleBillNotification = async (
         data: { billId },
         sound: true,
       },
-      trigger: notificationDate,
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: notificationDate,
+      },
     });
     
     return identifier;

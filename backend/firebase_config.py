@@ -336,7 +336,7 @@ class FirestoreCollection:
                     break
 
             update_data = {}
-            has_operator = "$set" in update or "$inc" in update
+            has_operator = "$set" in update or "$inc" in update or "$push" in update
             if "$set" in update:
                 update_data.update(_serialize_doc(update["$set"]))
             if "$inc" in update:
@@ -347,6 +347,9 @@ class FirestoreCollection:
                 elif upsert:
                     for k, v in update["$inc"].items():
                         update_data[k] = v
+            if "$push" in update:
+                for k, v in update["$push"].items():
+                    update_data[k] = firestore.ArrayUnion([_serialize_value(v)])
             if not has_operator:
                 update_data = _serialize_doc(update)
 

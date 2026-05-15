@@ -84,11 +84,8 @@ export async function uploadAttachment(asset: PickedAsset): Promise<UploadResult
     form.append('file', new File([blob], asset.fileName, { type: asset.mimeType }));
   } else {
     // React Native: pass the URI object directly (expo's standard pattern)
-    form.append(
-      'file',
-      // @ts-expect-error — RN-specific FormData file shape
-      { uri: asset.uri, name: asset.fileName, type: asset.mimeType },
-    );
+    // @ts-expect-error — RN-specific FormData file shape, not in web types
+    form.append('file', { uri: asset.uri, name: asset.fileName, type: asset.mimeType });
   }
 
   const res = await fetch(`${BACKEND_URL}/api/uploads/attachment`, {

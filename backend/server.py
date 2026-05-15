@@ -3527,6 +3527,18 @@ app.include_router(loan_prepayments_router)
 from insights import insights_router
 app.include_router(insights_router)
 
+from routers.notes import router as notes_router
+app.include_router(notes_router)
+
+from routers.mpin import router as mpin_router
+app.include_router(mpin_router)
+
+from routers.portfolio import router as portfolio_router
+app.include_router(portfolio_router)
+
+from routers.calendar import router as calendar_events_router
+app.include_router(calendar_events_router)
+
 @app.on_event("startup")
 async def _start_snapshot_scheduler():
     start_scheduler()
