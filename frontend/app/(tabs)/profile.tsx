@@ -141,67 +141,127 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Management */}
+        {/* PRODUCTIVITY */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Management</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>PRODUCTIVITY</Text>
+
           {[
-            { icon: 'trending-up-outline', label: 'Investments', color: '#00E676', route: '/investments' },
-            { icon: 'card-outline', label: 'Credit Cards', color: '#FF9100', route: '/credit-cards' },
-            { icon: 'grid-outline', label: 'Dashboard Widgets', color: '#0EA5E9', route: '/profile/dashboard-settings' },
-            { icon: 'lock-closed-outline', label: 'MPIN Security', color: '#EF4444', route: '/security/mpin' },
-            { icon: 'calendar-outline', label: 'Calendar', color: '#0EA5E9', route: '/calendar' },
-            { icon: 'people-outline', label: 'Family Members', color: '#3B82F6', route: '/profile/family' },
-            { icon: 'stats-chart-outline', label: 'Analytics', color: '#22C55E', route: '/(tabs)/analytics' },
-            { icon: 'pricetag-outline', label: 'Manage Categories', color: '#EC4899', route: '/profile/categories' },
-            { icon: 'wallet-outline', label: 'Budget', color: '#6366F1', route: '/budget' },
-            { icon: 'home-outline', label: 'Rental Tracker', color: '#14B8A6', route: '/rental-tracker' },
-            { icon: 'swap-horizontal-outline', label: 'Lend & Borrowed', color: '#8B5CF6', route: '/lend-borrow' },
-            { icon: 'calendar-number-outline', label: 'Planned Payments', color: '#F59E0B', route: '/planned-payments' },
+            { icon: 'document-outline', label: 'Notes', subtitle: 'Write and manage notes', color: '#F59E0B', route: '/notes' },
+            { icon: 'notifications-outline', label: 'Reminders', subtitle: 'Never miss a due date', color: '#EF4444', route: '/reminders' },
+            { icon: 'calendar-outline', label: 'Calendar', subtitle: 'View all financial events', color: '#3B82F6', route: '/calendar' },
           ].map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.actionItem, index === 11 && { borderBottomWidth: 0 }]}
+              style={[styles.actionItem, index === 2 && { borderBottomWidth: 0 }]}
               onPress={() => router.push(item.route as any)}
             >
               <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
                 <Ionicons name={item.icon as any} size={20} color={item.color} />
               </View>
-              <Text style={[styles.actionLabel, { color: colors.text }]}>{item.label}</Text>
+              <View style={styles.labelWrap}>
+                <Text style={[styles.actionLabel, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+              </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Data & Export */}
+        {/* FINANCIAL TOOLS */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Data & Storage</Text>
-          
-          <TouchableOpacity style={styles.actionItem} onPress={exportData}>
-            <View style={[styles.settingIcon, { backgroundColor: '#14B8A615' }]}>
-              <Ionicons name="download-outline" size={20} color="#14B8A6" />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>FINANCIAL TOOLS</Text>
+
+          {[
+            { icon: 'trending-up-outline', label: 'Investment', subtitle: 'Track and manage investments', color: '#22C55E', route: '/investments' },
+            { icon: 'wallet-outline', label: 'Budget Limits', subtitle: 'Set budget and track limits', color: '#0EA5E9', route: '/budget' },
+            { icon: 'calendar-number-outline', label: 'Planned Payments', subtitle: 'Upcoming bills and payments', color: '#F59E0B', route: '/planned-payments' },
+            { icon: 'home-outline', label: 'Loans', subtitle: 'Track loans and EMIs', color: '#8B5CF6', route: '/loans' },
+            { icon: 'home-outline', label: 'Rentals', subtitle: 'Manage rental properties', color: '#FF9100', route: '/rental-tracker' },
+            { icon: 'people-outline', label: 'Lent and Borrowed', subtitle: 'Track money lent or borrowed', color: '#3B82F6', route: '/lend-borrow' },
+            { icon: 'card-outline', label: 'Credit Cards', subtitle: 'Manage credit cards, bills & payments', color: '#EC4899', route: '/credit-cards' },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.actionItem, index === 6 && { borderBottomWidth: 0 }]}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <View style={styles.labelWrap}>
+                <Text style={[styles.actionLabel, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ACCOUNTS & STRUCTURE */}
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ACCOUNTS & STRUCTURE</Text>
+
+          {[
+            { icon: 'business-outline', label: 'Accounts', subtitle: 'View and manage your accounts', color: '#6366F1', route: '/accounts' },
+            { icon: 'pricetag-outline', label: 'Categories', subtitle: 'Manage income & expense categories', color: '#EC4899', route: '/profile/categories' },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.actionItem, index === 1 && { borderBottomWidth: 0 }]}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <View style={styles.labelWrap}>
+                <Text style={[styles.actionLabel, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* SETTINGS */}
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>SETTINGS</Text>
+
+          {[
+            { icon: 'settings-outline', label: 'Settings', subtitle: 'General app settings', color: '#6B7280', route: '/settings' },
+            { icon: 'shield-outline', label: 'Security (MPIN)', subtitle: 'Change MPIN & security', color: '#22C55E', route: '/security' },
+            { icon: 'cloud-upload-outline', label: 'Backup, Sync & Export Data', subtitle: 'Backup and sync your data', color: '#0EA5E9', route: '/backup-sync' },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.actionItem, index === 2 && { borderBottomWidth: 0 }]}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <View style={styles.labelWrap}>
+                <Text style={[styles.actionLabel, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* SUPPORT */}
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>SUPPORT</Text>
+
+          <TouchableOpacity style={[styles.actionItem, { borderBottomWidth: 0 }]}>
+            <View style={[styles.settingIcon, { backgroundColor: '#EF444415' }]}>
+              <Ionicons name="help-circle-outline" size={20} color="#EF4444" />
             </View>
-            <Text style={[styles.actionLabel, { color: colors.text }]}>Export Data</Text>
+            <View style={styles.labelWrap}>
+              <Text style={[styles.actionLabel, { color: colors.text }]}>Help & Support</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>Get help and contact us</Text>
+            </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
-
-          <View style={[styles.storageRow, { borderBottomWidth: 0 }]}>
-            <View style={[styles.storageChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Ionicons name="phone-portrait-outline" size={22} color="#22C55E" />
-              <Text style={[styles.storageLabel, { color: colors.text }]}>Local</Text>
-              <View style={[styles.statusDot, { backgroundColor: '#22C55E' }]} />
-            </View>
-            <View style={[styles.storageChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: 0.5 }]}>
-              <Ionicons name="logo-google" size={22} color={colors.textSecondary} />
-              <Text style={[styles.storageLabel, { color: colors.textSecondary }]}>Drive</Text>
-              <Text style={[styles.soonBadge, { color: colors.textSecondary }]}>Soon</Text>
-            </View>
-            <View style={[styles.storageChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: 0.5 }]}>
-              <Ionicons name="cloud-outline" size={22} color={colors.textSecondary} />
-              <Text style={[styles.storageLabel, { color: colors.textSecondary }]}>OneDrive</Text>
-              <Text style={[styles.soonBadge, { color: colors.textSecondary }]}>Soon</Text>
-            </View>
-          </View>
         </View>
 
         {/* Logout */}
@@ -304,10 +364,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(128,128,128,0.1)',
   },
-  actionLabel: {
+  labelWrap: {
     flex: 1,
+  },
+  actionLabel: {
     fontSize: 15,
     fontWeight: '500',
+    marginBottom: 2,
+  },
+  actionSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
   },
   storageRow: {
     flexDirection: 'row',
