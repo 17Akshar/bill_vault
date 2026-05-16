@@ -103,7 +103,7 @@ export default function DashboardScreen() {
     finally { setLoading(false); setRefreshing(false); }
   };
 
-  const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, []);
+  const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, [familyFilter]);
 
   if (loading) {
     return (

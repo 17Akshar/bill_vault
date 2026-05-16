@@ -252,7 +252,7 @@ export default function ProfileScreen() {
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>SUPPORT</Text>
 
-          <TouchableOpacity style={[styles.actionItem, { borderBottomWidth: 0 }]}>
+          <TouchableOpacity style={[styles.actionItem, { borderBottomWidth: 0 }]} onPress={() => router.push('/help' as any)}>
             <View style={[styles.settingIcon, { backgroundColor: '#EF444415' }]}>
               <Ionicons name="help-circle-outline" size={20} color="#EF4444" />
             </View>

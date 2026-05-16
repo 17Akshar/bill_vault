@@ -180,7 +180,7 @@ export default function EditBillScreen() {
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: colors.text }]}>Amount *</Text>
             <View style={[styles.amountInput, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>$</Text>
+              <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>₹</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: 'transparent', flex: 1, borderWidth: 0 }]}
                 placeholder="0.00"

@@ -20,7 +20,7 @@ export default function Welcome() {
     if (isAuthenticated) {
       router.replace('/(tabs)/dashboard');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     Animated.parallel([
