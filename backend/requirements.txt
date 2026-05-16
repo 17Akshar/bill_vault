@@ -13,3 +13,4 @@ python_bcrypt==0.3.2
 python_dateutil==2.9.0.post0
 Requests==2.34.2
 starlette==1.0.0
+python-multipart
