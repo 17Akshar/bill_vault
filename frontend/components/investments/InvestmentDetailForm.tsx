@@ -44,6 +44,7 @@ interface InvestmentDetailFormProps {
   onEnterEdit?: () => void;
   onDelete?: () => void;
   deleting?: boolean;
+  accounts?: any[];
   // ---------------------------
   colors: any;
 }

@@ -336,7 +336,7 @@ class FirestoreCollection:
                     break
 
             update_data = {}
-            has_operator = "$set" in update or "$inc" in update
+            has_operator = "$set" in update or "$inc" in update or "$push" in update
             if "$set" in update:
                 update_data.update(_serialize_doc(update["$set"]))
             if "$inc" in update:
@@ -347,6 +347,9 @@ class FirestoreCollection:
                 elif upsert:
                     for k, v in update["$inc"].items():
                         update_data[k] = v
+            if "$push" in update:
+                for k, v in update["$push"].items():
+                    update_data[k] = firestore.ArrayUnion([_serialize_value(v)])
             if not has_operator:
                 update_data = _serialize_doc(update)
 
@@ -359,8 +362,18 @@ class FirestoreCollection:
                     if f["op"] == "==":
                         merged[f["field"]] = f["value"]
                 merged.update(update_data)
+                # Use the same priority key list as insert_one so that
+                # upserts pick a stable, deterministic document ID.
                 doc_id = None
-                for key in ["user_id", "account_id", "note_id"]:
+                for key in [
+                    "transaction_id", "income_id", "expense_id", "bill_id",
+                    "investment_id", "heading_id", "reminder_id", "note_id",
+                    "family_member_id", "card_id", "loan_id", "lending_id",
+                    "rental_id", "payment_id", "account_id", "attempt_id",
+                    "log_id", "snapshot_id", "transfer_id",
+                    "loan_transaction_id", "emi_reminder_id", "prepayment_id",
+                    "user_id",
+                ]:
                     if key in merged:
                         doc_id = merged[key]
                         break

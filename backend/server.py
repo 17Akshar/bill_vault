@@ -35,9 +35,10 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app):
-    # Startup
+    from snapshots import start_scheduler, stop_scheduler
+    start_scheduler()
     yield
-    # Shutdown (no client to close for Firestore)
+    await stop_scheduler()
 
 # Create the main app
 app = FastAPI(lifespan=lifespan)
@@ -3474,7 +3475,7 @@ from recovery import recovery_router
 app.include_router(recovery_router)
 
 # Net-Worth Snapshots module (daily + monthly snapshot capture + scheduler)
-from snapshots import snapshots_router, start_scheduler, stop_scheduler, get_prev_month_snapshot
+from snapshots import snapshots_router, get_prev_month_snapshot
 app.include_router(snapshots_router)
 
 # Transfers module (third transaction type — moves money between accounts)
@@ -3527,17 +3528,20 @@ app.include_router(loan_prepayments_router)
 from insights import insights_router
 app.include_router(insights_router)
 
-@app.on_event("startup")
-async def _start_snapshot_scheduler():
-    start_scheduler()
+from routers.notes import router as notes_router
+app.include_router(notes_router)
 
-@app.on_event("shutdown")
-async def _stop_snapshot_scheduler():
-    await stop_scheduler()
+from routers.mpin import router as mpin_router
+app.include_router(mpin_router)
+
+from routers.portfolio import router as portfolio_router
+app.include_router(portfolio_router)
+
+from routers.calendar import router as calendar_events_router
+app.include_router(calendar_events_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],

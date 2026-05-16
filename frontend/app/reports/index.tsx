@@ -5,8 +5,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import api from '../../utils/api';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+
+type ReportItem = {
+  icon: string;
+  label: string;
+  desc: string;
+  color: string;
+  route?: string;
+  onPress?: () => void | Promise<void>;
+};
 
 export default function ReportsScreen() {
   const router = useRouter();
@@ -28,7 +37,7 @@ export default function ReportsScreen() {
     }
   };
 
-  const sections = [
+  const sections: { title: string; items: ReportItem[] }[] = [
     {
       title: 'Analytics',
       items: [

@@ -51,7 +51,7 @@ export default function NotesScreen() {
       setNotes(nRes.data);
       setHeadings(hRes.data);
       // Auto-expand all headings that have notes
-      const used = new Set(nRes.data.filter((n: any) => n.heading_id).map((n: any) => n.heading_id));
+      const used = new Set<string>(nRes.data.filter((n: any) => n.heading_id).map((n: any) => n.heading_id as string));
       used.add('ungrouped');
       setExpandedHeadings(used);
     } catch (e) { console.error(e); }

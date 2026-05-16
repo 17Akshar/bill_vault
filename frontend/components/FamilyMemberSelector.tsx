@@ -40,14 +40,16 @@ interface FilterProps {
 export function FamilyMemberFilter({ selectedId, onSelect, showAll = true, colors, label }: FilterProps) {
   const [members, setMembers] = useState<FamilyMember[]>([]);
 
-  useEffect(() => { loadMembers(); }, []);
-
-  const loadMembers = async () => {
-    try {
-      const res = await api.get('/family-members');
-      setMembers(res.data || []);
-    } catch (e) { console.error(e); }
-  };
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get('/family-members');
+        if (!cancelled) setMembers(res.data || []);
+      } catch (e) { console.error(e); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   if (members.length === 0) return null;
 
@@ -96,14 +98,16 @@ interface PickerProps {
 export function FamilyMemberPicker({ selectedId, onSelect, colors, label }: PickerProps) {
   const [members, setMembers] = useState<FamilyMember[]>([]);
 
-  useEffect(() => { loadMembers(); }, []);
-
-  const loadMembers = async () => {
-    try {
-      const res = await api.get('/family-members');
-      setMembers(res.data || []);
-    } catch (e) { console.error(e); }
-  };
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get('/family-members');
+        if (!cancelled) setMembers(res.data || []);
+      } catch (e) { console.error(e); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   if (members.length === 0) return null;
 

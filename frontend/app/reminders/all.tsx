@@ -457,7 +457,7 @@ export default function RemindersAllScreen() {
               month={calendarMonth}
               setMonth={setCalendarMonth}
               items={items}
-              onPickDay={(d) => {
+              onPickDay={(_d: string) => {
                 // No drill-down on click; show day's reminders below
               }}
             />

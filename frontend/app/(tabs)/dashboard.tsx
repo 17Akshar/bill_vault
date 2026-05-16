@@ -103,7 +103,7 @@ export default function DashboardScreen() {
     finally { setLoading(false); setRefreshing(false); }
   };
 
-  const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, []);
+  const onRefresh = useCallback(() => { setRefreshing(true); loadAll(); }, [familyFilter]);
 
   if (loading) {
     return (
@@ -424,10 +424,10 @@ export default function DashboardScreen() {
                   days === 1 ? 'Due in 1 day'  :
                               `Due in ${days} days`;
                 const dueColor =
-                  days === null ? T.textSecondary :
+                  days === null ? T.textDim :
                   days <= 0 ? T.danger :
                   days <= 2 ? '#FFB300' :
-                              T.textSecondary;
+                              T.textDim;
                 const amount = rem.amount
                   ?? rem.related_item?.amount
                   ?? rem.related_item?.emi_amount

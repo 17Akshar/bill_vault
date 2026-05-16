@@ -156,7 +156,7 @@ export default function TransactionsScreen() {
     finally { setLoading(false); setRefreshing(false); }
   };
 
-  const onRefresh = useCallback(() => { setRefreshing(true); loadTransactions(); }, [filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter]);
+  const onRefresh = useCallback(() => { setRefreshing(true); loadTransactions(); }, [filter, selectedMonth, selectedAccountFilter, selectedCategoryFilter, selectedMemberFilter]);
 
   const openEdit = (tx: Transaction) => {
     setEditItem(tx);
