@@ -11,17 +11,22 @@
       }
     },
     "preview": {
+      "channel": "preview",
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://your-backend.up.railway.app"
       }
     },
     "production": {
+      "channel": "production",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://your-backend.up.railway.app"
       }
     }
+  },
+  "update": {
+    "channel": "main"
   },
   "submit": {
     "production": {}

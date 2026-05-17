@@ -51,8 +51,19 @@
     "experiments": {
       "typedRoutes": true
     },
+    "updates": {
+      "url": "https://u.expo.dev/YOUR_EAS_PROJECT_ID",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
-      "EXPO_PUBLIC_BACKEND_URL": "http://localhost:8000"
+      "EXPO_PUBLIC_BACKEND_URL": "http://localhost:8000",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
     }
   }
 }
