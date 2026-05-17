@@ -13,7 +13,10 @@ if (Platform.OS === 'web') {
   axios.defaults.adapter = 'fetch';
 }
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL;
+const BACKEND_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  'http://localhost:8000';
 
 interface User {
   user_id: string;
@@ -51,22 +54,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const storedToken = await AsyncStorage.getItem('auth_token');
       const storedUser = await AsyncStorage.getItem('user');
-      
+
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
-      } else {
-        // Auto-bootstrap single-user mode when no stored credentials exist
-        // so that deep-links to protected screens (eg /investments) work
-        // without forcing a manual login on the welcome screen.
-        try {
-          await useSingleUserMode();
-        } catch (e) {
-          // Network/backend hiccup — silent fallback to unauthenticated state.
-          // Welcome screen will still render its CTAs.
-        }
       }
+      // Do NOT auto-call useSingleUserMode here — it bypasses login entirely.
+      // Single-user mode is only entered explicitly when the user taps
+      // "Use Without Account" on the login screen.
     } catch (error) {
       console.error('Auth check error:', error);
     } finally {

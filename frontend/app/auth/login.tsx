@@ -30,14 +30,15 @@ export default function Login() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await login(trimmedEmail, password);
       await routeAfterLogin(router.replace);
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);

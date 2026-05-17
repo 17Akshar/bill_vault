@@ -10,6 +10,7 @@ from io import StringIO, BytesIO
 import csv
 import json
 import os
+import re
 import logging
 import uuid
 import bcrypt
@@ -404,20 +405,31 @@ async def get_current_user(request: Request):
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     """Register new user with email/password"""
+    # Normalize email to lowercase to prevent case-sensitivity login failures
+    normalized_email = user_data.email.strip().lower()
+
     # Check if user exists
-    existing_user = await db.users.find_one({"email": user_data.email})
+    existing_user = await db.users.find_one({"email": normalized_email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
+    # Validate password strength (min 8 chars, uppercase, digit)
+    if len(user_data.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    if not re.search(r'[A-Z]', user_data.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'\d', user_data.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+
     # Hash password
     hashed_password = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt())
-    
+
     # Create user
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     verification_token = uuid.uuid4().hex
     user = {
         "user_id": user_id,
-        "email": user_data.email,
+        "email": normalized_email,
         "name": user_data.name,
         "mobile_number": user_data.mobile_number,
         "security_question": user_data.security_question,
@@ -466,7 +478,9 @@ async def register(user_data: UserCreate):
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
     """Login with email/password"""
-    user_doc = await db.users.find_one({"email": credentials.email})
+    # Normalize email to lowercase to match how it was stored at registration
+    normalized_email = credentials.email.strip().lower()
+    user_doc = await db.users.find_one({"email": normalized_email})
     if not user_doc:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -565,13 +579,14 @@ async def google_auth_session(request: Request, response: Response):
         "created_at": datetime.now(timezone.utc)
     })
     
-    # Set cookie
+    # Set cookie — use secure only in production (HTTPS)
+    is_production = os.environ.get("ENVIRONMENT", "development").lower() == "production"
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=is_production,
+        samesite="none" if is_production else "lax",
         path="/",
         max_age=7*24*60*60
     )
@@ -3545,4 +3560,5 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=False,
 )
