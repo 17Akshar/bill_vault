@@ -400,6 +400,13 @@ async def get_current_user(request: Request):
     
     return User(**user_doc)
 
+# ==================== HEALTH CHECK ====================
+
+@api_router.get("/health")
+async def health_check():
+    """Railway / load-balancer health check"""
+    return {"status": "ok"}
+
 # ==================== AUTH ENDPOINTS ====================
 
 @api_router.post("/auth/register")
