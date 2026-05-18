@@ -20,17 +20,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: pip install --quiet -r requirements.txt
-
       - name: Python syntax check (all .py files)
         working-directory: ./backend
         run: |
