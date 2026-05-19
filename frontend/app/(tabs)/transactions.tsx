@@ -311,6 +311,19 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
+      {/* Cash Flow (Income) Dashboard shortcut */}
+      {filter === 'income' && (
+        <TouchableOpacity
+          style={[styles.expenseDashBanner, { backgroundColor: '#00E67618', borderColor: '#00E67635' }]}
+          onPress={() => router.push('/income' as any)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="trending-up-outline" size={16} color="#00E676" />
+          <Text style={[styles.expenseDashText, { color: '#00E676' }]}>Open Cash Flow Dashboard</Text>
+          <Ionicons name="arrow-forward" size={14} color="#00E676" />
+        </TouchableOpacity>
+      )}
+
       {/* Expense Dashboard shortcut */}
       {filter === 'expense' && (
         <TouchableOpacity
