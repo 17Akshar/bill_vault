@@ -44,6 +44,9 @@ class ReminderCreate(BaseModel):
     related_id: Optional[str] = None
     is_recurring: bool = False
     recurrence: Optional[str] = None  # daily, weekly, monthly, quarterly, yearly
+    # Amount and provider for standalone reminders (bills, EMIs, etc.)
+    amount: Optional[float] = None
+    provider: Optional[str] = None   # human label e.g. "HDFC Bank", "BESCOM"
     # Advanced rule (per Add Reminder spec)
     url: Optional[str] = None
     end_type: Optional[str] = "never"       # 'never' | 'on' | 'after'
@@ -58,6 +61,8 @@ class ReminderUpdate(BaseModel):
     is_completed: Optional[bool] = None
     is_recurring: Optional[bool] = None
     recurrence: Optional[str] = None
+    amount: Optional[float] = None
+    provider: Optional[str] = None
     # Advanced rule
     url: Optional[str] = None
     end_type: Optional[str] = None
@@ -117,6 +122,8 @@ async def create_reminder(data: ReminderCreate, request: Request):
         "related_id": data.related_id,
         "is_recurring": data.is_recurring,
         "recurrence": data.recurrence,
+        "amount": data.amount,
+        "provider": data.provider,
         # Advanced rule
         "url": data.url,
         "end_type": data.end_type or "never",
