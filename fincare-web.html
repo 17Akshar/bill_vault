@@ -464,6 +464,147 @@
     svg { display: block; }
 
     /* ───────────────────────────────────────────────────────
+       TRANSACTIONS SCREEN
+    ─────────────────────────────────────────────────────── */
+
+    /* Month navigator */
+    .month-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; margin-bottom: 14px;
+    }
+    .month-label { color: var(--text); font-size: 16px; font-weight: 700; }
+    .month-btn {
+      width: 34px; height: 34px; border-radius: 17px; background: var(--card);
+      border: none; color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Summary row (income + expense cards side by side) */
+    .tx-summary {
+      display: flex; gap: 10px; padding: 0 20px; margin-bottom: 14px;
+    }
+    .tx-sum-card {
+      flex: 1; background: var(--card); border-radius: var(--radius-sm);
+      padding: 14px 16px;
+    }
+    .tx-sum-label { color: var(--text-dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tx-sum-value { font-size: 20px; font-weight: 800; margin-top: 4px; }
+
+    /* Filter chip bar */
+    .chip-bar {
+      display: flex; gap: 8px; padding: 0 20px; margin-bottom: 14px;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .chip-bar::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0; padding: 7px 16px; border-radius: 999px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      background: var(--card); color: var(--text-dim);
+      border: 1.5px solid transparent;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .chip.active { background: var(--primary-dim); color: var(--primary); border-color: var(--primary); }
+
+    /* Tx date group header */
+    .tx-date-header {
+      padding: 8px 20px 6px; color: var(--text-dim);
+      font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed; right: calc(50% - 215px + 20px); bottom: 84px;
+      width: 52px; height: 52px; border-radius: 26px;
+      background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 20px rgba(108,71,255,0.5);
+      cursor: pointer; border: none; z-index: 10;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s;
+    }
+    .fab:active { transform: scale(0.93); }
+    @media (max-width: 500px) { .fab { right: 20px; } }
+
+    /* ───────────────────────────────────────────────────────
+       ADD TRANSACTION / FORM SCREEN
+    ─────────────────────────────────────────────────────── */
+    .form-screen { padding-bottom: 100px; }
+    .form-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 52px 20px 16px;
+    }
+    .form-header-title { color: var(--text); font-size: 20px; font-weight: 800; }
+    .form-save-btn {
+      color: var(--primary); font-size: 16px; font-weight: 700;
+      background: none; border: none; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Amount hero */
+    .amount-hero {
+      background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+      margin: 0 20px 20px; border-radius: var(--radius);
+      padding: 24px 20px; text-align: center;
+    }
+    .amount-hero-label { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+    .amount-hero-prefix { color: rgba(255,255,255,0.8); font-size: 28px; font-weight: 700; }
+    .amount-hero-input {
+      background: none; border: none; color: #fff; font-size: 42px; font-weight: 800;
+      text-align: center; width: 80%; outline: none; letter-spacing: -1px;
+    }
+    .amount-hero-input::placeholder { color: rgba(255,255,255,0.4); }
+
+    /* Type selector chips */
+    .type-chips { display: flex; gap: 8px; margin-bottom: 20px; padding: 0 20px; }
+    .type-chip {
+      flex: 1; padding: 10px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      text-align: center; background: var(--card); color: var(--text-dim);
+      border: 1.5px solid transparent; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .type-chip.active-income   { background: var(--success-dim); color: var(--success); border-color: var(--success); }
+    .type-chip.active-expense  { background: var(--danger-dim);  color: var(--danger);  border-color: var(--danger);  }
+    .type-chip.active-transfer { background: var(--info-dim);    color: var(--info);    border-color: var(--info);    }
+
+    /* Form group card */
+    .form-card {
+      background: var(--card); margin: 0 20px 14px; border-radius: var(--radius); overflow: hidden;
+    }
+    .form-row {
+      display: flex; align-items: center; padding: 14px 16px; gap: 12px;
+      border-bottom: 1px solid var(--border); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .form-row:last-child { border-bottom: none; }
+    .form-row:active { background: rgba(255,255,255,0.04); }
+    .form-row-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .form-row-label { color: var(--text-dim); font-size: 12px; }
+    .form-row-value { color: var(--text); font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .form-row-placeholder { color: var(--text-dim); font-size: 14px; margin-top: 2px; }
+
+    /* Section label above card */
+    .form-section-label {
+      color: var(--text-dim); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      padding: 0 20px; margin-bottom: 8px; margin-top: 4px;
+    }
+
+    /* Sticky save bottom bar */
+    .sticky-save {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      background: var(--bg); border-top: 1px solid var(--border);
+      padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0));
+    }
+
+    /* ───────────────────────────────────────────────────────
        MISC UTILITIES
     ─────────────────────────────────────────────────────── */
     .text-success { color: var(--success); }
@@ -1184,7 +1325,308 @@ function renderDashboard() {
   </div>`;
 }
 
-/* ══════════════════════════════════════════════════════
+/* ─── TRANSACTIONS ───────────────────────────────────── */
+function renderTransactions() {
+  const allTx  = DEMO.transactions; // fallback to demo
+  const accts  = State.data.accounts || DEMO.accounts;
+  const filter = State.txFilter || 'all';
+  const month  = State.txMonth ?? new Date().getMonth();
+  const year   = State.txYear  ?? new Date().getFullYear();
+
+  // Filter by month/year
+  const inPeriod = allTx.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+
+  // Summary
+  const totalIncome  = inPeriod.filter(t => t._type === 'income').reduce((s,t) => s + t.amount, 0);
+  const totalExpense = inPeriod.filter(t => t._type === 'expense').reduce((s,t) => s + t.amount, 0);
+
+  // Filtered list
+  const filtered = filter === 'all' ? inPeriod
+    : inPeriod.filter(t => t._type === filter);
+
+  // Group by date
+  const grouped = {};
+  filtered.forEach(t => {
+    const dk = t.date ? t.date.slice(0,10) : 'Unknown';
+    if (!grouped[dk]) grouped[dk] = [];
+    grouped[dk].push(t);
+  });
+  const dateKeys = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+
+  const txRows = dateKeys.map(dk => {
+    const dayTxs = grouped[dk];
+    const dateLabel = (() => {
+      const d = new Date(dk);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diff = Math.round((d - today) / 86400000);
+      if (diff === 0)  return 'Today';
+      if (diff === -1) return 'Yesterday';
+      return d.getDate() + ' ' + MONTHS_FULL[d.getMonth()];
+    })();
+
+    const rows = dayTxs.map((t, i) => {
+      const isInc  = t._type === 'income';
+      const isTxfr = t._type === 'transfer';
+      const color  = isTxfr ? COLORS.info : isInc ? COLORS.success : COLORS.danger;
+      const iconSvg = isTxfr ? ICON.swap : isInc ? ICON.arrow_dn : ICON.arrow_up;
+      const title  = isTxfr ? 'Transfer' : (t.source || t.description || t.category || 'Transaction');
+      const acct   = accts.find(a => a.account_id === t.account_id);
+      const sub    = [t.category, acct ? acct.name : ''].filter(Boolean).join(' · ');
+      const amtStr = isTxfr ? formatINR(t.amount) : `${isInc?'+':'-'}${formatINR(t.amount)}`;
+      return `
+      <div class="list-row" onclick="App.openTxDetail('${t.id}')" ${i < dayTxs.length-1 ? 'style="border-bottom:1px solid var(--border)"':''}>
+        <div class="list-icon" style="background:${color}22">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="${color}">${iconSvg.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div class="list-body">
+          <div class="list-title">${title}</div>
+          <div class="list-sub">${sub}</div>
+        </div>
+        <div class="list-right">
+          <div class="list-amount" style="color:${color}">${amtStr}</div>
+          <div class="list-date">${t.date ? new Date(t.date).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="tx-date-header">${dateLabel}</div><div class="list-card" style="margin:0 20px 10px">${rows}</div>`;
+  }).join('');
+
+  const prevMonth = () => {
+    let m = month - 1, y = year;
+    if (m < 0) { m = 11; y--; }
+    State.txMonth = m; State.txYear = y; App.render();
+  };
+  const nextMonth = () => {
+    let m = month + 1, y = year;
+    if (m > 11) { m = 0; y++; }
+    State.txMonth = m; State.txYear = y; App.render();
+  };
+
+  return `
+  <div class="screen-wrap" style="padding-bottom:80px">
+    <!-- Header -->
+    <div class="page-header" style="padding-bottom:10px">
+      <div>
+        <div class="page-title">Transactions</div>
+      </div>
+      <div class="icon-btn" onclick="App.navigate('add-transaction',{type:'expense'})">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </div>
+    </div>
+
+    <!-- Month Navigator -->
+    <div class="month-nav">
+      <button class="month-btn" onclick="(${prevMonth.toString()})()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+      <div class="month-label">${MONTHS_FULL[month]} ${year}</div>
+      <button class="month-btn" onclick="(${nextMonth.toString()})()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="tx-summary">
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Income</div>
+        <div class="tx-sum-value text-success">${formatINR(totalIncome)}</div>
+      </div>
+      <div class="tx-sum-card">
+        <div class="tx-sum-label">Expenses</div>
+        <div class="tx-sum-value text-danger">${formatINR(totalExpense)}</div>
+      </div>
+    </div>
+
+    <!-- Filter Chips -->
+    <div class="chip-bar">
+      ${['all','income','expense','transfer'].map(f => `
+        <div class="chip ${filter===f?'active':''}" onclick="State.txFilter='${f}';App.render()">
+          ${f.charAt(0).toUpperCase()+f.slice(1)}
+        </div>`).join('')}
+    </div>
+
+    <!-- Grouped Transactions -->
+    ${filtered.length === 0
+      ? `<div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">No transactions</div>
+          <div class="empty-sub">No ${filter==='all'?'':filter} transactions in ${MONTHS_FULL[month]}.</div>
+        </div>`
+      : txRows}
+
+    <!-- FAB -->
+    <button class="fab" onclick="App.navigate('add-transaction',{type:'expense'})">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    </button>
+  </div>`;
+}
+
+/* ─── ADD / EDIT TRANSACTION ─────────────────────────── */
+function renderAddTransaction() {
+  const params = State.params || {};
+  const type   = State.addTxType || params.type || 'expense';
+  const accts  = State.data.accounts || DEMO.accounts;
+
+  const EXPENSE_CATS = ['Food & Dining','Transport','Shopping','Entertainment','Grocery','Bills & Utilities','Health','Education','Travel','Others'];
+  const INCOME_CATS  = ['Salary','Freelance','Business','Investment Returns','Rental','Gift','Others'];
+
+  const cats = type === 'income' ? INCOME_CATS : EXPENSE_CATS;
+
+  // Gradient color per type
+  const heroGrad = type === 'income'
+    ? 'linear-gradient(135deg,#1a6b3a,#22C55E)'
+    : type === 'transfer'
+    ? 'linear-gradient(135deg,#1a3a6b,#60A5FA)'
+    : 'linear-gradient(135deg,#6b1a1a,#EF4444)';
+
+  const acctOptions = accts.map(a => `<option value="${a.account_id}">${a.name} (${formatINR(a.balance)})</option>`).join('');
+  const catOptions  = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  // Colour-coded type chip handler string
+  const typeSwitch = (t) => `State.addTxType='${t}';App.render()`;
+
+  return `
+  <div class="screen-wrap form-screen">
+    <!-- Header -->
+    <div class="form-header">
+      <div class="icon-btn" onclick="history.length>1?App.goTab('transactions'):App.goTab('transactions')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
+      </div>
+      <div class="form-header-title">Add Transaction</div>
+      <button class="form-save-btn" onclick="App.saveTx()">Save</button>
+    </div>
+
+    <!-- Type selector -->
+    <div class="type-chips">
+      <div class="type-chip ${type==='income'?'active-income':''}" onclick="${typeSwitch('income')}">📈 Income</div>
+      <div class="type-chip ${type==='expense'?'active-expense':''}" onclick="${typeSwitch('expense')}">📉 Expense</div>
+      <div class="type-chip ${type==='transfer'?'active-transfer':''}" onclick="${typeSwitch('transfer')}">⇄ Transfer</div>
+    </div>
+
+    <!-- Amount hero -->
+    <div class="amount-hero" style="background:${heroGrad}">
+      <div class="amount-hero-label">Amount</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        <span class="amount-hero-prefix">₹</span>
+        <input class="amount-hero-input" id="tx-amount" type="number"
+          inputmode="decimal" placeholder="0" min="0" />
+      </div>
+    </div>
+
+    <!-- Basic Details -->
+    <div class="form-section-label">Basic Details</div>
+    <div class="form-card">
+      ${type !== 'transfer' ? `
+      <div class="form-row">
+        <div class="form-row-icon" style="background:var(--primary-dim)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)">${ICON.card.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">Account</div>
+          <select id="tx-account" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;cursor:pointer;margin-top:2px">
+            ${acctOptions}
+          </select>
+        </div>
+      </div>` : `
+      <div class="form-row">
+        <div class="form-row-icon" style="background:var(--info-dim)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--info)">${ICON.bank.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">From Account</div>
+          <select id="tx-from" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;cursor:pointer;margin-top:2px">
+            ${acctOptions}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:var(--success-dim)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--success)">${ICON.bank.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">To Account</div>
+          <select id="tx-to" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;cursor:pointer;margin-top:2px">
+            ${acctOptions}
+          </select>
+        </div>
+      </div>`}
+
+      ${type !== 'transfer' ? `
+      <div class="form-row">
+        <div class="form-row-icon" style="background:var(--warn-dim)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--warn)">${ICON.report.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">Category</div>
+          <select id="tx-category" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;cursor:pointer;margin-top:2px">
+            ${catOptions}
+          </select>
+        </div>
+      </div>` : ''}
+
+      <div class="form-row">
+        <div class="form-row-icon" style="background:var(--success-dim)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--success)">${ICON.calendar.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">Date</div>
+          <input id="tx-date" type="date" value="${new Date().toISOString().slice(0,10)}"
+            style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;cursor:pointer;margin-top:2px;color-scheme:dark" />
+        </div>
+      </div>
+    </div>
+
+    <!-- More Details -->
+    <div class="form-section-label">More Details (Optional)</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:rgba(255,255,255,0.06)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)">${ICON.note.match(/<path[^>]*\/>/g).join('')}</svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">${type==='income' ? 'Source / Payer' : type==='transfer' ? 'Note' : 'Description / Merchant'}</div>
+          <input id="tx-desc" type="text" placeholder="${type==='income'?'e.g. Employer Ltd':type==='transfer'?'Optional note':'e.g. Swiggy, Amazon'}"
+            style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px"
+            autocomplete="off" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:rgba(255,255,255,0.06)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="form-row-label">Notes</div>
+          <input id="tx-notes" type="text" placeholder="Add a note (optional)"
+            style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px"
+            autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Trust banner -->
+    <div style="margin:0 20px 100px;padding:14px 16px;background:var(--primary-dim);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.25);display:flex;gap:12px;align-items:center">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--primary)" flex-shrink="0">${ICON.shield.match(/<path[^>]*\/>/g).join('')}</svg>
+      <div>
+        <div style="color:var(--primary);font-size:13px;font-weight:700">Your data is secure</div>
+        <div style="color:var(--text-dim);font-size:12px;margin-top:2px">All transaction details are encrypted.</div>
+      </div>
+    </div>
+
+    <!-- Sticky Save -->
+    <div class="sticky-save">
+      <button class="btn btn-primary" style="width:100%;border-radius:var(--radius-sm);font-size:16px"
+        onclick="App.saveTx()">
+        Save ${type.charAt(0).toUpperCase()+type.slice(1)}
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
    9. APP CONTROLLER
 ══════════════════════════════════════════════════════ */
 const App = {
@@ -1197,9 +1639,10 @@ const App = {
   },
 
   goTab(tab) {
-    State.tab = tab;
+    State.tab    = tab;
     State.screen = tab;
     State.params = {};
+    State.addTxType = null;
     // Update tab bar highlight
     document.querySelectorAll('.tab-item').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === tab);
@@ -1255,14 +1698,14 @@ const App = {
     const scr = document.getElementById('screen');
     let html = '';
     switch (State.screen) {
-      case 'login':         html = renderLogin();       break;
-      case 'dashboard':     html = renderDashboard();   break;
+      case 'login':            html = renderLogin();          break;
+      case 'dashboard':        html = renderDashboard();      break;
+      case 'transactions':     html = renderTransactions();   break;
+      case 'add-transaction':  html = renderAddTransaction(); break;
       default:
         html = `<div class="screen-wrap">
           <div class="page-header">
-            <div>
-              <div class="page-title">${capitalize(State.screen)}</div>
-            </div>
+            <div><div class="page-title">${capitalize(State.screen.replace(/-/g,' '))}</div></div>
             <div class="icon-btn" onclick="App.goTab('${State.tab||'dashboard'}')">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
             </div>
@@ -1275,6 +1718,87 @@ const App = {
         </div>`;
     }
     scr.innerHTML = html;
+  },
+
+  /* ── Transaction actions ─────────────────────── */
+  openTxDetail(id) {
+    const tx = (State.data.transactions || DEMO.transactions).find(t => t.id === id);
+    if (!tx) return;
+    const isInc  = tx._type === 'income';
+    const isTxfr = tx._type === 'transfer';
+    const color  = isTxfr ? COLORS.info : isInc ? COLORS.success : COLORS.danger;
+    const amtStr = isTxfr ? formatINR(tx.amount) : `${isInc?'+':'-'}${formatINR(tx.amount)}`;
+    const accts  = State.data.accounts || DEMO.accounts;
+    const acct   = accts.find(a => a.account_id === tx.account_id);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+          <div class="list-icon" style="background:${color}22;width:52px;height:52px;border-radius:26px">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="${color}">${(isTxfr?ICON.swap:isInc?ICON.arrow_dn:ICON.arrow_up).match(/<path[^>]*\/>/g).join('')}</svg>
+          </div>
+          <div>
+            <div style="color:var(--text);font-size:18px;font-weight:700">${amtStr}</div>
+            <div style="color:var(--text-dim);font-size:13px">${formatDate(tx.date)}</div>
+          </div>
+        </div>
+        ${[
+          ['Type', tx._type.charAt(0).toUpperCase()+tx._type.slice(1)],
+          ['Category', tx.category || '—'],
+          ['Account', acct ? acct.name : '—'],
+          ['Description', tx.source || tx.description || '—'],
+          ['Date', tx.date || '—'],
+        ].map(([k,v]) => `
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--text-dim);font-size:14px">${k}</span>
+            <span style="color:var(--text);font-size:14px;font-weight:600">${v}</span>
+          </div>`).join('')}
+        <button class="btn btn-outline" style="width:100%;margin-top:20px" onclick="this.closest('.modal-overlay').remove()">Close</button>
+      </div>`;
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  async saveTx() {
+    const amount = parseFloat(document.getElementById('tx-amount')?.value || '0');
+    if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
+    const type  = State.addTxType || State.params?.type || 'expense';
+    const date  = document.getElementById('tx-date')?.value || new Date().toISOString().slice(0,10);
+    const desc  = document.getElementById('tx-desc')?.value || '';
+    const notes = document.getElementById('tx-notes')?.value || '';
+    const acct  = document.getElementById('tx-account')?.value || document.getElementById('tx-from')?.value || '';
+    const cat   = document.getElementById('tx-category')?.value || 'Others';
+
+    const body = { amount, date, description: desc, notes, account_id: acct, category: cat };
+    let ok = false;
+    if (type === 'income') {
+      const r = await apiPost('/income', { ...body, source: desc });
+      ok = !!r;
+    } else if (type === 'expense') {
+      const r = await apiPost('/expenses', body);
+      ok = !!r;
+    } else {
+      const toAcct = document.getElementById('tx-to')?.value || '';
+      const r = await apiPost('/transfers', { ...body, from_account_id: acct, to_account_id: toAcct });
+      ok = !!r;
+    }
+
+    // Add to local demo data regardless (optimistic)
+    const newTx = {
+      id: 'tx_' + Date.now(), _type: type, amount, date, category: cat,
+      source: desc, description: desc, account_id: acct,
+    };
+    DEMO.transactions.unshift(newTx);
+    if (type === 'income')  { DEMO.dashboard.monthly_income   += amount; DEMO.dashboard.total_balance += amount; }
+    if (type === 'expense') { DEMO.dashboard.monthly_expenses += amount; DEMO.dashboard.total_balance -= amount; }
+
+    State.addTxType = null;
+    this.showToast(ok ? `${type.charAt(0).toUpperCase()+type.slice(1)} saved!` : `${type.charAt(0).toUpperCase()+type.slice(1)} saved (demo mode)`);
+    await loadDashboardData();
+    this.goTab('transactions');
   },
 
   /* ── Toast ───────────────────────────────────── */
