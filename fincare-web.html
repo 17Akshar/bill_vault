@@ -464,6 +464,169 @@
     svg { display: block; }
 
     /* ───────────────────────────────────────────────────────
+       ACCOUNTS / WEALTH MODULE
+    ─────────────────────────────────────────────────────── */
+
+    /* Overview summary hero */
+    .wealth-hero {
+      margin: 0 20px 20px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .wealth-hero-total { color: var(--text-dim); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .wealth-hero-amount { color: var(--text); font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-bottom: 14px; }
+    .wealth-sub-row { display: flex; gap: 0; }
+    .wealth-sub-cell { flex: 1; padding: 12px 14px; border-radius: var(--radius-sm); }
+    .wealth-sub-label { color: var(--text-dim); font-size: 11px; font-weight: 500; margin-bottom: 4px; }
+    .wealth-sub-val { font-size: 16px; font-weight: 700; }
+
+    /* Account group rows */
+    .acct-group-list { background: var(--card); margin: 0 20px; border-radius: var(--radius); overflow: hidden; }
+    .acct-group-row {
+      display: flex; align-items: center; padding: 16px; gap: 14px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .acct-group-row:last-child { border-bottom: none; }
+    .acct-group-row:active { background: rgba(255,255,255,0.04); }
+    .acct-group-icon {
+      width: 44px; height: 44px; border-radius: 22px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .acct-group-info { flex: 1; min-width: 0; }
+    .acct-group-name { color: var(--text); font-size: 15px; font-weight: 600; }
+    .acct-group-sub  { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+    .acct-group-bal  { font-size: 16px; font-weight: 700; text-align: right; }
+
+    /* Advanced features grid */
+    .adv-grid { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 20px; }
+    .adv-card {
+      flex: 0 0 calc(50% - 5px); background: var(--card); border-radius: var(--radius-sm);
+      padding: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .adv-card:active { opacity: 0.7; }
+    .adv-card-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .adv-card-label { color: var(--text); font-size: 12px; font-weight: 600; line-height: 1.3; }
+
+    /* ─── Account Detail screen ─── */
+    .acct-detail-hero {
+      margin: 0 20px 18px;
+      background: linear-gradient(135deg, var(--grad-from), var(--grad-to));
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: 0 8px 32px rgba(108,71,255,0.35);
+    }
+    .acct-detail-name  { color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; }
+    .acct-detail-bank  { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 2px; }
+    .acct-detail-bal   { color: #fff; font-size: 30px; font-weight: 800; margin: 10px 0 4px; letter-spacing: -1px; }
+    .acct-detail-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4);
+      color: var(--success); font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px;
+    }
+
+    /* Quick action buttons (Send / Statement / Edit / More) */
+    .quick-acts { display: flex; gap: 8px; justify-content: space-between; margin: 0 20px 18px; }
+    .quick-act {
+      flex: 1; background: var(--card); border-radius: var(--radius-sm);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 14px 4px; cursor: pointer;
+      transition: background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .quick-act:active { background: var(--card2); }
+    .quick-act-icon  { width: 38px; height: 38px; border-radius: 19px; display: flex; align-items: center; justify-content: center; }
+    .quick-act-label { color: var(--text); font-size: 11px; font-weight: 600; text-align: center; }
+
+    /* Account info table */
+    .info-table { background: var(--card); margin: 0 20px 14px; border-radius: var(--radius); overflow: hidden; }
+    .info-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--text-dim); font-size: 13px; }
+    .info-value { color: var(--text); font-size: 13px; font-weight: 600; max-width: 55%; text-align: right; word-break: break-all; }
+
+    /* Action buttons row (Add Money / Transfer / Statement) */
+    .action-btns { display: flex; gap: 10px; padding: 0 20px; margin-bottom: 18px; }
+    .action-btn {
+      flex: 1; background: var(--primary-dim); border: 1.5px solid rgba(108,71,255,0.3);
+      border-radius: var(--radius-sm); padding: 12px 8px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .action-btn:active { opacity: 0.8; }
+    .action-btn-label { color: var(--primary); font-size: 11px; font-weight: 700; text-align: center; }
+
+    /* Smart insights */
+    .insight-grid { display: flex; gap: 10px; padding: 0 20px; margin-bottom: 18px; }
+    .insight-card {
+      flex: 1; background: var(--card); border-radius: var(--radius-sm); padding: 14px 12px;
+    }
+    .insight-icon  { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .insight-label { color: var(--text-dim); font-size: 11px; font-weight: 500; }
+    .insight-value { color: var(--text); font-size: 15px; font-weight: 700; margin-top: 4px; }
+
+    /* Transaction filter panel */
+    .filter-panel {
+      background: var(--card2); margin: 0 20px 14px; border-radius: var(--radius);
+      padding: 16px; border: 1px solid var(--border);
+    }
+    .filter-panel-title { color: var(--text); font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .filter-group-label { color: var(--text-dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 12px; }
+    .filter-chips-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .filter-chip {
+      padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      background: var(--card); color: var(--text-dim); cursor: pointer;
+      border: 1.5px solid transparent; -webkit-tap-highlight-color: transparent;
+    }
+    .filter-chip.active { background: var(--primary-dim); color: var(--primary); border-color: var(--primary); }
+    .filter-btns { display: flex; gap: 10px; margin-top: 14px; }
+    .filter-reset { flex: 1; }
+    .filter-apply { flex: 2; }
+
+    /* Search bar */
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border-radius: var(--radius-sm);
+      padding: 10px 14px; margin: 0 20px 14px;
+      border: 1.5px solid var(--border);
+    }
+    .search-bar:focus-within { border-color: var(--primary); }
+    .search-input {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-size: 14px; outline: none;
+    }
+    .search-input::placeholder { color: var(--text-dim); }
+
+    /* ─── Add Account form specifics ─── */
+    .acct-type-grid { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 20px; margin-bottom: 20px; }
+    .acct-type-card {
+      flex: 0 0 calc(33.33% - 7px); background: var(--card);
+      border-radius: var(--radius-sm); padding: 14px 8px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      cursor: pointer; border: 1.5px solid transparent;
+      transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+    }
+    .acct-type-card.active { background: var(--primary-dim); border-color: var(--primary); }
+    .acct-type-card:active { opacity: 0.8; }
+    .acct-type-label { color: var(--text); font-size: 12px; font-weight: 600; text-align: center; }
+    .acct-type-card.active .acct-type-label { color: var(--primary); }
+
+    /* Color swatch picker */
+    .color-swatches { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 16px; }
+    .color-swatch {
+      width: 34px; height: 34px; border-radius: 17px; cursor: pointer;
+      border: 3px solid transparent; transition: border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .color-swatch.selected { border-color: #fff; }
+
+    /* ───────────────────────────────────────────────────────
        TRANSACTIONS SCREEN
     ─────────────────────────────────────────────────────── */
 
@@ -722,6 +885,16 @@ const State = {
   txFilter: 'all',
   txMonth: new Date().getMonth(),
   txYear:  new Date().getFullYear(),
+  // Accounts module
+  viewAcctId:      null,   // account being viewed
+  acctTxTypeFilter:'all',  // all | credit | debit
+  acctTxDateFilter:'month',// month | last_month | year | custom
+  acctSort:        'date', // date | amount | category
+  acctSearch:      '',
+  showAcctFilter:  false,
+  addAcctType:     'bank',
+  editAcctId:      null,
+  acctColor:       '#6C47FF',
 };
 
 /* ══════════════════════════════════════════════════════
@@ -742,10 +915,13 @@ const DEMO = {
   },
 
   accounts: [
-    { account_id: 'a1', name: 'HDFC Savings', account_type: 'bank',   balance: 185420, icon: '🏦' },
-    { account_id: 'a2', name: 'SBI Current',  account_type: 'bank',   balance: 45200,  icon: '🏦' },
-    { account_id: 'a3', name: 'Paytm Wallet', account_type: 'wallet', balance: 3200,   icon: '👛' },
-    { account_id: 'a4', name: 'Cash',         account_type: 'cash',   balance: 8300,   icon: '💵' },
+    { account_id:'a1', name:'HDFC Savings',    account_type:'bank',        balance:185420, institution:'HDFC Bank',  account_number:'XXXX XXXX XXXX 1234', ifsc:'HDFC0001234', holder:'Akshar Mehta',  branch:'Mumbai Main Branch', sub_type:'Savings',  color:'#6C47FF', avg_inflow:120000, avg_outflow:45000, tx_count:42, include_in_net_worth:true,  visible:true, notes:'' },
+    { account_id:'a2', name:'SBI Current',     account_type:'bank',        balance:45200,  institution:'SBI',        account_number:'XXXX XXXX XXXX 5678', ifsc:'SBIN0001234', holder:'Akshar Mehta',  branch:'Andheri Branch',     sub_type:'Current',  color:'#22C55E', avg_inflow:25000,  avg_outflow:18000, tx_count:18, include_in_net_worth:true,  visible:true, notes:'' },
+    { account_id:'a3', name:'Google Pay',      account_type:'upi',         balance:0,      institution:'HDFC Bank',  account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Savings',  color:'#60A5FA', avg_inflow:8000,   avg_outflow:6500,  tx_count:28, include_in_net_worth:false, visible:true, upi_id:'akshar@okhdfc', linked_app:'Google Pay', notes:'' },
+    { account_id:'a4', name:'Cash in Hand',    account_type:'cash',        balance:8300,   institution:'',           account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Cash',     color:'#F59E0B', avg_inflow:10000,  avg_outflow:9200,  tx_count:14, include_in_net_worth:true,  visible:true, notes:'Daily expenses cash' },
+    { account_id:'a5', name:'Paytm Wallet',    account_type:'wallet',      balance:3200,   institution:'Paytm',      account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Wallet',   color:'#10B981', avg_inflow:5000,   avg_outflow:4800,  tx_count:22, include_in_net_worth:false, visible:true, notes:'' },
+    { account_id:'a6', name:'HDFC Infinia CC', account_type:'credit_card', balance:-24800, institution:'HDFC Bank',  account_number:'XXXX XXXX XXXX 4821', ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Credit',   color:'#EF4444', avg_inflow:0,      avg_outflow:24800, tx_count:16, include_in_net_worth:true,  visible:true, credit_limit:300000, notes:'' },
+    { account_id:'a7', name:'Nifty 50 Fund',   account_type:'investment',  balance:148500, institution:'Zerodha',    account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Mutual Fund', color:'#7C4DFF', avg_inflow:10000, avg_outflow:0, tx_count:6, include_in_net_worth:true, visible:true, notes:'Monthly SIP ₹10,000' },
   ],
 
   reminders: [
@@ -1626,6 +1802,693 @@ function renderAddTransaction() {
   </div>`;
 }
 
+/* ─── WEALTH / ACCOUNTS OVERVIEW ────────────────────── */
+const ACCT_GROUP_META = {
+  bank:        { label:'Bank Accounts',          color:'#7C4DFF', svgPath:'M11.5 1L2 6v2h19V6L11.5 1zM3 22h18v-2H3v2zm0-4h18v-8H3v8zm5-3.5v-1h2v1H8zm0 2.5v-1h2v1H8zm4-2.5v-1h2v1h-2zm0 2.5v-1h2v1h-2zm4-2.5v-1h2v1h-2zm0 2.5v-1h2v1h-2z' },
+  overdraft:   { label:'Accounts with Overdraft', color:'#FF9100', svgPath:'M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z' },
+  upi:         { label:'UPI Accounts',            color:'#26C6DA', svgPath:'M17 2H7C5.9 2 5 2.9 5 4v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm5-3H7V5h10v12z' },
+  cash:        { label:'Cash Accounts',           color:'#22C55E', svgPath:'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z' },
+  credit_card: { label:'Credit Cards',            color:'#EF4444', svgPath:'M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z' },
+  investment:  { label:'Investments',             color:'#F59E0B', svgPath:'M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z' },
+  wallet:      { label:'Cash & Wallets',          color:'#10B981', svgPath:'M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 00-2 2v8a2 2 0 002 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z' },
+};
+
+function getAccountGroups(accounts) {
+  const groups = {};
+  accounts.forEach(a => {
+    let key = a.account_type;
+    if (key === 'wallet') key = 'wallet';
+    if (!groups[key]) groups[key] = { total: 0, count: 0, accounts: [] };
+    groups[key].total += a.balance;
+    groups[key].count += 1;
+    groups[key].accounts.push(a);
+  });
+  return groups;
+}
+
+function renderWealth() {
+  const accts = State.data.accounts || DEMO.accounts;
+  const visible = accts.filter(a => a.visible !== false);
+  const groups  = getAccountGroups(visible);
+
+  const totalBalance   = visible.filter(a => a.include_in_net_worth !== false).reduce((s,a) => s + a.balance, 0);
+  const inAccounts     = visible.filter(a => a.include_in_net_worth !== false && a.balance >= 0).reduce((s,a) => s + a.balance, 0);
+  const inLiabilities  = Math.abs(visible.filter(a => a.include_in_net_worth !== false && a.balance < 0).reduce((s,a) => s + a.balance, 0));
+
+  const groupOrder = ['bank','upi','cash','wallet','overdraft','credit_card','investment'];
+  const groupRows = groupOrder
+    .filter(k => groups[k] && groups[k].count > 0)
+    .map(k => {
+      const meta = ACCT_GROUP_META[k] || ACCT_GROUP_META.bank;
+      const g    = groups[k];
+      const isLiab = k === 'credit_card' || k === 'overdraft';
+      const balColor = g.total < 0 ? COLORS.danger : COLORS.text;
+      const balStr   = g.total < 0 ? `-${formatINR(Math.abs(g.total))}` : formatINR(g.total);
+      return `
+      <div class="acct-group-row" onclick="App.openGroupList('${k}')">
+        <div class="acct-group-icon" style="background:${meta.color}22">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="${meta.color}"><path d="${meta.svgPath}"/></svg>
+        </div>
+        <div class="acct-group-info">
+          <div class="acct-group-name">${meta.label}</div>
+          <div class="acct-group-sub">${g.count} ${g.count===1?'Account':'Accounts'}${isLiab&&g.total<0?' · Overdrawn':''}</div>
+        </div>
+        <div class="acct-group-bal" style="color:${balColor}">${balStr}</div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)" style="margin-left:8px;flex-shrink:0"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </div>`;
+    }).join('');
+
+  const advFeatures = [
+    { icon:'✏️', label:'Account Nickname',   color:'#7C4DFF', fn:"App.showToast('Edit nickname — tap any account → Edit')" },
+    { icon:'🎨', label:'Custom Color',        color:'#EF4444', fn:"App.showToast('Set custom color in Add/Edit Account')" },
+    { icon:'👁️', label:'Hide / Show',         color:'#60A5FA', fn:"App.showToast('Toggle visibility from account details')" },
+    { icon:'📝', label:'Account Notes',       color:'#22C55E', fn:"App.showToast('Add notes in Add/Edit Account')" },
+    { icon:'📊', label:'Export Summary',      color:'#F59E0B', fn:"App.exportAllAccounts()" },
+    { icon:'🔄', label:'Reorder Accounts',    color:'#10B981', fn:"App.showToast('Reorder coming soon!')" },
+  ];
+
+  return `
+  <div class="screen-wrap" style="padding-bottom:32px">
+    <!-- Header -->
+    <div class="page-header" style="padding-bottom:14px">
+      <div>
+        <div class="page-title">Accounts</div>
+        <div class="page-sub">${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="icon-btn" onclick="App.navigate('add-account')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Hero -->
+    <div class="wealth-hero">
+      <div class="wealth-hero-total">Total Balance</div>
+      <div class="wealth-hero-amount">${formatINRFull(totalBalance)}</div>
+      <div class="wealth-sub-row">
+        <div class="wealth-sub-cell" style="background:var(--success-dim);margin-right:6px">
+          <div class="wealth-sub-label">In Accounts</div>
+          <div class="wealth-sub-val text-success">${formatINR(inAccounts)}</div>
+        </div>
+        <div class="wealth-sub-cell" style="background:var(--danger-dim)">
+          <div class="wealth-sub-label">In Liabilities</div>
+          <div class="wealth-sub-val text-danger">${formatINR(inLiabilities)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Groups -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">ACCOUNT GROUPS</div>
+      </div>
+      <div class="acct-group-list">${groupRows}</div>
+    </div>
+
+    <!-- Individual Accounts List -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">ALL ACCOUNTS</div>
+        <div class="view-all" onclick="App.navigate('add-account')">+ Add</div>
+      </div>
+      <div class="acct-group-list">
+        ${visible.map((a,i) => {
+          const meta = ACCT_GROUP_META[a.account_type] || ACCT_GROUP_META.bank;
+          const balColor = a.balance < 0 ? COLORS.danger : COLORS.text;
+          return `
+          <div class="acct-group-row" onclick="App.openAccount('${a.account_id}')">
+            <div class="acct-group-icon" style="background:${a.color||meta.color}22">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="${a.color||meta.color}"><path d="${meta.svgPath}"/></svg>
+            </div>
+            <div class="acct-group-info">
+              <div class="acct-group-name">${a.name}</div>
+              <div class="acct-group-sub">${a.institution||a.sub_type||a.account_type}</div>
+            </div>
+            <div class="acct-group-bal" style="color:${balColor}">${a.balance<0?'-':''}${formatINR(Math.abs(a.balance))}</div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)" style="margin-left:8px;flex-shrink:0"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Advanced Features -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Advanced Features</div>
+      </div>
+      <div class="adv-grid">
+        ${advFeatures.map(f => `
+          <div class="adv-card" onclick="${f.fn}">
+            <div class="adv-card-icon" style="background:${f.color}22;font-size:18px">${f.icon}</div>
+            <div class="adv-card-label">${f.label}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Security footer -->
+    <div style="margin:8px 20px 0;padding:14px 16px;background:var(--primary-dim);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.25);display:flex;gap:12px;align-items:center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      <div>
+        <div style="color:var(--text);font-size:13px;font-weight:700">Your Data is 100% Secure</div>
+        <div style="color:var(--text-dim);font-size:12px;margin-top:2px">Bank-grade encryption keeps your financial data safe.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ─── ACCOUNT GROUP LIST ─────────────────────────────── */
+function renderGroupList() {
+  const key   = State.params.group || 'bank';
+  const accts = (State.data.accounts || DEMO.accounts).filter(a => {
+    let t = a.account_type;
+    if (t === 'wallet') t = 'wallet';
+    return t === key && a.visible !== false;
+  });
+  const meta  = ACCT_GROUP_META[key] || ACCT_GROUP_META.bank;
+
+  return `
+  <div class="screen-wrap">
+    <div class="form-header">
+      <div class="icon-btn" onclick="App.goTab('wealth')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
+      </div>
+      <div class="form-header-title">${meta.label}</div>
+      <div class="icon-btn" onclick="App.navigate('add-account')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </div>
+    </div>
+    ${accts.length === 0
+      ? `<div class="empty-state"><div class="empty-icon">🏦</div><div class="empty-title">No ${meta.label}</div><div class="empty-sub">Add your first account to start tracking.</div><button class="btn btn-primary" style="margin:20px auto;padding:12px 28px" onclick="App.navigate('add-account')">+ Add Account</button></div>`
+      : `<div class="acct-group-list" style="margin:0 20px">
+          ${accts.map((a,i) => {
+            const balColor = a.balance < 0 ? COLORS.danger : COLORS.text;
+            return `
+            <div class="acct-group-row" onclick="App.openAccount('${a.account_id}')">
+              <div class="acct-group-icon" style="background:${a.color||meta.color}22">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="${a.color||meta.color}"><path d="${meta.svgPath}"/></svg>
+              </div>
+              <div class="acct-group-info">
+                <div class="acct-group-name">${a.name}</div>
+                <div class="acct-group-sub">${a.institution||a.sub_type||''} ${a.account_number?'· '+a.account_number:''}</div>
+              </div>
+              <div class="acct-group-bal" style="color:${balColor}">${a.balance<0?'-':''}${formatINR(Math.abs(a.balance))}</div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)" style="margin-left:8px;flex-shrink:0"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </div>`;
+          }).join('')}
+         </div>`
+    }
+  </div>`;
+}
+
+/* ─── ACCOUNT DETAIL ─────────────────────────────────── */
+function renderAccountDetail() {
+  const id   = State.viewAcctId || State.params.id;
+  const accts = State.data.accounts || DEMO.accounts;
+  const a    = accts.find(x => x.account_id === id);
+  if (!a) return `<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">Account not found</div></div>`;
+
+  const meta    = ACCT_GROUP_META[a.account_type] || ACCT_GROUP_META.bank;
+  const acctColor = a.color || meta.color;
+  const isLiab  = a.balance < 0;
+  const balColor  = isLiab ? '#FFB4BE' : '#9DFFD9';
+
+  // Transactions for this account
+  const allTx    = DEMO.transactions;
+  const typeF    = State.acctTxTypeFilter || 'all';
+  const dateF    = State.acctTxDateFilter || 'month';
+  const now      = new Date();
+  const acctTxs  = allTx.filter(t => {
+    const matchAcct = t.account_id === id || t.to_account_id === id;
+    if (!matchAcct) return false;
+    const txDate = new Date(t.date);
+    if (dateF === 'month') return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+    if (dateF === 'last_month') { const lm = new Date(now.getFullYear(), now.getMonth()-1,1); return txDate.getMonth()===lm.getMonth()&&txDate.getFullYear()===lm.getFullYear(); }
+    if (dateF === 'year') return txDate.getFullYear() === now.getFullYear();
+    return true;
+  }).filter(t => {
+    if (typeF === 'all') return true;
+    const isCredit = t._type === 'income' || t.to_account_id === id;
+    return typeF === 'credit' ? isCredit : !isCredit;
+  });
+
+  const sortedTxs = [...acctTxs].sort((a,b) => {
+    const s = State.acctSort || 'date';
+    if (s === 'amount')   return b.amount - a.amount;
+    if (s === 'category') return (a.category||'').localeCompare(b.category||'');
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  const txRows = sortedTxs.map((t,i) => {
+    const isInc  = t._type==='income' || t.to_account_id===id;
+    const color  = isInc ? COLORS.success : COLORS.danger;
+    const icon   = isInc ? ICON.arrow_dn : ICON.arrow_up;
+    const title  = t._type==='transfer' ? (t.to_account_id===id?'Transfer In':'Transfer Out') : (t.source||t.description||t.category||'Transaction');
+    const sub    = t.category || (t._type==='transfer'?'Transfer':'');
+    const amtStr = `${isInc?'+':'-'}${formatINR(t.amount)}`;
+    return `
+    <div class="list-row" style="${i<sortedTxs.length-1?'border-bottom:1px solid var(--border)':''}" onclick="App.openTxDetail('${t.id}')">
+      <div class="list-icon" style="background:${color}22">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="${color}">${icon.match(/<path[^>]*\/>/g).join('')}</svg>
+      </div>
+      <div class="list-body">
+        <div class="list-title">${title}</div>
+        <div class="list-sub">${sub}${t.date?' · '+formatDate(t.date):''}</div>
+      </div>
+      <div class="list-right">
+        <div class="list-amount" style="color:${color}">${amtStr}</div>
+        <div class="list-date">${t.date?new Date(t.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Info rows
+  const infoRows = [
+    a.account_number ? ['Account Number', a.account_number] : null,
+    a.ifsc           ? ['IFSC Code',       a.ifsc]           : null,
+    ['Account Holder', a.holder || 'Akshar Mehta'],
+    ['Account Type',   (a.sub_type||a.account_type||'').replace(/_/g,' ')],
+    a.branch         ? ['Branch',          a.branch]         : null,
+    a.upi_id         ? ['UPI ID',          a.upi_id]         : null,
+    a.linked_app     ? ['Linked App',      a.linked_app]     : null,
+    a.credit_limit   ? ['Credit Limit',    formatINR(a.credit_limit)] : null,
+    a.notes          ? ['Notes',           a.notes]          : null,
+  ].filter(Boolean);
+
+  const filterPanel = State.showAcctFilter ? `
+  <div class="filter-panel">
+    <div class="filter-panel-title">
+      Filter & Sort
+      <span style="cursor:pointer;color:var(--text-dim)" onclick="State.showAcctFilter=false;App.render()">✕</span>
+    </div>
+    <div class="filter-group-label">Date Range</div>
+    <div class="filter-chips-row">
+      ${[['month','This Month'],['last_month','Last Month'],['year','This Year'],['all','All Time']].map(([v,l]) => `
+        <div class="filter-chip ${State.acctTxDateFilter===v?'active':''}" onclick="State.acctTxDateFilter='${v}';App.render()">${l}</div>`).join('')}
+    </div>
+    <div class="filter-group-label">Transaction Type</div>
+    <div class="filter-chips-row">
+      ${[['all','All'],['credit','Credit'],['debit','Debit']].map(([v,l]) => `
+        <div class="filter-chip ${State.acctTxTypeFilter===v?'active':''}" onclick="State.acctTxTypeFilter='${v}';App.render()">${l}</div>`).join('')}
+    </div>
+    <div class="filter-group-label">Sort By</div>
+    <div class="filter-chips-row">
+      ${[['date','Date'],['amount','Amount'],['category','Category']].map(([v,l]) => `
+        <div class="filter-chip ${State.acctSort===v?'active':''}" onclick="State.acctSort='${v}';App.render()">${l}</div>`).join('')}
+    </div>
+    <div class="filter-btns">
+      <button class="btn btn-ghost filter-reset" onclick="State.acctTxTypeFilter='all';State.acctTxDateFilter='month';State.acctSort='date';App.render()">Reset</button>
+      <button class="btn btn-primary filter-apply" onclick="State.showAcctFilter=false;App.render()">Apply Filter</button>
+    </div>
+  </div>` : '';
+
+  return `
+  <div class="screen-wrap" style="padding-bottom:32px">
+    <!-- Header -->
+    <div class="form-header">
+      <div class="icon-btn" onclick="App.goTab('wealth')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
+      </div>
+      <div class="form-header-title">${a.name}</div>
+      <div class="icon-btn" onclick="App.openAcctMenu('${a.account_id}')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      </div>
+    </div>
+
+    <!-- Hero card -->
+    <div class="acct-detail-hero" style="background:linear-gradient(135deg,${acctColor}CC,${acctColor})">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <div class="acct-detail-name">${a.institution||a.sub_type||a.account_type}</div>
+          <div class="acct-detail-bank">${a.sub_type||a.account_type} Account${a.account_number?' · '+a.account_number:''}</div>
+        </div>
+        <div class="acct-detail-badge">✓ Active</div>
+      </div>
+      <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:10px">Current Balance</div>
+      <div class="acct-detail-bal" style="color:${isLiab?'#FFB4BE':'#fff'}">${a.balance<0?'-':''}${formatINRFull(Math.abs(a.balance))}</div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-acts">
+      <div class="quick-act" onclick="App.navigate('add-transaction',{type:'income',account_id:'${a.account_id}'})">
+        <div class="quick-act-icon" style="background:var(--success-dim)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--success)"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <div class="quick-act-label">Add Money</div>
+      </div>
+      <div class="quick-act" onclick="App.navigate('add-transaction',{type:'transfer',from_id:'${a.account_id}'})">
+        <div class="quick-act-icon" style="background:var(--info-dim)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--info)"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        </div>
+        <div class="quick-act-label">Transfer</div>
+      </div>
+      <div class="quick-act" onclick="App.exportAccount('${a.account_id}','csv')">
+        <div class="quick-act-icon" style="background:var(--warn-dim)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--warn)"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </div>
+        <div class="quick-act-label">Statement</div>
+      </div>
+      <div class="quick-act" onclick="App.navigate('edit-account',{id:'${a.account_id}'})">
+        <div class="quick-act-icon" style="background:var(--primary-dim)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--primary)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </div>
+        <div class="quick-act-label">Edit</div>
+      </div>
+    </div>
+
+    <!-- Account Info -->
+    <div class="section-header" style="margin-top:4px"><div class="section-title">ACCOUNT INFO</div></div>
+    <div class="info-table">
+      ${infoRows.map(([k,v]) => `
+        <div class="info-row">
+          <span class="info-label">${k}</span>
+          <span class="info-value">${v}</span>
+        </div>`).join('')}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-btns">
+      <div class="action-btn" onclick="App.navigate('add-transaction',{type:'income',account_id:'${a.account_id}'})">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        <div class="action-btn-label">Add Money</div>
+      </div>
+      <div class="action-btn" onclick="App.navigate('add-transaction',{type:'transfer',from_id:'${a.account_id}'})">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        <div class="action-btn-label">Transfer</div>
+      </div>
+      <div class="action-btn" onclick="App.exportAccount('${a.account_id}','csv')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--primary)"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        <div class="action-btn-label">Download Statement</div>
+      </div>
+    </div>
+
+    <!-- Smart Insights -->
+    <div class="section-header"><div class="section-title">Smart Insights</div></div>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--success-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--success)"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
+        </div>
+        <div class="insight-label">Avg Monthly Inflow</div>
+        <div class="insight-value text-success">${formatINR(a.avg_inflow||0)}</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--danger-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--danger)"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
+        </div>
+        <div class="insight-label">Avg Monthly Outflow</div>
+        <div class="insight-value text-danger">${formatINR(a.avg_outflow||0)}</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon" style="background:var(--info-dim)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--info)"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        </div>
+        <div class="insight-label">Total Transactions</div>
+        <div class="insight-value">${a.tx_count||acctTxs.length} This Month</div>
+      </div>
+    </div>
+
+    <!-- Transactions Section -->
+    <div class="section-header">
+      <div class="section-title">Transactions (${sortedTxs.length})</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="view-all" onclick="State.showAcctFilter=!State.showAcctFilter;App.render()">
+          ${State.showAcctFilter ? 'Hide Filter' : 'Filter'}
+        </div>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input class="search-input" placeholder="Search transactions…" id="acct-search"
+        oninput="State.acctSearch=this.value;App.render()" value="${State.acctSearch||''}" />
+    </div>
+
+    ${filterPanel}
+
+    <!-- Transaction list -->
+    ${sortedTxs.length === 0
+      ? `<div class="empty-state" style="padding:24px"><div class="empty-icon">📭</div><div class="empty-title">No transactions</div><div class="empty-sub">No transactions found for this period.</div></div>`
+      : `<div class="list-card">${txRows}</div>`
+    }
+  </div>`;
+}
+
+/* ─── ADD / EDIT ACCOUNT ─────────────────────────────── */
+const ACCT_TYPES = [
+  { key:'bank',        label:'Bank Account',   icon:'🏦', color:'#3B82F6', desc:'Savings & Current' },
+  { key:'overdraft',   label:'Overdraft',       icon:'⚠️', color:'#7C3AED', desc:'Overdraft accounts' },
+  { key:'upi',         label:'UPI Account',     icon:'📲', color:'#10B981', desc:'UPI ID linked' },
+  { key:'cash',        label:'Cash Account',    icon:'💵', color:'#22C55E', desc:'Physical cash' },
+  { key:'credit_card', label:'Credit Card',     icon:'💳', color:'#EF4444', desc:'All credit cards' },
+  { key:'investment',  label:'Investment',      icon:'📈', color:'#F59E0B', desc:'Stocks, MF & more' },
+];
+const COLOR_SWATCHES = ['#6C47FF','#22C55E','#EF4444','#60A5FA','#F59E0B','#10B981','#3B82F6','#EC407A','#7C3AED','#FF7043'];
+
+function renderAddAccount() {
+  const isEdit   = State.screen === 'edit-account';
+  const editId   = State.params?.id;
+  const existing = isEdit ? (DEMO.accounts.find(a=>a.account_id===editId)||{}) : {};
+  const type     = State.addAcctType || existing.account_type || 'bank';
+  const selColor = State.acctColor || existing.color || '#6C47FF';
+  const typeMeta = ACCT_TYPES.find(t=>t.key===type)||ACCT_TYPES[0];
+
+  const bankFields = `
+    <div class="form-section-label">Bank Details</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#3B82F622"><span style="font-size:16px">🏦</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Bank Name *</div>
+          <input id="af-bank" class="form-row-value" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="e.g. HDFC Bank, SBI" value="${existing.institution||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#3B82F622"><span style="font-size:16px">👤</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Account Holder Name *</div>
+          <input id="af-holder" class="form-row-value" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="Full name as on passbook" value="${existing.holder||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#3B82F622"><span style="font-size:16px">🔢</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Account Number</div>
+          <input id="af-accno" class="form-row-value" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="1234 5678 9012" type="text" inputmode="numeric" value="${existing.account_number||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#3B82F622"><span style="font-size:16px">🏢</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">IFSC Code</div>
+          <input id="af-ifsc" class="form-row-value" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="HDFC0001234" value="${existing.ifsc||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#3B82F622"><span style="font-size:16px">🏗️</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Branch (Optional)</div>
+          <input id="af-branch" class="form-row-value" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="e.g. Mumbai Main Branch" value="${existing.branch||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#3B82F622"><span style="font-size:16px">🏷️</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Account Type</div>
+          <select id="af-subtype" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;outline:none;cursor:pointer;width:100%;padding:2px 0">
+            ${['Savings','Current','Other'].map(s=>`<option value="${s}" ${(existing.sub_type||'Savings')===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+
+  const upiFields = `
+    <div class="form-section-label">UPI Details</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#10B98122"><span style="font-size:16px">🏦</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Bank Name *</div>
+          <input id="af-bank" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="ICICI Bank" value="${existing.institution||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#10B98122"><span style="font-size:16px">@</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">UPI ID *</div>
+          <input id="af-upi" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="yourname@okicici" value="${existing.upi_id||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#10B98122"><span style="font-size:16px">📲</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Linked App</div>
+          <select id="af-upiapp" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;outline:none;cursor:pointer;width:100%;padding:2px 0">
+            ${['Google Pay','PhonePe','Paytm','BHIM','Other'].map(s=>`<option value="${s}" ${(existing.linked_app||'Google Pay')===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+
+  const cashFields = `
+    <div class="form-section-label">Cash Details</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#22C55E22"><span style="font-size:16px">📍</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Location (Optional)</div>
+          <input id="af-loc" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="Home, Wallet, Locker…" value="${existing.cash_location||''}" />
+        </div>
+      </div>
+    </div>`;
+
+  const ccFields = `
+    <div class="form-section-label">Credit Card Details</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#EF444422"><span style="font-size:16px">🏦</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Bank Name *</div>
+          <input id="af-bank" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="HDFC Bank, ICICI…" value="${existing.institution||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#EF444422"><span style="font-size:16px">💳</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Card Number (last 4)</div>
+          <input id="af-accno" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="XXXX XXXX XXXX 1234" value="${existing.account_number||''}" maxlength="19" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#EF444422"><span style="font-size:16px">💰</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Credit Limit</div>
+          <input id="af-crlimit" type="number" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="300000" value="${existing.credit_limit||''}" inputmode="numeric" />
+        </div>
+      </div>
+    </div>`;
+
+  const invFields = `
+    <div class="form-section-label">Investment Details</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#F59E0B22"><span style="font-size:16px">🏢</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Platform / Broker *</div>
+          <input id="af-bank" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="Zerodha, Groww, Kuvera…" value="${existing.institution||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:#F59E0B22"><span style="font-size:16px">📊</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Investment Type</div>
+          <select id="af-subtype" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;outline:none;cursor:pointer;width:100%;padding:2px 0">
+            ${['Mutual Fund','Stocks','PPF','FD','NPS','Gold','Other'].map(s=>`<option value="${s}" ${(existing.sub_type||'Mutual Fund')===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+
+  const typeSpecific = {bank:bankFields, upi:upiFields, cash:cashFields, credit_card:ccFields, investment:invFields, overdraft:bankFields}[type] || bankFields;
+
+  return `
+  <div class="screen-wrap form-screen">
+    <!-- Header -->
+    <div class="form-header">
+      <div class="icon-btn" onclick="App.goTab('wealth')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
+      </div>
+      <div class="form-header-title">${isEdit ? 'Edit Account' : 'Add Account'}</div>
+      <button class="form-save-btn" onclick="App.saveAccount()">Save</button>
+    </div>
+
+    <!-- Account type grid -->
+    <div class="form-section-label">Account Types You Can Add</div>
+    <div class="acct-type-grid">
+      ${ACCT_TYPES.map(t => `
+        <div class="acct-type-card ${type===t.key?'active':''}" onclick="State.addAcctType='${t.key}';App.render()">
+          <div style="font-size:22px">${t.icon}</div>
+          <div class="acct-type-label">${t.label}</div>
+          <div style="color:var(--text-dim);font-size:10px;text-align:center">${t.desc}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Account Name + Opening Balance (common) -->
+    <div class="form-section-label">Basic Information</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:${typeMeta.color}22"><span style="font-size:16px">${typeMeta.icon}</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Account Name / Nickname *</div>
+          <input id="af-name" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="e.g. HDFC Salary A/c" value="${existing.name||''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-icon" style="background:${typeMeta.color}22"><span style="font-size:16px">💰</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Opening Balance (Optional)</div>
+          <input id="af-balance" type="number" inputmode="decimal" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="0.00" value="${existing.balance||''}" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Type-specific fields -->
+    ${typeSpecific}
+
+    <!-- Notes -->
+    <div class="form-section-label">Additional Settings</div>
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-row-icon" style="background:rgba(255,255,255,0.06)"><span style="font-size:16px">📝</span></div>
+        <div style="flex:1">
+          <div class="form-row-label">Account Notes (Optional)</div>
+          <input id="af-notes" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
+            placeholder="e.g. Emergency savings account" value="${existing.notes||''}" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Color picker -->
+    <div class="form-section-label">Account Color</div>
+    <div class="form-card" style="padding:0">
+      <div class="color-swatches">
+        ${COLOR_SWATCHES.map(c => `
+          <div class="color-swatch ${selColor===c?'selected':''}" style="background:${c}"
+            onclick="State.acctColor='${c}';App.render()"></div>`).join('')}
+      </div>
+    </div>
+
+    ${isEdit ? `
+    <!-- Delete -->
+    <div style="margin:14px 20px 100px;padding:14px 16px;background:var(--danger-dim);border-radius:var(--radius-sm);border:1px solid rgba(239,68,68,0.25);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="App.deleteAccount('${editId}')">
+      <div style="color:var(--danger);font-size:14px;font-weight:700">🗑️ Delete Account</div>
+      <div style="color:var(--text-dim);font-size:12px">Remove permanently</div>
+    </div>` : `<div style="height:100px"></div>`}
+
+    <!-- Sticky Save -->
+    <div class="sticky-save">
+      <button class="btn btn-primary" style="width:100%;border-radius:var(--radius-sm);font-size:16px" onclick="App.saveAccount()">
+        Save Account
+      </button>
+    </div>
+  </div>`;
+}
+
 /* ═══════════════════════════════════════════════════════
    9. APP CONTROLLER
 ══════════════════════════════════════════════════════ */
@@ -1698,10 +2561,15 @@ const App = {
     const scr = document.getElementById('screen');
     let html = '';
     switch (State.screen) {
-      case 'login':            html = renderLogin();          break;
-      case 'dashboard':        html = renderDashboard();      break;
-      case 'transactions':     html = renderTransactions();   break;
-      case 'add-transaction':  html = renderAddTransaction(); break;
+      case 'login':            html = renderLogin();            break;
+      case 'dashboard':        html = renderDashboard();        break;
+      case 'transactions':     html = renderTransactions();     break;
+      case 'add-transaction':  html = renderAddTransaction();   break;
+      case 'wealth':           html = renderWealth();           break;
+      case 'group-list':       html = renderGroupList();        break;
+      case 'account-detail':   html = renderAccountDetail();    break;
+      case 'add-account':      html = renderAddAccount();       break;
+      case 'edit-account':     html = renderAddAccount();       break;
       default:
         html = `<div class="screen-wrap">
           <div class="page-header">
@@ -1718,6 +2586,191 @@ const App = {
         </div>`;
     }
     scr.innerHTML = html;
+  },
+
+  /* ── Account Actions ─────────────────────────── */
+  openAccount(id) {
+    State.viewAcctId     = id;
+    State.acctTxTypeFilter = 'all';
+    State.acctTxDateFilter = 'month';
+    State.acctSort       = 'date';
+    State.acctSearch     = '';
+    State.showAcctFilter = false;
+    this.navigate('account-detail', { id });
+  },
+
+  openGroupList(key) {
+    this.navigate('group-list', { group: key });
+  },
+
+  openAcctMenu(id) {
+    const a = (State.data.accounts || DEMO.accounts).find(x=>x.account_id===id);
+    if (!a) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">${a.name}</div>
+        ${[
+          { icon:'✏️', label:'Edit Account',        fn:`App.navigate('edit-account',{id:'${id}'});` },
+          { icon:'🎨', label:'Change Color',         fn:`App.showToast('Select a new color in Edit Account');App.navigate('edit-account',{id:'${id}'});` },
+          { icon:'📊', label:'Download Statement',   fn:`App.exportAccount('${id}','csv');` },
+          { icon:'📄', label:'Download PDF',         fn:`App.exportAccount('${id}','pdf');` },
+          { icon:'📑', label:'Download Excel',       fn:`App.exportAccount('${id}','xlsx');` },
+          { icon:'👁️', label:a.visible!==false?'Hide Account':'Show Account', fn:`App.toggleVisibility('${id}');` },
+          { icon:'🗑️', label:'Delete Account',       fn:`App.deleteAccount('${id}');`, danger:true },
+        ].map(item => `
+          <div class="list-row" style="${item.danger?'color:var(--danger)':''}" onclick="${item.fn}this.closest('.modal-overlay').remove()">
+            <span style="font-size:20px;margin-right:4px">${item.icon}</span>
+            <span style="${item.danger?'color:var(--danger)':'color:var(--text)'};font-size:15px;font-weight:600">${item.label}</span>
+          </div>`).join('')}
+        <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+      </div>`;
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  toggleVisibility(id) {
+    const accts = State.data.accounts || DEMO.accounts;
+    const a = accts.find(x=>x.account_id===id);
+    if (a) { a.visible = a.visible===false ? true : false; }
+    this.showToast(a && a.visible===false ? 'Account hidden' : 'Account visible');
+    this.render();
+  },
+
+  async saveAccount() {
+    const name    = document.getElementById('af-name')?.value?.trim();
+    const balance = parseFloat(document.getElementById('af-balance')?.value || '0');
+    const type    = State.addAcctType || 'bank';
+    const color   = State.acctColor  || '#6C47FF';
+    const notes   = document.getElementById('af-notes')?.value?.trim() || '';
+
+    if (!name) { this.showToast('Please enter an account name'); return; }
+
+    const typeMeta = ACCT_TYPES.find(t=>t.key===type)||ACCT_TYPES[0];
+
+    // Build payload
+    const payload = {
+      name, account_type: type, balance, color, notes,
+      institution: document.getElementById('af-bank')?.value?.trim() || '',
+      account_number: document.getElementById('af-accno')?.value?.trim() || '',
+      ifsc: document.getElementById('af-ifsc')?.value?.trim() || '',
+      holder: document.getElementById('af-holder')?.value?.trim() || ((State.user||DEMO.user).name),
+      branch: document.getElementById('af-branch')?.value?.trim() || '',
+      sub_type: document.getElementById('af-subtype')?.value || typeMeta.label,
+      upi_id: document.getElementById('af-upi')?.value?.trim() || '',
+      linked_app: document.getElementById('af-upiapp')?.value || '',
+      credit_limit: parseFloat(document.getElementById('af-crlimit')?.value||'0') || 0,
+      include_in_net_worth: type !== 'wallet' && type !== 'upi',
+      visible: true,
+      avg_inflow: 0, avg_outflow: 0, tx_count: 0,
+    };
+
+    const isEdit = State.screen === 'edit-account';
+    const editId = State.params?.id;
+
+    // Try real API
+    let ok = false;
+    if (isEdit) {
+      const r = await fetch(API_BASE + '/accounts/' + editId, {
+        method: 'PUT',
+        headers: { 'Authorization':'Bearer '+State.token, 'Content-Type':'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(()=>null);
+      ok = r && r.ok;
+    } else {
+      const r = await fetch(API_BASE + '/accounts', {
+        method: 'POST',
+        headers: { 'Authorization':'Bearer '+State.token, 'Content-Type':'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(()=>null);
+      ok = r && r.ok;
+    }
+
+    // Optimistic local update
+    const accts = State.data.accounts || DEMO.accounts;
+    if (isEdit) {
+      const idx = accts.findIndex(a=>a.account_id===editId);
+      if (idx >= 0) Object.assign(accts[idx], payload);
+    } else {
+      const newAcct = { ...payload, account_id:'a'+Date.now() };
+      accts.push(newAcct);
+      DEMO.dashboard.total_balance += balance;
+    }
+    State.data.accounts = accts;
+
+    State.addAcctType = 'bank';
+    State.acctColor   = '#6C47FF';
+    this.showToast(ok ? 'Account saved!' : `Account ${isEdit?'updated':'added'} (demo mode)`);
+    this.goTab('wealth');
+  },
+
+  deleteAccount(id) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target===overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Delete Account?</div>
+        <div style="color:var(--text-dim);font-size:14px;margin-bottom:20px">This will permanently remove the account and all linked data. This action cannot be undone.</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" style="flex:1" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+          <button class="btn btn-primary" style="flex:2;background:var(--danger)" onclick="App._doDelete('${id}');this.closest('.modal-overlay').remove()">Delete</button>
+        </div>
+      </div>`;
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  async _doDelete(id) {
+    await fetch(API_BASE + '/accounts/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization':'Bearer '+State.token }
+    }).catch(()=>null);
+    const accts = State.data.accounts || DEMO.accounts;
+    const idx   = accts.findIndex(a=>a.account_id===id);
+    if (idx>=0) accts.splice(idx, 1);
+    State.data.accounts = accts;
+    this.showToast('Account deleted');
+    this.goTab('wealth');
+  },
+
+  exportAccount(id, format) {
+    const a     = (State.data.accounts||DEMO.accounts).find(x=>x.account_id===id);
+    const txs   = DEMO.transactions.filter(t=>t.account_id===id||t.to_account_id===id);
+    const name  = a ? a.name : 'Account';
+
+    if (format === 'csv') {
+      const rows = ['Date,Type,Description,Category,Amount,Balance'];
+      let running = a ? a.balance : 0;
+      [...txs].sort((x,y)=>new Date(x.date)-new Date(y.date)).forEach(t => {
+        const isInc = t._type==='income' || t.to_account_id===id;
+        const amt   = isInc ? t.amount : -t.amount;
+        rows.push([t.date, t._type, (t.source||t.description||''), t.category, amt, running].join(','));
+        running -= amt;
+      });
+      const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+      const url  = URL.createObjectURL(blob);
+      const el   = document.createElement('a');
+      el.href = url; el.download = `${name}-statement.csv`; el.click();
+      URL.revokeObjectURL(url);
+      this.showToast(`${name} statement downloaded`);
+    } else {
+      this.showToast(`${format.toUpperCase()} export — connect to backend for full export`);
+    }
+  },
+
+  exportAllAccounts() {
+    const accts = State.data.accounts || DEMO.accounts;
+    const rows  = ['Account,Type,Balance,Institution,Visible'];
+    accts.forEach(a => rows.push([a.name, a.account_type, a.balance, a.institution||'', a.visible!==false?'Yes':'No'].join(',')));
+    const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+    const url  = URL.createObjectURL(blob);
+    const el   = document.createElement('a');
+    el.href = url; el.download = 'accounts-summary.csv'; el.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Accounts summary exported');
   },
 
   /* ── Transaction actions ─────────────────────── */
