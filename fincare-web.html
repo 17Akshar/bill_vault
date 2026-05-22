@@ -271,6 +271,35 @@
     .sparkline { flex-shrink: 0; }
 
     /* ───────────────────────────────────────────────────────
+       DASHBOARD  –  3 STAT CARDS (below hero)
+    ─────────────────────────────────────────────────────── */
+    .stat-cards-row {
+      display: flex; gap: 10px; padding: 0 20px; margin-bottom: 22px;
+    }
+    .stat-card {
+      flex: 1; background: var(--card); border-radius: var(--radius);
+      padding: 14px 10px; display: flex; flex-direction: column;
+      align-items: center; gap: 5px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .stat-card-icon {
+      width: 40px; height: 40px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2px;
+    }
+    .stat-card-amt {
+      color: var(--text); font-size: 13px; font-weight: 800;
+      text-align: center; letter-spacing: -0.3px; white-space: nowrap;
+    }
+    .stat-card-label {
+      color: var(--text-dim); font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .stat-card-delta {
+      font-size: 10px; font-weight: 700;
+    }
+
+    /* ───────────────────────────────────────────────────────
        DASHBOARD  –  QUICK ACTIONS
     ─────────────────────────────────────────────────────── */
     .quick-row {
@@ -1795,13 +1824,13 @@ function renderDashboard() {
   const groups = { bank: {icon:'bank',label:'Bank Accounts',color:COLORS.info,total:0,count:0},
                    cash: {icon:'cash',label:'Cash & Wallets',color:COLORS.success,total:0,count:0},
                    upi:  {icon:'phone',label:'UPI',color:'#7B4FEF',total:0,count:0},
-                   ovrd: {icon:'card',label:'Overdraft',color:COLORS.danger,total:0,count:0} };
+                   cc:   {icon:'card',label:'Credit Cards',color:COLORS.danger,total:0,count:0} };
   acc.forEach(a => {
     const bal = a.balance ?? a.initial_balance ?? 0;
     let key = 'bank';
     if (a.account_type === 'cash' || a.account_type === 'wallet') key = 'cash';
     else if (a.account_type === 'upi') key = 'upi';
-    if (bal < 0) key = 'ovrd';
+    else if (a.account_type === 'credit_card') key = 'cc';
     groups[key].total += bal;
     groups[key].count += 1;
   });
@@ -1836,14 +1865,14 @@ function renderDashboard() {
     const isInc  = t._type === 'income';
     const isTxfr = t._type === 'transfer';
     const color  = isTxfr ? COLORS.info : isInc ? COLORS.success : COLORS.danger;
-    const icon   = isTxfr ? 'swap' : isInc ? 'arrow_dn' : 'arrow_up';
-    const title  = isTxfr ? 'Transfer' : (t.source || t.description || t.category || 'Transaction');
+    const meta   = txCatMeta(isTxfr ? 'Transfer' : t.category);
+    const title  = isTxfr ? (t.payee||'Transfer') : (t.source||t.description||t.payee||t.category||'Transaction');
     const sub    = t.category || (isInc ? 'Income' : 'Expense');
     const amtStr = isTxfr ? formatINR(t.amount) : `${isInc?'+':'-'}${formatINR(t.amount)}`;
     return `
     <div class="list-row" onclick="App.navigate('transactions')" ${i < tx.slice(0,5).length-1 ? 'style="border-bottom:1px solid var(--border)"' : ''}>
-      <div class="list-icon" style="background:${color}22">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="${color}">${ICON[icon].match(/<path[^>]*\/>/g).join('')}</svg>
+      <div class="list-icon" style="background:${meta.color}22;font-size:20px;display:flex;align-items:center;justify-content:center">
+        ${meta.icon}
       </div>
       <div class="list-body">
         <div class="list-title">${title}</div>
@@ -1901,28 +1930,33 @@ function renderDashboard() {
           ${sparklineSVG(sparkData, 110, 56, '#FFFFFF', true)}
         </div>
       </div>
-      <div class="hero-stats">
-        <div class="stat-pill">
-          <div class="stat-dot" style="background:${COLORS.success}"></div>
-          <div class="stat-info">
-            <div class="stat-value">${formatINR(monthlyIncome)}</div>
-            <div class="stat-delta" style="color:${incUp?COLORS.success:COLORS.danger}">${incUp?'▲':'▼'} ${Math.abs(incDeltaPct)}%</div>
-          </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-cards-row">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="background:${COLORS.success}22">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="${COLORS.success}"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
         </div>
-        <div class="stat-pill">
-          <div class="stat-dot" style="background:${COLORS.danger}"></div>
-          <div class="stat-info">
-            <div class="stat-value">${formatINR(monthlyExpenses)}</div>
-            <div class="stat-delta" style="color:${expUp?COLORS.danger:COLORS.success}">${expUp?'▲':'▼'} ${Math.abs(expDeltaPct)}%</div>
-          </div>
+        <div class="stat-card-amt">${formatINR(monthlyIncome)}</div>
+        <div class="stat-card-label">Income</div>
+        <div class="stat-card-delta" style="color:${incUp?COLORS.success:COLORS.danger}">${incUp?'▲':'▼'} ${Math.abs(incDeltaPct)}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="background:${COLORS.danger}22">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="${COLORS.danger}"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
         </div>
-        <div class="stat-pill">
-          <div class="stat-dot" style="background:${COLORS.info}"></div>
-          <div class="stat-info">
-            <div class="stat-value">${formatINR(savings)}</div>
-            <div class="stat-delta" style="color:${savUp?COLORS.success:COLORS.danger}">${savUp?'▲':'▼'} ${Math.abs(savDeltaPct)}%</div>
-          </div>
+        <div class="stat-card-amt">${formatINR(monthlyExpenses)}</div>
+        <div class="stat-card-label">Expense</div>
+        <div class="stat-card-delta" style="color:${expUp?COLORS.danger:COLORS.success}">${expUp?'▲':'▼'} ${Math.abs(expDeltaPct)}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="background:${COLORS.info}22">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="${COLORS.info}"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
         </div>
+        <div class="stat-card-amt">${formatINR(savings)}</div>
+        <div class="stat-card-label">Savings</div>
+        <div class="stat-card-delta" style="color:${savUp?COLORS.success:COLORS.danger}">${savUp?'▲':'▼'} ${Math.abs(savDeltaPct)}%</div>
       </div>
     </div>
 
