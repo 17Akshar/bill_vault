@@ -4596,6 +4596,71 @@ function renderInsightsCalendar() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   8b. MORE / PROFILE SCREEN
+══════════════════════════════════════════════════════ */
+function renderMore() {
+  const u = State.user || DEMO.user;
+  const initial = (u.name||'U').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+
+  function menuSection(title, items) {
+    var h = '<div style="margin-bottom:20px">';
+    h += '<div class="section-title" style="padding:0 4px 10px">' + title + '</div>';
+    h += '<div class="list-card">';
+    items.forEach(function(it, i) {
+      h += '<div class="list-row" style="' + (i < items.length-1 ? 'border-bottom:1px solid var(--border);' : '') + 'cursor:pointer" onclick="' + (it.fn || '') + '">'
+        + '<div class="list-icon" style="background:' + it.bg + ';font-size:20px;display:flex;align-items:center;justify-content:center">' + it.icon + '</div>'
+        + '<div class="list-body"><div class="list-title">' + it.label + '</div>'
+        + (it.sub ? '<div class="list-sub">' + it.sub + '</div>' : '')
+        + '</div>'
+        + '<div class="list-right" style="color:var(--text-dim)">'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+        + '</div>'
+        + '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+
+  var html = '<div class="screen-wrap">';
+  html += '<div class="page-header"><div><div class="page-title">Profile</div></div>'
+    + '<div class="icon-btn" onclick="App.goTab(\'dashboard\')">'
+    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+    + '</div></div>';
+
+  /* Profile hero */
+  html += '<div class="card" style="margin-bottom:20px;padding:24px;text-align:center">'
+    + '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--grad-from),var(--grad-to));display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;font-weight:800;color:#fff">' + initial + '</div>'
+    + '<div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px">' + u.name + '</div>'
+    + '<div style="font-size:13px;color:var(--text-dim);margin-bottom:16px">' + u.email + '</div>'
+    + '<button class="btn" style="padding:8px 24px;font-size:13px;background:var(--primary-dim);color:var(--primary);border:1px solid var(--primary);border-radius:20px" onclick="App.showToast(\'Edit profile coming soon!\')">Edit Profile</button>'
+    + '</div>';
+
+  html += menuSection('Finance', [
+    { icon:'📊', bg:'rgba(108,71,255,0.15)', label:'Reports & Analytics', sub:'Detailed financial reports', fn:"App.goTab('insights')" },
+    { icon:'🏦', bg:'rgba(34,197,94,0.15)',  label:'Accounts & Wallets',  sub:'Manage all your accounts',   fn:"App.goTab('wealth')" },
+    { icon:'🔔', bg:'rgba(245,158,11,0.15)', label:'Reminders',            sub:'Bill & payment reminders',   fn:"App.navigate('reminders')" },
+    { icon:'📁', bg:'rgba(96,165,250,0.15)', label:'Categories',           sub:'Manage spending categories',  fn:"App.navigate('category-mgmt')" },
+  ]);
+
+  html += menuSection('Preferences', [
+    { icon:'🌙', bg:'rgba(108,71,255,0.15)', label:'Appearance',    sub:'Theme & display settings', fn:"App.showToast('Appearance settings coming soon!')" },
+    { icon:'🔒', bg:'rgba(239,68,68,0.15)',  label:'Security',      sub:'PIN, biometrics & privacy',fn:"App.showToast('Security settings coming soon!')" },
+    { icon:'💾', bg:'rgba(34,197,94,0.15)',  label:'Data & Backup', sub:'Export or backup your data',fn:"App.showToast('Data export coming soon!')" },
+  ]);
+
+  html += menuSection('About', [
+    { icon:'ℹ️', bg:'rgba(96,165,250,0.15)',  label:'About BillVault', sub:'Version 1.0.0', fn:"App.showToast('BillVault v1.0.0 — Your personal finance companion')" },
+    { icon:'⭐', bg:'rgba(245,158,11,0.15)',  label:'Rate the App',    sub:'Leave a review', fn:"App.showToast('Thank you for your support!')" },
+    { icon:'📩', bg:'rgba(108,71,255,0.15)',  label:'Contact Support', sub:'Get help & feedback', fn:"App.showToast('support@billvault.app')" },
+  ]);
+
+  html += '<button class="btn" style="width:100%;padding:14px;font-size:15px;font-weight:700;background:rgba(239,68,68,0.12);color:var(--danger);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-sm);margin-bottom:32px" onclick="App.logout()">Sign Out</button>';
+
+  html += '</div>';
+  return html;
+}
+
+/* ═══════════════════════════════════════════════════════
    9. APP CONTROLLER
 ══════════════════════════════════════════════════════ */
 const App = {
@@ -4687,6 +4752,8 @@ const App = {
       case 'edit-reminder':    html = renderAddReminder();      break;
       case 'reminder-detail':  html = renderReminderDetail();   break;
       case 'insights':         html = renderInsights();         break;
+      case 'more':             html = renderMore();             break;
+      case 'reports':          State.screen='insights'; html = renderInsights(); break;
       default:
         html = `<div class="screen-wrap">
           <div class="page-header">
@@ -5084,23 +5151,52 @@ const App = {
     this.render();
   },
 
+  toggleAlertDay(days) {
+    if (!State.remForm) return;
+    State.remForm.alertDays = State.remForm.alertDays || [];
+    const idx = State.remForm.alertDays.indexOf(days);
+    if (idx >= 0) State.remForm.alertDays.splice(idx, 1);
+    else State.remForm.alertDays.push(days);
+    this.render();
+  },
+
   saveReminder() {
-    const title  = document.getElementById('rem-title')?.value || '';
-    const amount = parseFloat(document.getElementById('rem-amount')?.value || '0');
-    const date   = document.getElementById('rem-date')?.value || '';
-    if (!title) { this.showToast('Please enter a reminder title'); return; }
+    const rf = State.remForm;
+    if (!rf) return;
+    const title  = (rf.title || '').trim();
+    const amount = parseFloat(rf.amount || 0);
+    const date   = rf.date || '';
+    if (!title)  { this.showToast('Please enter a reminder title'); return; }
     if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
+    const existing = (DEMO.reminders || []).find(function(r){ return r.reminder_id === rf.id; });
     const newRem = {
-      reminder_id: 'rem_' + Date.now(),
-      title, amount, reminder_date: date,
-      reminder_type: document.getElementById('rem-type')?.value || 'bill',
-      provider: document.getElementById('rem-provider')?.value || '',
-      description: document.getElementById('rem-notes')?.value || '',
-      is_completed: false,
-      frequency: document.getElementById('rem-frequency')?.value || 'monthly',
+      reminder_id: existing ? rf.id : 'rem_' + Date.now(),
+      title,
+      amount,
+      reminder_date: date,
+      reminder_type: rf.type || 'bill',
+      provider: rf.provider || '',
+      description: rf.notes || '',
+      priority: rf.priority || 'medium',
+      is_completed: existing ? existing.is_completed : false,
+      recurring: rf.recurring || false,
+      recurrence: rf.recurrence || 'monthly',
+      end_type: rf.endType || 'never',
+      end_date: rf.endDate || null,
+      end_after: rf.endAfter || null,
+      auto_pay: rf.autoPay || false,
+      alert_days: rf.alertDays || [1],
+      account: rf.account || null,
     };
-    DEMO.reminders.push(newRem);
-    this.showToast('Reminder saved! 🔔');
+    if (existing) {
+      const idx = DEMO.reminders.indexOf(existing);
+      DEMO.reminders[idx] = newRem;
+      this.showToast('Reminder updated! 🔔');
+    } else {
+      DEMO.reminders.push(newRem);
+      this.showToast('Reminder saved! 🔔');
+    }
+    State.remForm = null;
     this.navigate('reminders');
   },
 
