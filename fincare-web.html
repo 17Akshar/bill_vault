@@ -4733,7 +4733,7 @@ const App = {
     } else {
       // Demo mode
       State.token = 'demo-token';
-      State.user  = DEMO.user;
+      State.user  = { ...DEMO.user };
       localStorage.setItem('fc_token', 'demo-token');
       localStorage.setItem('fc_user', JSON.stringify(DEMO.user));
     }
