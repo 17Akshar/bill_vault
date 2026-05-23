@@ -1976,7 +1976,7 @@ function renderDashboard() {
     return `
     <div class="list-row" onclick="App.navigate('reminders')" ${i < rem.slice(0,4).length-1 ? 'style="border-bottom:1px solid var(--border)"' : ''}>
       <div class="list-icon" style="background:${typeColor}22">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="${typeColor}">${ICON[typeIcon] ? ICON[typeIcon].match(/<path[^>]*\/>/g)[0] : ''}</svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="${typeColor}">${ICON[typeIcon] ? (ICON[typeIcon].match(/<path[^>]*\/>/g)||[''])[0] : ''}</svg>
       </div>
       <div class="list-body">
         <div class="list-title">${r.title}</div>
@@ -2022,7 +2022,7 @@ function renderDashboard() {
         <div class="avatar">${userInitial()}</div>
         <div>
           <div class="dash-sub">Dashboard</div>
-          <div class="dash-title">${greeting()}, ${u.name.split(' ')[0]}! 👋</div>
+          <div class="dash-title">${greeting()}, ${(u.name||'User').split(' ')[0]}! 👋</div>
         </div>
       </div>
       <div class="dash-right">
@@ -2121,7 +2121,7 @@ function renderDashboard() {
         ${acctCards.map(g => `
           <div class="acct-card" onclick="App.goTab('wealth')">
             <div class="acct-icon" style="background:${g.color}22">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="${g.color}">${(ICON[g.icon]||ICON.bank).match(/<path[^>]*\/>/g).join('')}</svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="${g.color}">${((ICON[g.icon]||ICON.bank).match(/<path[^>]*\/>/g)||[]).join('')}</svg>
             </div>
             <div class="acct-title">${g.label}</div>
             <div class="acct-amount" style="color:${g.total<0?COLORS.danger:'var(--text)'}">
@@ -2614,7 +2614,7 @@ function renderTxDetail() {
 
 /* ─── EXPERT VIEW ─────────────────────────────────────── */
 function renderExpertView() {
-  var allTx  = DEMO.transactions;
+  var allTx  = DEMO.transactions || [];
   var period = State.txExpertPeriod || 'month';
   var now    = new Date();
   var month  = State.txMonth != null ? State.txMonth : now.getMonth();
@@ -2735,8 +2735,9 @@ function renderCategoryMgmt() {
       +'<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
       +'</div>';
   }).join('');
+  var backTarget = (State.params && State.params.from) || 'expert-view';
   return '<div class="screen-wrap" style="padding-bottom:32px">'
-    +'<div class="form-header"><div class="icon-btn" onclick="App.navigate(\'expert-view\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header"><div class="icon-btn" onclick="App.navigate(\''+backTarget+'\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
     +'<div class="form-header-title">Categories</div>'
     +'<div class="icon-btn" onclick="App.showToast(\'Add custom category coming soon!\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div></div>'
     +'<div class="tx-type-bar" style="margin-top:8px">'+typeTabs+'</div>'
@@ -3124,7 +3125,7 @@ function renderAccountDetail() {
   const balColor  = isLiab ? '#FFB4BE' : '#9DFFD9';
 
   // Transactions for this account
-  const allTx    = DEMO.transactions;
+  const allTx    = DEMO.transactions || [];
   const typeF    = State.acctTxTypeFilter || 'all';
   const dateF    = State.acctTxDateFilter || 'month';
   const now      = new Date();
@@ -3159,7 +3160,7 @@ function renderAccountDetail() {
     return `
     <div class="list-row" style="${i<sortedTxs.length-1?'border-bottom:1px solid var(--border)':''}" onclick="App.openTxDetail('${t.id}')">
       <div class="list-icon" style="background:${color}22">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="${color}">${icon.match(/<path[^>]*\/>/g).join('')}</svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="${color}">${(icon.match(/<path[^>]*\/>/g)||[]).join('')}</svg>
       </div>
       <div class="list-body">
         <div class="list-title">${title}</div>
@@ -4652,7 +4653,7 @@ function renderMore() {
     { icon:'📊', bg:'rgba(108,71,255,0.15)', label:'Reports & Analytics', sub:'Detailed financial reports', fn:"App.goTab('insights')" },
     { icon:'🏦', bg:'rgba(34,197,94,0.15)',  label:'Accounts & Wallets',  sub:'Manage all your accounts',   fn:"App.goTab('wealth')" },
     { icon:'🔔', bg:'rgba(245,158,11,0.15)', label:'Reminders',            sub:'Bill & payment reminders',   fn:"App.navigate('reminders')" },
-    { icon:'📁', bg:'rgba(96,165,250,0.15)', label:'Categories',           sub:'Manage spending categories',  fn:"App.navigate('category-mgmt')" },
+    { icon:'📁', bg:'rgba(96,165,250,0.15)', label:'Categories',           sub:'Manage spending categories',  fn:"App.navigate('category-mgmt',{from:'more'})" },
   ]);
 
   html += menuSection('Preferences', [
@@ -5211,6 +5212,7 @@ const App = {
     const date   = rf.date || '';
     if (!title)  { this.showToast('Please enter a reminder title'); return; }
     if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
+    if (!date)   { this.showToast('Please select a due date'); return; }
     const existing = (DEMO.reminders || []).find(function(r){ return r.reminder_id === rf.id; });
     const newRem = {
       reminder_id: existing ? rf.id : 'rem_' + Date.now(),
