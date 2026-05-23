@@ -2331,11 +2331,11 @@ function renderTransactions() {
 
     // Month navigator
     + '<div class="month-nav">'
-    + '<button class="month-btn" onclick="var m=State.txMonth-1,y=State.txYear;if(m<0){m=11;y--;}State.txMonth=m;State.txYear=y;App.render()">'
+    + '<button class="month-btn" onclick="var m=State.txMonth-1,y=State.txYear;if(m<0){m=11;y--;}State.txMonth=m;State.txYear=y;State.txSearch=\'\';App.render()">'
     + '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>'
     + '</button>'
     + '<div class="month-label">' + MONTHS_FULL[month] + ' ' + year + '</div>'
-    + '<button class="month-btn" onclick="var m=State.txMonth+1,y=State.txYear;if(m>11){m=0;y++;}State.txMonth=m;State.txYear=y;App.render()">'
+    + '<button class="month-btn" onclick="var m=State.txMonth+1,y=State.txYear;if(m>11){m=0;y++;}State.txMonth=m;State.txYear=y;State.txSearch=\'\';App.render()">'
     + '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
     + '</button>'
     + '</div>'
@@ -2817,7 +2817,7 @@ function renderWealth() {
   var totalAssets = bankTotal + cashTotal + invTotal + rentalVal + otherTotal + lentAmt;
   var totalLiab   = loanTotal + ccTotal + borrowedAmt;
   var netWorth    = totalAssets - totalLiab;
-  var growthPct   = DEMO.dashboard.net_worth_delta_pct || 3.8;
+  var growthPct   = DEMO.dashboard.net_worth_delta_pct ?? 3.8;
   var growing     = growthPct >= 0;
 
   // — Health Score —
@@ -2868,7 +2868,7 @@ function renderWealth() {
   var insights = [
     { dot:'#22C55E', text: 'Net worth is ' + (growing?'up':'down') + ' ' + Math.abs(growthPct).toFixed(1) + '% this month — ' + (growing?'on a healthy growth trajectory.':'review your spending.') },
     { dot:'#7C4DFF', text: 'Investments make up ' + Math.round(invAlloc) + '% of total assets. ' + (invAlloc < 20 ? 'Consider increasing investment allocation.' : 'Allocation looks healthy.') },
-    { dot: loanTotal > bankTotal+cashTotal+invTotal ? '#EF4444' : '#F59E0B', text: 'Loan liabilities: ' + formatINR(loanTotal) + ' outstanding across ' + loans.length + ' loan' + (loans.length>1?'s':'')+'. Monthly EMI: '+formatINR(loans.reduce(function(s,l){return s+l.emi;},0))+'.'},
+    { dot: loanTotal > bankTotal+cashTotal+invTotal ? '#EF4444' : '#F59E0B', text: 'Loan liabilities: ' + formatINR(loanTotal) + ' outstanding across ' + loans.length + ' loan' + (loans.length>1?'s':'')+'. Monthly EMI: '+formatINR(loans.reduce(function(s,l){return s+(l.emi||0);},0))+'.'},
     { dot:'#60A5FA', text: 'Rental properties generate ' + formatINR(rentalInc) + '/month passive income from ' + rentals.length + ' propert' + (rentals.length>1?'ies':'y') + '.' },
     { dot: savingsRate >= 30 ? '#22C55E' : '#F59E0B', text: 'Savings rate this month: ' + savingsRate.toFixed(1) + '% — ' + (savingsRate>=30?'Excellent! Above the recommended 30%.':savingsRate>=20?'Good. Try to reach 30% for stronger wealth building.':'Below target. Review monthly expenses.') },
   ];
@@ -3141,6 +3141,14 @@ function renderAccountDetail() {
     if (typeF === 'all') return true;
     const isCredit = t._type === 'income' || t.to_account_id === id;
     return typeF === 'credit' ? isCredit : !isCredit;
+  }).filter(t => {
+    if (!State.acctSearch) return true;
+    const q = State.acctSearch.toLowerCase();
+    return (t.source||'').toLowerCase().includes(q)
+        || (t.description||'').toLowerCase().includes(q)
+        || (t.category||'').toLowerCase().includes(q)
+        || (t.payee||'').toLowerCase().includes(q)
+        || (t.notes||'').toLowerCase().includes(q);
   });
 
   const sortedTxs = [...acctTxs].sort((a,b) => {
@@ -3774,14 +3782,14 @@ function renderAllTab(rems) {
   let list = rems.filter(r => !r.is_completed);
   if (State.remSearch) {
     const q = State.remSearch.toLowerCase();
-    list = list.filter(r => r.title.toLowerCase().includes(q) || (r.provider||'').toLowerCase().includes(q) || (r.description||'').toLowerCase().includes(q));
+    list = list.filter(r => (r.title||'').toLowerCase().includes(q) || (r.provider||'').toLowerCase().includes(q) || (r.description||'').toLowerCase().includes(q));
   }
   if (State.remCatFilter !== 'all') {
     list = list.filter(r => r.reminder_type === State.remCatFilter);
   }
   if (State.remSort === 'date')   list.sort((a,b) => new Date(a.reminder_date) - new Date(b.reminder_date));
   if (State.remSort === 'amount') list.sort((a,b) => b.amount - a.amount);
-  if (State.remSort === 'name')   list.sort((a,b) => a.title.localeCompare(b.title));
+  if (State.remSort === 'name')   list.sort((a,b) => (a.title||'').localeCompare(b.title||''));
 
   let html = '<div style="padding:0 20px 12px;position:relative">'
     + '<input id="rem-search" type="text" placeholder="Search reminders..." value="' + State.remSearch + '" oninput="State.remSearch=this.value;App.render()" '
@@ -4418,7 +4426,7 @@ function renderInsightsBudget() {
   var totalBudget  = budgets.reduce(function(s,b) { return s + b.budget; }, 0) * multiplier;
   var totalSpent   = budgets.reduce(function(s,b) { return s + b.spent;  }, 0) * multiplier;
   var remaining    = totalBudget - totalSpent;
-  var overallPct   = Math.min(100, Math.round((totalSpent / totalBudget) * 100));
+  var overallPct   = Math.min(100, Math.round((totalSpent / (totalBudget || 1)) * 100));
   var overallColor = overallPct >= 90 ? COLORS.danger : overallPct >= 70 ? COLORS.warn : COLORS.success;
   var overBudget   = budgets.filter(function(b) { return b.spent > b.budget; });
   var html = '';
@@ -4448,7 +4456,7 @@ function renderInsightsBudget() {
     + '<div class="view-all" onclick="App.showToast(\'Budget settings coming soon!\')">View All</div></div>'
     + '<div class="list-card" style="margin:0 20px 22px">';
   budgets.forEach(function(b) {
-    var pct      = Math.round((b.spent / b.budget) * 100);
+    var pct      = Math.round((b.spent / (b.budget || 1)) * 100);
     var barColor = pct >= 100 ? COLORS.danger : pct >= 80 ? COLORS.warn : COLORS.success;
     html += '<div class="ins-bud-row">'
       + '<div class="ins-bud-icon" style="background:' + b.color + '22">' + b.icon + '</div>'
@@ -4485,9 +4493,9 @@ function renderInsightsTrends() {
   var curInc   = incData[incData.length-1];  var prevInc  = incData[incData.length-2];
   var curExp   = expData[expData.length-1];  var prevExp  = expData[expData.length-2];
   var curInv   = invData[invData.length-1];  var prevInv  = invData[invData.length-2];
-  var incPct   = Math.round(((curInc-prevInc)/prevInc)*100);
-  var expPct   = Math.round(((curExp-prevExp)/prevExp)*100);
-  var invPct   = Math.round(((curInv-prevInv)/prevInv)*100);
+  var incPct   = prevInc ? Math.round(((curInc-prevInc)/prevInc)*100) : 0;
+  var expPct   = prevExp ? Math.round(((curExp-prevExp)/prevExp)*100) : 0;
+  var invPct   = prevInv ? Math.round(((curInv-prevInv)/prevInv)*100) : 0;
   var html = '';
   html += '<div class="ins-period-row">';
   [{key:'month',label:'This Month'},{key:'6m',label:'Last 6 Months'},{key:'year',label:'This Year'}].forEach(function(p) {
@@ -4737,6 +4745,9 @@ const App = {
 
   logout() {
     State.token = null; State.user = null;
+    State.data  = { accounts:null, reminders:null, recentTx:null, dashboard:null,
+                    transactions:null, budgets:null, investments:null, creditCards:null,
+                    loans:null, income:null, expenses:null };
     localStorage.removeItem('fc_token');
     localStorage.removeItem('fc_user');
     document.getElementById('tab-bar').style.display = 'none';
@@ -5215,7 +5226,7 @@ const App = {
   duplicateReminder(id) {
     const r = (DEMO.reminders||[]).find(x => x.reminder_id === id);
     if (!r) return;
-    const copy = Object.assign({}, r, { reminder_id: 'rem_' + Date.now(), is_completed: false });
+    const copy = Object.assign({}, r, { reminder_id: 'rem_' + Date.now(), is_completed: false, completed_on: null, paid_amount: null });
     DEMO.reminders.push(copy);
     this.showToast('Reminder duplicated 📋');
     this.render();
@@ -5257,7 +5268,7 @@ const App = {
       end_after: rf.endAfter || null,
       auto_pay: rf.autoPay || false,
       alert_days: rf.alertDays || [1],
-      account: rf.account || null,
+      account_id: rf.account || null,
     };
     if (existing) {
       const idx = DEMO.reminders.indexOf(existing);
