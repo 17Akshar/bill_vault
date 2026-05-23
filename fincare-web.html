@@ -2867,7 +2867,7 @@ function renderWealth() {
   // — AI insights —
   var insights = [
     { dot:'#22C55E', text: 'Net worth is ' + (growing?'up':'down') + ' ' + Math.abs(growthPct).toFixed(1) + '% this month — ' + (growing?'on a healthy growth trajectory.':'review your spending.') },
-    { dot:'#7C4DFF', text: 'Investments make up ' + Math.round(invTotal/totalAssets*100) + '% of total assets. ' + (invAlloc < 20 ? 'Consider increasing investment allocation.' : 'Allocation looks healthy.') },
+    { dot:'#7C4DFF', text: 'Investments make up ' + Math.round(invAlloc) + '% of total assets. ' + (invAlloc < 20 ? 'Consider increasing investment allocation.' : 'Allocation looks healthy.') },
     { dot: loanTotal > bankTotal+cashTotal+invTotal ? '#EF4444' : '#F59E0B', text: 'Loan liabilities: ' + formatINR(loanTotal) + ' outstanding across ' + loans.length + ' loan' + (loans.length>1?'s':'')+'. Monthly EMI: '+formatINR(loans.reduce(function(s,l){return s+l.emi;},0))+'.'},
     { dot:'#60A5FA', text: 'Rental properties generate ' + formatINR(rentalInc) + '/month passive income from ' + rentals.length + ' propert' + (rentals.length>1?'ies':'y') + '.' },
     { dot: savingsRate >= 30 ? '#22C55E' : '#F59E0B', text: 'Savings rate this month: ' + savingsRate.toFixed(1) + '% — ' + (savingsRate>=30?'Excellent! Above the recommended 30%.':savingsRate>=20?'Good. Try to reach 30% for stronger wealth building.':'Below target. Review monthly expenses.') },
@@ -4689,8 +4689,10 @@ const App = {
   goTab(tab) {
     State.tab    = tab;
     State.screen = tab;
-    State.params = {};
+    State.params    = {};
     State.addTxType = null;
+    State.txEditData = null;
+    State.txIsEdit   = false;
     // Update tab bar highlight
     document.querySelectorAll('.tab-item').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === tab);
@@ -4890,7 +4892,11 @@ const App = {
     const accts = State.data.accounts || DEMO.accounts;
     if (isEdit) {
       const idx = accts.findIndex(a=>a.account_id===editId);
-      if (idx >= 0) Object.assign(accts[idx], payload);
+      if (idx >= 0) {
+        const oldBalance = accts[idx].balance || 0;
+        Object.assign(accts[idx], payload);
+        DEMO.dashboard.total_balance += (balance - oldBalance);
+      }
     } else {
       const newAcct = { ...payload, account_id:'a'+Date.now() };
       accts.push(newAcct);
@@ -4930,6 +4936,7 @@ const App = {
     const idx   = accts.findIndex(a=>a.account_id===id);
     if (idx>=0) accts.splice(idx, 1);
     State.data.accounts = accts;
+    State.viewAcctId = null;
     this.showToast('Account deleted');
     this.goTab('wealth');
   },
@@ -5090,6 +5097,7 @@ const App = {
 
     const isEdit = State.txIsEdit && State.txEditData;
     const editId = isEdit ? State.txEditData.id : null;
+    const allAccts = State.data.accounts || DEMO.accounts;
 
     const txData = {
       _type: type, amount, date, category: cat,
@@ -5103,9 +5111,18 @@ const App = {
       const idx = DEMO.transactions.findIndex(t => t.id === editId);
       if (idx !== -1) {
         const old = DEMO.transactions[idx];
-        // Reverse old balance effect
+        // Reverse old dashboard totals
         if (old._type === 'income')  { DEMO.dashboard.monthly_income   -= old.amount; DEMO.dashboard.total_balance -= old.amount; }
         if (old._type === 'expense') { DEMO.dashboard.monthly_expenses -= old.amount; DEMO.dashboard.total_balance += old.amount; }
+        // Reverse old individual account balances
+        const oldAcct = allAccts.find(a => a.account_id === old.account_id);
+        if (old._type === 'income'  && oldAcct) oldAcct.balance -= old.amount;
+        if (old._type === 'expense' && oldAcct) oldAcct.balance += old.amount;
+        if (old._type === 'transfer') {
+          if (oldAcct) oldAcct.balance += old.amount;
+          const oldTo = allAccts.find(a => a.account_id === old.to_account_id);
+          if (oldTo) oldTo.balance -= old.amount;
+        }
         DEMO.transactions[idx] = { ...old, ...txData };
       }
     } else {
@@ -5114,6 +5131,15 @@ const App = {
 
     if (type === 'income')  { DEMO.dashboard.monthly_income   += amount; DEMO.dashboard.total_balance += amount; }
     if (type === 'expense') { DEMO.dashboard.monthly_expenses += amount; DEMO.dashboard.total_balance -= amount; }
+    // Update individual account balances
+    const srcAcct = allAccts.find(a => a.account_id === acct);
+    if (type === 'income'  && srcAcct) srcAcct.balance += amount;
+    if (type === 'expense' && srcAcct) srcAcct.balance -= amount;
+    if (type === 'transfer') {
+      if (srcAcct) srcAcct.balance -= amount;
+      const destAcct = allAccts.find(a => a.account_id === toAcct);
+      if (destAcct) destAcct.balance += amount;
+    }
 
     State.addTxType   = null;
     State.txRecurring = false;
