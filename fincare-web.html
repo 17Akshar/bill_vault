@@ -1612,7 +1612,7 @@ const State = {
   remSort:       'date',
   remCalMonth:   new Date().getMonth(),
   remCalYear:    new Date().getFullYear(),
-  remCalDay:     new Date().getDate(),
+  remCalDay:     null,
   remForm: null,              // null = closed, {} = open (add), {id} = edit
   remDetailId:   null,
   remShowFilter: false,
@@ -1795,6 +1795,10 @@ function daysFromNow(n) {
   d.setDate(d.getDate() + n);
   return d.toISOString().split('T')[0];
 }
+
+let _uid = 0;
+function uid(prefix) { return prefix + Date.now() + '_' + (++_uid); }
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function formatINR(n) {
   if (n == null || isNaN(n)) return '₹0';
@@ -2946,7 +2950,7 @@ function renderWealth() {
   var ccTotal     = cards.reduce(function(s,c){ return s+c.outstanding; },0);
   var lendBorrow  = DEMO.lendBorrow || [];
   var borrowedAmt = lendBorrow.filter(function(x){ return x.type==='borrowed'; }).reduce(function(s,x){ return s+(x.remaining||x.amount); },0);
-  var lentAmt     = lendBorrow.filter(function(x){ return x.type==='lent'&&x.status!=='settled'; }).reduce(function(s,x){ return s+(x.remaining||0); },0);
+  var lentAmt     = lendBorrow.filter(function(x){ return x.type==='lent'&&x.status!=='settled'; }).reduce(function(s,x){ return s+(x.remaining||x.amount||0); },0);
 
   // — Net Worth —
   var totalAssets = bankTotal + cashTotal + invTotal + rentalVal + otherTotal + lentAmt;
@@ -3235,8 +3239,8 @@ function renderGroupList() {
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="${a.color||meta.color}"><path d="${meta.svgPath}"/></svg>
               </div>
               <div class="acct-group-info">
-                <div class="acct-group-name">${a.name}</div>
-                <div class="acct-group-sub">${a.institution||a.sub_type||''} ${a.account_number?'· '+a.account_number:''}</div>
+                <div class="acct-group-name">${escapeHtml(a.name)}</div>
+                <div class="acct-group-sub">${escapeHtml(a.institution||a.sub_type||'')} ${a.account_number?'· '+escapeHtml(a.account_number):''}</div>
               </div>
               <div class="acct-group-bal" style="color:${balColor}">${a.balance<0?'-':''}${formatINR(Math.abs(a.balance))}</div>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)" style="margin-left:8px;flex-shrink:0"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
@@ -3363,7 +3367,7 @@ function renderAccountDetail() {
       <div class="icon-btn" onclick="App.goTab('wealth')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
       </div>
-      <div class="form-header-title">${a.name}</div>
+      <div class="form-header-title">${escapeHtml(a.name)}</div>
       <div class="icon-btn" onclick="App.openAcctMenu('${a.account_id}')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
       </div>
@@ -3373,8 +3377,8 @@ function renderAccountDetail() {
     <div class="acct-detail-hero" style="background:linear-gradient(135deg,${acctColor}CC,${acctColor})">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div>
-          <div class="acct-detail-name">${a.institution||a.sub_type||a.account_type}</div>
-          <div class="acct-detail-bank">${a.sub_type||a.account_type} Account${a.account_number?' · '+a.account_number:''}</div>
+          <div class="acct-detail-name">${escapeHtml(a.institution||a.sub_type||a.account_type)}</div>
+          <div class="acct-detail-bank">${escapeHtml(a.sub_type||a.account_type)} Account${a.account_number?' · '+escapeHtml(a.account_number):''}</div>
         </div>
         <div class="acct-detail-badge">✓ Active</div>
       </div>
@@ -3503,7 +3507,7 @@ const COLOR_SWATCHES = ['#6C47FF','#22C55E','#EF4444','#60A5FA','#F59E0B','#10B9
 function renderAddAccount() {
   const isEdit   = State.screen === 'edit-account';
   const editId   = State.params?.id;
-  const existing = isEdit ? (DEMO.accounts.find(a=>a.account_id===editId)||{}) : {};
+  const existing = isEdit ? ((State.data.accounts||DEMO.accounts).find(a=>a.account_id===editId)||{}) : {};
   const type     = State.addAcctType || existing.account_type || 'bank';
   const selColor = State.acctColor || existing.color || '#6C47FF';
   const typeMeta = ACCT_TYPES.find(t=>t.key===type)||ACCT_TYPES[0];
@@ -3804,7 +3808,7 @@ function renderUpcomingTab(rems) {
   ];
   const overdue  = pending.filter(r => daysUntil(r.reminder_date) < 0);
   const dueToday = pending.filter(r => daysUntil(r.reminder_date) === 0);
-  const thisWeek = pending.filter(r => { const d = daysUntil(r.reminder_date); return d >= 0 && d <= 7; });
+  const thisWeek = pending.filter(r => { const d = daysUntil(r.reminder_date); return d >= 2 && d <= 7; });
   const totalDue = pending.reduce((s,r) => s + r.amount, 0);
 
   let html = '<div class="rem-summary">';
@@ -3850,7 +3854,8 @@ function renderCalendarTab(rems) {
   const year    = State.remCalYear;
   const month   = State.remCalMonth;
   const today   = new Date();
-  const selDay  = State.remCalDay;
+  const daysInMonthCal = new Date(year, month+1, 0).getDate();
+  const selDay = (State.remCalDay != null && State.remCalDay <= daysInMonthCal) ? State.remCalDay : null;
   const firstDay    = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName   = new Date(year, month, 1).toLocaleString('default', { month:'long' });
@@ -3893,10 +3898,10 @@ function renderCalendarTab(rems) {
 
   if (selDay && dayMap[selDay] && dayMap[selDay].length > 0) {
     html += '<div style="padding:0 20px"><div style="color:var(--text);font-size:14px;font-weight:700;margin-bottom:10px">'
-      + monthName + ' ' + selDay + ' — ' + dayMap[selDay].length + ' reminder' + (dayMap[selDay].length > 1 ? 's' : '')
+      + monthName + ' ' + selDay + ', ' + year + ' — ' + dayMap[selDay].length + ' reminder' + (dayMap[selDay].length > 1 ? 's' : '')
       + '</div>' + dayMap[selDay].map(r => remCard(r)).join('') + '</div>';
   } else if (selDay) {
-    html += '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:14px">No reminders on ' + monthName + ' ' + selDay + '</div>';
+    html += '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:14px">No reminders on ' + monthName + ' ' + selDay + ', ' + year + '</div>';
   } else {
     const monthTotal = pending.filter(r => {
       const d = new Date(r.reminder_date);
@@ -4034,6 +4039,12 @@ function renderAddReminder() {
   const rems   = State.data.reminders || DEMO.reminders;
   const existing = isEdit ? rems.find(r => r.reminder_id === editId) : null;
 
+  if (isEdit && !existing) {
+    State.remForm = null;
+    App.showToast('Reminder not found');
+    App.navigate('reminders');
+    return '<div class="screen-wrap"></div>';
+  }
   if (!State.remForm) {
     State.remForm = existing ? {
       id:         editId,
@@ -4373,7 +4384,7 @@ function renderInsightsOverview() {
     + '<div style="display:flex;justify-content:space-between">'
     + '<span style="color:var(--success);font-size:18px;font-weight:800">' + formatINR(income) + '</span>'
     + '<span style="color:var(--danger);font-size:18px;font-weight:800">' + formatINR(expense) + '</span>'
-    + '<span style="color:var(--info);font-size:18px;font-weight:800">' + formatINR(savings) + '</span>'
+    + '<span style="color:' + (savings < 0 ? 'var(--danger)' : 'var(--info)') + ';font-size:18px;font-weight:800">' + formatINR(savings) + '</span>'
     + '</div>'
     + '</div>';
   html += '<div class="card" style="margin:0 20px 16px">'
@@ -4663,8 +4674,10 @@ function renderInsightsCalendar() {
   var month  = State.insightsCalMonth != null ? State.insightsCalMonth : new Date().getMonth();
   var year   = State.insightsCalYear  != null ? State.insightsCalYear  : new Date().getFullYear();
   var today  = new Date();
-  var selDay = State.insightsCalDay != null ? State.insightsCalDay
-    : (month === today.getMonth() && year === today.getFullYear() ? today.getDate() : 1);
+  var maxDays = new Date(year, month+1, 0).getDate();
+  var selDay  = (State.insightsCalDay != null && State.insightsCalDay <= maxDays)
+    ? State.insightsCalDay
+    : (month === today.getMonth() && year === today.getFullYear() ? today.getDate() : null);
   var allTx  = DEMO.transactions;
   var allRem = State.data.reminders || DEMO.reminders;
   var eventMap = {};
@@ -4833,9 +4846,30 @@ const App = {
     State.tab    = tab;
     State.screen = tab;
     State.params    = {};
-    State.addTxType = null;
-    State.txEditData = null;
-    State.txIsEdit   = false;
+    // Transaction form state
+    State.addTxType   = null;
+    State.txEditData  = null;
+    State.txIsEdit    = false;
+    State.txShowSearch = false;
+    // Reminder state
+    State.remForm      = null;
+    State.remTab       = 'upcoming';
+    State.remCatFilter = 'all';
+    State.remSearch    = '';
+    State.remSort      = 'date';
+    State.remCalDay    = null;
+    // Insights state
+    State.insightsTab         = 'overview';
+    State.insightsPeriod      = 'month';
+    State.insightsTrendPeriod = 'month';
+    State.insightsCalDay      = null;
+    // Account detail state
+    State.viewAcctId       = null;
+    State.acctTxTypeFilter = 'all';
+    State.acctTxDateFilter = 'month';
+    State.acctSort         = 'date';
+    State.acctSearch       = '';
+    State.showAcctFilter   = false;
     // Update tab bar highlight
     document.querySelectorAll('.tab-item').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === tab);
@@ -4883,6 +4917,18 @@ const App = {
     State.data  = { accounts:null, reminders:null, recentTx:null, dashboard:null,
                     transactions:null, budgets:null, investments:null, creditCards:null,
                     loans:null, income:null, expenses:null };
+    // Reset all UI state
+    State.addTxType   = null; State.txEditData = null; State.txIsEdit = false;
+    State.txShowSearch = false; State.txSearch = ''; State.txAccountFilter = 'all';
+    State.txMonth = new Date().getMonth(); State.txYear = new Date().getFullYear();
+    State.remForm = null; State.remTab = 'upcoming'; State.remCatFilter = 'all';
+    State.remSearch = ''; State.remSort = 'date'; State.remCalDay = null;
+    State.insightsTab = 'overview'; State.insightsPeriod = 'month';
+    State.insightsTrendPeriod = 'month'; State.insightsCalDay = null;
+    State.viewAcctId = null; State.acctTxTypeFilter = 'all';
+    State.acctTxDateFilter = 'month'; State.acctSort = 'date';
+    State.acctSearch = ''; State.showAcctFilter = false;
+    State.tab = 'dashboard'; State.screen = 'login'; State.params = {};
     localStorage.removeItem('fc_token');
     localStorage.removeItem('fc_user');
     document.getElementById('tab-bar').style.display = 'none';
@@ -5005,6 +5051,7 @@ const App = {
       holder: document.getElementById('af-holder')?.value?.trim() || ((State.user||DEMO.user).name),
       branch: document.getElementById('af-branch')?.value?.trim() || '',
       sub_type: document.getElementById('af-subtype')?.value || typeMeta.label,
+      cash_location: document.getElementById('af-loc')?.value?.trim() || '',
       upi_id: document.getElementById('af-upi')?.value?.trim() || '',
       linked_app: document.getElementById('af-upiapp')?.value || '',
       credit_limit: parseFloat(document.getElementById('af-crlimit')?.value||'0') || 0,
@@ -5041,12 +5088,12 @@ const App = {
       if (idx >= 0) {
         const oldBalance = accts[idx].balance || 0;
         Object.assign(accts[idx], payload);
-        DEMO.dashboard.total_balance += (balance - oldBalance);
+        if (DEMO.dashboard) DEMO.dashboard.total_balance += (balance - oldBalance);
       }
     } else {
-      const newAcct = { ...payload, account_id:'a'+Date.now() };
+      const newAcct = { ...payload, account_id: uid('a') };
       accts.push(newAcct);
-      DEMO.dashboard.total_balance += balance;
+      if (DEMO.dashboard) DEMO.dashboard.total_balance += balance;
     }
     State.data.accounts = accts;
 
@@ -5089,17 +5136,20 @@ const App = {
 
   exportAccount(id, format) {
     const a     = (State.data.accounts||DEMO.accounts).find(x=>x.account_id===id);
-    const txs   = DEMO.transactions.filter(t=>t.account_id===id||t.to_account_id===id);
+    const txs   = (DEMO.transactions||[]).filter(t=>t.account_id===id||t.to_account_id===id);
     const name  = a ? a.name : 'Account';
 
     if (format === 'csv') {
       const rows = ['Date,Type,Description,Category,Amount,Balance'];
-      let running = a ? a.balance : 0;
-      [...txs].sort((x,y)=>new Date(x.date)-new Date(y.date)).forEach(t => {
+      const sortedTxs = [...txs].sort((x,y)=>new Date(x.date)-new Date(y.date));
+      const allAmts   = sortedTxs.map(t => (t._type==='income'||t.to_account_id===id) ? t.amount : -t.amount);
+      const opening   = (a ? a.balance : 0) - allAmts.reduce((s,v)=>s+v, 0);
+      let running = opening;
+      sortedTxs.forEach(t => {
         const isInc = t._type==='income' || t.to_account_id===id;
         const amt   = isInc ? t.amount : -t.amount;
-        rows.push([t.date, t._type, (t.source||t.description||''), t.category, amt, running].join(','));
-        running -= amt;
+        running += amt;
+        rows.push([t.date, t._type, (t.source||t.description||t.payee||''), t.category, amt, running].join(','));
       });
       const blob = new Blob([rows.join('\n')], {type:'text/csv'});
       const url  = URL.createObjectURL(blob);
@@ -5271,9 +5321,12 @@ const App = {
       const idx = DEMO.transactions.findIndex(t => t.id === editId);
       if (idx !== -1) {
         const old = DEMO.transactions[idx];
-        // Reverse old dashboard totals
-        if (old._type === 'income')  { DEMO.dashboard.monthly_income   -= old.amount; DEMO.dashboard.total_balance -= old.amount; }
-        if (old._type === 'expense') { DEMO.dashboard.monthly_expenses -= old.amount; DEMO.dashboard.total_balance += old.amount; }
+        // Reverse old dashboard totals (only if in current month)
+        const oldDate = new Date(old.date); const now3 = new Date();
+        const oldIsCur = oldDate.getMonth()===now3.getMonth() && oldDate.getFullYear()===now3.getFullYear();
+        if (old._type === 'income'  && oldIsCur) { DEMO.dashboard.monthly_income   -= old.amount; }
+        if (old._type === 'expense' && oldIsCur) { DEMO.dashboard.monthly_expenses -= old.amount; }
+        DEMO.dashboard.total_balance -= (old._type==='income' ? old.amount : old._type==='expense' ? -old.amount : 0);
         // Reverse old individual account balances
         const oldAcct = allAccts.find(a => a.account_id === old.account_id);
         if (old._type === 'income'  && oldAcct) oldAcct.balance -= old.amount;
@@ -5286,7 +5339,7 @@ const App = {
         DEMO.transactions[idx] = { ...old, ...txData };
       }
     } else {
-      DEMO.transactions.unshift({ id: 'tx_' + Date.now(), ...txData });
+      DEMO.transactions.unshift({ id: uid('tx_'), ...txData });
     }
 
     const txDate2 = new Date(date); const now2 = new Date();
@@ -5342,6 +5395,8 @@ const App = {
 
   _doSnooze(id, days) {
     const r = (DEMO.reminders||[]).find(x => x.reminder_id === id);
+    if (!r) return;
+    if (r.is_completed) { this.showToast('Cannot snooze a completed reminder'); return; }
     if (r && r.reminder_date) {
       const d = new Date(r.reminder_date);
       d.setDate(d.getDate() + days);
@@ -5377,7 +5432,7 @@ const App = {
   duplicateReminder(id) {
     const r = (DEMO.reminders||[]).find(x => x.reminder_id === id);
     if (!r) return;
-    const copy = Object.assign({}, r, { reminder_id: 'rem_' + Date.now(), is_completed: false, completed_on: null, paid_amount: null });
+    const copy = Object.assign({}, r, { reminder_id: uid('rem_'), is_completed: false, completed_on: null, paid_amount: null });
     DEMO.reminders.push(copy);
     this.showToast('Reminder duplicated 📋');
     this.render();
@@ -5403,7 +5458,7 @@ const App = {
     if (!date)   { this.showToast('Please select a due date'); return; }
     const existing = (DEMO.reminders || []).find(function(r){ return r.reminder_id === rf.id; });
     const newRem = {
-      reminder_id: existing ? rf.id : 'rem_' + Date.now(),
+      reminder_id: existing ? rf.id : uid('rem_'),
       title,
       amount,
       reminder_date: date,
@@ -5429,7 +5484,8 @@ const App = {
       DEMO.reminders.push(newRem);
       this.showToast('Reminder saved! 🔔');
     }
-    State.remForm = null;
+    State.remForm    = null;
+    State.remDetailId = null;
     this.navigate('reminders');
   },
 
@@ -5455,9 +5511,11 @@ const App = {
   /* ── Toast ───────────────────────────────────── */
   showToast(msg, duration = 2500) {
     const el = document.getElementById('toast');
+    if (!el) return;
     el.textContent = msg;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), duration);
+    clearTimeout(el._toastTimer);
+    el._toastTimer = setTimeout(() => el.classList.remove('show'), duration);
   },
 };
 
