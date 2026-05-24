@@ -5278,7 +5278,8 @@ const App = {
   async saveTx() {
     const amount = parseFloat(document.getElementById('tx-amount')?.value || '0');
     if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
-    const type   = State.addTxType || State.params?.type || 'expense';
+    const type   = State.addTxType || State.params?.type
+      || (State.screen === 'add-income' ? 'income' : State.screen === 'add-transfer' ? 'transfer' : 'expense');
     const dateEl = document.getElementById('tx-date');
     const timeEl = document.getElementById('tx-time');
     const dateStr = dateEl?.value || new Date().toISOString().slice(0,10);
