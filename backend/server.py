@@ -369,7 +369,31 @@ async def get_current_user(request: Request):
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Check if it's a session token (Google OAuth)
+    # Detect token type: JWTs have exactly 3 dot-separated base64 segments.
+    # Session tokens (Google OAuth / Emergent) are opaque strings without dots.
+    # Trying to JWT-decode a session token that is no longer in the DB produces
+    # a misleading "Invalid token" error — guard against it here.
+    token_parts = token.split('.')
+    is_jwt_shaped = len(token_parts) == 3
+
+    if not is_jwt_shaped:
+        # Must be a session token — look it up and fail clearly if not found
+        session_doc = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+        if not session_doc:
+            raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+        expires_at = session_doc["expires_at"]
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+        user_doc = await db.users.find_one({"user_id": session_doc["user_id"]}, {"_id": 0, "password_hash": 0})
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+        return User(**user_doc)
+
+    # Check if it's also stored as a session token (Google OAuth cookie path)
     session_doc = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
     if session_doc:
         # Verify session not expired
@@ -379,24 +403,22 @@ async def get_current_user(request: Request):
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=401, detail="Session expired")
-        
-        # Get user
+            raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
         user_doc = await db.users.find_one({"user_id": session_doc["user_id"]}, {"_id": 0, "password_hash": 0})
         if not user_doc:
             raise HTTPException(status_code=404, detail="User not found")
         return User(**user_doc)
-    
-    # Otherwise verify JWT token
+
+    # JWT token — verify signature and expiry
     payload = verify_token(token)
     user_id = payload.get("user_id")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
+        raise HTTPException(status_code=401, detail="Invalid token: missing user_id claim")
+
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
     if not user_doc:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return User(**user_doc)
 
 # ==================== AUTH ENDPOINTS ====================

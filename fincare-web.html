@@ -1929,12 +1929,24 @@ function barChartSVG(bars, w, h, colors) {
 /* ══════════════════════════════════════════════════════
    6. API LAYER  (with demo fallback)
 ══════════════════════════════════════════════════════ */
+function _handleApiUnauth() {
+  State.token = null;
+  localStorage.removeItem('fc_token');
+  localStorage.removeItem('fc_user');
+  State.user = null;
+  State.screen = 'login';
+  State.tab = 'login';
+  App.render();
+  App.showToast('Session expired. Please log in again.');
+}
+
 async function apiGet(path) {
   if (!State.token) return null;
   try {
     const res = await fetch(API_BASE + path, {
       headers: { 'Authorization': 'Bearer ' + State.token }
     });
+    if (res.status === 401) { _handleApiUnauth(); return null; }
     if (!res.ok) throw new Error(res.status);
     return await res.json();
   } catch { return null; }
@@ -1948,6 +1960,7 @@ async function apiPost(path, body) {
       headers: { 'Authorization': 'Bearer ' + State.token, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+    if (res.status === 401) { _handleApiUnauth(); return null; }
     if (!res.ok) throw new Error(res.status);
     return await res.json();
   } catch { return null; }
@@ -5567,10 +5580,20 @@ function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 ══════════════════════════════════════════════════════ */
 (async function init() {
   if (State.token && State.user) {
-    // Already logged in — restore session
-    await loadDashboardData();
-    document.getElementById('tab-bar').style.display = 'flex';
-    App.goTab('dashboard');
+    if (State.token === 'demo-token') {
+      // Demo mode — skip backend validation, load DEMO data directly
+      await loadDashboardData();
+      document.getElementById('tab-bar').style.display = 'flex';
+      App.goTab('dashboard');
+    } else {
+      // Real token — validate with backend first
+      await loadDashboardData();
+      // If a 401 was received, _handleApiUnauth() already cleared the token
+      // and rendered the login screen — don't overwrite that navigation.
+      if (!State.token) return;
+      document.getElementById('tab-bar').style.display = 'flex';
+      App.goTab('dashboard');
+    }
   } else {
     App.navigate('login');
   }

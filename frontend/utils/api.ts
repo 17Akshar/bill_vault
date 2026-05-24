@@ -2,13 +2,14 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { EventEmitter } from 'events';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL 
-  || process.env.EXPO_PUBLIC_BACKEND_URL;
+export const authEvents = new EventEmitter();
 
-if (!BACKEND_URL) {
-  console.warn('EXPO_PUBLIC_BACKEND_URL is not configured — using default');
-}
+const BACKEND_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  'http://localhost:8000';
 
 // Globally force axios to use the `fetch` adapter on web (browser + SSR).
 // Without this, axios falls back to its Node.js `http` adapter which pulls in
@@ -42,18 +43,19 @@ api.interceptors.request.use(
   }
 );
 
-// Handle response errors
+// Handle response errors — on 401 clear stored credentials and signal logout
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('user');
-      // You might want to navigate to login here
+      // Notify AuthContext so it resets state and sends user back to login
+      authEvents.emit('unauthenticated');
     }
     return Promise.reject(error);
   }
 );
 
+export { BACKEND_URL };
 export default api;
