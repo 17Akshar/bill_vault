@@ -1975,7 +1975,7 @@ async function loadDashboardData() {
   State.data.dashboard   = dash  || DEMO.dashboard;
   State.data.accounts    = accts || DEMO.accounts;
   State.data.reminders   = rems  || DEMO.reminders;
-  State.data.recentTx    = all.length ? all : DEMO.transactions.slice(0, 5);
+  State.data.recentTx    = all.length ? all : (DEMO.transactions || []).slice(0, 5);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2061,7 +2061,7 @@ function renderDashboard() {
   const d   = State.data.dashboard || DEMO.dashboard;
   const acc = State.data.accounts  || DEMO.accounts;
   const rem = State.data.reminders || DEMO.reminders;
-  const tx  = State.data.recentTx  || DEMO.transactions.slice(0,5);
+  const tx  = State.data.recentTx  || (DEMO.transactions||[]).slice(0,5);
   const u   = State.user || DEMO.user;
 
   const totalBalance    = d.total_balance    || 0;
@@ -2130,7 +2130,7 @@ function renderDashboard() {
     const isTxfr = t._type === 'transfer';
     const color  = isTxfr ? COLORS.info : isInc ? COLORS.success : COLORS.danger;
     const meta   = txCatMeta(isTxfr ? 'Transfer' : t.category);
-    const title  = isTxfr ? (t.payee||'Transfer') : (t.source||t.description||t.payee||t.category||'Transaction');
+    const title  = isTxfr ? (t.source||'Transfer') : (t.source||t.description||t.payee||t.category||'Transaction');
     const sub    = t.category || (isInc ? 'Income' : 'Expense');
     const amtStr = isTxfr ? formatINR(t.amount) : `${isInc?'+':'-'}${formatINR(t.amount)}`;
     return `
@@ -2930,8 +2930,8 @@ function renderWealth() {
 
   // — Investments —
   var invs       = DEMO.investments || [];
-  var invTotal   = invs.reduce(function(s,i){ return s+i.current; },0);
-  var invInvested= invs.reduce(function(s,i){ return s+i.invested; },0);
+  var invTotal   = invs.reduce(function(s,i){ return s+(i.current||0); },0);
+  var invInvested= invs.reduce(function(s,i){ return s+(i.invested||0); },0);
   var invGain    = invTotal - invInvested;
 
   // — Property / Rentals —
@@ -2949,7 +2949,7 @@ function renderWealth() {
   var cards       = DEMO.creditCards || [];
   var ccTotal     = cards.reduce(function(s,c){ return s+c.outstanding; },0);
   var lendBorrow  = DEMO.lendBorrow || [];
-  var borrowedAmt = lendBorrow.filter(function(x){ return x.type==='borrowed'; }).reduce(function(s,x){ return s+(x.remaining||x.amount); },0);
+  var borrowedAmt = lendBorrow.filter(function(x){ return x.type==='borrowed'; }).reduce(function(s,x){ return s+(x.remaining||x.amount||0); },0);
   var lentAmt     = lendBorrow.filter(function(x){ return x.type==='lent'&&x.status!=='settled'; }).reduce(function(s,x){ return s+(x.remaining||x.amount||0); },0);
 
   // — Net Worth —
@@ -3030,7 +3030,7 @@ function renderWealth() {
   var liabCards = [
     { icon:'🏦', name:'Loans & EMI', val:loanTotal, color:'#EF4444', fn:"App.showToast('Loans module — tap More tab')" },
     { icon:'💳', name:'Credit Cards', val:ccTotal, color:'#F97316', fn:"App.showToast('Credit cards — tap More tab')" },
-    { icon:'🤝', name:'Lend / Borrow', val:borrowedAmt+lentAmt, color:'#8B5CF6', fn:"App.showToast('Lend & Borrow module coming soon!')" },
+    { icon:'🤝', name:'Lend / Borrow', val:borrowedAmt, color:'#8B5CF6', fn:"App.showToast('Lend & Borrow module coming soon!')" },
   ];
 
   function catCard(c) {
@@ -3165,7 +3165,7 @@ function renderWealth() {
       +'<div class="acct-group-list" style="margin:0 20px 20px">'
       +loans.map(function(l){
           var paid = Math.round(l.paid_months/l.tenure_months*100);
-          return '<div class="acct-group-row" onclick="App.showToast(\'Loan detail: \''+l.name+' — \''+formatINR(l.outstanding)+' outstanding\')">'
+          return '<div class="acct-group-row" onclick="App.showToast(\'Loan detail: \''+escapeHtml(l.name)+' — \''+formatINR(l.outstanding)+' outstanding\')">'
             +'<div class="acct-group-icon" style="background:rgba(239,68,68,0.15)"><svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444"><path d="M11.5 1L2 6v2h19V6L11.5 1zM3 22h18v-2H3v2zm0-4h18v-8H3v8z"/></svg></div>'
             +'<div class="acct-group-info">'
             +'<div class="acct-group-name">'+l.name+'</div>'
@@ -3301,8 +3301,8 @@ function renderAccountDetail() {
     const isInc  = t._type==='income' || t.to_account_id===id;
     const color  = isInc ? COLORS.success : COLORS.danger;
     const icon   = isInc ? ICON.arrow_up : ICON.arrow_dn;
-    const title  = t._type==='transfer' ? (t.to_account_id===id?'Transfer In':'Transfer Out') : (t.source||t.description||t.category||'Transaction');
-    const sub    = t.category || (t._type==='transfer'?'Transfer':'');
+    const title  = t._type==='transfer' ? (t.to_account_id===id?'Transfer In':'Transfer Out') : escapeHtml(t.source||t.description||t.category||'Transaction');
+    const sub    = escapeHtml(t.category || (t._type==='transfer'?'Transfer':''));
     const amtStr = `${isInc?'+':'-'}${formatINR(t.amount)}`;
     return `
     <div class="list-row" style="${i<sortedTxs.length-1?'border-bottom:1px solid var(--border)':''}" onclick="App.openTxDetail('${t.id}')">
@@ -3968,7 +3968,7 @@ function renderAllTab(rems) {
 }
 
 function renderCompletedTab(rems) {
-  const done = rems.filter(r => r.is_completed).sort((a,b) => new Date(b.completed_on||b.reminder_date) - new Date(a.completed_on||a.reminder_date));
+  const done = rems.filter(r => r.is_completed).sort((a,b) => new Date(b.completed_on||b.reminder_date||'2000-01-01') - new Date(a.completed_on||a.reminder_date||'2000-01-01'));
   if (done.length === 0) {
     return '<div style="text-align:center;padding:60px 20px">'
       + '<div style="font-size:48px;margin-bottom:12px">📋</div>'
@@ -4024,10 +4024,11 @@ function renderReminders() {
   });
   html += '</div>';
 
-  if (tab === 'upcoming')  html += renderUpcomingTab(rems);
-  if (tab === 'calendar')  html += renderCalendarTab(rems);
-  if (tab === 'all')       html += renderAllTab(rems);
-  if (tab === 'completed') html += renderCompletedTab(rems);
+  if      (tab === 'upcoming')  html += renderUpcomingTab(rems);
+  else if (tab === 'calendar')  html += renderCalendarTab(rems);
+  else if (tab === 'all')       html += renderAllTab(rems);
+  else if (tab === 'completed') html += renderCompletedTab(rems);
+  else                          html += renderUpcomingTab(rems);
 
   html += '</div>';
   return html;
@@ -4054,7 +4055,9 @@ function renderAddReminder() {
       date:       existing.reminder_date,
       recurring:  existing.is_recurring,
       recurrence: existing.recurrence || 'monthly',
-      endType:    'never',
+      endType:    existing.end_type  || 'never',
+      endDate:    existing.end_date  || '',
+      endAfter:   existing.end_after || '',
       alertDays:  existing.alert_days || [1],
       notes:      existing.description || '',
       autoPay:    existing.auto_pay || false,
@@ -4447,7 +4450,7 @@ function renderInsightsCashFlow() {
   html += '<div class="hero-card" style="margin-bottom:16px">'
     + '<div class="hero-top"><div style="flex:1">'
     + '<div class="hero-label">Net Cash Flow</div>'
-    + '<div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:2px">This Month (' + MONTHS[new Date().getMonth()] + ')</div>'
+    + '<div style="color:rgba(255,255,255,0.7);font-size:11px;margin-top:2px">' + (period==='quarter'?'This Quarter':period==='year'?'This Year':'This Month (' + MONTHS[new Date().getMonth()] + ')') + '</div>'
     + '<div class="hero-amount">' + formatINRFull(netCF) + '</div>'
     + '<div class="hero-delta" style="color:#9DFFD9">▲ ' + (outflow ? Math.round((netCF / outflow) * 100) : 0) + '% vs last month</div>'
     + '</div><div>' + sparklineSVG(sparkData, 110, 56, '#FFFFFF', true) + '</div></div></div>';
@@ -4462,7 +4465,7 @@ function renderInsightsCashFlow() {
   html += '<div class="section-header"><div class="section-title">Cash In vs Cash Out</div>'
     + '<div class="view-all" onclick="App.showToast(\'Details coming soon!\')">View Details</div></div>';
   html += '<div class="ins-bar-row">';
-  var maxBar = Math.max(inflow, outflow);
+  var maxBar = Math.max(inflow, outflow, 1);
   html += '<div class="ins-bar-item"><div class="ins-bar-label">Total Inflow</div>'
     + '<div class="ins-bar-track"><div class="ins-bar-fill" style="width:' + Math.round((inflow/maxBar)*100) + '%;background:' + COLORS.success + '"></div></div>'
     + '<div class="ins-bar-amt text-success">' + formatINR(inflow) + '</div></div>';
@@ -4741,11 +4744,13 @@ function renderInsightsCalendar() {
     html += '</div>';
   }
   html += '</div>';
-  var selEvents = eventMap[selDay] || [];
+  var selEvents = selDay ? (eventMap[selDay] || []) : [];
   html += '<div style="padding:0 20px;margin-bottom:12px">'
     + '<div style="color:var(--text);font-size:15px;font-weight:700;margin-bottom:12px">'
-    + selDay + ' ' + MONTHS[month] + ' ' + year + '</div>';
-  if (selEvents.length === 0) {
+    + (selDay ? selDay + ' ' + MONTHS[month] + ' ' + year : MONTHS[month] + ' ' + year) + '</div>';
+  if (!selDay) {
+    html += '<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px">Tap a date to see events</div>';
+  } else if (selEvents.length === 0) {
     html += '<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px">No events on this day</div>';
   } else {
     html += '<div class="list-card">';
@@ -4800,8 +4805,8 @@ function renderMore() {
   /* Profile hero */
   html += '<div class="card" style="margin-bottom:20px;padding:24px;text-align:center">'
     + '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--grad-from),var(--grad-to));display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;font-weight:800;color:#fff">' + initial + '</div>'
-    + '<div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px">' + u.name + '</div>'
-    + '<div style="font-size:13px;color:var(--text-dim);margin-bottom:16px">' + u.email + '</div>'
+    + '<div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px">' + escapeHtml(u.name||'User') + '</div>'
+    + '<div style="font-size:13px;color:var(--text-dim);margin-bottom:16px">' + escapeHtml(u.email||'') + '</div>'
     + '<button class="btn" style="padding:8px 24px;font-size:13px;background:var(--primary-dim);color:var(--primary);border:1px solid var(--primary);border-radius:20px" onclick="App.showToast(\'Edit profile coming soon!\')">Edit Profile</button>'
     + '</div>';
 
@@ -4863,6 +4868,8 @@ const App = {
     State.insightsPeriod      = 'month';
     State.insightsTrendPeriod = 'month';
     State.insightsCalDay      = null;
+    State.insightsCalMonth    = new Date().getMonth();
+    State.insightsCalYear     = new Date().getFullYear();
     // Account detail state
     State.viewAcctId       = null;
     State.acctTxTypeFilter = 'all';
@@ -4920,11 +4927,14 @@ const App = {
     // Reset all UI state
     State.addTxType   = null; State.txEditData = null; State.txIsEdit = false;
     State.txShowSearch = false; State.txSearch = ''; State.txAccountFilter = 'all';
+    State.txFilter = 'all'; State.txRecurring = false; State.txCatTab = 'expense';
+    State.txExpertPeriod = 'month'; State.txDetailId = null;
     State.txMonth = new Date().getMonth(); State.txYear = new Date().getFullYear();
     State.remForm = null; State.remTab = 'upcoming'; State.remCatFilter = 'all';
     State.remSearch = ''; State.remSort = 'date'; State.remCalDay = null;
     State.insightsTab = 'overview'; State.insightsPeriod = 'month';
     State.insightsTrendPeriod = 'month'; State.insightsCalDay = null;
+    State.insightsCalMonth = new Date().getMonth(); State.insightsCalYear = new Date().getFullYear();
     State.viewAcctId = null; State.acctTxTypeFilter = 'all';
     State.acctTxDateFilter = 'month'; State.acctSort = 'date';
     State.acctSearch = ''; State.showAcctFilter = false;
@@ -5004,7 +5014,7 @@ const App = {
     overlay.innerHTML = `
       <div class="modal-sheet">
         <div class="modal-handle"></div>
-        <div class="modal-title">${a.name}</div>
+        <div class="modal-title">${escapeHtml(a.name)}</div>
         ${[
           { icon:'✏️', label:'Edit Account',        fn:`App.navigate('edit-account',{id:'${id}'});` },
           { icon:'🎨', label:'Change Color',         fn:`App.showToast('Select a new color in Edit Account');App.navigate('edit-account',{id:'${id}'});` },
@@ -5051,7 +5061,7 @@ const App = {
       holder: document.getElementById('af-holder')?.value?.trim() || ((State.user||DEMO.user).name),
       branch: document.getElementById('af-branch')?.value?.trim() || '',
       sub_type: document.getElementById('af-subtype')?.value || typeMeta.label,
-      cash_location: document.getElementById('af-loc')?.value?.trim() || '',
+      ...(type === 'cash' ? { cash_location: document.getElementById('af-loc')?.value?.trim() || '' } : {}),
       upi_id: document.getElementById('af-upi')?.value?.trim() || '',
       linked_app: document.getElementById('af-upiapp')?.value || '',
       credit_limit: parseFloat(document.getElementById('af-crlimit')?.value||'0') || 0,
@@ -5127,7 +5137,11 @@ const App = {
     }).catch(()=>null);
     const accts = State.data.accounts || DEMO.accounts;
     const idx   = accts.findIndex(a=>a.account_id===id);
-    if (idx>=0) accts.splice(idx, 1);
+    if (idx >= 0) {
+      if (DEMO.dashboard) DEMO.dashboard.total_balance -= (accts[idx].balance || 0);
+      accts.splice(idx, 1);
+    }
+    DEMO.transactions = (DEMO.transactions || []).filter(t => t.account_id !== id && t.to_account_id !== id);
     State.data.accounts = accts;
     State.viewAcctId = null;
     this.showToast('Account deleted');
@@ -5290,6 +5304,7 @@ const App = {
     const acct   = document.getElementById('tx-account')?.value || document.getElementById('tx-from')?.value || '';
     const cat    = type === 'transfer' ? 'Transfer' : (document.getElementById('tx-category')?.value || 'Others');
     const toAcct = document.getElementById('tx-to')?.value || '';
+    if (!acct) { this.showToast('Please select an account'); return; }
     if (type === 'transfer' && !toAcct) { this.showToast('Please select a destination account'); return; }
     if (type === 'transfer' && toAcct === acct) { this.showToast('From and To accounts must be different'); return; }
 
@@ -5477,9 +5492,10 @@ const App = {
       alert_days: rf.alertDays || [1],
       account_id: rf.account || null,
     };
+    if (!DEMO.reminders) DEMO.reminders = [];
     if (existing) {
       const idx = DEMO.reminders.indexOf(existing);
-      DEMO.reminders[idx] = newRem;
+      if (idx >= 0) DEMO.reminders[idx] = newRem;
       this.showToast('Reminder updated! 🔔');
     } else {
       DEMO.reminders.push(newRem);
