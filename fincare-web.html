@@ -2114,8 +2114,8 @@ function renderDashboard() {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="${typeColor}">${ICON[typeIcon] ? (ICON[typeIcon].match(/<path[^>]*\/>/g)||[''])[0] : ''}</svg>
       </div>
       <div class="list-body">
-        <div class="list-title">${r.title}</div>
-        <div class="list-sub">${r.description || daysLabel}</div>
+        <div class="list-title">${escapeHtml(r.title)}</div>
+        <div class="list-sub">${escapeHtml(r.description || daysLabel)}</div>
       </div>
       <div class="list-right">
         ${amt > 0 ? `<div class="list-amount text-white">${formatINR(amt)}</div>` : ''}
@@ -2139,8 +2139,8 @@ function renderDashboard() {
         ${meta.icon}
       </div>
       <div class="list-body">
-        <div class="list-title">${title}</div>
-        <div class="list-sub">${sub}</div>
+        <div class="list-title">${escapeHtml(title)}</div>
+        <div class="list-sub">${escapeHtml(sub)}</div>
       </div>
       <div class="list-right">
         <div class="list-amount" style="color:${color}">${amtStr}</div>
@@ -2309,7 +2309,7 @@ const TX_CAT_ICONS = {
 function txCatMeta(cat) { return TX_CAT_ICONS[cat] || {icon:'💰',color:'#A0A3BD'}; }
 
 function renderTransactions() {
-  var allTx  = DEMO.transactions;
+  var allTx  = State.data.transactions || DEMO.transactions;
   var accts  = State.data.accounts || DEMO.accounts;
   var filter = State.txFilter || 'all';
   var month  = State.txMonth != null ? State.txMonth : new Date().getMonth();
@@ -2384,8 +2384,8 @@ function renderTransactions() {
         + meta.icon
         + '</div>'
         + '<div class="tx-row-body">'
-        + '<div class="tx-row-title">' + title + '</div>'
-        + '<div class="tx-row-sub">' + sub + '</div>'
+        + '<div class="tx-row-title">' + escapeHtml(title) + '</div>'
+        + '<div class="tx-row-sub">' + escapeHtml(sub) + '</div>'
         + '</div>'
         + '<div class="tx-row-right">'
         + '<div class="tx-row-amt" style="color:' + amtColor + '">' + amtStr + '</div>'
@@ -2524,7 +2524,7 @@ function renderAddIncome() {
   var accts = State.data.accounts || DEMO.accounts;
   var incomeCats = (DEMO.categories||[]).filter(function(c){return c.type==='income';}).map(function(c){return c.name;});
   if (!incomeCats.length) incomeCats = ['Salary','Freelance','Business','Investment Returns','Rental','Gift','Others'];
-  var acctOptions = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+a.name+' ('+formatINR(a.balance)+')</option>';}).join('');
+  var acctOptions = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var catOptions  = incomeCats.map(function(c){return '<option value="'+c+'"'+(c===(p.category||'')?' selected':'')+'>'+c+'</option>';}).join('');
   var now = new Date();
   var pDate = p.date ? new Date(p.date) : now;
@@ -2556,9 +2556,9 @@ function renderAddIncome() {
     +'<div class="form-section-label">More Details</div>'
     +'<div class="form-card">'
     +'<div class="form-row"><div class="form-row-icon" style="background:rgba(255,255,255,0.06)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>'
-    +'<div style="flex:1"><div class="form-row-label">Source / Payer</div><input id="tx-payee" type="text" placeholder="e.g. Employer Ltd, Client Name" value="'+(p.source||p.payee||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
+    +'<div style="flex:1"><div class="form-row-label">Source / Payer</div><input id="tx-payee" type="text" placeholder="e.g. Employer Ltd, Client Name" value="'+escapeHtml(p.source||p.payee||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
     +'<div class="form-row"><div class="form-row-icon" style="background:rgba(255,255,255,0.06)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>'
-    +'<div style="flex:1"><div class="form-row-label">Notes</div><input id="tx-notes" type="text" placeholder="Add a note (optional)" value="'+(p.notes||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
+    +'<div style="flex:1"><div class="form-row-label">Notes</div><input id="tx-notes" type="text" placeholder="Add a note (optional)" value="'+escapeHtml(p.notes||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
     +'<div class="form-row" style="cursor:pointer" onclick="State.txRecurring=!State.txRecurring;App.render()">'
     +'<div class="form-row-icon" style="background:rgba(108,71,255,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></div>'
     +'<div style="flex:1"><div class="form-row-label">Recurring</div><div style="color:var(--text-dim);font-size:12px;margin-top:2px">'+(recOn?'Monthly — auto record':'One-time income')+'</div></div>'
@@ -2579,7 +2579,7 @@ function renderAddExpense() {
   var accts = State.data.accounts || DEMO.accounts;
   var expCats = (DEMO.categories||[]).filter(function(c){return c.type==='expense';}).map(function(c){return c.name;});
   if (!expCats.length) expCats = ['Food & Dining','Transport','Shopping','Entertainment','Grocery','Bills & Utilities','Health','Education','Travel','Others'];
-  var acctOptions = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+a.name+' ('+formatINR(a.balance)+')</option>';}).join('');
+  var acctOptions = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var catOptions  = expCats.map(function(c){return '<option value="'+c+'"'+(c===(p.category||'')?' selected':'')+'>'+c+'</option>';}).join('');
   var now = new Date();
   var pDate = p.date ? new Date(p.date) : now;
@@ -2611,9 +2611,9 @@ function renderAddExpense() {
     +'<div class="form-section-label">More Details</div>'
     +'<div class="form-card">'
     +'<div class="form-row"><div class="form-row-icon" style="background:rgba(255,255,255,0.06)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg></div>'
-    +'<div style="flex:1"><div class="form-row-label">Payee / Merchant</div><input id="tx-payee" type="text" placeholder="e.g. Swiggy, Amazon, Hospital" value="'+(p.description||p.payee||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
+    +'<div style="flex:1"><div class="form-row-label">Payee / Merchant</div><input id="tx-payee" type="text" placeholder="e.g. Swiggy, Amazon, Hospital" value="'+escapeHtml(p.description||p.payee||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
     +'<div class="form-row"><div class="form-row-icon" style="background:rgba(255,255,255,0.06)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>'
-    +'<div style="flex:1"><div class="form-row-label">Notes</div><input id="tx-notes" type="text" placeholder="Add a note (optional)" value="'+(p.notes||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
+    +'<div style="flex:1"><div class="form-row-label">Notes</div><input id="tx-notes" type="text" placeholder="Add a note (optional)" value="'+escapeHtml(p.notes||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
     +'<div class="form-row" style="cursor:pointer" onclick="State.txRecurring=!State.txRecurring;App.render()">'
     +'<div class="form-row-icon" style="background:rgba(108,71,255,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></div>'
     +'<div style="flex:1"><div class="form-row-label">Recurring</div><div style="color:var(--text-dim);font-size:12px;margin-top:2px">'+(recOn?'Monthly — auto record':'One-time expense')+'</div></div>'
@@ -2632,8 +2632,8 @@ function renderAddTransfer() {
   var p = State.txEditData || {};
   var isEdit = State.txIsEdit && p.id;
   var accts = State.data.accounts || DEMO.accounts;
-  var fromOpts = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+a.name+' ('+formatINR(a.balance)+')</option>';}).join('');
-  var toOpts   = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.to_account_id?' selected':'')+'>'+a.name+' ('+formatINR(a.balance)+')</option>';}).join('');
+  var fromOpts = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.account_id||accts[0]?.account_id)?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
+  var toOpts   = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.to_account_id||accts[1]?.account_id)?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var now = new Date();
   var pDate = p.date ? new Date(p.date) : now;
   var hasTime = p.date && p.date.length > 10;
@@ -2664,7 +2664,7 @@ function renderAddTransfer() {
     +'<div class="form-section-label">Optional</div>'
     +'<div class="form-card">'
     +'<div class="form-row"><div class="form-row-icon" style="background:rgba(255,255,255,0.06)"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>'
-    +'<div style="flex:1"><div class="form-row-label">Notes</div><input id="tx-notes" type="text" placeholder="e.g. Savings transfer, rent prepayment" value="'+(p.notes||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
+    +'<div style="flex:1"><div class="form-row-label">Notes</div><input id="tx-notes" type="text" placeholder="e.g. Savings transfer, rent prepayment" value="'+escapeHtml(p.notes||'')+'" style="background:none;border:none;color:var(--text);font-size:14px;font-weight:600;width:100%;outline:none;margin-top:2px" autocomplete="off" /></div></div>'
     +'</div>'
     +'<div class="sticky-save" style="padding-bottom:20px"><button class="btn btn-primary" style="width:100%;border-radius:var(--radius-sm);font-size:16px;font-weight:700" onclick="App.saveTx()">💾 '+(isEdit?'Update':'Save')+' Transfer</button></div>'
     +'</div>';
@@ -2707,7 +2707,7 @@ function renderTxDetail() {
   var infoHtml = infoRows.map(function(r){
     return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">'
       +'<div style="color:var(--text-dim);font-size:13px;flex-shrink:0">'+r.label+'</div>'
-      +'<div style="color:var(--text);font-size:13px;font-weight:600;text-align:right;max-width:62%;word-break:break-word">'+r.value+'</div>'
+      +'<div style="color:var(--text);font-size:13px;font-weight:600;text-align:right;max-width:62%;word-break:break-word">'+escapeHtml(r.value)+'</div>'
       +'</div>';
   }).join('');
 
@@ -2737,7 +2737,7 @@ function renderTxDetail() {
     +'<div style="background:'+heroGrad+';padding:28px 20px;text-align:center">'
     +'<div style="font-size:48px;margin-bottom:10px">'+meta.icon+'</div>'
     +'<div style="color:white;font-size:30px;font-weight:800;margin-bottom:6px">'+amtStr+'</div>'
-    +'<div style="color:rgba(255,255,255,0.85);font-size:15px;margin-bottom:14px">'+title+'</div>'
+    +'<div style="color:rgba(255,255,255,0.85);font-size:15px;margin-bottom:14px">'+escapeHtml(title)+'</div>'
     +'<div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 16px;font-size:11px;font-weight:800;color:white;letter-spacing:1.5px">'+badge+'</div>'
     +'</div></div>'
     +'<div style="margin:0 20px 16px"><div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">QUICK ACTIONS</div>'
@@ -2752,7 +2752,7 @@ function renderTxDetail() {
 
 /* ─── EXPERT VIEW ─────────────────────────────────────── */
 function renderExpertView() {
-  var allTx  = DEMO.transactions || [];
+  var allTx  = State.data.transactions || DEMO.transactions || [];
   var period = State.txExpertPeriod || 'month';
   var now    = new Date();
   var month  = State.txMonth != null ? State.txMonth : now.getMonth();
@@ -2945,7 +2945,7 @@ function renderWealth() {
 
   // — Liabilities —
   var loans       = DEMO.loans || [];
-  var loanTotal   = loans.reduce(function(s,l){ return s+l.outstanding; },0);
+  var loanTotal   = loans.reduce(function(s,l){ return s+(l.outstanding||0); },0);
   var cards       = DEMO.creditCards || [];
   var ccTotal     = cards.reduce(function(s,c){ return s+c.outstanding; },0);
   var lendBorrow  = DEMO.lendBorrow || [];
@@ -3168,8 +3168,8 @@ function renderWealth() {
           return '<div class="acct-group-row" onclick="App.showToast(\'Loan detail: \''+escapeHtml(l.name)+' — \''+formatINR(l.outstanding)+' outstanding\')">'
             +'<div class="acct-group-icon" style="background:rgba(239,68,68,0.15)"><svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444"><path d="M11.5 1L2 6v2h19V6L11.5 1zM3 22h18v-2H3v2zm0-4h18v-8H3v8z"/></svg></div>'
             +'<div class="acct-group-info">'
-            +'<div class="acct-group-name">'+l.name+'</div>'
-            +'<div class="acct-group-sub">'+l.lender+' · EMI '+formatINR(l.emi)+'/mo · '+paid+'% paid</div>'
+            +'<div class="acct-group-name">'+escapeHtml(l.name)+'</div>'
+            +'<div class="acct-group-sub">'+escapeHtml(l.lender)+' · EMI '+formatINR(l.emi)+'/mo · '+paid+'% paid</div>'
             +'</div>'
             +'<div><div class="acct-group-bal" style="color:#EF4444">'+formatINR(l.outstanding)+'</div>'
             +'<div style="color:var(--text-dim);font-size:11px;text-align:right">'+l.interest_rate+'% p.a.</div></div>'
@@ -3700,7 +3700,7 @@ function renderAddAccount() {
         <div style="flex:1">
           <div class="form-row-label">Opening Balance (Optional)</div>
           <input id="af-balance" type="number" inputmode="decimal" style="background:none;border:none;outline:none;width:100%;color:var(--text);font-size:14px;font-weight:600;padding:2px 0"
-            placeholder="0.00" value="${existing.balance||''}" />
+            placeholder="0.00" value="${existing.balance != null ? existing.balance : ''}" />
         </div>
       </div>
     </div>
@@ -3785,8 +3785,8 @@ function remCard(r) {
       <div class="rem-card-left-bar" style="background:${meta.color}"></div>
       <div class="rem-icon" style="background:${meta.color}22">${meta.icon}</div>
       <div class="rem-body">
-        <div class="rem-title">${r.title}</div>
-        <div class="rem-provider">${r.provider || r.description || ''}</div>
+        <div class="rem-title">${escapeHtml(r.title)}</div>
+        <div class="rem-provider">${escapeHtml(r.provider || r.description || '')}</div>
         <div class="rem-badges">${badge}${r.is_recurring ? '<span class="pill pill-dim">'+recLabel+'</span>' : ''}${autoIcon}</div>
       </div>
       <div class="rem-right">
@@ -3803,7 +3803,7 @@ function renderUpcomingTab(rems) {
     { key:'today',    label:'📅 Today',       filter: r => daysUntil(r.reminder_date) === 0 },
     { key:'tomorrow', label:'📆 Tomorrow',    filter: r => daysUntil(r.reminder_date) === 1 },
     { key:'week',     label:'📋 Next 7 Days', filter: r => { const d = daysUntil(r.reminder_date); return d >= 2 && d <= 7; } },
-    { key:'month',    label:'🗓️ This Month',  filter: r => { const d = daysUntil(r.reminder_date); return d >= 8 && d <= 30; } },
+    { key:'month',    label:'🗓️ This Month',  filter: r => { const d = daysUntil(r.reminder_date); return d >= 8 && d <= 31; } },
     { key:'later',    label:'⏳ Later',        filter: r => daysUntil(r.reminder_date) > 30 },
   ];
   const overdue  = pending.filter(r => daysUntil(r.reminder_date) < 0);
@@ -3932,7 +3932,7 @@ function renderAllTab(rems) {
   if (State.remSort === 'name')   list.sort((a,b) => (a.title||'').localeCompare(b.title||''));
 
   let html = '<div style="padding:0 20px 12px;position:relative">'
-    + '<input id="rem-search" type="text" placeholder="Search reminders..." value="' + State.remSearch + '" oninput="State.remSearch=this.value;App.render()" '
+    + '<input id="rem-search" type="text" placeholder="Search reminders..." value="' + escapeHtml(State.remSearch) + '" oninput="State.remSearch=this.value;App.render()" '
     + 'style="width:100%;padding:10px 16px 10px 40px;border-radius:var(--radius-sm);background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;box-sizing:border-box;outline:none">'
     + '<div style="position:absolute;left:32px;top:50%;transform:translateY(-50%);pointer-events:none">'
     + '<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
@@ -3987,8 +3987,8 @@ function renderCompletedTab(rems) {
       + '<div class="rem-card-left-bar" style="background:#22C55E"></div>'
       + '<div class="rem-icon" style="background:rgba(34,197,94,0.12)">' + meta.icon + '</div>'
       + '<div class="rem-body">'
-      + '<div class="rem-title" style="text-decoration:line-through;color:var(--text-dim)">' + r.title + '</div>'
-      + '<div class="rem-provider">' + (r.provider || '') + '</div>'
+      + '<div class="rem-title" style="text-decoration:line-through;color:var(--text-dim)">' + escapeHtml(r.title) + '</div>'
+      + '<div class="rem-provider">' + escapeHtml(r.provider || '') + '</div>'
       + '<div class="rem-badges"><span class="pill pill-dim" style="background:rgba(34,197,94,0.15);color:#22C55E">Paid ' + (r.completed_on ? formatDate(r.completed_on) : '') + '</span></div>'
       + '</div>'
       + '<div class="rem-right"><div class="rem-amount">' + formatINR(r.paid_amount || r.amount) + '</div><div class="rem-status" style="color:#22C55E">✓ Done</div></div>'
@@ -4046,7 +4046,7 @@ function renderAddReminder() {
     App.navigate('reminders');
     return '<div class="screen-wrap"></div>';
   }
-  if (!State.remForm) {
+  if (!State.remForm || (isEdit && State.remForm.id !== editId)) {
     State.remForm = existing ? {
       id:         editId,
       title:      existing.title,
@@ -4067,7 +4067,7 @@ function renderAddReminder() {
     } : {
       title:'', amount:'', type:'bill',
       date: new Date().toISOString().split('T')[0],
-      recurring: false, recurrence:'monthly', endType:'never', alertDays:[1],
+      recurring: false, recurrence:'monthly', endType:'never', endDate:'', endAfter:'', alertDays:[1],
       notes:'', autoPay:false, account:'', provider:'', priority:'medium',
     };
   }
@@ -4151,10 +4151,10 @@ function renderAddReminder() {
     + '<div style="display:flex;gap:8px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none">' + typeSelHtml + '</div>'
 
     + '<div class="form-group"><label class="form-label">Reminder Name *</label>'
-    + '<input class="form-input" id="rf-title" type="text" placeholder="e.g. Electricity Bill" value="' + (rf.title||'') + '" oninput="State.remForm.title=this.value"></div>'
+    + '<input class="form-input" id="rf-title" type="text" placeholder="e.g. Electricity Bill" value="' + escapeHtml(rf.title||'') + '" oninput="State.remForm.title=this.value"></div>'
 
     + '<div class="form-group"><label class="form-label">Provider / Institution</label>'
-    + '<input class="form-input" id="rf-provider" type="text" placeholder="e.g. BSES, HDFC Bank" value="' + (rf.provider||'') + '" oninput="State.remForm.provider=this.value"></div>'
+    + '<input class="form-input" id="rf-provider" type="text" placeholder="e.g. BSES, HDFC Bank" value="' + escapeHtml(rf.provider||'') + '" oninput="State.remForm.provider=this.value"></div>'
 
     + '<div class="form-group"><label class="form-label">Amount (₹)</label>'
     + '<input class="form-input" id="rf-amount" type="number" placeholder="0.00" value="' + (rf.amount||'') + '" oninput="State.remForm.amount=this.value" inputmode="decimal"></div>'
@@ -4188,7 +4188,7 @@ function renderAddReminder() {
     + '</div>'
 
     + '<div class="form-group"><label class="form-label">Notes</label>'
-    + '<textarea class="form-input" id="rf-notes" rows="3" placeholder="Additional notes..." oninput="State.remForm.notes=this.value" style="resize:none">' + (rf.notes||'') + '</textarea></div>'
+    + '<textarea class="form-input" id="rf-notes" rows="3" placeholder="Additional notes..." oninput="State.remForm.notes=this.value" style="resize:none">' + escapeHtml(rf.notes||'') + '</textarea></div>'
 
     + previewHtml
 
@@ -4261,7 +4261,7 @@ function renderReminderDetail() {
     + infoRows.map(function(row, i) {
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;' + (i < infoRows.length - 1 ? 'border-bottom:1px solid var(--border)' : '') + '">'
         + '<span style="color:var(--text-dim);font-size:13px">' + row[0] + '</span>'
-        + '<span style="color:var(--text);font-size:13px;font-weight:600;text-align:right;max-width:180px">' + row[1] + '</span>'
+        + '<span style="color:var(--text);font-size:13px;font-weight:600;text-align:right;max-width:180px">' + escapeHtml(String(row[1])) + '</span>'
         + '</div>';
     }).join('')
     + '</div>';
@@ -4269,7 +4269,7 @@ function renderReminderDetail() {
   const notesHtml = r.description ? (
     '<div style="margin:0 20px 16px;background:var(--card);border-radius:var(--radius);padding:14px 16px">'
     + '<div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">NOTES</div>'
-    + '<div style="color:var(--text);font-size:14px;line-height:1.5">' + r.description + '</div>'
+    + '<div style="color:var(--text);font-size:14px;line-height:1.5">' + escapeHtml(r.description) + '</div>'
     + '</div>'
   ) : '';
 
@@ -4298,8 +4298,8 @@ function renderReminderDetail() {
     + '<div class="rem-detail-hero" style="background:linear-gradient(135deg,' + meta.color + 'dd,' + meta.color + '88)">'
     + '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:36px">' + meta.icon + '</div><div>' + badge + '</div></div>'
     + '<div class="rem-detail-amount">' + formatINRFull(r.amount) + '</div>'
-    + '<div style="color:#fff;font-size:17px;font-weight:700">' + r.title + '</div>'
-    + '<div class="rem-detail-provider">' + (r.provider || r.description || meta.label) + '</div>'
+    + '<div style="color:#fff;font-size:17px;font-weight:700">' + escapeHtml(r.title) + '</div>'
+    + '<div class="rem-detail-provider">' + escapeHtml(r.provider || r.description || meta.label) + '</div>'
     + '</div>'
     + '<div class="rem-quick-strip">' + quickHtml + '</div>'
     + analyticsHtml
@@ -4355,14 +4355,15 @@ function renderInsightsOverview() {
   var vs_inc  = ins.vs_last_income  ?? 5.2;
   var vs_exp  = ins.vs_last_expense ?? -2.1;
   var sparkData = cf6m.map(function(m) { return m.income - m.expense; });
-  var grpTotals = {bank:0,cash:0,upi:0,cc:0};
-  var grpCounts = {bank:0,cash:0,upi:0,cc:0};
+  var grpTotals = {bank:0,cash:0,upi:0,cc:0,investment:0};
+  var grpCounts = {bank:0,cash:0,upi:0,cc:0,investment:0};
   acc.forEach(function(a) {
     var bal = a.balance || a.initial_balance || 0;
     var key = 'bank';
     if (a.account_type === 'cash' || a.account_type === 'wallet') key = 'cash';
     else if (a.account_type === 'upi') key = 'upi';
     else if (a.account_type === 'credit_card') key = 'cc';
+    else if (a.account_type === 'investment') key = 'investment';
     grpTotals[key] += bal; grpCounts[key] += 1;
   });
   var quickInsights = [
@@ -4371,10 +4372,11 @@ function renderInsightsOverview() {
     { dot: COLORS.info,    text: 'You can save <b>' + formatINR(Math.round(expense * 0.15)) + '</b> with better planning.' },
   ];
   var acctRows = [
-    { label:'Bank Accounts',  color:COLORS.info,    total:grpTotals.bank, count:grpCounts.bank },
-    { label:'Cash & Wallets', color:COLORS.success, total:grpTotals.cash, count:grpCounts.cash },
-    { label:'UPI Accounts',   color:'#7B4FEF',      total:grpTotals.upi,  count:grpCounts.upi  },
-    { label:'Credit Cards',   color:COLORS.danger,  total:grpTotals.cc,   count:grpCounts.cc   },
+    { label:'Bank Accounts',      color:COLORS.info,    total:grpTotals.bank,       count:grpCounts.bank       },
+    { label:'Cash & Wallets',     color:COLORS.success, total:grpTotals.cash,       count:grpCounts.cash       },
+    { label:'UPI Accounts',       color:'#7B4FEF',      total:grpTotals.upi,        count:grpCounts.upi        },
+    { label:'Credit Cards',       color:COLORS.danger,  total:grpTotals.cc,         count:grpCounts.cc         },
+    { label:'Investment Accounts',color:'#F59E0B',      total:grpTotals.investment, count:grpCounts.investment },
   ].filter(function(r) { return r.count > 0; });
   var html = '';
   html += '<div class="card" style="margin:0 20px 16px">'
@@ -4527,7 +4529,7 @@ function renderInsightsSpending() {
     + '<div style="position:relative;flex-shrink:0">' + donutSVG(donutSlices, 52, 120) + '</div>'
     + '<div style="flex:1">'
     + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">Total Spending</div>'
-    + '<div style="color:var(--text-dim);font-size:11px">This Month (' + MONTHS[new Date().getMonth()] + ')</div>'
+    + '<div style="color:var(--text-dim);font-size:11px">' + (period === 'year' ? 'This Year' : period === 'quarter' ? 'This Quarter' : 'This Month (' + MONTHS[new Date().getMonth()] + ')') + '</div>'
     + '<div style="color:var(--text);font-size:26px;font-weight:800;margin:6px 0 4px">' + formatINRFull(totalSpend) + '</div>'
     + '<div style="color:var(--danger);font-size:12px;font-weight:700">▲ 10% vs last month</div>'
     + '</div></div></div>';
@@ -4620,7 +4622,7 @@ function renderInsightsBudget() {
     html += '<div class="section-header"><div class="section-title">Over Budget</div></div>'
       + '<div class="list-card" style="margin:0 20px 22px">';
     overBudget.forEach(function(b,i) {
-      var pct = Math.round((b.spent / b.budget) * 100);
+      var pct = Math.round((b.spent / (b.budget || 1)) * 100);
       html += '<div class="list-row" onclick="App.goTab(\'transactions\')" ' + (i < overBudget.length-1 ? 'style="border-bottom:1px solid var(--border)"' : '') + '>'
         + '<div class="list-icon" style="background:' + COLORS.danger + '22;font-size:20px;display:flex;align-items:center;justify-content:center">' + b.icon + '</div>'
         + '<div class="list-body"><div class="list-title">' + b.category + '</div>'
@@ -4681,7 +4683,7 @@ function renderInsightsCalendar() {
   var selDay  = (State.insightsCalDay != null && State.insightsCalDay <= maxDays)
     ? State.insightsCalDay
     : (month === today.getMonth() && year === today.getFullYear() ? today.getDate() : null);
-  var allTx  = DEMO.transactions;
+  var allTx  = State.data.transactions || DEMO.transactions;
   var allRem = State.data.reminders || DEMO.reminders;
   var eventMap = {};
   allTx.forEach(function(t) {
@@ -4697,7 +4699,7 @@ function renderInsightsCalendar() {
       icon: meta.icon,
       color: isTx ? COLORS.info : isInc ? COLORS.success : COLORS.danger,
       title: t.source || t.description || t.category || 'Transaction',
-      sub: (isInc ? '+' : '-') + formatINR(t.amount),
+      sub: (isTx ? '' : isInc ? '+' : '-') + formatINR(t.amount),
       amtColor: isTx ? COLORS.info : isInc ? COLORS.success : COLORS.danger,
     });
   });
@@ -4719,10 +4721,10 @@ function renderInsightsCalendar() {
   var dayNames    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var html = '';
   html += '<div class="cal-header" style="padding:0 20px;margin-bottom:12px">'
-    + '<div class="icon-btn" onclick="var m=State.insightsCalMonth-1,y=State.insightsCalYear;if(m<0){m=11;y--;}State.insightsCalMonth=m;State.insightsCalYear=y;State.insightsCalDay=1;App.render()">'
+    + '<div class="icon-btn" onclick="var m=State.insightsCalMonth-1,y=State.insightsCalYear;if(m<0){m=11;y--;}State.insightsCalMonth=m;State.insightsCalYear=y;State.insightsCalDay=null;App.render()">'
     + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>'
     + '<div class="cal-month-label">' + MONTHS[month] + ' ' + year + '</div>'
-    + '<div class="icon-btn" onclick="var m=State.insightsCalMonth+1,y=State.insightsCalYear;if(m>11){m=0;y++;}State.insightsCalMonth=m;State.insightsCalYear=y;State.insightsCalDay=1;App.render()">'
+    + '<div class="icon-btn" onclick="var m=State.insightsCalMonth+1,y=State.insightsCalYear;if(m>11){m=0;y++;}State.insightsCalMonth=m;State.insightsCalYear=y;State.insightsCalDay=null;App.render()">'
     + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div></div>';
   html += '<div class="ins-cal-grid">';
   dayNames.forEach(function(d) { html += '<div class="ins-cal-day-name">' + d + '</div>'; });
@@ -4757,8 +4759,8 @@ function renderInsightsCalendar() {
     selEvents.forEach(function(e,i) {
       html += '<div class="list-row" onclick="App.goTab(\'transactions\')" ' + (i < selEvents.length-1 ? 'style="border-bottom:1px solid var(--border)"' : '') + '>'
         + '<div class="list-icon" style="background:' + e.color + '22;font-size:20px;display:flex;align-items:center;justify-content:center">' + e.icon + '</div>'
-        + '<div class="list-body"><div class="list-title">' + e.title + '</div>'
-        + '<div class="list-sub">' + (e.type === 'income' ? 'Income' : e.type === 'reminder' ? 'Reminder' : 'Expense') + '</div></div>'
+        + '<div class="list-body"><div class="list-title">' + escapeHtml(e.title) + '</div>'
+        + '<div class="list-sub">' + (e.type === 'income' ? 'Income' : e.type === 'reminder' ? 'Reminder' : e.type === 'transfer' ? 'Transfer' : 'Expense') + '</div></div>'
         + '<div class="list-right"><div class="list-amount" style="color:' + e.amtColor + '">' + e.sub + '</div></div>'
         + '</div>';
     });
@@ -4856,6 +4858,7 @@ const App = {
     State.txEditData  = null;
     State.txIsEdit    = false;
     State.txShowSearch = false;
+    State.txDetailId  = null;
     // Reminder state
     State.remForm      = null;
     State.remTab       = 'upcoming';
@@ -4863,6 +4866,8 @@ const App = {
     State.remSearch    = '';
     State.remSort      = 'date';
     State.remCalDay    = null;
+    State.remCalMonth  = new Date().getMonth();
+    State.remCalYear   = new Date().getFullYear();
     // Insights state
     State.insightsTab         = 'overview';
     State.insightsPeriod      = 'month';
@@ -5044,8 +5049,12 @@ const App = {
   async saveAccount() {
     const name    = document.getElementById('af-name')?.value?.trim();
     const balance = parseFloat(document.getElementById('af-balance')?.value || '0');
-    const type    = State.addAcctType || 'bank';
-    const color   = State.acctColor  || '#6C47FF';
+    const isEditNow = State.screen === 'edit-account';
+    const editIdNow = State.params?.id;
+    const acctsCur  = State.data.accounts || DEMO.accounts;
+    const existingAcct = isEditNow ? acctsCur.find(a=>a.account_id===editIdNow) : null;
+    const type    = (State.addAcctType !== 'bank' ? State.addAcctType : null) || (existingAcct?.account_type) || State.addAcctType || 'bank';
+    const color   = State.acctColor !== '#6C47FF' ? State.acctColor : (existingAcct?.color || State.acctColor || '#6C47FF');
     const notes   = document.getElementById('af-notes')?.value?.trim() || '';
 
     if (!name) { this.showToast('Please enter an account name'); return; }
@@ -5067,7 +5076,9 @@ const App = {
       credit_limit: parseFloat(document.getElementById('af-crlimit')?.value||'0') || 0,
       include_in_net_worth: type !== 'wallet' && type !== 'upi',
       visible: true,
-      avg_inflow: 0, avg_outflow: 0, tx_count: 0,
+      avg_inflow: existingAcct?.avg_inflow || 0,
+      avg_outflow: existingAcct?.avg_outflow || 0,
+      tx_count: existingAcct?.tx_count || 0,
     };
 
     const isEdit = State.screen === 'edit-account';
@@ -5142,6 +5153,7 @@ const App = {
       accts.splice(idx, 1);
     }
     DEMO.transactions = (DEMO.transactions || []).filter(t => t.account_id !== id && t.to_account_id !== id);
+    State.data.recentTx = (State.data.recentTx || []).filter(t => t.account_id !== id && t.to_account_id !== id);
     State.data.accounts = accts;
     State.viewAcctId = null;
     this.showToast('Account deleted');
@@ -5159,11 +5171,12 @@ const App = {
       const allAmts   = sortedTxs.map(t => (t._type==='income'||t.to_account_id===id) ? t.amount : -t.amount);
       const opening   = (a ? a.balance : 0) - allAmts.reduce((s,v)=>s+v, 0);
       let running = opening;
+      const csvQ = v => { const s = String(v == null ? '' : v); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       sortedTxs.forEach(t => {
         const isInc = t._type==='income' || t.to_account_id===id;
         const amt   = isInc ? t.amount : -t.amount;
         running += amt;
-        rows.push([t.date, t._type, (t.source||t.description||t.payee||''), t.category, amt, running].join(','));
+        rows.push([t.date, t._type, (t.source||t.description||t.payee||''), t.category, amt, running].map(csvQ).join(','));
       });
       const blob = new Blob([rows.join('\n')], {type:'text/csv'});
       const url  = URL.createObjectURL(blob);
@@ -5179,7 +5192,8 @@ const App = {
   exportAllAccounts() {
     const accts = State.data.accounts || DEMO.accounts;
     const rows  = ['Account,Type,Balance,Institution,Visible'];
-    accts.forEach(a => rows.push([a.name, a.account_type, a.balance, a.institution||'', a.visible!==false?'Yes':'No'].join(',')));
+    const csvQ2 = v => { const s = String(v == null ? '' : v); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    accts.forEach(a => rows.push([a.name, a.account_type, a.balance, a.institution||'', a.visible!==false?'Yes':'No'].map(csvQ2).join(',')));
     const blob = new Blob([rows.join('\n')], {type:'text/csv'});
     const url  = URL.createObjectURL(blob);
     const el   = document.createElement('a');
@@ -5286,6 +5300,7 @@ const App = {
       }
     }
     this.showToast('Transaction deleted');
+    loadDashboardData().catch(()=>{});
     this.goTab('transactions');
   },
 
@@ -5333,6 +5348,7 @@ const App = {
       ...(type === 'transfer' ? { to_account_id: toAcct } : {}),
     };
 
+    let applyNewBalances = true;
     if (isEdit) {
       const idx = DEMO.transactions.findIndex(t => t.id === editId);
       if (idx !== -1) {
@@ -5353,11 +5369,14 @@ const App = {
           if (oldTo) oldTo.balance -= old.amount;
         }
         DEMO.transactions[idx] = { ...old, ...txData };
+      } else {
+        applyNewBalances = false;
       }
     } else {
       DEMO.transactions.unshift({ id: uid('tx_'), ...txData });
     }
 
+    if (applyNewBalances) {
     const txDate2 = new Date(date); const now2 = new Date();
     const isCurrentMonth = txDate2.getMonth() === now2.getMonth() && txDate2.getFullYear() === now2.getFullYear();
     if (type === 'income')  { if (isCurrentMonth) DEMO.dashboard.monthly_income   += amount; DEMO.dashboard.total_balance += amount; }
@@ -5370,6 +5389,7 @@ const App = {
       if (srcAcct) srcAcct.balance -= amount;
       const destAcct = allAccts.find(a => a.account_id === toAcct);
       if (destAcct) destAcct.balance += amount;
+    }
     }
 
     State.addTxType   = null;
@@ -5389,7 +5409,8 @@ const App = {
   },
 
   markReminderPaid(id) {
-    const r = (DEMO.reminders||[]).find(x => x.reminder_id === id);
+    const rems = State.data.reminders || DEMO.reminders || [];
+    const r = rems.find(x => x.reminder_id === id);
     if (r) { r.is_completed = true; r.completed_on = new Date().toISOString().slice(0,10); r.paid_amount = r.amount; }
     this.showToast('Reminder marked as paid ✅');
     this.navigate('reminders');
@@ -5410,7 +5431,7 @@ const App = {
   },
 
   _doSnooze(id, days) {
-    const r = (DEMO.reminders||[]).find(x => x.reminder_id === id);
+    const r = (State.data.reminders || DEMO.reminders || []).find(x => x.reminder_id === id);
     if (!r) return;
     if (r.is_completed) { this.showToast('Cannot snooze a completed reminder'); return; }
     if (r && r.reminder_date) {
@@ -5439,17 +5460,19 @@ const App = {
   },
 
   _doDeleteReminder(id) {
-    const idx = (DEMO.reminders||[]).findIndex(x => x.reminder_id === id);
-    if (idx !== -1) DEMO.reminders.splice(idx, 1);
+    const rems = State.data.reminders || DEMO.reminders || [];
+    const idx = rems.findIndex(x => x.reminder_id === id);
+    if (idx !== -1) rems.splice(idx, 1);
     this.showToast('Reminder deleted');
     this.navigate('reminders');
   },
 
   duplicateReminder(id) {
-    const r = (DEMO.reminders||[]).find(x => x.reminder_id === id);
+    const rems = State.data.reminders || DEMO.reminders || [];
+    const r = rems.find(x => x.reminder_id === id);
     if (!r) return;
     const copy = Object.assign({}, r, { reminder_id: uid('rem_'), is_completed: false, completed_on: null, paid_amount: null });
-    DEMO.reminders.push(copy);
+    rems.push(copy);
     this.showToast('Reminder duplicated 📋');
     this.render();
   },
@@ -5472,7 +5495,8 @@ const App = {
     if (!title)  { this.showToast('Please enter a reminder title'); return; }
     if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
     if (!date)   { this.showToast('Please select a due date'); return; }
-    const existing = (DEMO.reminders || []).find(function(r){ return r.reminder_id === rf.id; });
+    const remsList = State.data.reminders || DEMO.reminders || [];
+    const existing = remsList.find(function(r){ return r.reminder_id === rf.id; });
     const newRem = {
       reminder_id: existing ? rf.id : uid('rem_'),
       title,
@@ -5492,13 +5516,12 @@ const App = {
       alert_days: rf.alertDays || [1],
       account_id: rf.account || null,
     };
-    if (!DEMO.reminders) DEMO.reminders = [];
     if (existing) {
-      const idx = DEMO.reminders.indexOf(existing);
-      if (idx >= 0) DEMO.reminders[idx] = newRem;
+      const idx = remsList.indexOf(existing);
+      if (idx >= 0) remsList[idx] = newRem;
       this.showToast('Reminder updated! 🔔');
     } else {
-      DEMO.reminders.push(newRem);
+      remsList.push(newRem);
       this.showToast('Reminder saved! 🔔');
     }
     State.remForm    = null;
