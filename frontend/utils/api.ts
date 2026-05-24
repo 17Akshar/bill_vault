@@ -3,11 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL 
-  || process.env.EXPO_PUBLIC_BACKEND_URL;
+const BACKEND_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  'http://localhost:8000';
 
-if (!BACKEND_URL) {
-  console.warn('EXPO_PUBLIC_BACKEND_URL is not configured — using default');
+if (!Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL && !process.env.EXPO_PUBLIC_BACKEND_URL) {
+  console.warn('EXPO_PUBLIC_BACKEND_URL is not configured — falling back to http://localhost:8000');
 }
 
 // Globally force axios to use the `fetch` adapter on web (browser + SSR).

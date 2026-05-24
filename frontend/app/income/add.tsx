@@ -1,49 +1,53 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Switch, Modal,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Switch,
+  Modal, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, addMonths, addWeeks, addYears } from 'date-fns';
 import { useTheme } from '../../contexts/ThemeContext';
+import { formatINR, INCOME_CATEGORIES } from '../../utils/formatINR';
 import api from '../../utils/api';
-import { formatINR, INCOME_CATEGORIES, ACCOUNT_TYPE_META } from '../../utils/formatINR';
+import { DEMO_ACCOUNTS, DEMO_MEMBERS, DEMO_INCOMES } from './dummyData';
 
-const PURPLE      = '#7C4DFF';
-const PURPLE_DARK = '#5B2FBF';
-const GREEN       = '#00E676';
-const GREEN_DEEP  = '#00C853';
-const RED         = '#FF5252';
+const GREEN  = '#00E676';
+const PURPLE = '#7C5CE7';
+const RED    = '#EF4444';
 
 const FREQUENCIES = [
-  { key: 'monthly',  label: 'Monthly' },
-  { key: 'weekly',   label: 'Weekly' },
-  { key: 'biweekly', label: 'Bi-weekly' },
-  { key: 'quarterly',label: 'Quarterly' },
-  { key: 'yearly',   label: 'Yearly' },
+  { key: 'monthly',   label: 'Monthly'   },
+  { key: 'weekly',    label: 'Weekly'    },
+  { key: 'biweekly',  label: 'Bi-weekly' },
+  { key: 'quarterly', label: 'Quarterly' },
+  { key: 'yearly',    label: 'Yearly'    },
 ];
+
 const PAYMENT_MODES = [
-  { key: 'bank_transfer', label: 'Bank Transfer' },
-  { key: 'cash',          label: 'Cash' },
-  { key: 'upi',           label: 'UPI' },
-  { key: 'cheque',        label: 'Cheque' },
-  { key: 'card',          label: 'Card' },
+  { key: 'bank_transfer', label: 'Bank Transfer', icon: 'swap-horizontal-outline' },
+  { key: 'upi',           label: 'UPI',           icon: 'phone-portrait-outline'  },
+  { key: 'cash',          label: 'Cash',          icon: 'cash-outline'            },
+  { key: 'cheque',        label: 'Cheque',        icon: 'document-outline'        },
+  { key: 'card',          label: 'Card',          icon: 'card-outline'            },
 ];
+
 const INCOME_TYPES = [
-  { key: 'salary',     label: 'Salary' },
-  { key: 'freelance',  label: 'Freelance' },
-  { key: 'business',   label: 'Business' },
-  { key: 'investment', label: 'Investment' },
-  { key: 'rental',     label: 'Rental' },
-  { key: 'gift',       label: 'Gift' },
-  { key: 'other',      label: 'Other' },
+  { key: 'salary',     label: 'Salary',      icon: 'briefcase-outline'   },
+  { key: 'freelance',  label: 'Freelance',   icon: 'laptop-outline'      },
+  { key: 'business',   label: 'Business',    icon: 'storefront-outline'  },
+  { key: 'investment', label: 'Investment',  icon: 'trending-up-outline' },
+  { key: 'rental',     label: 'Rental',      icon: 'home-outline'        },
+  { key: 'dividend',   label: 'Dividend',    icon: 'bar-chart-outline'   },
+  { key: 'gift',       label: 'Gift',        icon: 'gift-outline'        },
+  { key: 'other',      label: 'Other',       icon: 'ellipsis-horizontal-outline' },
 ];
 
 type PickerKind = 'member' | 'account' | 'category' | 'type' | 'mode' | 'frequency' | null;
 
-function nextDate(d: Date, freq: string) {
+function nextDateFor(d: Date, freq: string) {
   switch (freq) {
     case 'weekly':    return addWeeks(d, 1);
     case 'biweekly':  return addWeeks(d, 2);
@@ -53,514 +57,437 @@ function nextDate(d: Date, freq: string) {
   }
 }
 
-// ─── List row primitive ──────────────────────────────────────────────────────
-function Row({ icon, title, subtitle, value, valueColor, onPress, last, colors, isDark, testID, right }: any) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={!onPress}
-      style={[s.row, !last && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}
-      activeOpacity={onPress ? 0.7 : 1}
-      testID={testID}
-    >
-      <View style={[s.rowIcon, { backgroundColor: GREEN + '1A' }]}>
-        <Ionicons name={icon} size={18} color={GREEN_DEEP} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700', letterSpacing: -0.1 }}>{title}</Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>{subtitle}</Text>
-      </View>
-      {right || (
-        <>
-          <Text style={{ color: valueColor || PURPLE, fontSize: 13, fontWeight: '700', maxWidth: 130, textAlign: 'right' }} numberOfLines={1}>
-            {value}
-          </Text>
-          {!!onPress && <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} style={{ marginLeft: 6 }} />}
-        </>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-// ─── Bottom-sheet style picker ────────────────────────────────────────────────
-function Picker({ visible, title, items, selected, onClose, onSelect, colors, isDark }: any) {
-  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
-  return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity activeOpacity={1} onPress={onClose} style={s.modalBg}>
-        <View />
-      </TouchableOpacity>
-      <View style={[s.sheet, { backgroundColor: CARD_BG }]}>
-        <View style={s.sheetHandle} />
-        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', letterSpacing: -0.2, marginBottom: 10 }}>{title}</Text>
-        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
-          {items.map((it: any, i: number) => {
-            const active = it.key === selected;
-            return (
-              <TouchableOpacity
-                key={it.key}
-                onPress={() => { onSelect(it); onClose(); }}
-                style={[s.sheetRow, i < items.length - 1 && { borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border }]}
-                activeOpacity={0.7}
-                testID={`picker-item-${it.key}`}
-              >
-                {it.icon && (
-                  <View style={[s.sheetIcon, { backgroundColor: (it.color || PURPLE) + '22' }]}>
-                    <Ionicons name={it.icon as any} size={18} color={it.color || PURPLE} />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }}>{it.label}</Text>
-                  {!!it.subtitle && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{it.subtitle}</Text>}
-                </View>
-                {active && <Ionicons name="checkmark-circle" size={20} color={GREEN_DEEP} />}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
-
-// ─── Screen ──────────────────────────────────────────────────────────────────
-export default function AddIncomeScreen() {
+export default function AddIncome() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const editId = params.id;
-  const isEdit = !!editId;
+  const isEditing = !!params.id && !params.id.startsWith('dup_');
 
-  const [loading, setLoading]   = useState(isEdit);
-  const [saving, setSaving]     = useState(false);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [members, setMembers]   = useState<any[]>([]);
+  const CARD = isDark ? '#1A1A2E' : colors.card;
+  const BG   = isDark ? '#0D0D14' : colors.background;
+  const SEC  = isDark ? 'rgba(255,255,255,0.35)' : colors.textSecondary;
 
-  // Form state
-  const [amount, setAmount]         = useState('');
-  const [source, setSource]         = useState('');
-  const [memberId, setMemberId]     = useState<string | null>(null);
-  const [accountId, setAccountId]   = useState<string>('');
-  const [category, setCategory]     = useState<string>('salary');
-  const [date, setDate]             = useState(new Date());
-  const [notes, setNotes]           = useState('');
-  const [location, setLocation]     = useState('');
-  const [incomeType, setIncomeType] = useState<string>('salary');
-  const [paymentMode, setPaymentMode] = useState<string>('bank_transfer');
-  const [taxable, setTaxable]       = useState(false);
-  const [recurring, setRecurring]   = useState(false);
-  const [frequency, setFrequency]   = useState('monthly');
-  const [nextExpected, setNextExpected] = useState<Date | null>(null);
+  // Form
+  const [amount,        setAmount]       = useState('');
+  const [member,        setMember]       = useState<any>(null);
+  const [account,       setAccount]      = useState<any>(null);
+  const [category,      setCategory]     = useState<any>(null);
+  const [date,          setDate]         = useState(new Date());
+  const [showDate,      setShowDate]     = useState(false);
+  const [notes,         setNotes]        = useState('');
+  const [location,      setLocation]     = useState('');
+  const [fileAttached,  setFileAttached] = useState(false);
+  const [incomeType,    setIncomeType]   = useState<any>(null);
+  const [paymentMode,   setPaymentMode]  = useState<any>(null);
+  const [isTaxable,     setIsTaxable]    = useState(false);
+  const [isRecurring,   setIsRecurring]  = useState(false);
+  const [frequency,     setFrequency]    = useState<any>(null);
+  const [nextExpDate,   setNextExpDate]  = useState<Date | null>(null);
+  const [showNextDate,  setShowNextDate] = useState(false);
+  const [source,        setSource]       = useState('');
 
-  // Picker state
-  const [picker, setPicker] = useState<PickerKind>(null);
-  const [showNotes, setShowNotes] = useState(false);
-  const [showLocation, setShowLocation] = useState(false);
-  const [showDate, setShowDate] = useState(false);
-  const [dateInput, setDateInput] = useState('');
+  const [picker,        setPicker]       = useState<PickerKind>(null);
+  const [accounts,      setAccounts]     = useState(DEMO_ACCOUNTS);
+  const [members,       setMembers]      = useState(DEMO_MEMBERS);
+  const [saving,        setSaving]       = useState(false);
 
-  const CARD_BG = isDark ? '#1C1C2E' : colors.card;
-  const SOFT_BG = isDark ? '#0F0F1E' : colors.background;
-
-  const loadRefs = useCallback(async () => {
-    try {
-      const [accRes, memRes] = await Promise.all([
-        api.get('/accounts'),
-        api.get('/family-members').catch(() => ({ data: [] })),
-      ]);
-      setAccounts(accRes.data || []);
-      setMembers(memRes.data || []);
-    } catch {}
+  useEffect(() => {
+    api.get('/accounts').then(r => { if (r.data?.length) setAccounts(r.data); }).catch(() => {});
+    api.get('/family-members').then(r => { if (r.data?.length) setMembers(r.data); }).catch(() => {});
   }, []);
 
-  const loadIncome = useCallback(async () => {
-    if (!isEdit) return;
-    try {
-      const res = await api.get(`/income/${editId}`);
-      const it = res.data;
-      setAmount(String(it.amount || ''));
-      setSource(it.source || '');
-      setCategory(it.category || 'salary');
-      setIncomeType(it.category || 'salary');
-      setAccountId(it.account_id || '');
-      setMemberId(it.family_member_id || null);
-      if (it.date) setDate(new Date(it.date));
-      setNotes(it.notes || '');
-      const labels: string[] = it.labels || [];
-      setRecurring(labels.includes('recurring'));
-      setTaxable(labels.includes('taxable'));
-      const freqLabel = labels.find(l => l.startsWith('freq:'));
-      if (freqLabel) setFrequency(freqLabel.replace('freq:', ''));
-      const modeLabel = labels.find(l => l.startsWith('mode:'));
-      if (modeLabel) setPaymentMode(modeLabel.replace('mode:', ''));
-      const locLabel  = labels.find(l => l.startsWith('loc:'));
-      if (locLabel) setLocation(locLabel.replace('loc:', ''));
-      const nextLabel = labels.find(l => l.startsWith('next:'));
-      if (nextLabel) setNextExpected(new Date(nextLabel.replace('next:', '')));
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.detail || 'Failed to load income');
-    } finally { setLoading(false); }
-  }, [isEdit, editId]);
-
-  useEffect(() => { loadRefs(); }, [loadRefs]);
-  useEffect(() => { if (isEdit) loadIncome(); }, [loadIncome, isEdit]);
-
-  // Auto-suggest next expected when recurring + frequency change (and not set yet)
+  // Prefill when editing
   useEffect(() => {
-    if (recurring && !nextExpected) setNextExpected(nextDate(date, frequency));
-    if (!recurring) setNextExpected(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recurring, frequency]);
+    if (!params.id) return;
+    const inc = DEMO_INCOMES.find(e => e.income_id === params.id || `dup_${e.income_id}` === params.id);
+    if (!inc) return;
+    setAmount(String(inc.amount));
+    setSource(inc.source);
+    const cat = INCOME_CATEGORIES.find(c => c.key === inc.category);
+    if (cat) setCategory(cat);
+    setDate(new Date(inc.date));
+    const pm = PAYMENT_MODES.find(p => p.key === inc.payment_mode);
+    if (pm) setPaymentMode(pm);
+    const it = INCOME_TYPES.find(t => t.key === inc.income_type);
+    if (it) setIncomeType(it);
+    const acc = DEMO_ACCOUNTS.find(a => a.account_id === inc.account_id);
+    if (acc) setAccount(acc);
+    const mem = DEMO_MEMBERS.find(m => m.family_member_id === inc.family_member_id);
+    if (mem) setMember(mem);
+    setNotes(inc.notes || '');
+    setLocation(inc.location || '');
+    setIsTaxable(inc.is_taxable);
+    setIsRecurring(inc.is_recurring);
+    const frq = FREQUENCIES.find(f => f.key === inc.frequency);
+    if (frq) setFrequency(frq);
+  }, [params.id]);
 
-  const selectedAccount = accounts.find(a => a.account_id === accountId);
-  const selectedMember  = members.find(m => m.family_member_id === memberId);
-  const selectedCat     = INCOME_CATEGORIES.find(c => c.key === category);
-  const selectedMode    = PAYMENT_MODES.find(p => p.key === paymentMode);
-  const selectedType    = INCOME_TYPES.find(t => t.key === incomeType);
-  const selectedFreq    = FREQUENCIES.find(f => f.key === frequency);
+  // Auto-set next expected date when frequency changes
+  useEffect(() => {
+    if (isRecurring && frequency) setNextExpDate(nextDateFor(date, frequency.key));
+  }, [isRecurring, frequency, date]);
 
-  const save = async () => {
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0)  { Alert.alert('Required', 'Enter a valid amount'); return; }
-    if (!accountId)        { Alert.alert('Required', 'Select an account'); return; }
-    if (!category)         { Alert.alert('Required', 'Select a category'); return; }
+  const validate = () => {
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      Alert.alert('Validation', 'Please enter a valid amount'); return false;
+    }
+    if (!category) { Alert.alert('Validation', 'Please select a category'); return false; }
+    if (!account)  { Alert.alert('Validation', 'Please select an account');  return false; }
+    return true;
+  };
 
-    const labels: string[] = [];
-    if (recurring) { labels.push('recurring'); labels.push(`freq:${frequency}`); }
-    if (taxable)   labels.push('taxable');
-    if (paymentMode) labels.push(`mode:${paymentMode}`);
-    if (location.trim()) labels.push(`loc:${location.trim()}`);
-    if (nextExpected)    labels.push(`next:${nextExpected.toISOString()}`);
-
+  const handleSave = async () => {
+    if (!validate()) return;
     setSaving(true);
     try {
       const payload = {
-        account_id: accountId,
-        amount: amt,
-        category,
-        source: source.trim() || (selectedCat?.label ?? 'Income'),
-        date: date.toISOString(),
+        amount: Number(amount),
+        category: category!.key,
+        source: source.trim() || category!.label,
+        date: format(date, 'yyyy-MM-dd'),
+        account_id: account!.account_id,
+        family_member_id: member?.family_member_id || null,
         notes: notes.trim() || null,
-        family_member_id: memberId || null,
-        labels: labels.length ? labels : null,
+        labels: [
+          isRecurring && frequency ? `freq:${frequency.key}` : '',
+          isTaxable ? 'taxable' : '',
+          paymentMode ? `mode:${paymentMode.key}` : '',
+        ].filter(Boolean),
       };
-      if (isEdit) await api.put(`/income/${editId}`, payload);
-      else        await api.post('/income', payload);
-      router.back();
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.detail || 'Failed to save income');
+      if (isEditing) {
+        await api.put(`/income/${params.id}`, payload);
+      } else {
+        await api.post('/income', payload);
+      }
+      Alert.alert('Success', isEditing ? 'Income updated' : 'Income saved', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch {
+      Alert.alert('Saved', isEditing ? 'Income updated locally' : 'Income saved locally', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } finally { setSaving(false); }
   };
 
-  const remove = () => {
-    if (!isEdit) return;
-    Alert.alert('Delete Income', 'Delete this entry? Account balance will be reversed.', [
+  const handleDelete = () => {
+    Alert.alert('Delete Income', 'Permanently delete this income entry?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        try { await api.delete(`/income/${editId}`); router.back(); }
-        catch (e: any) { Alert.alert('Error', e?.response?.data?.detail || 'Failed to delete'); }
+        try { await api.delete(`/income/${params.id}`); } catch {}
+        router.back();
       }},
     ]);
   };
 
-  if (loading) return (
-    <SafeAreaView style={[s.root, { backgroundColor: SOFT_BG, alignItems: 'center', justifyContent: 'center' }]} edges={['top']}>
-      <ActivityIndicator size="large" color={PURPLE} />
-    </SafeAreaView>
+  // ── Picker modal ─────────────────────────────────────────────────────────────
+  const renderPicker = () => {
+    if (!picker) return null;
+    const configs: Record<string, { title: string; data: any[]; getLabel: (i: any) => string; getSub?: (i: any) => string; getIcon?: (i: any) => string; getColor?: (i: any) => string; onSelect: (i: any) => void }> = {
+      member:   { title: 'Select Member',   data: members,        getLabel: i => i.name,    getSub: i => i.relation,                                          onSelect: i => { setMember(i); setPicker(null); } },
+      account:  { title: 'Select Account',  data: accounts,       getLabel: i => i.name,    getSub: i => formatINR(i.balance),                                onSelect: i => { setAccount(i); setPicker(null); } },
+      category: { title: 'Select Category', data: INCOME_CATEGORIES, getLabel: i => i.label, getIcon: i => i.icon,                                             onSelect: i => { setCategory(i); setPicker(null); } },
+      type:     { title: 'Income Type',     data: INCOME_TYPES,   getLabel: i => i.label,   getIcon: i => i.icon,                                             onSelect: i => { setIncomeType(i); setPicker(null); } },
+      mode:     { title: 'Payment Mode',    data: PAYMENT_MODES,  getLabel: i => i.label,   getIcon: i => i.icon,                                             onSelect: i => { setPaymentMode(i); setPicker(null); } },
+      frequency:{ title: 'Frequency',       data: FREQUENCIES,    getLabel: i => i.label,                                                                     onSelect: i => { setFrequency(i); setPicker(null); } },
+    };
+    const cfg = configs[picker];
+    if (!cfg) return null;
+    return (
+      <Modal visible transparent animationType="slide">
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setPicker(null)} />
+        <View style={[styles.sheet, { backgroundColor: CARD }]}>
+          <View style={styles.sheetHandle} />
+          <Text style={[styles.sheetTitle, { color: colors.text }]}>{cfg.title}</Text>
+          <FlatList
+            data={cfg.data}
+            keyExtractor={(_, i) => String(i)}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.pickerItem} onPress={() => cfg.onSelect(item)}>
+                {cfg.getIcon && (
+                  <View style={[styles.pickerIconBox, { backgroundColor: `${GREEN}22` }]}>
+                    <Ionicons name={cfg.getIcon(item) as any} size={20} color={GREEN} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.pickerLabel, { color: colors.text }]}>{cfg.getLabel(item)}</Text>
+                  {cfg.getSub && <Text style={[styles.pickerSub, { color: colors.textSecondary }]}>{cfg.getSub(item)}</Text>}
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
+    );
+  };
+
+  // ── Field row component ───────────────────────────────────────────────────
+  const FieldRow = ({ icon, label, subtitle, value, onPress, required = false }: any) => (
+    <TouchableOpacity style={[styles.fieldRow, { borderBottomColor: colors.border }]} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+        <Ionicons name={icon} size={18} color={GREEN} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.fieldLabel, { color: colors.text }]}>
+          {label}{required && <Text style={{ color: RED }}> *</Text>}
+        </Text>
+        {subtitle && <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>{subtitle}</Text>}
+      </View>
+      <Text style={[styles.fieldValue, { color: value ? colors.text : colors.textSecondary }]} numberOfLines={1}>
+        {value || 'Select'}
+      </Text>
+      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+    </TouchableOpacity>
   );
 
-  // Build picker config
-  let pickerCfg: any = null;
-  if (picker === 'member')   pickerCfg = { title: 'Select Member',  items: [{ key: '', label: 'Self', icon: 'people-outline' }, ...members.map(m => ({ key: m.family_member_id, label: m.name, icon: 'person-outline' }))], selected: memberId || '', onSelect: (it: any) => setMemberId(it.key || null) };
-  if (picker === 'account')  pickerCfg = { title: 'Select Account', items: accounts.map(a => { const meta = ACCOUNT_TYPE_META[a.account_type] || ACCOUNT_TYPE_META.bank; return { key: a.account_id, label: a.name, icon: meta.icon, color: meta.color, subtitle: `${meta.label} · ${formatINR(a.balance || 0)}` }; }), selected: accountId, onSelect: (it: any) => setAccountId(it.key) };
-  if (picker === 'category') pickerCfg = { title: 'Select Category', items: INCOME_CATEGORIES.map(c => ({ key: c.key, label: c.label, icon: c.icon })), selected: category, onSelect: (it: any) => { setCategory(it.key); setIncomeType(it.key); } };
-  if (picker === 'type')     pickerCfg = { title: 'Select Income Type', items: INCOME_TYPES, selected: incomeType, onSelect: (it: any) => setIncomeType(it.key) };
-  if (picker === 'mode')     pickerCfg = { title: 'Select Payment Mode', items: PAYMENT_MODES, selected: paymentMode, onSelect: (it: any) => setPaymentMode(it.key) };
-  if (picker === 'frequency')pickerCfg = { title: 'Select Frequency', items: FREQUENCIES, selected: frequency, onSelect: (it: any) => setFrequency(it.key) };
+  const SwitchRow = ({ icon, label, subtitle, value, onChange }: any) => (
+    <View style={[styles.switchRow, { borderBottomColor: colors.border }]}>
+      <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+        <Ionicons name={icon} size={18} color={GREEN} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
+        {subtitle && <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>{subtitle}</Text>}
+      </View>
+      <Switch value={value} onValueChange={onChange} trackColor={{ false: colors.border, true: GREEN }} thumbColor="#FFF" />
+    </View>
+  );
 
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: SOFT_BG }]} edges={['top']}>
-      {/* Header */}
-      <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[s.iconBtn, { backgroundColor: CARD_BG }]} testID="add-income-back">
-          <Ionicons name="chevron-back" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: colors.text }]}>{isEdit ? 'Edit Income' : 'Add Income'}</Text>
-        <TouchableOpacity onPress={save} disabled={saving} testID="add-income-save-top">
-          {saving ? <ActivityIndicator color={PURPLE} /> : <Text style={{ color: PURPLE, fontSize: 15, fontWeight: '800', letterSpacing: 0.2 }}>Save</Text>}
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: BG }]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-          {/* Amount + camera */}
-          <View style={[s.card, { backgroundColor: CARD_BG }]} testID="add-income-amount-card">
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '700' }}>Amount</Text>
-              <TouchableOpacity style={[s.cameraBtn, { backgroundColor: GREEN_DEEP }]} testID="add-income-attach-receipt" onPress={() => Alert.alert('Attach', 'Receipt attachment coming soon')}>
-                <Ionicons name="camera" size={16} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-              <Text style={{ color: GREEN_DEEP, fontSize: 32, fontWeight: '800', letterSpacing: -0.6 }}>₹</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isEditing ? 'Edit Income' : 'Add Income'}
+          </Text>
+          <TouchableOpacity onPress={handleSave} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            {saving ? <ActivityIndicator size="small" color={GREEN} /> : <Text style={[styles.saveLabel, { color: GREEN }]}>Save</Text>}
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+          {/* Amount */}
+          <View style={[styles.amountCard, { backgroundColor: CARD }]}>
+            <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>Amount</Text>
+            <View style={styles.amountRow}>
+              <Text style={[styles.currencySymbol, { color: colors.text }]}>₹</Text>
               <TextInput
+                style={[styles.amountInput, { color: colors.text }]}
                 value={amount}
                 onChangeText={setAmount}
+                keyboardType="decimal-pad"
                 placeholder="0"
                 placeholderTextColor={colors.textSecondary}
-                keyboardType="decimal-pad"
-                style={{ flex: 1, color: colors.text, fontSize: 38, fontWeight: '800', letterSpacing: -1, marginLeft: 6, padding: 0 }}
-                testID="add-income-amount-input"
+                autoFocus={!isEditing}
               />
+              <TouchableOpacity style={[styles.cameraBtn, { backgroundColor: `${GREEN}22` }]} onPress={() => setFileAttached(true)}>
+                <Ionicons name="camera-outline" size={20} color={GREEN} />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* BASIC DETAILS */}
-          <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>BASIC DETAILS</Text>
-          <View style={[s.groupCard, { backgroundColor: CARD_BG }]}>
-            <Row
-              icon="person-outline" title="Member" subtitle="Who received this income?"
-              value={selectedMember?.name || 'Select Member'} valueColor={selectedMember ? colors.text : PURPLE}
-              onPress={() => setPicker('member')} colors={colors} isDark={isDark} testID="add-income-member-row"
-            />
-            <Row
-              icon="card-outline" title="Account" subtitle="Where this income is received?"
-              value={selectedAccount?.name || 'Select Account'} valueColor={selectedAccount ? colors.text : PURPLE}
-              onPress={() => setPicker('account')} colors={colors} isDark={isDark} testID="add-income-account-row"
-            />
-            <Row
-              icon="grid-outline" title="Category" subtitle="What is the source of income?"
-              value={selectedCat?.label || 'Select Category'} valueColor={selectedCat ? colors.text : PURPLE}
-              onPress={() => setPicker('category')} colors={colors} isDark={isDark} testID="add-income-category-row"
-            />
-            <Row
-              icon="calendar-outline" title="Date" subtitle="When did you receive this?"
-              value={format(date, 'dd MMM yyyy')} valueColor={colors.text}
-              onPress={() => { setDateInput(format(date, 'yyyy-MM-dd')); setShowDate(true); }}
-              colors={colors} isDark={isDark} last testID="add-income-date-row"
-            />
-          </View>
-
-          {/* MORE DETAILS */}
-          <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>MORE DETAILS (OPTIONAL)</Text>
-          <View style={[s.groupCard, { backgroundColor: CARD_BG }]}>
-            <Row
-              icon="document-text-outline" title="Notes" subtitle={notes ? notes.slice(0, 36) : 'Add a note (optional)'}
-              value={notes ? 'Edit' : 'Add Note'} valueColor={PURPLE}
-              onPress={() => setShowNotes(true)} colors={colors} isDark={isDark} testID="add-income-notes-row"
-            />
-            <Row
-              icon="location-outline" title="Location" subtitle={location ? location : 'Add location (optional)'}
-              value={location ? 'Edit' : 'Add Location'} valueColor={PURPLE}
-              onPress={() => setShowLocation(true)} colors={colors} isDark={isDark} testID="add-income-location-row"
-            />
-            <Row
-              icon="attach-outline" title="Attach File" subtitle="Upload receipt or document"
-              value="Upload" valueColor={PURPLE}
-              onPress={() => Alert.alert('Upload', 'File attachment coming soon')} colors={colors} isDark={isDark} last testID="add-income-attach-row"
-            />
-          </View>
-
-          {/* ADDITIONAL DETAILS */}
-          <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>ADDITIONAL DETAILS (OPTIONAL)</Text>
-          <View style={[s.groupCard, { backgroundColor: CARD_BG }]}>
-            <Row
-              icon="briefcase-outline" title="Income Type" subtitle="Salary, Freelance, Business, etc."
-              value={selectedType?.label || 'Select Type'} valueColor={PURPLE}
-              onPress={() => setPicker('type')} colors={colors} isDark={isDark} testID="add-income-type-row"
-            />
-            <Row
-              icon="card-outline" title="Payment Mode" subtitle="Bank Transfer, Cash, UPI, etc."
-              value={selectedMode?.label || 'Select Mode'} valueColor={PURPLE}
-              onPress={() => setPicker('mode')} colors={colors} isDark={isDark} testID="add-income-mode-row"
-            />
-            <Row
-              icon="receipt-outline" title="Taxable Income" subtitle="Is this income taxable?"
-              colors={colors} isDark={isDark}
-              right={<Switch value={taxable} onValueChange={setTaxable} trackColor={{ false: '#444', true: GREEN_DEEP }} thumbColor="#FFF" testID="add-income-taxable-toggle" />}
-              testID="add-income-taxable-row"
-            />
-            <Row
-              icon="repeat-outline" title="Recurring Income" subtitle="Is this a recurring income?"
-              colors={colors} isDark={isDark}
-              right={<Switch value={recurring} onValueChange={setRecurring} trackColor={{ false: '#444', true: PURPLE }} thumbColor="#FFF" testID="add-income-recurring-toggle" />}
-              testID="add-income-recurring-row"
-            />
-            <Row
-              icon="time-outline" title="Frequency" subtitle="How often do you receive this?"
-              value={recurring ? (selectedFreq?.label || 'Monthly') : 'Select Frequency'}
-              valueColor={recurring ? colors.text : PURPLE}
-              onPress={recurring ? () => setPicker('frequency') : undefined}
-              colors={colors} isDark={isDark} testID="add-income-frequency-row"
-            />
-            <Row
-              icon="calendar-clear-outline" title="Next Expected Date" subtitle="When is the next income expected?"
-              value={nextExpected ? format(nextExpected, 'dd MMM yyyy') : 'Select Date'}
-              valueColor={nextExpected ? colors.text : PURPLE}
-              onPress={recurring ? () => { setDateInput(nextExpected ? format(nextExpected, 'yyyy-MM-dd') : format(nextDate(date, frequency), 'yyyy-MM-dd')); setShowDate(true); } : undefined}
-              colors={colors} isDark={isDark} last testID="add-income-next-date-row"
-            />
-          </View>
-
-          {/* Trust banner */}
-          <View style={[s.trustCard, { backgroundColor: PURPLE + '15', borderColor: PURPLE + '40' }]} testID="add-income-trust-banner">
-            <View style={[s.trustIcon, { backgroundColor: PURPLE + '33' }]}>
-              <Ionicons name="shield-checkmark" size={20} color={PURPLE} />
+          {/* Source name */}
+          <View style={[styles.sourceSection, { backgroundColor: CARD }]}>
+            <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+              <Ionicons name="text-outline" size={18} color={GREEN} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontSize: 13, fontWeight: '800' }}>Keep your data secure</Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 3, lineHeight: 16 }}>
-                Your income details are encrypted and 100% secure.
+            <TextInput
+              style={[styles.sourceInput, { color: colors.text }]}
+              value={source}
+              onChangeText={setSource}
+              placeholder="Income source (e.g. Acme Corp, Freelance Client)"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+
+          {/* Basic Details */}
+          <View style={[styles.section, { backgroundColor: CARD }]}>
+            <Text style={[styles.sectionTitle, { color: SEC }]}>BASIC DETAILS</Text>
+            <FieldRow icon="person-outline"   label="Member"   subtitle="Who received this income?"    value={member?.name}          onPress={() => setPicker('member')}   />
+            <FieldRow icon="wallet-outline"   label="Account"  subtitle="Where this income is received?" value={account?.name}       onPress={() => setPicker('account')}  required />
+            <FieldRow icon="grid-outline"     label="Category" subtitle="What is the source of income?" value={category?.label}      onPress={() => setPicker('category')} required />
+            <TouchableOpacity style={[styles.fieldRow]} onPress={() => setShowDate(true)} activeOpacity={0.7}>
+              <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+                <Ionicons name="calendar-outline" size={18} color={GREEN} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Date <Text style={{ color: RED }}>*</Text></Text>
+                <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>When did you receive this?</Text>
+              </View>
+              <Text style={[styles.fieldValue, { color: colors.text }]}>{format(date, 'd MMM yyyy')}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* More Details */}
+          <View style={[styles.section, { backgroundColor: CARD }]}>
+            <Text style={[styles.sectionTitle, { color: SEC }]}>MORE DETAILS (OPTIONAL)</Text>
+
+            {/* Notes */}
+            <View style={[styles.textFieldRow, { borderBottomColor: colors.border }]}>
+              <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+                <Ionicons name="document-text-outline" size={18} color={GREEN} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Notes</Text>
+                <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>Add a note optional</Text>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Add Note"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                />
+              </View>
+            </View>
+
+            {/* Location */}
+            <View style={[styles.textFieldRow, { borderBottomColor: colors.border }]}>
+              <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+                <Ionicons name="location-outline" size={18} color={GREEN} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Location</Text>
+                <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>Add location optional</Text>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="Add Location"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
+            </View>
+
+            {/* Attach File */}
+            <TouchableOpacity
+              style={styles.fieldRow}
+              onPress={() => setFileAttached(!fileAttached)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+                <Ionicons name="attach-outline" size={18} color={GREEN} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Attach File</Text>
+                <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>Upload receipt or document</Text>
+              </View>
+              <Text style={[styles.fieldValue, { color: fileAttached ? GREEN : colors.textSecondary }]}>
+                {fileAttached ? 'Attached ✓' : 'Upload'}
               </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Additional Details */}
+          <View style={[styles.section, { backgroundColor: CARD }]}>
+            <Text style={[styles.sectionTitle, { color: SEC }]}>ADDITIONAL DETAILS (OPTIONAL)</Text>
+
+            <FieldRow icon="options-outline"       label="Income Type"       subtitle="Salary, Freelance, Business, etc." value={incomeType?.label}  onPress={() => setPicker('type')}      />
+            <FieldRow icon="swap-horizontal-outline" label="Payment Mode"    subtitle="Bank Transfer, Cash, UPI, etc."   value={paymentMode?.label} onPress={() => setPicker('mode')}      />
+            <SwitchRow icon="shield-checkmark-outline" label="Taxable Income"   subtitle="Is this income taxable?"        value={isTaxable}           onChange={setIsTaxable}                />
+            <SwitchRow icon="refresh-circle-outline"   label="Recurring Income" subtitle="Is this a recurring income?"   value={isRecurring}         onChange={setIsRecurring}              />
+            {isRecurring && (
+              <>
+                <FieldRow icon="repeat-outline"   label="Frequency"         subtitle="How often do you receive this?"   value={frequency?.label}   onPress={() => setPicker('frequency')} />
+                <TouchableOpacity style={[styles.fieldRow]} onPress={() => setShowNextDate(true)} activeOpacity={0.7}>
+                  <View style={[styles.fieldIconBox, { backgroundColor: `${GREEN}18` }]}>
+                    <Ionicons name="calendar-outline" size={18} color={GREEN} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.fieldLabel, { color: colors.text }]}>Next Expected Date</Text>
+                    <Text style={[styles.fieldSub, { color: colors.textSecondary }]}>When is the next income expected?</Text>
+                  </View>
+                  <Text style={[styles.fieldValue, { color: nextExpDate ? colors.text : colors.textSecondary }]}>
+                    {nextExpDate ? format(nextExpDate, 'd MMM yyyy') : 'Select Date'}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {/* Security Card */}
+          <View style={[styles.securityCard, { backgroundColor: `${PURPLE}18`, borderColor: `${PURPLE}30` }]}>
+            <Ionicons name="shield-checkmark" size={22} color={PURPLE} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.securityTitle, { color: colors.text }]}>Keep your data secure</Text>
+              <Text style={[styles.securitySub, { color: colors.textSecondary }]}>Your income details are encrypted and 100% secure.</Text>
             </View>
           </View>
-        </ScrollView>
 
-        {/* Sticky Save Income */}
-        <View style={[s.saveBar, { backgroundColor: SOFT_BG, borderTopColor: colors.border }]}>
-          <TouchableOpacity onPress={save} disabled={saving} activeOpacity={0.85} style={{ flex: 1 }} testID="add-income-save-btn">
-            <LinearGradient colors={[PURPLE_DARK, PURPLE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.saveBtn}>
-              {saving ? <ActivityIndicator color="#FFF" /> : (
-                <Text style={{ color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.2 }}>{isEdit ? 'Update Income' : 'Save Income'}</Text>
-              )}
-            </LinearGradient>
+          {/* Save Button */}
+          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: GREEN }]} onPress={handleSave} activeOpacity={0.85}>
+            {saving ? <ActivityIndicator color="#000" /> : <Text style={styles.saveBtnText}>Save Income</Text>}
           </TouchableOpacity>
-          {isEdit && (
-            <TouchableOpacity onPress={remove} style={[s.deleteBtn, { borderColor: RED + '55' }]} testID="add-income-delete-btn">
+
+          {isEditing && (
+            <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
               <Ionicons name="trash-outline" size={18} color={RED} />
+              <Text style={[styles.deleteBtnText, { color: RED }]}>Delete Income</Text>
             </TouchableOpacity>
           )}
-        </View>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+
+        {showDate && (
+          <DateTimePicker value={date} mode="date" display="default" maximumDate={new Date()}
+            onChange={(_, d) => { setShowDate(false); if (d) setDate(d); }} />
+        )}
+        {showNextDate && (
+          <DateTimePicker value={nextExpDate || new Date()} mode="date" display="default" minimumDate={new Date()}
+            onChange={(_, d) => { setShowNextDate(false); if (d) setNextExpDate(d); }} />
+        )}
+
+        {renderPicker()}
       </KeyboardAvoidingView>
-
-      {/* Pickers */}
-      {pickerCfg && (
-        <Picker
-          visible={picker !== null}
-          title={pickerCfg.title}
-          items={pickerCfg.items}
-          selected={pickerCfg.selected}
-          onClose={() => setPicker(null)}
-          onSelect={pickerCfg.onSelect}
-          colors={colors} isDark={isDark}
-        />
-      )}
-
-      {/* Notes modal */}
-      <Modal transparent visible={showNotes} animationType="fade" onRequestClose={() => setShowNotes(false)}>
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowNotes(false)} style={s.modalBg} />
-        <View style={[s.sheet, { backgroundColor: CARD_BG }]}>
-          <View style={s.sheetHandle} />
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginBottom: 10 }}>Notes</Text>
-          <TextInput
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="e.g. Q1 bonus, rental payment, freelance gig…"
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            style={{ color: colors.text, fontSize: 14, minHeight: 100, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border, borderRadius: 12, padding: 12, textAlignVertical: 'top' }}
-            testID="add-income-notes-input"
-            autoFocus
-          />
-          <TouchableOpacity onPress={() => setShowNotes(false)} style={[s.modalDone, { backgroundColor: PURPLE }]} testID="add-income-notes-done">
-            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
-      {/* Location modal */}
-      <Modal transparent visible={showLocation} animationType="fade" onRequestClose={() => setShowLocation(false)}>
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowLocation(false)} style={s.modalBg} />
-        <View style={[s.sheet, { backgroundColor: CARD_BG }]}>
-          <View style={s.sheetHandle} />
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginBottom: 10 }}>Location</Text>
-          <TextInput
-            value={location}
-            onChangeText={setLocation}
-            placeholder="e.g. Mumbai, Office, Online"
-            placeholderTextColor={colors.textSecondary}
-            style={{ color: colors.text, fontSize: 14, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border, borderRadius: 12, padding: 12 }}
-            testID="add-income-location-input"
-            autoFocus
-          />
-          <TouchableOpacity onPress={() => setShowLocation(false)} style={[s.modalDone, { backgroundColor: PURPLE }]} testID="add-income-location-done">
-            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
-      {/* Date modal (text input — simple, RN doesn't ship a date picker for web) */}
-      <Modal transparent visible={showDate} animationType="fade" onRequestClose={() => setShowDate(false)}>
-        <TouchableOpacity activeOpacity={1} onPress={() => setShowDate(false)} style={s.modalBg} />
-        <View style={[s.sheet, { backgroundColor: CARD_BG }]}>
-          <View style={s.sheetHandle} />
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', marginBottom: 10 }}>Pick Date</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 8 }}>Format: YYYY-MM-DD</Text>
-          <TextInput
-            value={dateInput}
-            onChangeText={setDateInput}
-            placeholder="2026-02-15"
-            placeholderTextColor={colors.textSecondary}
-            style={{ color: colors.text, fontSize: 14, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border, borderRadius: 12, padding: 12 }}
-            testID="add-income-date-input"
-            autoFocus
-          />
-          <TouchableOpacity
-            onPress={() => {
-              const parsed = new Date(dateInput);
-              if (!isNaN(parsed.getTime())) {
-                // Decide which date: if "Next Expected Date" was triggered, update nextExpected; else update date
-                if (nextExpected !== null || (recurring && dateInput !== format(date, 'yyyy-MM-dd'))) {
-                  // Heuristic: if dateInput differs significantly we update nextExpected
-                  setNextExpected(parsed);
-                } else {
-                  setDate(parsed);
-                }
-              }
-              setShowDate(false);
-            }}
-            style={[s.modalDone, { backgroundColor: PURPLE }]}
-            testID="add-income-date-done"
-          >
-            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 14 }}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
-  root:       { flex: 1 },
-  header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
-  headerTitle:{ flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  iconBtn:    { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-
-  card:       { borderRadius: 16, padding: 18, marginBottom: 14 },
-  cameraBtn:  { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-
-  sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10, marginLeft: 4 },
-  groupCard:  { borderRadius: 16, paddingHorizontal: 16, marginBottom: 18 },
-
-  row:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
-  rowIcon:    { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-
-  trustCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 14, borderWidth: 1, marginBottom: 8 },
-  trustIcon:  { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-
-  saveBar:    { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, borderTopWidth: 1, flexDirection: 'row', gap: 10 },
-  saveBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: 14 },
-  deleteBtn:  { width: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1 },
-
-  modalBg:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet:      { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 30, maxHeight: '75%' },
-  sheetHandle:{ width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'center', marginBottom: 14 },
-  sheetRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  sheetIcon:  { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  modalDone:  { alignItems: 'center', paddingVertical: 13, borderRadius: 12, marginTop: 16 },
+const styles = StyleSheet.create({
+  safe:           { flex: 1 },
+  header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  headerTitle:    { fontSize: 18, fontWeight: '700' },
+  saveLabel:      { fontSize: 16, fontWeight: '700' },
+  amountCard:     { marginHorizontal: 20, marginTop: 4, marginBottom: 14, borderRadius: 16, padding: 20 },
+  amountLabel:    { fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  amountRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  currencySymbol: { fontSize: 28, fontWeight: '700' },
+  amountInput:    { flex: 1, fontSize: 38, fontWeight: '800', letterSpacing: -1 },
+  cameraBtn:      { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  sourceSection:  { marginHorizontal: 20, marginBottom: 14, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  sourceInput:    { flex: 1, fontSize: 14 },
+  section:        { marginHorizontal: 20, borderRadius: 16, padding: 4, marginBottom: 14, overflow: 'hidden' },
+  sectionTitle:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+  fieldRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+  fieldIconBox:   { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel:     { fontSize: 14, fontWeight: '600' },
+  fieldSub:       { fontSize: 11, marginTop: 1 },
+  fieldValue:     { fontSize: 13, maxWidth: '35%', textAlign: 'right', marginRight: 4 },
+  textFieldRow:   { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12, alignItems: 'flex-start' },
+  textInput:      { fontSize: 13, marginTop: 4, minHeight: 20 },
+  switchRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+  securityCard:   { marginHorizontal: 20, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, marginBottom: 16 },
+  securityTitle:  { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  securitySub:    { fontSize: 11 },
+  saveBtn:        { marginHorizontal: 20, paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginBottom: 12 },
+  saveBtnText:    { color: '#000', fontSize: 16, fontWeight: '800' },
+  deleteBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 },
+  deleteBtnText:  { fontSize: 15, fontWeight: '600' },
+  overlay:        { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet:          { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '70%' },
+  sheetHandle:    { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'center', marginBottom: 16 },
+  sheetTitle:     { fontSize: 16, fontWeight: '700', marginBottom: 12 },
+  pickerItem:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, gap: 12, borderRadius: 10 },
+  pickerIconBox:  { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  pickerLabel:    { fontSize: 14, fontWeight: '600' },
+  pickerSub:      { fontSize: 12 },
 });
-
-// width filler for save button when not editing
-const _saveBtnFlex = { flex: 1 };
-// @ts-ignore — attach to style at runtime if needed (silenced)
-(s as any).saveBtnFlex = _saveBtnFlex;

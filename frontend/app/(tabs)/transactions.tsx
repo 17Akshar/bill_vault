@@ -311,6 +311,32 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
+      {/* Cash Flow (Income) Dashboard shortcut */}
+      {filter === 'income' && (
+        <TouchableOpacity
+          style={[styles.expenseDashBanner, { backgroundColor: '#00E67618', borderColor: '#00E67635' }]}
+          onPress={() => router.push('/income' as any)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="trending-up-outline" size={16} color="#00E676" />
+          <Text style={[styles.expenseDashText, { color: '#00E676' }]}>Open Cash Flow Dashboard</Text>
+          <Ionicons name="arrow-forward" size={14} color="#00E676" />
+        </TouchableOpacity>
+      )}
+
+      {/* Expense Dashboard shortcut */}
+      {filter === 'expense' && (
+        <TouchableOpacity
+          style={[styles.expenseDashBanner, { backgroundColor: '#EF44441A', borderColor: '#EF444440' }]}
+          onPress={() => router.push('/expense' as any)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="analytics-outline" size={16} color="#EF4444" />
+          <Text style={[styles.expenseDashText, { color: '#EF4444' }]}>Open Expense Dashboard</Text>
+          <Ionicons name="arrow-forward" size={14} color="#EF4444" />
+        </TouchableOpacity>
+      )}
+
       {/* Type Filter */}
       <View style={styles.filterRow}>
         {(['all', 'income', 'expense'] as FilterType[]).map((f) => (
@@ -563,6 +589,8 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 12 },
   summaryValue: { fontSize: 16, fontWeight: 'bold' },
   filterRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 10 },
+  expenseDashBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 8, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1, gap: 8 },
+  expenseDashText: { flex: 1, fontSize: 13, fontWeight: '600' },
   // (FilterChip styles live in /components/transactions/atoms.tsx)
   accountFilterScroll: { maxHeight: 44, marginBottom: 8 },
   accountFilterContent: { paddingHorizontal: 20, gap: 8 },

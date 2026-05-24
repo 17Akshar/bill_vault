@@ -17,14 +17,14 @@
  * markup if needed — but for V1 we send the standard fields and stash the
  * advanced rule in `description` for round-tripping.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../utils/api';
 import CrossPlatformPicker from '../../components/CrossPlatformPicker';
 import { scheduleReminderNotifications } from '../../utils/reminderNotifications';
@@ -64,10 +64,16 @@ const fmtTime = (d: Date) =>
 
 export default function AddReminderScreen() {
   const router = useRouter();
-  const [reminderType, setReminderType] = useState<ReminderType>('bill');
-  const [title, setTitle] = useState('');
-  const [notes, setNotes] = useState('');
-  const [url, setUrl] = useState('');
+  const params = useLocalSearchParams<{ id?: string; type?: string; title?: string; description?: string }>();
+  const editId = params.id;
+  const isEdit = !!editId;
+
+  const [reminderType, setReminderType] = useState<ReminderType>((params.type as ReminderType) || 'bill');
+  const [title, setTitle]   = useState(params.title || '');
+  const [notes, setNotes]   = useState(params.description || '');
+  const [url, setUrl]       = useState('');
+  const [amount, setAmount] = useState('');
+  const [provider, setProvider] = useState('');
   const [dateTime, setDateTime] = useState<Date>(() => {
     const d = new Date();
     d.setMinutes(0, 0, 0);
@@ -83,6 +89,32 @@ export default function AddReminderScreen() {
   });
   const [occurrences, setOccurrences] = useState<number>(10);
   const [saving, setSaving] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(isEdit);
+
+  // Load existing reminder for edit mode
+  useEffect(() => {
+    if (!isEdit) return;
+    (async () => {
+      try {
+        const res = await api.get('/reminders');
+        const found = (res.data || []).find((r: any) => r.reminder_id === editId);
+        if (found) {
+          setTitle(found.title || '');
+          setNotes(found.description || '');
+          setUrl(found.url || '');
+          setAmount(found.amount ? String(found.amount) : '');
+          setProvider(found.provider || '');
+          setReminderType((found.reminder_type as ReminderType) || 'custom');
+          if (found.reminder_date) setDateTime(new Date(found.reminder_date));
+          setRecurrence((found.recurrence as Recurrence) || 'none');
+          setEndType((found.end_type as EndType) || 'never');
+          if (found.end_date) setEndDate(new Date(found.end_date));
+          if (found.max_occurrences) setOccurrences(found.max_occurrences);
+        }
+      } catch { /* ignore */ }
+      finally { setLoadingEdit(false); }
+    })();
+  }, [editId]);
 
   // Reminder Preview text
   const previewText = useMemo(() => {
@@ -117,30 +149,44 @@ export default function AddReminderScreen() {
       return;
     }
     setSaving(true);
+    const payload = {
+      title: title.trim(),
+      description: notes.trim() || null,
+      reminder_date: dateTime.toISOString(),
+      reminder_type: reminderType,
+      is_recurring: recurrence !== 'none',
+      recurrence: recurrence !== 'none' ? recurrence : null,
+      amount: amount ? parseFloat(amount) : null,
+      provider: provider.trim() || null,
+      url: url.trim() || null,
+      end_type: endType,
+      end_date: endType === 'on' ? endDate.toISOString() : null,
+      max_occurrences: endType === 'after' ? occurrences : null,
+    };
     try {
-      const res = await api.post('/reminders', {
-        title: title.trim(),
-        description: notes.trim() || null,
-        reminder_date: dateTime.toISOString(),
-        reminder_type: reminderType,
-        is_recurring: recurrence !== 'none',
-        recurrence,
-        // Structured advanced rule
-        url: url.trim() || null,
-        end_type: endType,
-        end_date: endType === 'on' ? endDate.toISOString() : null,
-        max_occurrences: endType === 'after' ? occurrences : null,
-      });
-      // Best-effort schedule of local OS notifications
+      let res;
+      if (isEdit) {
+        res = await api.put(`/reminders/${editId}`, payload);
+      } else {
+        res = await api.post('/reminders', payload);
+      }
       scheduleReminderNotifications(res?.data).catch(() => {});
       if (router.canGoBack()) router.back();
-      else router.replace('/reminders/all' as any);
+      else router.replace('/reminders' as any);
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.detail || 'Failed to save reminder');
     } finally {
       setSaving(false);
     }
   };
+
+  if (loadingEdit) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator color="#7C4DFF" style={{ marginTop: 60 }} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container]}>
@@ -153,7 +199,7 @@ export default function AddReminderScreen() {
           <TouchableOpacity testID="add-reminder-back" onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Reminder</Text>
+          <Text style={styles.headerTitle}>{isEdit ? 'Edit Reminder' : 'Add Reminder'}</Text>
           <TouchableOpacity testID="add-reminder-save-top" onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator size="small" color="#7C4DFF" />
@@ -212,6 +258,36 @@ export default function AddReminderScreen() {
               placeholderTextColor="#A0A3BD"
               value={title}
               onChangeText={setTitle}
+            />
+          </Card>
+
+          {/* Amount */}
+          <Card>
+            <Label icon="cash-outline">Amount (Optional)</Label>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: '700' }}>₹</Text>
+              <TextInput
+                testID="add-reminder-amount"
+                style={[styles.input, { flex: 1 }]}
+                placeholder="0.00"
+                placeholderTextColor="#A0A3BD"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="decimal-pad"
+              />
+            </View>
+          </Card>
+
+          {/* Provider */}
+          <Card>
+            <Label icon="business-outline">Provider / Account (Optional)</Label>
+            <TextInput
+              testID="add-reminder-provider"
+              style={styles.input}
+              placeholder="e.g., HDFC Bank, BESCOM, LIC"
+              placeholderTextColor="#A0A3BD"
+              value={provider}
+              onChangeText={setProvider}
             />
           </Card>
 

@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+buildArgs = { EXPO_PUBLIC_BACKEND_URL = "$BACKEND_URL" }
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+healthcheckPath = "/"
+healthcheckTimeout = 30

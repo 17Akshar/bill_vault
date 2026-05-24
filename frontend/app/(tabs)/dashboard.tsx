@@ -316,9 +316,9 @@ export default function DashboardScreen() {
         {w('quick_actions') && (
           <View style={s.quickRow} testID="dashboard-quick-actions">
             {[
-              { icon: 'plus', label: 'Income',   color: T.success, route: '/transactions/add?type=income',  testID: 'quick-action-income' },
-              { icon: 'minus', label: 'Expense',  color: T.danger,  route: '/transactions/add?type=expense', testID: 'quick-action-expense' },
-              { icon: 'swap-horizontal', label: 'Transfer', color: T.info, route: '/transactions/add?type=transfer', testID: 'quick-action-transfer' },
+              { icon: 'plus', label: 'Income',   color: T.success, route: '/income/add',   testID: 'quick-action-income' },
+              { icon: 'minus', label: 'Expense',  color: T.danger,  route: '/expense/add',  testID: 'quick-action-expense' },
+              { icon: 'swap-horizontal', label: 'Transfer', color: T.info, route: '/transfer/add', testID: 'quick-action-transfer' },
             ].map((a) => (
               <PressScale
                 key={a.label}
