@@ -101,8 +101,8 @@ export default function BillDetailsScreen() {
   if (!bill) return null;
 
   const isPaid = bill.payment_status === 'paid';
-  const dueDate = parseISO(bill.due_date);
-  const isOverdue = !isPaid && dueDate < new Date();
+  const dueDate = bill.due_date ? parseISO(bill.due_date) : new Date();
+  const isOverdue = !isPaid && !!bill.due_date && dueDate < new Date();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -150,7 +150,7 @@ export default function BillDetailsScreen() {
               colors={colors} 
             />
           )}
-          <DetailRow icon="time-outline" label="Created" value={format(parseISO(bill.created_at), 'MMM d, yyyy')} colors={colors} isLast />
+          <DetailRow icon="time-outline" label="Created" value={bill.created_at ? format(parseISO(bill.created_at), 'MMM d, yyyy') : '—'} colors={colors} isLast />
         </View>
 
         {/* Notes */}

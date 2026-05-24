@@ -1308,14 +1308,17 @@ async def create_income(data: IncomeCreate, request: Request):
         "category": data.category,
         "sub_category": data.sub_category,
         "source": data.source,
-        "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
         "notes": data.notes,
         "labels": data.labels or [],
         "location": data.location,
         "attachment_url": data.attachment_url,
         "created_at": datetime.now(timezone.utc)
     }
-    
+    try:
+        income["date"] = datetime.fromisoformat(data.date.replace('Z', '+00:00'))
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=422, detail="Invalid date format. Use YYYY-MM-DD or ISO 8601.")
+
     await db.income.insert_one(income)
     
     # Update account balance (+)
@@ -1427,8 +1430,11 @@ async def update_income(income_id: str, data: IncomeUpdate, request: Request):
         )
     
     if "date" in update_data:
-        update_data["date"] = datetime.fromisoformat(update_data["date"].replace('Z', '+00:00'))
-    
+        try:
+            update_data["date"] = datetime.fromisoformat(update_data["date"].replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            raise HTTPException(status_code=422, detail="Invalid date format. Use YYYY-MM-DD or ISO 8601.")
+
     await db.income.update_one(
         {"income_id": income_id, "user_id": user.user_id},
         {"$set": update_data}
@@ -1490,7 +1496,6 @@ async def create_expense(data: ExpenseCreate, request: Request):
         "sub_category": data.sub_category,
         "payment_type": data.payment_type,
         "description": data.description,
-        "date": datetime.fromisoformat(data.date.replace('Z', '+00:00')),
         "notes": data.notes,
         "labels": data.labels or [],
         "payee": data.payee,
@@ -1498,7 +1503,11 @@ async def create_expense(data: ExpenseCreate, request: Request):
         "attachment_url": data.attachment_url,
         "created_at": datetime.now(timezone.utc)
     }
-    
+    try:
+        expense["date"] = datetime.fromisoformat(data.date.replace('Z', '+00:00'))
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=422, detail="Invalid date format. Use YYYY-MM-DD or ISO 8601.")
+
     await db.expenses.insert_one(expense)
     
     # Update account balance (-)
@@ -1612,8 +1621,11 @@ async def update_expense(expense_id: str, data: ExpenseUpdate, request: Request)
         )
     
     if "date" in update_data:
-        update_data["date"] = datetime.fromisoformat(update_data["date"].replace('Z', '+00:00'))
-    
+        try:
+            update_data["date"] = datetime.fromisoformat(update_data["date"].replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            raise HTTPException(status_code=422, detail="Invalid date format. Use YYYY-MM-DD or ISO 8601.")
+
     await db.expenses.update_one(
         {"expense_id": expense_id, "user_id": user.user_id},
         {"$set": update_data}
@@ -3423,17 +3435,25 @@ async def get_calendar_events(request: Request, month: int = None, year: int = N
     else:
         end = datetime(y, m + 1, 1, tzinfo=timezone.utc)
 
+    # ISO strings work for both datetime and date-only values stored in Firestore
+    start_iso = start.isoformat()
+    end_iso   = end.isoformat()
+
     events = []
+
+    def _date_str(val: object) -> str:
+        """Return first 10 chars of a date field regardless of its type."""
+        return str(val)[:10] if val else ""
 
     # Bills
     bills = await db.bills.find({
         "user_id": user.user_id,
-        "due_date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+        "due_date": {"$gte": start_iso, "$lt": end_iso}
     }, {"_id": 0}).to_list(200)
     for b in bills:
         events.append({
             "id": b.get("bill_id"),
-            "date": b.get("due_date", "")[:10],
+            "date": _date_str(b.get("due_date")),
             "title": b.get("name", "Bill"),
             "type": "bill",
             "amount": b.get("amount", 0),
@@ -3444,12 +3464,12 @@ async def get_calendar_events(request: Request, month: int = None, year: int = N
     # Income
     incomes = await db.income.find({
         "user_id": user.user_id,
-        "date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+        "date": {"$gte": start_iso, "$lt": end_iso}
     }, {"_id": 0}).to_list(200)
     for i in incomes:
         events.append({
             "id": i.get("income_id"),
-            "date": i.get("date", "")[:10],
+            "date": _date_str(i.get("date")),
             "title": i.get("source", "Income"),
             "type": "income",
             "amount": i.get("amount", 0),
@@ -3459,12 +3479,12 @@ async def get_calendar_events(request: Request, month: int = None, year: int = N
     # Expenses
     expenses = await db.expenses.find({
         "user_id": user.user_id,
-        "date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+        "date": {"$gte": start_iso, "$lt": end_iso}
     }, {"_id": 0}).to_list(200)
     for e in expenses:
         events.append({
             "id": e.get("expense_id"),
-            "date": e.get("date", "")[:10],
+            "date": _date_str(e.get("date")),
             "title": e.get("description", e.get("category", "Expense")),
             "type": "expense",
             "amount": e.get("amount", 0),
@@ -3474,12 +3494,12 @@ async def get_calendar_events(request: Request, month: int = None, year: int = N
     # Reminders
     reminders = await db.reminders.find({
         "user_id": user.user_id,
-        "due_date": {"$gte": start.isoformat(), "$lt": end.isoformat()}
+        "due_date": {"$gte": start_iso, "$lt": end_iso}
     }, {"_id": 0}).to_list(200)
     for r in reminders:
         events.append({
             "id": r.get("reminder_id"),
-            "date": r.get("due_date", "")[:10],
+            "date": _date_str(r.get("due_date")),
             "title": r.get("title", "Reminder"),
             "type": "reminder",
             "amount": r.get("amount", 0),

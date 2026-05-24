@@ -139,6 +139,13 @@ def _matches_filters(doc: Dict, filters: List[Dict]) -> bool:
                 actual = datetime.fromisoformat(actual.replace("Z", "+00:00"))
             except ValueError:
                 pass
+        # Normalize when both are strings but one is date-only and other is datetime
+        elif isinstance(target, str) and isinstance(actual, str):
+            # Pad date-only strings to full ISO datetime for consistent ordering
+            if len(actual) == 10 and len(target) > 10:
+                actual = actual + "T00:00:00+00:00"
+            elif len(target) == 10 and len(actual) > 10:
+                target = target + "T00:00:00+00:00"
         try:
             if op == "==":
                 if actual != target:
