@@ -2251,7 +2251,17 @@ function renderDashboard() {
   const allTxsD  = State.data.transactions || DEMO.transactions;
   const nowD     = new Date();
   const curMTxsD = allTxsD.filter(t => { const d2 = new Date(t.date); return d2.getMonth() === nowD.getMonth() && d2.getFullYear() === nowD.getFullYear(); });
-  const totalBalance    = acc.filter(a => a.include_in_net_worth !== false).reduce((s, a) => s + (a.balance || 0), 0);
+  // Compute true net worth matching the Wealth tab formula
+  const _invD        = (State.data.investments || DEMO.investments || []).reduce((s,i)=>s+(i.current||0),0);
+  const _rentalD     = (DEMO.rentals||[]).reduce((s,r)=>s+(r.market_value||0),0);
+  const _otherD      = (DEMO.otherAssets||[]).reduce((s,x)=>s+(x.value||0),0);
+  const _lentD       = (DEMO.lendBorrow||[]).filter(x=>x.type==='lent'&&x.status!=='settled').reduce((s,x)=>s+(x.remaining||x.amount||0),0);
+  const _loansD      = (DEMO.loans||[]).reduce((s,l)=>s+(l.outstanding||0),0);
+  const _ccD         = (DEMO.creditCards||[]).reduce((s,c)=>s+c.outstanding,0);
+  const _borrowedD   = (DEMO.lendBorrow||[]).filter(x=>x.type==='borrowed').reduce((s,x)=>s+(x.remaining||x.amount||0),0);
+  const _bankD       = acc.filter(a=>a.account_type==='bank').reduce((s,a)=>s+a.balance,0);
+  const _cashD       = acc.filter(a=>a.account_type==='cash'||a.account_type==='wallet').reduce((s,a)=>s+a.balance,0);
+  const totalBalance  = (_bankD + _cashD + _invD + _rentalD + _otherD + _lentD) - (_loansD + _ccD + _borrowedD);
   const monthlyIncome   = curMTxsD.filter(t => t._type === 'income').reduce((s, t) => s + (t.amount || 0), 0) || d.monthly_income || 0;
   const monthlyExpenses = curMTxsD.filter(t => t._type === 'expense').reduce((s, t) => s + (t.amount || 0), 0) || d.monthly_expenses || 0;
   const savings         = monthlyIncome - monthlyExpenses;
@@ -3271,6 +3281,25 @@ function renderInvestmentDashboard() {
       + '</div>'
       + '<div style="background:var(--card);border-radius:var(--radius);padding:0 14px;border:1px solid var(--border)">'
         + (catRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No investments yet. Tap + to add.</div>')
+      + '</div>'
+    + '</div>'
+    // Quick tools
+    + '<div style="padding:16px 20px 0">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">INVESTMENT TOOLS</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + [
+          {icon:'📊', label:'Performance',   fn:"App.navigate('portfolio-performance')"},
+          {icon:'🥧', label:'Allocation',    fn:"App.navigate('portfolio-allocation')"},
+          {icon:'⚖️', label:'Rebalance',     fn:"App.navigate('rebalance')"},
+          {icon:'🎯', label:'Goals',         fn:"App.navigate('goal-detail')"},
+          {icon:'📈', label:'SIP Calculator',fn:"App.navigate('sip-calculator')"},
+          {icon:'🌐', label:'Market',        fn:"App.navigate('market-overview')"},
+        ].map(function(t){
+          return '<div onclick="'+t.fn+'" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer">'
+            +'<div style="font-size:22px">'+t.icon+'</div>'
+            +'<div style="color:var(--text);font-size:13px;font-weight:700">'+t.label+'</div>'
+            +'</div>';
+        }).join('')
       + '</div>'
     + '</div>'
   + '</div>';
@@ -5791,17 +5820,14 @@ function renderMore() {
   }
 
   var html = '<div class="screen-wrap">';
-  html += '<div class="page-header"><div><div class="page-title">Profile</div></div>'
-    + '<div class="icon-btn" onclick="App.goTab(\'dashboard\')">'
-    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
-    + '</div></div>';
+  html += '<div class="page-header"><div><div class="page-title">Profile</div></div><div></div></div>';
 
   /* Profile hero */
   html += '<div class="card" style="margin-bottom:20px;padding:24px;text-align:center">'
     + '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--grad-from),var(--grad-to));display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;font-weight:800;color:#fff">' + initial + '</div>'
     + '<div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px">' + escapeHtml(u.name||'User') + '</div>'
     + '<div style="font-size:13px;color:var(--text-dim);margin-bottom:16px">' + escapeHtml(u.email||'') + '</div>'
-    + '<button class="btn" style="padding:8px 24px;font-size:13px;background:var(--primary-dim);color:var(--primary);border:1px solid var(--primary);border-radius:20px" onclick="App.showToast(\'Edit profile coming soon!\')">Edit Profile</button>'
+    + '<button class="btn" style="padding:8px 24px;font-size:13px;background:var(--primary-dim);color:var(--primary);border:1px solid var(--primary);border-radius:20px" onclick="App.navigate(\'edit-profile\')">Edit Profile</button>'
     + '</div>';
 
   html += menuSection('Finance', [
@@ -5816,21 +5842,663 @@ function renderMore() {
   ]);
 
   html += menuSection('Preferences', [
-    { icon:'🌙', bg:'rgba(108,71,255,0.15)', label:'Appearance',    sub:'Theme & display settings', fn:"App.showToast('Appearance settings coming soon!')" },
-    { icon:'🔒', bg:'rgba(239,68,68,0.15)',  label:'Security',      sub:'PIN, biometrics & privacy',fn:"App.showToast('Security settings coming soon!')" },
-    { icon:'💾', bg:'rgba(34,197,94,0.15)',  label:'Data & Backup', sub:'Export or backup your data',fn:"App.showToast('Data export coming soon!')" },
+    { icon:'🌙', bg:'rgba(108,71,255,0.15)', label:'Appearance',             sub:'Theme & display settings',         fn:"App.navigate('appearance')" },
+    { icon:'🔔', bg:'rgba(245,158,11,0.15)', label:'Notifications',          sub:'Manage alert preferences',          fn:"App.navigate('notification-settings')" },
+    { icon:'🔒', bg:'rgba(239,68,68,0.15)',  label:'Security',               sub:'PIN, biometrics & privacy',         fn:"App.navigate('security')" },
+    { icon:'💾', bg:'rgba(34,197,94,0.15)',  label:'Data & Backup',          sub:'Export or backup your data',        fn:"App.navigate('data-export')" },
   ]);
 
   html += menuSection('About', [
-    { icon:'ℹ️', bg:'rgba(96,165,250,0.15)',  label:'About BillVault', sub:'Version 1.0.0', fn:"App.showToast('BillVault v1.0.0 — Your personal finance companion')" },
-    { icon:'⭐', bg:'rgba(245,158,11,0.15)',  label:'Rate the App',    sub:'Leave a review', fn:"App.showToast('Thank you for your support!')" },
-    { icon:'📩', bg:'rgba(108,71,255,0.15)',  label:'Contact Support', sub:'Get help & feedback', fn:"App.showToast('support@billvault.app')" },
+    { icon:'ℹ️', bg:'rgba(96,165,250,0.15)',  label:'About BillVault', sub:'Version 1.0.0',         fn:"App.showToast('BillVault v1.0.0 — Your personal finance companion')" },
+    { icon:'❓', bg:'rgba(108,71,255,0.15)',  label:'Help Center',     sub:'FAQs and support',       fn:"App.navigate('help-center')" },
+    { icon:'⭐', bg:'rgba(245,158,11,0.15)',  label:'Rate the App',    sub:'Leave a review',         fn:"App.showToast('Thank you for your support!')" },
+    { icon:'📩', bg:'rgba(96,165,250,0.15)', label:'Contact Support',  sub:'Get help & feedback',    fn:"App.navigate('help-center')" },
   ]);
 
   html += '<button class="btn" style="width:100%;padding:14px;font-size:15px;font-weight:700;background:rgba(239,68,68,0.12);color:var(--danger);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-sm);margin-bottom:32px" onclick="App.logout()">Sign Out</button>';
 
   html += '</div>';
   return html;
+}
+
+/* ═══════════════════════════════════════════════════════
+   8b. STUB SCREEN IMPLEMENTATIONS
+══════════════════════════════════════════════════════ */
+
+function _stubBackBtn(fallbackTab) {
+  var tab = fallbackTab || State.tab || 'more';
+  return '<div class="icon-btn" onclick="App.goTab(\''+tab+'\')">'
+    +'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+    +'</div>';
+}
+
+/* ── Notifications ───────────────────────────────────── */
+function renderNotifications() {
+  var notifs = [
+    { id:'n1', icon:'🔔', color:'#F59E0B', title:'Credit Card Due Soon',       body:'HDFC Infinia ₹48,200 due in 8 days. Pay on time to avoid interest.', time:'2h ago',  read:false },
+    { id:'n2', icon:'💰', color:'#22C55E', title:'Salary Credited',             body:'₹1,20,000 received in HDFC Savings from Employer Ltd.',              time:'1d ago',  read:false },
+    { id:'n3', icon:'⚠️', color:'#EF4444', title:'Unusual Spending Detected',   body:'You spent ₹7,849 on Shopping this month — 18.6% of total expenses.',  time:'2d ago',  read:true  },
+    { id:'n4', icon:'📅', color:'#6C47FF', title:'Electricity Bill Reminder',   body:'BSES ₹2,450 due tomorrow. Set up auto-pay to never miss.',            time:'1d ago',  read:true  },
+    { id:'n5', icon:'📈', color:'#10B981', title:'Investment Gain',             body:'Nifty 50 Fund up 2.3% today. Portfolio value: ₹4,73,500.',            time:'5h ago',  read:false },
+    { id:'n6', icon:'💳', color:'#EF4444', title:'SBI Prime Payment Due',       body:'₹16,800 due in 14 days. Minimum payment: ₹2,000.',                    time:'3d ago',  read:true  },
+    { id:'n7', icon:'🎯', color:'#6C47FF', title:'Monthly Budget Alert',        body:'You have used 84% of your Entertainment budget for May.',              time:'4d ago',  read:true  },
+    { id:'n8', icon:'🏠', color:'#F59E0B', title:'Rent Received',               body:'₹35,000 rent received from Sanjay Kumar for 2 BHK Flat.',             time:'5d ago',  read:true  },
+  ];
+  var unreadCount = notifs.filter(function(n){return !n.read;}).length;
+  var html = '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('dashboard')
+    +'<div class="form-header-title">Notifications</div>'
+    +'<div style="color:var(--primary);font-size:13px;font-weight:700;cursor:pointer" onclick="App.showToast(\'All notifications marked as read\')">Mark all read</div>'
+    +'</div>';
+  if (unreadCount > 0) {
+    html += '<div style="margin:0 20px 12px;padding:10px 14px;background:rgba(108,71,255,0.12);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.25)">'
+      +'<span style="color:var(--primary);font-size:13px;font-weight:700">'+unreadCount+' unread notification'+(unreadCount>1?'s':'')+'</span>'
+      +'</div>';
+  }
+  html += '<div style="margin:0 20px">';
+  notifs.forEach(function(n) {
+    html += '<div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;opacity:'+(n.read?'0.7':'1')+'">'
+      +'<div style="width:44px;height:44px;border-radius:22px;background:'+n.color+'22;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">'+n.icon+'</div>'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
+      +'<div style="color:var(--text);font-size:14px;font-weight:'+(n.read?'600':'800')+'">'+n.title+'</div>'
+      +(n.read?'':'<div style="width:8px;height:8px;border-radius:4px;background:var(--primary);flex-shrink:0;margin-top:4px"></div>')
+      +'</div>'
+      +'<div style="color:var(--text-dim);font-size:12px;line-height:1.5;margin-bottom:4px">'+n.body+'</div>'
+      +'<div style="color:var(--text-dim);font-size:11px">'+n.time+'</div>'
+      +'</div></div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+/* ── Edit Profile ────────────────────────────────────── */
+function renderEditProfile() {
+  var u = State.user || DEMO.user || {};
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Edit Profile</div>'
+    +'<button class="form-save-btn" onclick="App._saveProfile()">Save</button>'
+    +'</div>'
+    +'<div style="text-align:center;padding:24px 20px 16px">'
+    +'<div style="width:80px;height:80px;border-radius:40px;background:linear-gradient(135deg,var(--grad-from),var(--grad-to));display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:30px;font-weight:800;color:#fff">'
+    +(u.name?u.name.charAt(0).toUpperCase():'A')+'</div>'
+    +'<div style="color:var(--primary);font-size:13px;font-weight:700;cursor:pointer" onclick="App.showToast(\'Photo upload coming soon\')">Change Photo</div>'
+    +'</div>'
+    +'<div style="margin:0 20px">'
+    +'<div class="card" style="padding:0">'
+    +[
+      {label:'Full Name',    id:'ep-name',  type:'text',  val:u.name||'Akshar Mehta',         placeholder:'Your full name'},
+      {label:'Email',        id:'ep-email', type:'email', val:u.email||'akshar@example.com',  placeholder:'your@email.com'},
+      {label:'Phone',        id:'ep-phone', type:'tel',   val:u.phone||'+91 98765 43210',      placeholder:'+91 XXXXX XXXXX'},
+      {label:'Date of Birth',id:'ep-dob',  type:'date',  val:u.dob||'1995-06-15',             placeholder:''},
+    ].map(function(f,i,arr){
+      return '<div style="padding:14px 16px;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+'">'
+        +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:0.8px;margin-bottom:6px">'+f.label.toUpperCase()+'</div>'
+        +'<input id="'+f.id+'" type="'+f.type+'" value="'+escapeHtml(f.val)+'" placeholder="'+f.placeholder+'" style="width:100%;background:none;border:none;outline:none;color:var(--text);font-size:15px;font-weight:600">'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="margin-top:20px;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:0.8px;margin-bottom:8px">PREFERENCES</div>'
+    +'<div class="card" style="padding:0">'
+    +'<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'
+    +'<div><div style="color:var(--text);font-size:14px;font-weight:600">Currency</div><div style="color:var(--text-dim);font-size:12px">Indian Rupee (₹)</div></div>'
+    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+    +'</div>'
+    +'<div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">'
+    +'<div><div style="color:var(--text);font-size:14px;font-weight:600">Language</div><div style="color:var(--text-dim);font-size:12px">English (India)</div></div>'
+    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+    +'</div>'
+    +'</div>'
+    +'</div></div>';
+}
+
+/* ── SIP Calculator ──────────────────────────────────── */
+function renderSipCalculator() {
+  var sipAmt   = State.sipAmount  || 10000;
+  var sipRate  = State.sipRate    || 12;
+  var sipYears = State.sipYears   || 10;
+  var months   = sipYears * 12;
+  var r        = sipRate / 100 / 12;
+  var invested = sipAmt * months;
+  var maturity = Math.round(sipAmt * (Math.pow(1+r, months) - 1) / r * (1+r));
+  var gain     = maturity - invested;
+  var gainPct  = Math.round(gain / invested * 100);
+  function fmtCr(v){return v>=10000000?'₹'+(v/10000000).toFixed(2)+' Cr':v>=100000?'₹'+(v/100000).toFixed(2)+' L':formatINR(v);}
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('wealth')
+    +'<div class="form-header-title">SIP Calculator</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px;background:linear-gradient(135deg,#1a0a4a,#2d1b6e);border-radius:var(--radius);padding:20px">'
+    +'<div style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:4px">MATURITY VALUE</div>'
+    +'<div style="color:#fff;font-size:32px;font-weight:800;margin-bottom:4px">'+fmtCr(maturity)+'</div>'
+    +'<div style="display:flex;gap:16px;margin-top:12px">'
+    +'<div><div style="color:rgba(255,255,255,0.6);font-size:11px">Invested</div><div style="color:#fff;font-size:15px;font-weight:700">'+fmtCr(invested)+'</div></div>'
+    +'<div><div style="color:rgba(255,255,255,0.6);font-size:11px">Gain</div><div style="color:#22C55E;font-size:15px;font-weight:700">+'+fmtCr(gain)+' ('+gainPct+'%)</div></div>'
+    +'</div></div>'
+    +'<div style="margin:0 20px">'
+    +[
+      {label:'Monthly SIP Amount', id:'sip-amount', val:sipAmt, min:500, max:100000, step:500, unit:'₹', stateKey:'sipAmount'},
+      {label:'Expected Returns (p.a.)', id:'sip-rate', val:sipRate, min:1, max:30, step:0.5, unit:'%', stateKey:'sipRate'},
+      {label:'Investment Duration', id:'sip-years', val:sipYears, min:1, max:30, step:1, unit:'yrs', stateKey:'sipYears'},
+    ].map(function(s){
+      return '<div class="card" style="margin-bottom:12px;padding:14px 16px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<div style="color:var(--text);font-size:13px;font-weight:600">'+s.label+'</div>'
+        +'<div style="color:var(--primary);font-size:15px;font-weight:800">'+s.val+' '+s.unit+'</div>'
+        +'</div>'
+        +'<input type="range" min="'+s.min+'" max="'+s.max+'" step="'+s.step+'" value="'+s.val+'"'
+        +' style="width:100%;accent-color:var(--primary)"'
+        +' oninput="State.'+s.stateKey+'=parseFloat(this.value);App.render()">'
+        +'<div style="display:flex;justify-content:space-between;margin-top:4px">'
+        +'<span style="color:var(--text-dim);font-size:11px">'+s.min+' '+s.unit+'</span>'
+        +'<span style="color:var(--text-dim);font-size:11px">'+s.max+' '+s.unit+'</span>'
+        +'</div></div>';
+    }).join('')
+    +'<div style="margin-top:8px;padding:14px 16px;background:var(--primary-dim);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.3)">'
+    +'<div style="color:var(--primary);font-size:12px;font-weight:700;margin-bottom:8px">📈 PROJECTION BREAKDOWN</div>'
+    +[
+      {label:'Monthly SIP',    val:formatINR(sipAmt)},
+      {label:'Total Invested', val:fmtCr(invested)},
+      {label:'Total Returns',  val:fmtCr(gain)},
+      {label:'Maturity Amount',val:fmtCr(maturity)},
+    ].map(function(r){
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0">'
+        +'<span style="color:var(--text-dim);font-size:13px">'+r.label+'</span>'
+        +'<span style="color:var(--text);font-size:13px;font-weight:700">'+r.val+'</span>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'</div></div>';
+}
+
+/* ── Market Overview ─────────────────────────────────── */
+function renderMarketOverview() {
+  var indices = [
+    {name:'NIFTY 50',      val:'24,861.10', chg:'+186.20', pct:'+0.75%', color:'#22C55E'},
+    {name:'SENSEX',        val:'81,632.47', chg:'+612.14', pct:'+0.76%', color:'#22C55E'},
+    {name:'BANK NIFTY',    val:'53,214.65', chg:'-124.80', pct:'-0.23%', color:'#EF4444'},
+    {name:'NIFTY IT',      val:'38,940.25', chg:'+420.55', pct:'+1.09%', color:'#22C55E'},
+    {name:'NIFTY MIDCAP',  val:'53,126.80', chg:'+231.40', pct:'+0.44%', color:'#22C55E'},
+    {name:'NIFTY SMALLCAP',val:'18,712.55', chg:'-89.30',  pct:'-0.47%', color:'#EF4444'},
+  ];
+  var topStocks = [
+    {name:'RELIANCE',  price:'2,891.50', chg:'+1.2%', color:'#22C55E'},
+    {name:'TCS',       price:'3,542.80', chg:'+0.8%', color:'#22C55E'},
+    {name:'HDFC BANK', price:'1,764.25', chg:'-0.3%', color:'#EF4444'},
+    {name:'INFOSYS',   price:'1,612.40', chg:'+1.5%', color:'#22C55E'},
+    {name:'ICICI BANK',price:'1,289.70', chg:'+0.6%', color:'#22C55E'},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('wealth')
+    +'<div class="form-header-title">Market Overview</div>'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:600">LIVE</div></div>'
+    +'<div style="margin:0 20px 16px;padding:10px 14px;background:rgba(34,197,94,0.1);border-radius:var(--radius-sm);border:1px solid rgba(34,197,94,0.2)">'
+    +'<span style="color:#22C55E;font-size:12px;font-weight:700">Markets are Open · BSE/NSE · 25 May 2026</span>'
+    +'</div>'
+    +'<div style="margin:0 20px 8px;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">INDICES</div>'
+    +'<div style="margin:0 20px 20px">'
+    +indices.map(function(idx){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+idx.name+'</div>'
+        +'<div style="text-align:right">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+idx.val+'</div>'
+        +'<div style="color:'+idx.color+';font-size:12px;font-weight:600">'+idx.chg+' ('+idx.pct+')</div>'
+        +'</div></div>';
+    }).join('')
+    +'</div>'
+    +'<div style="margin:0 20px 8px;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">TOP STOCKS</div>'
+    +'<div style="margin:0 20px 20px">'
+    +topStocks.map(function(s){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+s.name+'</div>'
+        +'<div style="text-align:right">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">₹'+s.price+'</div>'
+        +'<div style="color:'+s.color+';font-size:12px;font-weight:600">'+s.chg+'</div>'
+        +'</div></div>';
+    }).join('')
+    +'</div></div>';
+}
+
+/* ── Portfolio Performance ───────────────────────────── */
+function renderPortfolioPerformance() {
+  var invs = State.data.investments || DEMO.investments || [];
+  var totalInvested = invs.reduce(function(s,i){return s+(i.invested||0);},0);
+  var totalCurrent  = invs.reduce(function(s,i){return s+(i.current||0);},0);
+  var totalGain     = totalCurrent - totalInvested;
+  var totalGainPct  = totalInvested > 0 ? (totalGain/totalInvested*100).toFixed(2) : '0.00';
+  var periods = [
+    {label:'1M',  ret:'+3.2%'},
+    {label:'3M',  ret:'+8.7%'},
+    {label:'6M',  ret:'+14.3%'},
+    {label:'1Y',  ret:'+22.8%'},
+    {label:'3Y',  ret:'+67.4%'},
+    {label:'All', ret:'+'+totalGainPct+'%'},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('wealth')
+    +'<div class="form-header-title">Performance</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px;background:linear-gradient(135deg,#0a2a1a,#0d4a2a);border-radius:var(--radius);padding:20px">'
+    +'<div style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:700;letter-spacing:1px">TOTAL RETURNS</div>'
+    +'<div style="color:#22C55E;font-size:32px;font-weight:800;margin:4px 0">+'+formatINR(totalGain)+'</div>'
+    +'<div style="color:rgba(255,255,255,0.7);font-size:14px">+'+totalGainPct+'% overall · '+formatINR(totalInvested)+' invested</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin:0 20px 20px;overflow-x:auto;padding-bottom:4px">'
+    +periods.map(function(p){
+      return '<div style="flex-shrink:0;padding:8px 14px;border-radius:20px;background:var(--card);border:1px solid var(--border);text-align:center;cursor:pointer">'
+        +'<div style="color:var(--text-dim);font-size:11px;font-weight:700">'+p.label+'</div>'
+        +'<div style="color:#22C55E;font-size:13px;font-weight:800">'+p.ret+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="margin:0 20px 8px;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">BY INVESTMENT</div>'
+    +'<div style="margin:0 20px 20px">'
+    +invs.map(function(inv){
+      var g = (inv.current||0)-(inv.invested||0);
+      var gp = inv.invested>0?((g/inv.invested)*100).toFixed(1):'0.0';
+      var col = g>=0?'#22C55E':'#EF4444';
+      return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+escapeHtml(inv.name||inv.fund_name||'Investment')+'</div>'
+        +'<div style="color:col;font-size:14px;font-weight:700;color:'+col+'">'+formatINR(Math.abs(g))+' ('+gp+'%)</div>'
+        +'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px;margin-top:3px">'+escapeHtml(inv.category||'Investment')+' · Invested: '+formatINR(inv.invested||0)+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+}
+
+/* ── Portfolio Allocation ────────────────────────────── */
+function renderPortfolioAllocation() {
+  var invs  = State.data.investments || DEMO.investments || [];
+  var bycat = {};
+  invs.forEach(function(i){var c=i.category||'Other';bycat[c]=(bycat[c]||0)+(i.current||0);});
+  var total = Object.values(bycat).reduce(function(s,v){return s+v;},0)||1;
+  var colors = ['#6C47FF','#22C55E','#F59E0B','#EF4444','#60A5FA','#10B981'];
+  var catKeys = Object.keys(bycat);
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('wealth')
+    +'<div class="form-header-title">Allocation</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px;text-align:center">'
+    +'<div style="position:relative;width:160px;height:160px;margin:0 auto 16px">'
+    +'<svg width="160" height="160" viewBox="0 0 160 160">'
+    +(function(){
+      var html=''; var offset=0;
+      var circumference = 2*Math.PI*60;
+      catKeys.forEach(function(cat,i){
+        var pct=bycat[cat]/total;
+        var dash=pct*circumference;
+        html+='<circle cx="80" cy="80" r="60" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="28" stroke-dasharray="'+dash+' '+(circumference-dash)+'" stroke-dashoffset="-'+offset+'" transform="rotate(-90 80 80)"/>';
+        offset+=dash;
+      });
+      return html;
+    })()
+    +'</svg>'
+    +'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'
+    +'<div style="color:var(--text);font-size:13px;font-weight:800">'+formatINR(total)+'</div>'
+    +'<div style="color:var(--text-dim);font-size:11px">Total</div>'
+    +'</div></div>'
+    +catKeys.map(function(cat,i){
+      var pct=Math.round(bycat[cat]/total*100);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0">'
+        +'<div style="width:12px;height:12px;border-radius:3px;background:'+colors[i%colors.length]+';flex-shrink:0"></div>'
+        +'<div style="flex:1;color:var(--text);font-size:14px;font-weight:600">'+cat+'</div>'
+        +'<div style="color:var(--text-dim);font-size:13px">'+formatINR(bycat[cat])+'</div>'
+        +'<div style="color:var(--text);font-size:13px;font-weight:700;width:36px;text-align:right">'+pct+'%</div>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+}
+
+/* ── Rebalance ───────────────────────────────────────── */
+function renderRebalance() {
+  var suggestions = [
+    {cat:'Equity Mutual Funds',  current:58, target:60, action:'Buy',  color:'#22C55E', amount:9400},
+    {cat:'Direct Stocks',        current:22, target:20, action:'Sell', color:'#EF4444', amount:6200},
+    {cat:'Gold ETF',             current:8,  target:10, action:'Buy',  color:'#F59E0B', amount:6100},
+    {cat:'Debt Funds',           current:12, target:10, action:'Sell', color:'#EF4444', amount:3200},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('wealth')
+    +'<div class="form-header-title">Rebalance</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px;padding:14px;background:rgba(108,71,255,0.12);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.25)">'
+    +'<div style="color:var(--primary);font-size:13px;font-weight:700;margin-bottom:4px">Portfolio Drift Detected</div>'
+    +'<div style="color:var(--text-dim);font-size:12px">Your portfolio has drifted from target allocation. Review and rebalance to stay on track.</div>'
+    +'</div>'
+    +'<div style="margin:0 20px 8px;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">SUGGESTED ACTIONS</div>'
+    +'<div style="margin:0 20px 20px">'
+    +suggestions.map(function(s){
+      return '<div style="padding:14px;background:var(--card);border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid var(--border)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+s.cat+'</div>'
+        +'<div style="padding:4px 10px;border-radius:12px;background:'+s.color+'22;color:'+s.color+';font-size:12px;font-weight:700">'+s.action+' '+formatINR(s.amount)+'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="color:var(--text-dim);font-size:12px">Current: '+s.current+'%</span>'
+        +'<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+        +'<span style="color:var(--primary);font-size:12px;font-weight:700">Target: '+s.target+'%</span>'
+        +'</div>'
+        +'<div style="margin-top:8px;height:6px;border-radius:3px;background:rgba(255,255,255,0.08)">'
+        +'<div style="height:6px;border-radius:3px;background:'+s.color+';width:'+s.current+'%"></div>'
+        +'</div></div>';
+    }).join('')
+    +'<button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:700;border-radius:var(--radius-sm)" onclick="App.showToast(\'Rebalance order placed (demo mode)\')">Execute Rebalance Plan</button>'
+    +'</div></div>';
+}
+
+/* ── Goal Detail ─────────────────────────────────────── */
+function renderGoalDetail() {
+  var goals = [
+    {name:'Emergency Fund',      target:300000, saved:185000, icon:'🛡️', color:'#22C55E', deadline:'Dec 2026',  monthly:10000},
+    {name:'Vacation — Europe',   target:250000, saved:68000,  icon:'✈️', color:'#60A5FA', deadline:'Mar 2027',  monthly:15000},
+    {name:'New Car Down Payment',target:400000, saved:120000, icon:'🚗', color:'#F59E0B', deadline:'Jun 2027',  monthly:20000},
+    {name:'Children\'s Education',target:2000000,saved:340000, icon:'🎓',color:'#EF4444', deadline:'Jan 2034',  monthly:12000},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('wealth')
+    +'<div class="form-header-title">Goals</div>'
+    +'<div style="color:var(--primary);font-size:22px;font-weight:800;cursor:pointer" onclick="App.showToast(\'Add new goal coming soon\')">+</div>'
+    +'</div>'
+    +'<div style="margin:0 20px 20px">'
+    +goals.map(function(g){
+      var pct=Math.round(g.saved/g.target*100);
+      var rem=g.target-g.saved;
+      return '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border)">'
+        +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+        +'<div style="width:44px;height:44px;border-radius:22px;background:'+g.color+'22;display:flex;align-items:center;justify-content:center;font-size:22px">'+g.icon+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="color:var(--text);font-size:15px;font-weight:800">'+g.name+'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px">Target by '+g.deadline+'</div>'
+        +'</div>'
+        +'<div style="text-align:right">'
+        +'<div style="color:g.color;color:'+g.color+';font-size:16px;font-weight:800">'+pct+'%</div>'
+        +'</div></div>'
+        +'<div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.08);margin-bottom:10px">'
+        +'<div style="height:8px;border-radius:4px;background:'+g.color+';width:'+pct+'%"></div>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between">'
+        +'<span style="color:var(--text-dim);font-size:12px">Saved: '+formatINR(g.saved)+'</span>'
+        +'<span style="color:var(--text-dim);font-size:12px">Remaining: '+formatINR(rem)+'</span>'
+        +'</div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--text-dim);font-size:12px">'
+        +'Monthly contribution: <span style="color:var(--primary);font-weight:700">'+formatINR(g.monthly)+'</span>'
+        +'</div></div>';
+    }).join('')
+    +'</div></div>';
+}
+
+/* ── Budget Setup ────────────────────────────────────── */
+function renderBudgetSetup() {
+  var budgets = [
+    {cat:'Food & Dining',    icon:'🍔', color:'#F59E0B', current:20000, id:'bs-food'},
+    {cat:'Shopping',         icon:'🛍️', color:'#EF4444', current:10000, id:'bs-shop'},
+    {cat:'Transport',        icon:'🚗', color:'#60A5FA', current:8000,  id:'bs-trans'},
+    {cat:'Entertainment',    icon:'🎬', color:'#06B6D4', current:5000,  id:'bs-ent'},
+    {cat:'Bills & Utilities',icon:'⚡', color:'#8B5CF6', current:6000,  id:'bs-bills'},
+    {cat:'Health',           icon:'💊', color:'#22C55E', current:4000,  id:'bs-health'},
+    {cat:'Grocery',          icon:'🛒', color:'#10B981', current:8000,  id:'bs-groc'},
+    {cat:'Others',           icon:'📦', color:'#A0A3BD', current:15000, id:'bs-others'},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('insights')
+    +'<div class="form-header-title">Budget Setup</div>'
+    +'<button class="form-save-btn" onclick="App.showToast(\'Budget saved!\')">Save</button>'
+    +'</div>'
+    +'<div style="margin:0 20px 12px;padding:12px 14px;background:rgba(108,71,255,0.12);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.25)">'
+    +'<div style="color:var(--text-dim);font-size:12px">Set monthly spending limits per category. You\'ll get alerts when you\'re close to your limit.</div>'
+    +'</div>'
+    +'<div style="margin:0 20px">'
+    +budgets.map(function(b){
+      return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+        +'<div style="width:36px;height:36px;border-radius:18px;background:'+b.color+'22;display:flex;align-items:center;justify-content:center;font-size:18px">'+b.icon+'</div>'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700;flex:1">'+b.cat+'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px">₹</div>'
+        +'<input id="'+b.id+'" type="number" value="'+b.current+'" min="0" step="500"'
+        +' style="width:80px;text-align:right;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:14px;font-weight:700">'
+        +'</div></div>';
+    }).join('')
+    +'<div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">'
+    +'<span style="color:var(--text-dim);font-size:13px;font-weight:700">Total Monthly Budget</span>'
+    +'<span style="color:var(--primary);font-size:15px;font-weight:800">'+formatINR(budgets.reduce(function(s,b){return s+b.current;},0))+'</span>'
+    +'</div>'
+    +'</div></div>';
+}
+
+/* ── Data Export ─────────────────────────────────────── */
+function renderDataExport() {
+  var formats = [
+    {icon:'📊', label:'Excel Spreadsheet', sub:'Full transaction history with charts', ext:'xlsx', color:'#22C55E'},
+    {icon:'📄', label:'CSV File',           sub:'Raw data for custom analysis',         ext:'csv',  color:'#60A5FA'},
+    {icon:'📑', label:'PDF Report',         sub:'Formatted monthly financial report',    ext:'pdf',  color:'#EF4444'},
+    {icon:'📱', label:'JSON Data',          sub:'Machine-readable export for backup',    ext:'json', color:'#F59E0B'},
+  ];
+  var ranges = ['This Month','Last 3 Months','Last 6 Months','This Year','All Time'];
+  var selRange = State.exportRange || 'This Month';
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Data Export</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px">'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">SELECT DATE RANGE</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">'
+    +ranges.map(function(r){
+      var active=r===selRange;
+      return '<div onclick="State.exportRange=\''+r+'\';App.render()" style="padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;'
+        +(active?'background:var(--primary);color:#fff;':'background:var(--card);color:var(--text-dim);border:1px solid var(--border);')+'">'+r+'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">CHOOSE FORMAT</div>'
+    +formats.map(function(f){
+      return '<div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid var(--border);cursor:pointer" onclick="App.showToast(\'Exporting as '+f.ext+' — demo mode\')">'
+        +'<div style="width:48px;height:48px;border-radius:12px;background:'+f.color+'22;display:flex;align-items:center;justify-content:center;font-size:24px">'+f.icon+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+f.label+'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px">'+f.sub+'</div>'
+        +'</div>'
+        +'<div style="padding:6px 12px;border-radius:16px;background:'+f.color+'22;color:'+f.color+';font-size:12px;font-weight:700">.'+f.ext+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+}
+
+/* ── Security ────────────────────────────────────────── */
+function renderSecurity() {
+  var toggles = [
+    {label:'App Lock',               sub:'Require authentication to open app',  id:'sec-lock',   on:true},
+    {label:'Biometric Login',        sub:'Use fingerprint or face to unlock',    id:'sec-bio',    on:true},
+    {label:'PIN Lock',               sub:'4-digit PIN as backup',                id:'sec-pin',    on:false},
+    {label:'Transaction PIN',        sub:'Confirm before any new transaction',   id:'sec-txpin',  on:false},
+    {label:'Hide Balance on Home',   sub:'Blur amounts on dashboard',            id:'sec-blur',   on:false},
+    {label:'Auto-lock after 5 min',  sub:'Lock screen after inactivity',         id:'sec-auto',   on:true},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Security</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px;padding:14px;background:rgba(34,197,94,0.1);border-radius:var(--radius-sm);border:1px solid rgba(34,197,94,0.2)">'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<svg width="20" height="20" viewBox="0 0 24 24" fill="#22C55E"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>'
+    +'<span style="color:#22C55E;font-size:13px;font-weight:700">Your data is end-to-end encrypted</span>'
+    +'</div></div>'
+    +'<div style="margin:0 20px">'
+    +toggles.map(function(t,i,arr){
+      return '<div style="display:flex;align-items:center;padding:14px 0;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+'">'
+        +'<div style="flex:1">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+t.label+'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px">'+t.sub+'</div>'
+        +'</div>'
+        +'<div onclick="App.showToast(\''+t.label+' '+(t.on?'disabled':'enabled')+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(t.on?'var(--primary)':'rgba(255,255,255,0.12)')+';position:relative;cursor:pointer;flex-shrink:0;transition:background 0.2s">'
+        +'<div style="width:20px;height:20px;border-radius:10px;background:#fff;position:absolute;top:2px;'+(t.on?'right:2px':'left:2px')+'"></div>'
+        +'</div></div>';
+    }).join('')
+    +'</div>'
+    +'<div style="margin:20px 20px 0">'
+    +'<button class="btn" style="width:100%;padding:14px;font-size:14px;font-weight:700;background:rgba(239,68,68,0.12);color:var(--danger);border:1px solid rgba(239,68,68,0.3);border-radius:var(--radius-sm)" onclick="App.showToast(\'Changing PIN — demo mode\')">Change PIN</button>'
+    +'</div></div>';
+}
+
+/* ── Help Center ─────────────────────────────────────── */
+function renderHelpCenter() {
+  var faqs = [
+    {q:'How do I add a transaction?',         a:'Tap the Transactions tab, then press the + button. Choose Income, Expense, or Transfer and fill in the details.'},
+    {q:'Can I connect my bank account?',       a:'BillVault supports manual entry and CSV import. Bank sync via API is coming soon in a future update.'},
+    {q:'How is my net worth calculated?',      a:'Net Worth = All Assets (bank accounts, investments, property, gold) minus all Liabilities (loans, credit cards, borrowed money).'},
+    {q:'How do reminders work?',              a:'Reminders notify you before bill due dates. Set them under the Reminders tab. Mark as paid once done.'},
+    {q:'Is my data safe?',                    a:'Yes. All data is encrypted in transit and at rest. We use bank-grade AES-256 encryption. Your data is never sold.'},
+    {q:'How do I export my data?',            a:'Go to More → Data & Backup → Export. Choose your format (CSV, PDF, Excel) and date range.'},
+    {q:'Can I set spending limits?',          a:'Yes! Go to More → Budget Setup to set monthly category limits. You\'ll get alerts at 80% and 100% usage.'},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Help Center</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 16px;padding:14px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">'
+    +'<div style="color:var(--text);font-size:14px;font-weight:700;margin-bottom:4px">Need more help?</div>'
+    +'<div style="color:var(--text-dim);font-size:12px;margin-bottom:10px">Our support team usually responds within 24 hours.</div>'
+    +'<button class="btn btn-primary" style="padding:10px 20px;font-size:13px;font-weight:700;border-radius:20px" onclick="App.showToast(\'Opening email: support@billvault.app\')">Contact Support</button>'
+    +'</div>'
+    +'<div style="margin:0 20px 8px;color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">FREQUENTLY ASKED QUESTIONS</div>'
+    +'<div style="margin:0 20px 20px">'
+    +faqs.map(function(f,i,arr){
+      return '<div style="padding:14px 0;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+'">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700;margin-bottom:6px">'+f.q+'</div>'
+        +'<div style="color:var(--text-dim);font-size:13px;line-height:1.6">'+f.a+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+}
+
+/* ── Notification Settings ───────────────────────────── */
+function renderNotificationSettings() {
+  var groups = [
+    {title:'REMINDERS', items:[
+      {label:'Bill Due Reminders',        sub:'Get notified before bills are due',      on:true},
+      {label:'Loan EMI Alerts',           sub:'Upcoming EMI payment reminders',         on:true},
+      {label:'Credit Card Due',           sub:'Card payment deadline alerts',           on:true},
+    ]},
+    {title:'TRANSACTIONS', items:[
+      {label:'Large Transaction Alerts',  sub:'When a single transaction > ₹10,000',    on:true},
+      {label:'Daily Spend Summary',       sub:'End-of-day spending summary',            on:false},
+      {label:'Weekly Report',             sub:'Week-in-review every Sunday',            on:true},
+    ]},
+    {title:'INSIGHTS', items:[
+      {label:'Budget Limit Warnings',     sub:'At 80% and 100% of category budget',     on:true},
+      {label:'Savings Goal Milestones',   sub:'When you hit 25%, 50%, 75%, 100%',       on:true},
+      {label:'Investment Gains/Losses',   sub:'Daily portfolio performance alerts',      on:false},
+    ]},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Notifications</div>'
+    +'<div></div></div>'
+    +groups.map(function(g){
+      return '<div style="margin:0 20px 20px">'
+        +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">'+g.title+'</div>'
+        +'<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">'
+        +g.items.map(function(item,i,arr){
+          return '<div style="display:flex;align-items:center;padding:14px 16px;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+'">'
+            +'<div style="flex:1">'
+            +'<div style="color:var(--text);font-size:14px;font-weight:700">'+item.label+'</div>'
+            +'<div style="color:var(--text-dim);font-size:12px">'+item.sub+'</div>'
+            +'</div>'
+            +'<div onclick="App.showToast(\''+(item.on?'Disabled':'Enabled')+': '+item.label+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(item.on?'var(--primary)':'rgba(255,255,255,0.12)')+';position:relative;cursor:pointer;flex-shrink:0">'
+            +'<div style="width:20px;height:20px;border-radius:10px;background:#fff;position:absolute;top:2px;'+(item.on?'right:2px':'left:2px')+'"></div>'
+            +'</div></div>';
+        }).join('')
+        +'</div></div>';
+    }).join('')
+    +'</div>';
+}
+
+/* ── Appearance ──────────────────────────────────────── */
+function renderAppearance() {
+  var accents = [
+    {name:'Purple',  color:'#6C47FF'},
+    {name:'Blue',    color:'#3B82F6'},
+    {name:'Green',   color:'#22C55E'},
+    {name:'Orange',  color:'#F59E0B'},
+    {name:'Red',     color:'#EF4444'},
+    {name:'Cyan',    color:'#06B6D4'},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Appearance</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px">'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">THEME</div>'
+    +'<div style="display:flex;gap:10px;margin-bottom:24px">'
+    +[{label:'Dark',icon:'🌙',active:true},{label:'Light',icon:'☀️',active:false},{label:'Auto',icon:'⚙️',active:false}].map(function(t){
+      return '<div onclick="App.showToast(\''+t.label+' theme applied\')" style="flex:1;padding:16px 8px;border-radius:var(--radius-sm);text-align:center;cursor:pointer;border:2px solid '+(t.active?'var(--primary)':'var(--border)')+';background:'+(t.active?'var(--primary-dim)':'var(--card)')+'">'
+        +'<div style="font-size:24px;margin-bottom:6px">'+t.icon+'</div>'
+        +'<div style="color:'+(t.active?'var(--primary)':'var(--text-dim)')+';font-size:13px;font-weight:700">'+t.label+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">ACCENT COLOR</div>'
+    +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">'
+    +accents.map(function(a,i){
+      return '<div onclick="App.showToast(\''+a.name+' accent applied\')" style="width:44px;height:44px;border-radius:22px;background:'+a.color+';cursor:pointer;border:3px solid '+(i===0?'#fff':'transparent')+';box-shadow:'+(i===0?'0 0 0 2px var(--primary)':'none')+'"></div>';
+    }).join('')
+    +'</div>'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">FONT SIZE</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);padding:14px 16px;margin-bottom:24px">'
+    +'<input type="range" min="12" max="18" step="1" value="15" style="width:100%;accent-color:var(--primary)" oninput="App.showToast(\'Font size: \'+this.value+\'px\')">'
+    +'<div style="display:flex;justify-content:space-between;margin-top:6px">'
+    +'<span style="color:var(--text-dim);font-size:11px">Small</span><span style="color:var(--text-dim);font-size:11px">Large</span>'
+    +'</div></div>'
+    +'<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">OTHER</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">'
+    +[
+      {label:'Compact View',       sub:'Show more items per screen',   on:false},
+      {label:'Show Account Icons', sub:'Display icons in account list', on:true},
+      {label:'Animations',         sub:'Enable screen transitions',     on:true},
+    ].map(function(item,i,arr){
+      return '<div style="display:flex;align-items:center;padding:14px 16px;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+'">'
+        +'<div style="flex:1">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+item.label+'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px">'+item.sub+'</div>'
+        +'</div>'
+        +'<div onclick="App.showToast(\''+(item.on?'Disabled':'Enabled')+': '+item.label+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(item.on?'var(--primary)':'rgba(255,255,255,0.12)')+';position:relative;cursor:pointer;flex-shrink:0">'
+        +'<div style="width:20px;height:20px;border-radius:10px;background:#fff;position:absolute;top:2px;'+(item.on?'right:2px':'left:2px')+'"></div>'
+        +'</div></div>';
+    }).join('')
+    +'</div>'
+    +'</div></div>';
+}
+
+/* ── Currency Settings ───────────────────────────────── */
+function renderCurrencySettings() {
+  var currencies = [
+    {code:'INR', symbol:'₹', name:'Indian Rupee',    flag:'🇮🇳', active:true},
+    {code:'USD', symbol:'$', name:'US Dollar',        flag:'🇺🇸', active:false},
+    {code:'EUR', symbol:'€', name:'Euro',             flag:'🇪🇺', active:false},
+    {code:'GBP', symbol:'£', name:'British Pound',    flag:'🇬🇧', active:false},
+    {code:'AED', symbol:'د.إ', name:'UAE Dirham',    flag:'🇦🇪', active:false},
+    {code:'SGD', symbol:'S$', name:'Singapore Dollar',flag:'🇸🇬', active:false},
+  ];
+  return '<div class="screen-wrap">'
+    +'<div class="form-header">'+_stubBackBtn('more')
+    +'<div class="form-header-title">Currency</div>'
+    +'<div></div></div>'
+    +'<div style="margin:0 20px 12px;padding:12px 14px;background:rgba(108,71,255,0.12);border-radius:var(--radius-sm);border:1px solid rgba(108,71,255,0.25)">'
+    +'<div style="color:var(--text-dim);font-size:12px">Your primary currency. All amounts will be displayed in this currency.</div>'
+    +'</div>'
+    +'<div style="margin:0 20px">'
+    +currencies.map(function(c,i,arr){
+      return '<div onclick="App.showToast(\'Currency changed to '+c.code+' (demo mode)\')" style="display:flex;align-items:center;padding:14px 0;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+';cursor:pointer">'
+        +'<div style="font-size:24px;margin-right:14px">'+c.flag+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="color:var(--text);font-size:14px;font-weight:700">'+c.name+'</div>'
+        +'<div style="color:var(--text-dim);font-size:12px">'+c.code+' · '+c.symbol+'</div>'
+        +'</div>'
+        +(c.active?'<svg width="20" height="20" viewBox="0 0 24 24" fill="var(--primary)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':'')
+        +'</div>';
+    }).join('')
+    +'</div></div>';
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -5987,20 +6655,37 @@ const App = {
       case 'insights':         html = renderInsights();         break;
       case 'more':             html = renderMore();             break;
       case 'reports':          App.goTab('insights'); return;
-      default:
-        html = `<div class="screen-wrap">
-          <div class="page-header">
-            <div><div class="page-title">${capitalize(State.screen.replace(/-/g,' '))}</div></div>
-            <div class="icon-btn" onclick="App.goTab('${State.tab||'dashboard'}')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>
-            </div>
-          </div>
-          <div style="text-align:center;padding:60px 20px">
-            <div style="font-size:48px;margin-bottom:16px">🚧</div>
-            <div style="color:var(--text);font-size:18px;font-weight:700;margin-bottom:8px">Coming Next</div>
-            <div style="color:var(--text-dim);font-size:14px">This screen will be built in the next step.</div>
-          </div>
-        </div>`;
+      case 'notifications':         html = renderNotifications();        break;
+      case 'edit-profile':          html = renderEditProfile();          break;
+      case 'sip-calculator':        html = renderSipCalculator();        break;
+      case 'market-overview':       html = renderMarketOverview();       break;
+      case 'portfolio-performance': html = renderPortfolioPerformance(); break;
+      case 'portfolio-allocation':  html = renderPortfolioAllocation();  break;
+      case 'rebalance':             html = renderRebalance();            break;
+      case 'goal-detail':           html = renderGoalDetail();           break;
+      case 'budget-setup':          html = renderBudgetSetup();          break;
+      case 'data-export':           html = renderDataExport();           break;
+      case 'security':              html = renderSecurity();             break;
+      case 'help-center':           html = renderHelpCenter();           break;
+      case 'notification-settings': html = renderNotificationSettings(); break;
+      case 'appearance':            html = renderAppearance();           break;
+      case 'currency-settings':     html = renderCurrencySettings();     break;
+      default: {
+        var _fallbackTab = State.tab || 'dashboard';
+        html = '<div class="screen-wrap">'
+          +'<div class="form-header">'
+          +'<div class="icon-btn" onclick="App.goTab(\''+_fallbackTab+'\')">'
+          +'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+          +'</div>'
+          +'<div class="form-header-title">'+capitalize(State.screen.replace(/-/g,' '))+'</div>'
+          +'<div></div>'
+          +'</div>'
+          +'<div style="text-align:center;padding:60px 20px">'
+          +'<div style="font-size:48px;margin-bottom:16px">🚧</div>'
+          +'<div style="color:var(--text);font-size:18px;font-weight:700;margin-bottom:8px">Coming Soon</div>'
+          +'<div style="color:var(--text-dim);font-size:14px">This feature is under development.</div>'
+          +'</div></div>';
+      }
     }
     scr.innerHTML = html;
   },
@@ -6559,6 +7244,24 @@ const App = {
     State.remForm    = null;
     State.remDetailId = null;
     this.navigate('reminders');
+  },
+
+  _saveProfile() {
+    const name  = document.getElementById('ep-name')?.value?.trim();
+    const email = document.getElementById('ep-email')?.value?.trim();
+    const phone = document.getElementById('ep-phone')?.value?.trim();
+    const dob   = document.getElementById('ep-dob')?.value?.trim();
+    if (!name)  { this.showToast('Please enter your name'); return; }
+    if (!email) { this.showToast('Please enter your email'); return; }
+    const u = State.user || DEMO.user;
+    u.name  = name;
+    u.email = email;
+    if (phone) u.phone = phone;
+    if (dob)   u.dob   = dob;
+    if (State.user) State.user = u;
+    if (DEMO.user)  DEMO.user  = u;
+    this.showToast('Profile updated!');
+    this.goTab('more');
   },
 
   remCalPrev() {
