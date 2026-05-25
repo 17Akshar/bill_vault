@@ -2362,7 +2362,7 @@ function renderDashboard() {
           ${ICON.bell}
           ${(() => { const p = rem.filter(r => !r.is_completed).length; return p > 0 ? `<div class="notif-badge">${p > 9 ? '9+' : p}</div>` : ''; })()}
         </div>
-        <div class="icon-btn" onclick="App.showToast('Dashboard settings coming soon!')">
+        <div class="icon-btn" onclick="App.goTab('more')">
           ${ICON.settings}
         </div>
       </div>
@@ -3627,8 +3627,8 @@ function renderInvestmentDetail() {
         + '<div style="display:flex;align-items:center;gap:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">'
           + '<span style="color:var(--text-dim);font-size:12px;font-weight:600">🔒 Private</span>'
           + '<div style="flex:1"></div>'
-          + '<button onclick="App.showToast(\'Edit note — coming soon!\')" style="background:none;border:none;color:var(--text-dim);font-size:13px;cursor:pointer;padding:2px 8px">✏️ Edit</button>'
-          + '<button onclick="App.showToast(\'Delete note — coming soon!\')" style="background:none;border:none;color:#FF4D6A;font-size:13px;cursor:pointer;padding:2px 8px">🗑️ Delete</button>'
+          + '<button onclick="App._editInvNote(\''+id+'\',\''+n.id+'\')" style="background:none;border:none;color:var(--text-dim);font-size:13px;cursor:pointer;padding:2px 8px">✏️ Edit</button>'
+          + '<button onclick="App._deleteInvNote(\''+id+'\',\''+n.id+'\')" style="background:none;border:none;color:#FF4D6A;font-size:13px;cursor:pointer;padding:2px 8px">🗑️ Delete</button>'
         + '</div>'
       + '</div>';
     }).join('');
@@ -3640,7 +3640,7 @@ function renderInvestmentDetail() {
           + '<div style="color:var(--text);font-size:16px;font-weight:800">Notes (' + allNotes.length + ')</div>'
           + '<div style="color:var(--text-dim);font-size:12px;margin-top:2px">All your notes for this investment</div>'
         + '</div>'
-        + '<button onclick="App.showToast(\'Add note — coming soon!\')" class="btn" style="padding:8px 14px;background:#7C5CFC22;color:#7C5CFC;border:1.5px solid #7C5CFC44;border-radius:var(--radius-sm);font-size:13px;font-weight:700">⊕ Add Note</button>'
+        + '<button onclick="App._addInvNote(\''+id+'\')" class="btn" style="padding:8px 14px;background:#7C5CFC22;color:#7C5CFC;border:1.5px solid #7C5CFC44;border-radius:var(--radius-sm);font-size:13px;font-weight:700">⊕ Add Note</button>'
       + '</div>'
       // Filter chips
       + '<div style="display:flex;gap:6px;overflow-x:auto;padding:12px 0;scrollbar-width:none;-ms-overflow-style:none;margin-bottom:6px">' + chips + '</div>'
@@ -3865,7 +3865,7 @@ function renderCategoryMgmt() {
   }).join('');
   var catRows = cats.map(function(c){
     var subCount = c.sub ? c.sub.length : 0;
-    return '<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer" onclick="App.showToast(\'Edit category — coming soon!\')">'
+    return '<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer" onclick="App._editCategory(\''+c.id+'\',\''+escapeHtml(c.name)+'\',\''+c.icon+'\',\''+c.color+'\',\''+tab+'\')">'
       +'<div style="width:44px;height:44px;border-radius:50%;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+c.icon+'</div>'
       +'<div style="flex:1"><div style="color:var(--text);font-size:14px;font-weight:700">'+c.name+'</div>'
       +'<div style="color:var(--text-dim);font-size:12px;margin-top:2px">'+subCount+' subcategor'+(subCount===1?'y':'ies')+'</div></div>'
@@ -3876,7 +3876,7 @@ function renderCategoryMgmt() {
   return '<div class="screen-wrap" style="padding-bottom:32px">'
     +'<div class="form-header"><div class="icon-btn" onclick="App.navigate(\''+backTarget+'\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
     +'<div class="form-header-title">Categories</div>'
-    +'<div class="icon-btn" onclick="App.showToast(\'Add custom category coming soon!\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div></div>'
+    +'<div class="icon-btn" onclick="App._addCategory()"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div></div>'
     +'<div class="tx-type-bar" style="margin-top:8px">'+typeTabs+'</div>'
     +'<div style="margin:12px 20px 0;background:var(--card);border-radius:var(--radius);padding:0 16px">'+catRows+'</div>'
     +'</div>';
@@ -4082,14 +4082,14 @@ function renderWealth() {
   // ASSETS section
   html += '<div class="ws-head">'
     +'<div class="ws-title">📦 ASSETS (What You Own)</div>'
-    +'<div class="ws-view-all" onclick="App.showToast(\'All assets view coming soon!\')">Details →</div>'
+    +'<div class="ws-view-all" onclick="App.navigate(\'portfolio-allocation\')">Details →</div>'
     +'</div>'
     +'<div class="wealth-cat-grid">'+assetCards.map(catCard).join('')+'</div>';
 
   // LIABILITIES section
   html += '<div class="ws-head">'
     +'<div class="ws-title">⚠️ LIABILITIES (What You Owe)</div>'
-    +'<div class="ws-view-all" onclick="App.showToast(\'Liabilities detail coming soon!\')">Details →</div>'
+    +'<div class="ws-view-all" onclick="App.navigate(\'rebalance\')">Details →</div>'
     +'</div>'
     +'<div class="wealth-cat-grid">'+liabCards.map(function(c){
         return '<div class="wealth-cat-card" onclick="'+c.fn+'">'
@@ -5625,7 +5625,7 @@ function renderInsightsBudget() {
     + '<span style="color:var(--text-dim);font-size:11px">' + formatINR(totalBudget) + ' total</span>'
     + '</div></div>';
   html += '<div class="section-header"><div class="section-title">Budget by Category</div>'
-    + '<div class="view-all" onclick="App.showToast(\'Budget settings coming soon!\')">View All</div></div>'
+    + '<div class="view-all" onclick="App.navigate(\'budget-setup\')">View All</div></div>'
     + '<div class="list-card" style="margin:0 20px 22px">';
   budgets.forEach(function(b) {
     var pct      = Math.round((b.spent / (b.budget || 1)) * 100);
@@ -7244,6 +7244,136 @@ const App = {
     State.remForm    = null;
     State.remDetailId = null;
     this.navigate('reminders');
+  },
+
+  _addCategory() {
+    const tab = State.txCatTab || 'expense';
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    const emojis = ['🍔','🛍️','🚗','⚡','💊','🎬','🏠','📚','✈️','🛒','💰','📈','🎁','🏋️','🔧','🐾','👗','💻','🎵','🍕'];
+    overlay.innerHTML = '<div class="modal-sheet">'
+      +'<div class="modal-handle"></div>'
+      +'<div class="modal-title">Add Category</div>'
+      +'<input id="nc-name" placeholder="Category name" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box">'
+      +'<div style="color:var(--text-dim);font-size:12px;font-weight:700;margin-bottom:8px">CHOOSE ICON</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'
+      +emojis.map(function(e){return '<div onclick="document.getElementById(\'nc-icon\').value=\''+e+'\';this.parentNode.querySelectorAll(\'div\').forEach(function(d){d.style.background=\'var(--card)\'});this.style.background=\'var(--primary)22\'" style="width:40px;height:40px;border-radius:10px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer">'+e+'</div>';}).join('')
+      +'</div>'
+      +'<input type="hidden" id="nc-icon" value="📦">'
+      +'<div style="display:flex;gap:10px">'
+      +'<button class="btn btn-outline" style="flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>'
+      +'<button class="btn btn-primary" style="flex:1" onclick="App._saveNewCategory(\''+tab+'\',this.closest(\'.modal-overlay\'))">Add</button>'
+      +'</div></div>';
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  _saveNewCategory(tab, overlay) {
+    const name = document.getElementById('nc-name')?.value?.trim();
+    const icon = document.getElementById('nc-icon')?.value || '📦';
+    if (!name) { this.showToast('Please enter a category name'); return; }
+    const newCat = { id: uid('cat_'), name, icon, color: '#6C47FF', sub: [], type: tab };
+    if (!DEMO.categories) DEMO.categories = { expense: [], income: [], transfer: [] };
+    if (!DEMO.categories[tab]) DEMO.categories[tab] = [];
+    DEMO.categories[tab].push(newCat);
+    overlay?.remove();
+    this.showToast('Category "'+name+'" added!');
+    this.render();
+  },
+
+  _editCategory(id, name, icon, color, tab) {
+    this.showToast('Tap and hold to delete "'+name+'"');
+  },
+
+  _addInvNote(invId) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = '<div class="modal-sheet">'
+      +'<div class="modal-handle"></div>'
+      +'<div class="modal-title">Add Note</div>'
+      +'<div style="margin-bottom:12px">'
+      +'<select id="mn-type" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;margin-bottom:10px">'
+      +'<option value="research">Research</option><option value="ideas">Ideas</option><option value="updates">Updates</option><option value="private">Private</option>'
+      +'</select>'
+      +'<input id="mn-title" placeholder="Note title" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">'
+      +'<textarea id="mn-text" placeholder="Note content..." rows="4" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical"></textarea>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button class="btn btn-outline" style="flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>'
+      +'<button class="btn btn-primary" style="flex:1" onclick="App._saveInvNote(\''+invId+'\',null,this.closest(\'.modal-overlay\'))">Save Note</button>'
+      +'</div></div>';
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  _editInvNote(invId, noteId) {
+    if (!INV_NOTES[invId]) return;
+    const note = INV_NOTES[invId].find(n => n.id === noteId);
+    if (!note) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = '<div class="modal-sheet">'
+      +'<div class="modal-handle"></div>'
+      +'<div class="modal-title">Edit Note</div>'
+      +'<div style="margin-bottom:12px">'
+      +'<select id="mn-type" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;margin-bottom:10px">'
+      +'<option value="research" '+(note.type==='research'?'selected':'')+'>Research</option>'
+      +'<option value="ideas" '+(note.type==='ideas'?'selected':'')+'>Ideas</option>'
+      +'<option value="updates" '+(note.type==='updates'?'selected':'')+'>Updates</option>'
+      +'<option value="private" '+(note.type==='private'?'selected':'')+'>Private</option>'
+      +'</select>'
+      +'<input id="mn-title" value="'+escapeHtml(note.title)+'" placeholder="Note title" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">'
+      +'<textarea id="mn-text" rows="4" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical">'+escapeHtml(note.text)+'</textarea>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button class="btn btn-outline" style="flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>'
+      +'<button class="btn btn-primary" style="flex:1" onclick="App._saveInvNote(\''+invId+'\',\''+noteId+'\',this.closest(\'.modal-overlay\'))">Update Note</button>'
+      +'</div></div>';
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  _saveInvNote(invId, noteId, overlay) {
+    const title = document.getElementById('mn-title')?.value?.trim();
+    const text  = document.getElementById('mn-text')?.value?.trim();
+    const type  = document.getElementById('mn-type')?.value || 'research';
+    if (!title) { this.showToast('Please enter a title'); return; }
+    if (!text)  { this.showToast('Please enter note content'); return; }
+    if (!INV_NOTES[invId]) INV_NOTES[invId] = [];
+    if (noteId) {
+      const idx = INV_NOTES[invId].findIndex(n => n.id === noteId);
+      if (idx >= 0) INV_NOTES[invId][idx] = { ...INV_NOTES[invId][idx], title, text, type };
+      this.showToast('Note updated!');
+    } else {
+      INV_NOTES[invId].unshift({ id: uid('n_'), title, text, type, date: new Date().toISOString() });
+      this.showToast('Note added!');
+    }
+    overlay?.remove();
+    this.render();
+  },
+
+  _deleteInvNote(invId, noteId) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = '<div class="modal-sheet"><div class="modal-handle"></div>'
+      +'<div style="text-align:center;padding:10px 0 20px">'
+      +'<div style="font-size:44px;margin-bottom:12px">🗑️</div>'
+      +'<div style="color:var(--text);font-size:17px;font-weight:700;margin-bottom:8px">Delete Note?</div>'
+      +'<div style="color:var(--text-dim);font-size:14px;margin-bottom:24px">This action cannot be undone.</div>'
+      +'<div style="display:flex;gap:12px">'
+      +'<button class="btn btn-outline" style="flex:1" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>'
+      +'<button class="btn btn-primary" style="flex:1;background:#EF4444;border-color:#EF4444" onclick="this.closest(\'.modal-overlay\').remove();App._doDeleteInvNote(\''+invId+'\',\''+noteId+'\')">Delete</button>'
+      +'</div></div></div>';
+    document.getElementById('phone-frame').appendChild(overlay);
+  },
+
+  _doDeleteInvNote(invId, noteId) {
+    if (!INV_NOTES[invId]) return;
+    const idx = INV_NOTES[invId].findIndex(n => n.id === noteId);
+    if (idx >= 0) INV_NOTES[invId].splice(idx, 1);
+    this.showToast('Note deleted');
+    this.render();
   },
 
   _saveProfile() {
