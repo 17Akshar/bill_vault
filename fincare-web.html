@@ -1627,11 +1627,12 @@ const State = {
   editAcctId:      null,
   acctColor:       '#6C47FF',
   // Investment module
-  invCat:        null,
-  invSelId:      null,
-  invDetailTab:  'overview',
-  invCatFilter:  'all',
-  invNoteFilter: 'all',
+  invCat:         null,
+  invSelId:       null,
+  invDetailTab:   'overview',
+  invCatFilter:   'all',
+  invNoteFilter:  'all',
+  invChartPeriod: '1Y',
 };
 
 /* ══════════════════════════════════════════════════════
@@ -1816,32 +1817,47 @@ const INV_PORTFOLIO = {
 };
 
 const INV_TRANSACTIONS = {
-  s1: [
-    { id:'it1', type:'buy',  date:'2024-01-15', qty:5, price:2100, amount:10500, brokerage:105, stt:53, other:26, total_charges:184, net_amount:10684 },
-    { id:'it2', type:'buy',  date:'2024-03-20', qty:3, price:2320, amount:6960,  brokerage:70,  stt:35, other:17, total_charges:122, net_amount:7082  },
-    { id:'it3', type:'buy',  date:'2024-08-10', qty:2, price:2480, amount:4960,  brokerage:50,  stt:25, other:12, total_charges:87,  net_amount:5047  },
-  ],
-  s2: [
-    { id:'it4', type:'buy',  date:'2024-02-01', qty:10, price:1550, amount:15500, brokerage:155, stt:78, other:38, total_charges:271, net_amount:15771 },
-    { id:'it5', type:'buy',  date:'2024-05-15', qty:5,  price:1640, amount:8200,  brokerage:82,  stt:41, other:20, total_charges:143, net_amount:8343  },
-  ],
-  s5: [
-    { id:'it6', type:'buy',  date:'2023-12-10', qty:30, price:400, amount:12000, brokerage:120, stt:60, other:30, total_charges:210, net_amount:12210 },
-    { id:'it7', type:'buy',  date:'2024-04-05', qty:20, price:452, amount:9040,  brokerage:90,  stt:45, other:22, total_charges:157, net_amount:9197  },
-  ],
-  m1: [
-    { id:'it8',  type:'buy', date:'2024-01-01', amount:5000, units:49.2, nav:101.63, sip:true },
-    { id:'it9',  type:'buy', date:'2024-02-01', amount:5000, units:48.1, nav:103.95, sip:true },
-    { id:'it10', type:'buy', date:'2024-03-01', amount:5000, units:47.5, nav:105.26, sip:true },
-    { id:'it11', type:'buy', date:'2024-04-01', amount:5000, units:46.8, nav:106.84, sip:true },
-  ],
+  s1: {
+    buys: [
+      { id:'it1', date:'2023-01-10', qty:50, price:2520, amount:126000, brokerage:20, stt:126, exchg:4.35, gst:3.60, stamp:18.90, sebi:0.13, other:0,  total_charges:172.98, net_amount:126173 },
+      { id:'it2', date:'2023-03-15', qty:30, price:2700, amount:81000,  brokerage:20, stt:81,  exchg:2.79, gst:3.60, stamp:12.15, sebi:0.08, other:0,  total_charges:119.62, net_amount:81120  },
+      { id:'it3', date:'2023-08-10', qty:37, price:2950, amount:109150, brokerage:20, stt:109, exchg:3.77, gst:3.60, stamp:16.37, sebi:0.11, other:0,  total_charges:152.85, net_amount:109303 },
+    ],
+    sells: [
+      { id:'it4', date:'2024-02-05', qty:40, price:2920, amount:116800, brokerage:20, stt:117, exchg:4.03, gst:3.60, stamp:0,     sebi:0.12, other:0,  total_charges:144.75, net_amount:116655, realized_pl:1600  },
+      { id:'it5', date:'2024-04-20', qty:10, price:2980, amount:29800,  brokerage:20, stt:30,  exchg:1.03, gst:3.60, stamp:0,     sebi:0.03, other:0,  total_charges:54.66,  net_amount:29745,  realized_pl:-3450 },
+    ],
+  },
+  s2: {
+    buys: [
+      { id:'it6', date:'2024-02-01', qty:10, price:1550, amount:15500, brokerage:20, stt:16, exchg:0.54, gst:3.60, stamp:2.33, sebi:0.02, other:0, total_charges:42.49, net_amount:15542 },
+      { id:'it7', date:'2024-05-15', qty:5,  price:1640, amount:8200,  brokerage:20, stt:8,  exchg:0.28, gst:3.60, stamp:1.23, sebi:0.01, other:0, total_charges:33.12, net_amount:8233  },
+    ],
+    sells: [],
+  },
+  s5: {
+    buys: [
+      { id:'it8', date:'2023-12-10', qty:30, price:400, amount:12000, brokerage:20, stt:12, exchg:0.41, gst:3.60, stamp:1.80, sebi:0.01, other:0, total_charges:37.82, net_amount:12038 },
+      { id:'it9', date:'2024-04-05', qty:20, price:452, amount:9040,  brokerage:20, stt:9,  exchg:0.31, gst:3.60, stamp:1.36, sebi:0.01, other:0, total_charges:34.28, net_amount:9074  },
+    ],
+    sells: [],
+  },
+  m1: {
+    buys: [
+      { id:'it10', date:'2024-01-01', amount:5000, units:49.2, nav:101.63, sip:true },
+      { id:'it11', date:'2024-02-01', amount:5000, units:48.1, nav:103.95, sip:true },
+      { id:'it12', date:'2024-03-01', amount:5000, units:47.5, nav:105.26, sip:true },
+      { id:'it13', date:'2024-04-01', amount:5000, units:46.8, nav:106.84, sip:true },
+    ],
+    sells: [],
+  },
 };
 
 const INV_NOTES = {
   s1: [
-    { id:'in1', type:'research', date:'2024-09-01', title:'Q2 Results Analysis',   text:'Strong Q2 performance with 18% revenue growth. JIO platforms showing excellent traction. Retail segment recovering well.' },
-    { id:'in2', type:'updates',  date:'2024-10-15', title:'New 52-Week High',       text:'Stock touched 52-week high of ₹2,972 today. Holding position. Key support at ₹2,650.' },
-    { id:'in3', type:'ideas',    date:'2024-11-01', title:'Target Price Revision',  text:'Upgrading target price to ₹3,200 based on strong fundamentals and energy segment recovery.' },
+    { id:'in1', type:'research', date:'2024-04-20T10:30:00', title:'Strong Q4 Results',      text:'Reliance posted strong Q4 numbers with 18% revenue growth. JIO platforms showing excellent traction. Retail segment recovering well.' },
+    { id:'in2', type:'ideas',    date:'2024-04-12T09:15:00', title:'Long Term Hold',          text:'Upgrading target price to ₹3,200 based on strong fundamentals. Planning to hold for 3–5 years. Energy segment recovery is key catalyst.' },
+    { id:'in3', type:'updates',  date:'2024-04-05T14:45:00', title:'New Energy Initiatives',  text:'Stock touched 52-week high of ₹2,972 today. New green energy capex cycle underway. Key support at ₹2,650.' },
   ],
   s2: [
     { id:'in4', type:'research', date:'2024-08-20', title:'Post-Merger Analysis',   text:'HDFC Bank post-merger integration progressing well. ROE expansion expected in FY26.' },
@@ -3104,6 +3120,73 @@ var _invBackSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="current
 var _invChevron = '<svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)" style="flex-shrink:0"><path d="M9 6l6 6-6 6" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 var _invPlusSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
 
+function _invMetric(lbl, val, color, sub) {
+  return '<div style="flex:1;text-align:center;padding:10px 6px">'
+    + '<div style="color:var(--text-dim);font-size:10px;font-weight:600;margin-bottom:4px;letter-spacing:0.3px">' + lbl + '</div>'
+    + '<div style="color:' + (color || 'var(--text)') + ';font-size:13px;font-weight:800;line-height:1.2">' + val + '</div>'
+    + (sub ? '<div style="color:' + (color || 'var(--text-dim)') + ';font-size:10px;font-weight:600;margin-top:2px;opacity:0.8">' + sub + '</div>' : '')
+  + '</div>';
+}
+
+function _invTxCell(lbl, val) {
+  return '<div style="flex:1;text-align:center">'
+    + '<div style="color:var(--text-dim);font-size:10px;font-weight:600;margin-bottom:3px">' + lbl + '</div>'
+    + '<div style="color:var(--text);font-size:12px;font-weight:700">' + val + '</div>'
+  + '</div>';
+}
+
+function _invFmtTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  var h = d.getHours(), m = d.getMinutes();
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return _invFmtDate(iso) + ', ' + h + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
+}
+
+function _invChartSVG(gainPct, period, w, h) {
+  // Deterministic bezier chart - seeded by gainPct + period string
+  var seed = Math.abs(gainPct * 137 + period.charCodeAt(0) * 31) % 1000;
+  function prng(n) { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+  var pts = 20;
+  var padL = 8, padR = 8, padT = 16, padB = 28;
+  var cw = w - padL - padR, ch = h - padT - padB;
+  var base = gainPct >= 0 ? 0.62 : 0.38;
+  var vals = [];
+  for (var i = 0; i < pts; i++) vals.push(base + (prng(i) - 0.5) * 0.28);
+  // Trend the last value toward positive or negative
+  vals[pts - 1] = gainPct >= 0 ? Math.max(vals[pts - 1], 0.65) : Math.min(vals[pts - 1], 0.35);
+  vals[0] = 0.5;
+  var xs = vals.map(function(_, i) { return padL + (i / (pts - 1)) * cw; });
+  var ys = vals.map(function(v) { return padT + (1 - v) * ch; });
+  var color = gainPct >= 0 ? '#10D078' : '#FF4D6A';
+  var gradId = 'ig' + Math.abs(gainPct * 10 | 0) + period;
+  // Build smooth path using quadratic bezier midpoints
+  var d = 'M' + xs[0].toFixed(1) + ',' + ys[0].toFixed(1);
+  for (var j = 0; j < pts - 1; j++) {
+    var mx = (xs[j] + xs[j + 1]) / 2, my = (ys[j] + ys[j + 1]) / 2;
+    d += ' Q' + xs[j].toFixed(1) + ',' + ys[j].toFixed(1) + ' ' + mx.toFixed(1) + ',' + my.toFixed(1);
+  }
+  d += ' Q' + xs[pts - 2].toFixed(1) + ',' + ys[pts - 2].toFixed(1) + ' ' + xs[pts - 1].toFixed(1) + ',' + ys[pts - 1].toFixed(1);
+  var areaD = d + ' L' + xs[pts - 1].toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) + ' Z';
+  var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+  var gridLines = [0.25, 0.5, 0.75].map(function(f) {
+    var y = (padT + f * ch).toFixed(1);
+    return '<line x1="' + padL + '" y1="' + y + '" x2="' + (padL + cw) + '" y2="' + y + '" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>';
+  }).join('');
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">'
+    + '<defs>'
+    + '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.35"/>'
+    + '<stop offset="100%" stop-color="' + color + '" stop-opacity="0.02"/>'
+    + '</linearGradient></defs>'
+    + gridLines
+    + '<path d="' + areaD + '" fill="url(#' + gradId + ')"/>'
+    + '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="' + xs[pts - 1].toFixed(1) + '" cy="' + ys[pts - 1].toFixed(1) + '" r="4" fill="' + color + '" stroke="#1a1a2e" stroke-width="2"/>'
+  + '</svg>';
+}
+
 /* ─── INVESTMENT DASHBOARD ───────────────────────────── */
 function renderInvestmentDashboard() {
   var cats = _invCatSummaries();
@@ -3297,19 +3380,23 @@ function renderInvestmentDetail() {
   var item = _invFindItem(id);
   if (!item) return '<div class="screen-wrap"><div style="text-align:center;padding:60px;color:var(--text-dim)">Investment not found.</div></div>';
 
-  var meta = INV_CAT_META[item.category || cat] || { icon: '💰', color: '#6C47FF', label: 'Investment', sub: '' };
-  var tab  = State.invDetailTab || 'overview';
+  var meta    = INV_CAT_META[item.category || cat] || { icon: '💰', color: '#6C47FF', label: 'Investment', sub: '' };
+  var tab     = State.invDetailTab || 'overview';
   var gain    = (item.current || 0) - (item.invested || 0);
   var gainPct = _invGainPct(item.invested || 0, item.current || 0);
   var gc      = _invGainColor(gain);
+  var isStock = (item.category === 'stocks' || item.category === 'etfs');
+  var sym     = isStock ? (item.symbol || (item.name || '').slice(0, 3).toUpperCase()) : (item.name || '').slice(0, 2).toUpperCase();
+  var initials = (item.name || '').split(' ').slice(0, 2).map(function(w) { return w[0] || ''; }).join('').toUpperCase();
 
-  var tabBar = ['overview', 'transactions', 'notes'].map(function(t) {
+  var tabBar = ['overview','transactions','notes'].map(function(t) {
     var a = tab === t;
-    return '<div onclick="State.invDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (a ? 'var(--primary)' : 'transparent') + ';color:' + (a ? 'var(--primary)' : 'var(--text-dim)') + '">' + t.charAt(0).toUpperCase() + t.slice(1) + '</div>';
+    var lbl = t === 'overview' ? 'Overview' : t === 'transactions' ? 'Transactions' : 'Notes';
+    return '<div onclick="State.invDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:11px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (a ? '#7C5CFC' : 'transparent') + ';color:' + (a ? '#7C5CFC' : 'var(--text-dim)') + ';transition:all 0.2s">' + lbl + '</div>';
   }).join('');
 
-  function sr(lbl, val, vc) {
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+  function detailRow(lbl, val, vc) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
       + '<div style="color:var(--text-dim);font-size:13px">' + lbl + '</div>'
       + '<div style="color:' + (vc || 'var(--text)') + ';font-size:13px;font-weight:700">' + val + '</div>'
     + '</div>';
@@ -3317,112 +3404,225 @@ function renderInvestmentDetail() {
 
   var content = '';
 
+  /* ══ OVERVIEW TAB ══ */
   if (tab === 'overview') {
-    var rows = [];
-    rows.push(sr('Invested', formatINR(item.invested || 0)));
-    rows.push(sr('Current Value', formatINR(item.current || 0)));
-    rows.push(sr('Gain / Loss', _invSign(gain) + formatINR(Math.abs(gain)), gc));
-    rows.push(sr('Returns', _invSign(gainPct) + gainPct.toFixed(2) + '%', gc));
-    if (item.qty)           rows.push(sr('Quantity', item.qty + ' units'));
-    if (item.buy_price)     rows.push(sr('Avg Buy Price', '₹' + item.buy_price.toLocaleString('en-IN')));
-    if (item.current_price) rows.push(sr('Current Price', '₹' + item.current_price.toLocaleString('en-IN')));
-    if (item.nav)           rows.push(sr('NAV', '₹' + item.nav));
-    if (item.units)         rows.push(sr('Units', item.units.toFixed(3)));
-    if (item.sip_amt)       rows.push(sr('SIP Amount', formatINR(item.sip_amt) + '/mo'));
-    if (item.interest_rate) rows.push(sr('Interest Rate', item.interest_rate + '% p.a.'));
-    if (item.tenure)        rows.push(sr('Tenure', item.tenure));
-    if (item.maturity_date) rows.push(sr('Maturity', _invFmtDate(item.maturity_date)));
-    if (item.grams)         rows.push(sr('Weight', item.grams + 'g'));
-    if (item.equity_pct)    rows.push(sr('Equity Allocation', item.equity_pct + '%'));
-    if (item.pran)          rows.push(sr('PRAN', item.pran));
-    if (item.uan)           rows.push(sr('UAN', item.uan));
-    var stBg  = item.status === 'active' ? 'rgba(16,208,120,0.15)' : 'rgba(255,77,106,0.15)';
-    var stCol = item.status === 'active' ? '#10D078' : '#FF4D6A';
-    rows.push(sr('Status', '<span style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;background:' + stBg + ';color:' + stCol + '">' + (item.status || 'active').toUpperCase() + '</span>'));
+    var period = State.invChartPeriod || '1Y';
+    var periods = ['1D','1M','3M','6M','1Y','ALL'];
+    var periodBar = periods.map(function(p) {
+      var a = p === period;
+      return '<div onclick="State.invChartPeriod=\'' + p + '\';App.render()" style="flex:1;text-align:center;padding:6px 2px;font-size:11px;font-weight:700;border-radius:6px;cursor:pointer;background:' + (a ? '#7C5CFC' : 'transparent') + ';color:' + (a ? '#fff' : 'var(--text-dim)') + ';transition:all 0.2s">' + p + '</div>';
+    }).join('');
 
-    content = '<div style="padding:0 20px">'
-      + '<div style="background:var(--card);border-radius:var(--radius);padding:4px 16px;border:1px solid var(--border)">' + rows.join('') + '</div>'
-      + '<div style="margin-top:14px;display:flex;gap:10px">'
-        + '<button onclick="App.navigate(\'investment-buy\',{type:\'' + (item.category || cat) + '\',editId:\'' + item.id + '\'})" class="btn" style="flex:1;padding:12px;background:rgba(16,208,120,0.12);color:#10D078;border:1.5px solid rgba(16,208,120,0.3);font-size:13px;font-weight:700;border-radius:var(--radius-sm)">📈 Buy More</button>'
-        + '<button onclick="App.navigate(\'investment-sell\',{id:\'' + item.id + '\',cat:\'' + (item.category || cat) + '\'})" class="btn" style="flex:1;padding:12px;background:rgba(255,77,106,0.12);color:#FF4D6A;border:1.5px solid rgba(255,77,106,0.3);font-size:13px;font-weight:700;border-radius:var(--radius-sm)">📉 Sell</button>'
+    var chartW = 320, chartH = 110;
+    var chartSVG = _invChartSVG(gainPct, period, chartW, chartH);
+
+    var detailRows = [];
+    if (item.qty)           detailRows.push(detailRow('Shares', item.qty + ' shares'));
+    if (item.buy_price)     detailRows.push(detailRow('Avg Buy Price', '₹' + item.buy_price.toLocaleString('en-IN')));
+    if (item.current_price) detailRows.push(detailRow('Current Price', '₹' + item.current_price.toLocaleString('en-IN'), gc));
+    if (item.nav)           detailRows.push(detailRow('NAV', '₹' + item.nav));
+    if (item.units)         detailRows.push(detailRow('Units', item.units.toFixed(3)));
+    if (item.sip_amt)       detailRows.push(detailRow('SIP Amount', formatINR(item.sip_amt) + '/mo'));
+    if (item.interest_rate) detailRows.push(detailRow('Interest Rate', item.interest_rate + '% p.a.'));
+    if (item.tenure)        detailRows.push(detailRow('Tenure', item.tenure));
+    if (item.maturity_date) detailRows.push(detailRow('Maturity Date', _invFmtDate(item.maturity_date)));
+    if (item.grams)         detailRows.push(detailRow('Weight', item.grams + 'g'));
+    if (item.equity_pct)    detailRows.push(detailRow('Equity Allocation', item.equity_pct + '%'));
+    if (item.pran)          detailRows.push(detailRow('PRAN', item.pran));
+    if (item.uan)           detailRows.push(detailRow('UAN', item.uan));
+    detailRows.push(detailRow('Invested On', _invFmtDate('2023-01-10')));
+    detailRows.push(detailRow('Last Updated', _invFmtDate(new Date().toISOString())));
+
+    content = '<div style="padding:0 16px">'
+      // 3-col metrics
+      + '<div style="display:flex;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:14px;overflow:hidden">'
+        + _invMetric('Total Invested', formatINR(item.invested || 0), 'var(--text)', '')
+        + '<div style="width:1px;background:var(--border);align-self:stretch;margin:10px 0"></div>'
+        + _invMetric('Current Value', formatINR(item.current || 0), 'var(--text)', '')
+        + '<div style="width:1px;background:var(--border);align-self:stretch;margin:10px 0"></div>'
+        + _invMetric('Gain / Loss', _invSign(gain) + formatINR(Math.abs(gain)), gc, _invSign(gainPct) + gainPct.toFixed(2) + '%')
+      + '</div>'
+      // Detail rows card
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);padding:0 14px;margin-bottom:14px">'
+        + detailRows.join('')
+      + '</div>'
+      // Performance chart
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);padding:16px 14px;margin-bottom:14px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+          + '<div style="color:var(--text);font-size:13px;font-weight:700">Performance</div>'
+          + '<div style="color:' + gc + ';font-size:12px;font-weight:700">' + _invSign(gainPct) + gainPct.toFixed(2) + '% (' + period + ')</div>'
+        + '</div>'
+        + '<div style="width:100%;overflow:hidden">' + chartSVG + '</div>'
+        + '<div style="display:flex;gap:4px;margin-top:10px;background:rgba(255,255,255,0.04);border-radius:8px;padding:4px">' + periodBar + '</div>'
+      + '</div>'
+      // Action buttons
+      + '<div style="display:flex;gap:10px;margin-bottom:8px">'
+        + '<button onclick="App.navigate(\'investment-buy\',{type:\'' + (item.category || cat) + '\',editId:\'' + item.id + '\'})" class="btn" style="flex:1;padding:14px;background:#10D078;color:#fff;font-size:14px;font-weight:800;border-radius:var(--radius-sm)">Buy More</button>'
+        + '<button onclick="App.navigate(\'investment-sell\',{id:\'' + item.id + '\',cat:\'' + (item.category || cat) + '\'})" class="btn" style="flex:1;padding:14px;background:#FF4D6A;color:#fff;font-size:14px;font-weight:800;border-radius:var(--radius-sm)">Sell</button>'
       + '</div>'
     + '</div>';
+
+  /* ══ TRANSACTIONS TAB ══ */
   } else if (tab === 'transactions') {
-    var txList = INV_TRANSACTIONS[id] || [];
-    var txRows = txList.map(function(tx) {
-      var isBuy = tx.type === 'buy';
+    var txData  = INV_TRANSACTIONS[id] || { buys: [], sells: [] };
+    var buys    = txData.buys  || [];
+    var sells   = txData.sells || [];
+
+    function txCard(tx, isBuy) {
       var tc = isBuy ? '#10D078' : '#FF4D6A';
-      return '<div style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-          + '<div style="display:flex;align-items:center;gap:8px">'
-            + '<div style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:' + tc + '1a;color:' + tc + '">' + (isBuy ? 'BUY' : 'SELL') + '</div>'
-            + '<div style="color:var(--text-dim);font-size:12px">' + _invFmtDate(tx.date) + '</div>'
-          + '</div>'
-          + '<div style="color:var(--text);font-size:14px;font-weight:800">' + formatINR(tx.amount || 0) + '</div>'
+      var pl = tx.realized_pl;
+      var plColor = (pl !== undefined) ? _invGainColor(pl) : '#fff';
+      return '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px;overflow:hidden">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05)">'
+          + '<div style="color:var(--text);font-size:13px;font-weight:700">' + _invFmtDate(tx.date) + '</div>'
+          + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">Qty: <span style="color:var(--text);font-weight:700">' + (tx.qty || '—') + '</span></div>'
         + '</div>'
-        + (tx.sip
-          ? '<div style="color:var(--text-dim);font-size:12px">SIP · Units: ' + (tx.units || '—') + ' · NAV: ₹' + (tx.nav || '—') + '</div>'
-          : '<div style="color:var(--text-dim);font-size:12px">Qty: ' + (tx.qty || '—') + ' · Price: ₹' + (tx.price || '—') + ' · Charges: ' + formatINR(tx.total_charges || 0) + '</div>')
+        + '<div style="display:flex;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+          + _invTxCell(isBuy ? 'Buy Price' : 'Sell Price', tx.price ? '₹' + tx.price.toLocaleString('en-IN') : (tx.nav ? '₹' + tx.nav : '—'))
+          + '<div style="width:1px;background:var(--border)"></div>'
+          + _invTxCell('Amount', tx.amount ? formatINR(tx.amount) : '—')
+          + '<div style="width:1px;background:var(--border)"></div>'
+          + _invTxCell('Charges', tx.total_charges ? '₹' + tx.total_charges.toFixed(2) : '—')
+        + '</div>'
+        + (pl !== undefined ? '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:' + (pl >= 0 ? 'rgba(16,208,120,0.06)' : 'rgba(255,77,106,0.06)') + '">'
+          + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">Realized P&amp;L</div>'
+          + '<div style="color:' + plColor + ';font-size:13px;font-weight:800">' + _invSign(pl) + formatINR(Math.abs(pl)) + '</div>'
+        + '</div>' : '')
       + '</div>';
-    }).join('');
+    }
 
-    var txTotalBought = txList.filter(function(t) { return t.type === 'buy'; }).reduce(function(s, t) { return s + (t.amount || 0); }, 0);
-    content = '<div style="padding:0 20px">'
-      + '<div style="background:var(--card);border-radius:var(--radius);padding:0 16px;border:1px solid var(--border)">'
-        + (txRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No transactions yet.</div>')
+    var buyCards  = buys.map(function(tx)  { return txCard(tx, true);  }).join('');
+    var sellCards = sells.map(function(tx) { return txCard(tx, false); }).join('');
+
+    var totalBuyAmt  = buys.reduce(function(s, t)  { return s + (t.amount || 0); }, 0);
+    var totalBuyQty  = buys.reduce(function(s, t)  { return s + (t.qty   || 0); }, 0);
+    var avgBuyPrice  = totalBuyQty > 0 ? totalBuyAmt / totalBuyQty : 0;
+
+    var totalSellQty = sells.reduce(function(s, t) { return s + (t.qty   || 0); }, 0);
+    var totalSellAmt = sells.reduce(function(s, t) { return s + (t.amount|| 0); }, 0);
+    var totalRealPL  = sells.reduce(function(s, t) { return s + (t.realized_pl || 0); }, 0);
+    var realPLPct    = totalSellAmt > 0 ? (totalRealPL / (totalSellAmt - totalRealPL) * 100) : 0;
+
+    content = '<div style="padding:0 16px">'
+      // Buy Transactions
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        + '<div style="color:var(--text);font-size:14px;font-weight:800">Buy Transactions</div>'
+        + '<div style="color:var(--text-dim);font-size:12px">' + buys.length + ' transaction' + (buys.length !== 1 ? 's' : '') + '</div>'
       + '</div>'
-      + (txList.length ? '<div style="margin-top:12px;background:rgba(108,71,255,0.1);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:12px 16px;display:flex;justify-content:space-between"><div><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Total Invested (all txs)</div><div style="color:#10D078;font-size:14px;font-weight:800">' + formatINR(txTotalBought) + '</div></div></div>' : '')
-      + '<button onclick="App.navigate(\'investment-buy\',{type:\'' + (item.category || cat) + '\',editId:\'' + item.id + '\'})" class="btn" style="width:100%;margin-top:14px;padding:14px;background:var(--primary);color:#fff;border-radius:var(--radius-sm);font-size:14px;font-weight:700">+ Add Transaction</button>'
+      + (buyCards || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px">No buy transactions</div>')
+      // Buy summary
+      + (buys.length ? '<div style="display:flex;background:rgba(16,208,120,0.06);border:1px solid rgba(16,208,120,0.15);border-radius:var(--radius-sm);padding:12px 0;margin-bottom:20px">'
+          + _invTxCell('Total Shares', totalBuyQty + ' qty')
+          + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
+          + _invTxCell('Avg Buy Price', avgBuyPrice > 0 ? '₹' + avgBuyPrice.toFixed(2) : '—')
+          + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
+          + _invTxCell('Total Invested', formatINR(totalBuyAmt))
+        + '</div>' : '')
+      // Sell Transactions
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        + '<div style="color:var(--text);font-size:14px;font-weight:800">Sell Transactions</div>'
+        + '<div style="color:var(--text-dim);font-size:12px">' + sells.length + ' transaction' + (sells.length !== 1 ? 's' : '') + '</div>'
+      + '</div>'
+      + (sellCards || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px">No sell transactions</div>')
+      // Sell summary
+      + (sells.length ? '<div style="display:flex;background:rgba(255,77,106,0.06);border:1px solid rgba(255,77,106,0.15);border-radius:var(--radius-sm);padding:12px 0;margin-bottom:16px">'
+          + _invTxCell('Total Sold', totalSellQty + ' qty')
+          + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
+          + _invTxCell('Total Value', formatINR(totalSellAmt))
+          + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
+          + _invTxCell('Realized P&L %', (totalRealPL >= 0 ? '+' : '') + realPLPct.toFixed(1) + '%')
+        + '</div>' : '')
+      + '<button onclick="App.navigate(\'investment-buy\',{type:\'' + (item.category || cat) + '\',editId:\'' + item.id + '\'})" class="btn btn-primary" style="width:100%;padding:14px;font-size:14px;font-weight:800;border-radius:var(--radius-sm);margin-bottom:8px">+ Add Buy Transaction</button>'
     + '</div>';
-  } else { // notes
+
+  /* ══ NOTES TAB ══ */
+  } else {
     var nFilter = State.invNoteFilter || 'all';
-    var noteTypeColors = { all: '#7C5CFC', private: '#EC4899', research: '#38BDF8', updates: '#10D078', ideas: '#FBBF24' };
-    var chips = ['all','private','research','updates','ideas'].map(function(nt) {
-      var a = nFilter === nt; var c = noteTypeColors[nt];
-      return '<div onclick="State.invNoteFilter=\'' + nt + '\';App.render()" style="padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;background:' + (a ? c + '22' : 'rgba(255,255,255,0.06)') + ';color:' + (a ? c : 'var(--text-dim)') + ';border:1px solid ' + (a ? c + '44' : 'rgba(255,255,255,0.08)') + '">' + nt.charAt(0).toUpperCase() + nt.slice(1) + '</div>';
+    var noteTypeMeta = {
+      all:      { color:'#7C5CFC', icon:'📋', label:'All' },
+      research: { color:'#38BDF8', icon:'🔬', label:'Research' },
+      updates:  { color:'#10D078', icon:'📢', label:'Updates' },
+      ideas:    { color:'#FBBF24', icon:'💡', label:'Ideas' },
+      private:  { color:'#EC4899', icon:'🔒', label:'Private' },
+    };
+    var chips = ['all','research','updates','ideas','private'].map(function(nt) {
+      var a = nFilter === nt; var m = noteTypeMeta[nt];
+      return '<div onclick="State.invNoteFilter=\'' + nt + '\';App.render()" style="padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;background:' + (a ? m.color : 'transparent') + ';color:' + (a ? '#fff' : 'var(--text-dim)') + ';border:1.5px solid ' + (a ? m.color : 'rgba(255,255,255,0.12)') + '">' + m.label + '</div>';
     }).join('');
 
-    var allNotes = INV_NOTES[id] || [];
+    var allNotes     = INV_NOTES[id] || [];
     var filteredNotes = nFilter === 'all' ? allNotes : allNotes.filter(function(n) { return n.type === nFilter; });
-    var noteRows = filteredNotes.map(function(n) {
-      var nc = noteTypeColors[n.type] || '#7C5CFC';
-      return '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;border:1px solid var(--border)">'
-        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-          + '<div style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:' + nc + '1a;color:' + nc + '">' + (n.type || '').toUpperCase() + '</div>'
-          + '<div style="color:var(--text-dim);font-size:11px">' + _invFmtDate(n.date) + '</div>'
+
+    var noteCards = filteredNotes.map(function(n) {
+      var m = noteTypeMeta[n.type] || noteTypeMeta.research;
+      var noteIcons = { research:'🔬', updates:'📢', ideas:'💡', private:'🔒' };
+      var noteIcon  = noteIcons[n.type] || '📋';
+      return '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);padding:14px;margin-bottom:10px">'
+        + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+          + '<div style="width:36px;height:36px;border-radius:10px;background:' + m.color + '22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">' + noteIcon + '</div>'
+          + '<div style="flex:1;min-width:0">'
+            + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+              + '<span style="padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;background:' + m.color + '22;color:' + m.color + '">' + (n.type || '').toUpperCase() + '</span>'
+              + '<span style="color:var(--text-dim);font-size:11px">' + _invFmtTime(n.date) + '</span>'
+            + '</div>'
+          + '</div>'
+          + '<div style="color:var(--text-dim);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1" onclick="App.showToast(\'Note options\')">⋯</div>'
         + '</div>'
-        + '<div style="color:var(--text);font-size:14px;font-weight:700;margin-bottom:6px">' + escapeHtml(n.title) + '</div>'
-        + '<div style="color:var(--text-dim);font-size:13px;line-height:1.6">' + escapeHtml(n.text) + '</div>'
+        + '<div style="color:var(--text);font-size:14px;font-weight:800;margin-bottom:6px">' + escapeHtml(n.title) + '</div>'
+        + '<div style="color:var(--text-dim);font-size:13px;line-height:1.6;margin-bottom:12px">' + escapeHtml(n.text) + '</div>'
+        + '<div style="display:flex;align-items:center;gap:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">'
+          + '<span style="color:var(--text-dim);font-size:12px;font-weight:600">🔒 Private</span>'
+          + '<div style="flex:1"></div>'
+          + '<button onclick="App.showToast(\'Edit note — coming soon!\')" style="background:none;border:none;color:var(--text-dim);font-size:13px;cursor:pointer;padding:2px 8px">✏️ Edit</button>'
+          + '<button onclick="App.showToast(\'Delete note — coming soon!\')" style="background:none;border:none;color:#FF4D6A;font-size:13px;cursor:pointer;padding:2px 8px">🗑️ Delete</button>'
+        + '</div>'
       + '</div>';
     }).join('');
 
-    content = '<div style="padding:0 20px">'
-      + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;-ms-overflow-style:none">' + chips + '</div>'
-      + (noteRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No notes found.</div>')
-      + '<button onclick="App.showToast(\'Add note — coming soon!\')" class="btn" style="width:100%;margin-top:4px;padding:14px;background:var(--primary-dim);color:var(--primary);border:1.5px solid var(--primary);border-radius:var(--radius-sm);font-size:14px;font-weight:700">+ Add Note</button>'
+    content = '<div style="padding:0 16px">'
+      // Header
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        + '<div>'
+          + '<div style="color:var(--text);font-size:16px;font-weight:800">Notes (' + allNotes.length + ')</div>'
+          + '<div style="color:var(--text-dim);font-size:12px;margin-top:2px">All your notes for this investment</div>'
+        + '</div>'
+        + '<button onclick="App.showToast(\'Add note — coming soon!\')" class="btn" style="padding:8px 14px;background:#7C5CFC22;color:#7C5CFC;border:1.5px solid #7C5CFC44;border-radius:var(--radius-sm);font-size:13px;font-weight:700">⊕ Add Note</button>'
+      + '</div>'
+      // Filter chips
+      + '<div style="display:flex;gap:6px;overflow-x:auto;padding:12px 0;scrollbar-width:none;-ms-overflow-style:none;margin-bottom:6px">' + chips + '</div>'
+      // Note cards
+      + (noteCards || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:32px 0">No notes found.</div>')
+      // Security card
+      + '<div style="margin-top:4px;background:linear-gradient(135deg,rgba(124,92,252,0.18) 0%,rgba(56,189,248,0.10) 100%);border:1px solid rgba(124,92,252,0.25);border-radius:var(--radius-sm);padding:16px;display:flex;align-items:center;gap:12px">'
+        + '<div style="font-size:26px">🛡️</div>'
+        + '<div>'
+          + '<div style="color:var(--text);font-size:13px;font-weight:700">Your notes are private and secure</div>'
+          + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">Encrypted and visible only to you</div>'
+        + '</div>'
+      + '</div>'
     + '</div>';
   }
 
-  var sym = (item.category === 'stocks' || item.category === 'etfs') ? (item.symbol || item.name).slice(0, 5) : (item.name || '').slice(0, 2).toUpperCase();
-
   return '<div class="screen-wrap" style="padding-bottom:32px">'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 12px">'
+    // Header
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px">'
       + '<div class="icon-btn" onclick="App.navigate(\'investment-category\',{cat:\'' + (item.category || cat) + '\'})">' + _invBackSVG + '</div>'
       + '<div style="text-align:center;flex:1;padding:0 8px">'
         + '<div style="color:var(--text);font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(item.name) + '</div>'
-        + '<div style="color:' + gc + ';font-size:12px;font-weight:700;margin-top:2px">' + _invSign(gain) + formatINR(Math.abs(gain)) + ' (' + _invSign(gainPct) + gainPct.toFixed(2) + '%)</div>'
+        + '<div style="color:var(--text-dim);font-size:12px;margin-top:2px">' + (item.symbol ? item.symbol + ' · ' : '') + (item.exchange || meta.label) + '</div>'
       + '</div>'
-      + '<div style="width:42px;height:42px;border-radius:21px;background:' + meta.color + '22;display:flex;align-items:center;justify-content:center;font-size:20px">' + meta.icon + '</div>'
+      + '<div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,' + meta.color + '33,' + meta.color + '11);border:1px solid ' + meta.color + '44;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:' + meta.color + ';flex-shrink:0">' + initials + '</div>'
     + '</div>'
-    // Mini hero
-    + '<div style="margin:0 20px 14px;background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'
-      + '<div><div style="color:var(--text-dim);font-size:11px;margin-bottom:4px">Current Value</div>'
-        + '<div style="color:var(--text);font-size:24px;font-weight:900">' + formatINR(item.current || 0) + '</div></div>'
-      + '<div style="text-align:right"><div style="color:var(--text-dim);font-size:11px;margin-bottom:4px">Invested</div>'
-        + '<div style="color:var(--text-dim);font-size:14px;font-weight:700">' + formatINR(item.invested || 0) + '</div></div>'
+    // Live price strip
+    + '<div style="padding:0 16px 12px">'
+      + '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">'
+        + '<div style="color:var(--text);font-size:26px;font-weight:900">' + (item.current_price ? '₹' + item.current_price.toLocaleString('en-IN') : formatINR(item.current || 0)) + '</div>'
+        + '<div style="color:' + gc + ';font-size:13px;font-weight:700">' + _invSign(gainPct) + gainPct.toFixed(2) + '% today</div>'
+        + '<div style="color:var(--text-dim);font-size:12px;font-weight:600;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:6px">Market Closed</div>'
+      + '</div>'
     + '</div>'
     // Tabs
-    + '<div style="display:flex;margin:0 20px 16px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabBar + '</div>'
+    + '<div style="display:flex;margin:0 16px 14px;background:rgba(255,255,255,0.04);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabBar + '</div>'
     + content
   + '</div>';
 }
@@ -3430,49 +3630,110 @@ function renderInvestmentDetail() {
 /* ─── INVESTMENT BUY ─────────────────────────────────── */
 function renderInvestmentBuy() {
   var type    = State.params.type || 'stocks';
+  var editId  = State.params.editId || '';
+  var editItem = editId ? _invFindItem(editId) : null;
   var meta    = INV_CAT_META[type] || { icon: '💰', color: '#6C47FF', label: type };
   var isStock = (type === 'stocks' || type === 'etfs');
   var isMF    = (type === 'mutual_funds');
   var today   = new Date().toISOString().slice(0, 10);
-  var ins     = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;-webkit-appearance:none';
 
-  function fr(lbl, inp) {
-    return '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">' + lbl + '</div>' + inp + '</div>';
+  var ins = 'flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none;min-width:0;text-align:right';
+  var rowStyle = 'display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.06)';
+  var iconBg   = 'width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-right:12px';
+  var lblStyle = 'color:var(--text-dim);font-size:13px;font-weight:600;min-width:110px';
+
+  function txRow(iconEmoji, iconBg2, lbl, inputId, inputType, placeholder, value, extra, readOnly) {
+    var inp = readOnly
+      ? '<div id="' + inputId + '" style="' + ins + '">' + (value || placeholder) + '</div>'
+      : '<input type="' + inputType + '" id="' + inputId + '" placeholder="' + placeholder + '" value="' + (value || '') + '" style="' + ins + '" ' + (extra || '') + '/>';
+    return '<div style="' + rowStyle + '">'
+      + '<div style="' + iconBg + 'background:' + iconBg2 + '">' + iconEmoji + '</div>'
+      + '<div style="' + lblStyle + '">' + lbl + '</div>'
+      + inp
+    + '</div>';
   }
 
-  var chargesSection = isStock ? (
-    '<div style="margin-bottom:16px;background:var(--card);border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border)">'
-    + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px">CHARGES BREAKDOWN (Auto)</div>'
-    + ['STT (0.1%)','Exchange Levy','GST on Brokerage','Stamp Duty','SEBI Charges'].map(function(l, i) {
-      var ids = ['ibf-stt','ibf-exchg','ibf-gst','ibf-stamp','ibf-sebi'];
-      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--text-dim);font-size:13px">' + l + '</span><span id="' + ids[i] + '" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>';
-    }).join('')
-    + '<div style="display:flex;justify-content:space-between;padding:8px 0 0"><span style="color:var(--text);font-size:13px;font-weight:700">Total Charges</span><span id="ibf-total-ch" style="color:#FF4D6A;font-size:13px;font-weight:800">₹0.00</span></div>'
-    + '</div>'
-  ) : '';
+  function chargeRow(lbl, inputId, readOnly, defaultVal) {
+    var inp = readOnly
+      ? '<span id="' + inputId + '" style="color:var(--text-dim);font-size:13px;font-weight:700">₹0.00</span>'
+      : '<input type="number" id="' + inputId + '" placeholder="0.00" value="' + (defaultVal || '') + '" style="width:80px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:5px 10px;color:var(--text);font-size:13px;font-weight:600;text-align:right;outline:none" oninput="App._recalcBuy()"/>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,0.05)">'
+      + '<div style="color:var(--text-dim);font-size:13px">' + lbl + '</div>'
+      + inp
+    + '</div>';
+  }
 
-  return '<div class="screen-wrap" style="padding-bottom:40px">'
-    + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 20px">'
-      + '<div class="icon-btn" onclick="App.navigate(\'investment-type-select\')">' + _invBackSVG + '</div>'
-      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">' + meta.icon + ' Buy ' + meta.label + '</div>'
-        + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">Record a purchase</div></div>'
+  var backDest = editItem ? 'investment-detail' : 'investment-type-select';
+  var backParams = editItem ? '{id:\'' + editId + '\',cat:\'' + type + '\'}' : '{}';
+
+  return '<div class="screen-wrap" style="padding-bottom:48px">'
+    // Header
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 16px 16px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'' + backDest + '\',' + backParams + ')">' + _invBackSVG + '</div>'
+      + '<div style="color:var(--text);font-size:17px;font-weight:800">Add Buy Transaction</div>'
+      + '<div onclick="App._saveInvBuy(\'' + type + '\')" style="color:#7C5CFC;font-size:14px;font-weight:700;cursor:pointer;padding:4px 8px">Save</div>'
     + '</div>'
-    + '<div style="padding:0 20px">'
-      + fr('Date', '<input type="date" id="ibf-date" value="' + today + '" style="' + ins + '" oninput="App._recalcBuy()">')
-      + fr('Name / Symbol', '<input type="text" id="ibf-name" placeholder="' + (isStock ? 'e.g. RELIANCE' : isMF ? 'e.g. Nifty 50 Index Fund' : 'Enter name') + '" style="' + ins + '">')
-      + (isStock ? fr('Quantity', '<input type="number" id="ibf-qty" placeholder="Number of units" style="' + ins + '" oninput="App._recalcBuy()">') : '')
-      + (isStock ? fr('Buy Price (₹ per unit)', '<input type="number" id="ibf-price" placeholder="Price per share" style="' + ins + '" oninput="App._recalcBuy()">') : '')
-      + (!isStock ? fr('Amount (₹)', '<input type="number" id="ibf-amt" placeholder="Amount invested" style="' + ins + '" oninput="App._recalcBuy()">') : '')
-      + (isStock ? fr('Brokerage (₹)', '<input type="number" id="ibf-brok" placeholder="e.g. 20" style="' + ins + '" oninput="App._recalcBuy()">') : '')
-      + chargesSection
-      // Summary panel
-      + '<div id="ibf-summary" style="margin-bottom:16px;background:rgba(108,71,255,0.1);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:16px">'
-        + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">SUMMARY</div>'
-        + '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Transaction Amount</span><span id="ibf-amt-disp" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>'
-        + (isStock ? '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Total Charges</span><span id="ibf-charges-disp" style="color:#FF4D6A;font-size:13px;font-weight:700">₹0.00</span></div>' : '')
-        + '<div style="display:flex;justify-content:space-between;padding:7px 0 0"><span style="color:var(--text);font-size:14px;font-weight:800">Net Amount</span><span id="ibf-net" style="color:var(--primary);font-size:16px;font-weight:900">₹0.00</span></div>'
-        + (isStock ? '<div style="display:flex;justify-content:space-between;padding:5px 0 0"><span style="color:var(--text-dim);font-size:13px">Avg Buy Price</span><span id="ibf-avg" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>' : '')
+    // Transaction Details section
+    + '<div style="margin:0 16px 16px">'
+      + '<div style="color:var(--text-dim);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;padding-left:4px">TRANSACTION DETAILS</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden">'
+        + txRow('📅', 'rgba(124,92,252,0.15)', 'Date', 'ibf-date', 'date', '', today, 'oninput="App._recalcBuy()"', false)
+        + txRow('🏢', 'rgba(56,189,248,0.15)', 'Company Name', 'ibf-name', 'text', editItem ? editItem.name : 'e.g. Reliance Industries', editItem ? editItem.name : '', '', false)
+        + txRow('🏛️', 'rgba(16,208,120,0.15)', 'Exchange', 'ibf-exchange', 'text', editItem ? (editItem.exchange || 'NSE') : 'NSE', editItem ? (editItem.exchange || 'NSE') : 'NSE', '', false)
+        + (isStock ? txRow('📦', 'rgba(251,191,36,0.15)', 'Quantity', 'ibf-qty', 'number', 'e.g. 10', '', 'oninput="App._recalcBuy()"', false) : '')
+        + (isStock ? txRow('💰', 'rgba(255,77,106,0.15)', 'Buy Price (₹)', 'ibf-price', 'number', 'e.g. 2520.00', '', 'oninput="App._recalcBuy()"', false) : '')
+        + (!isStock ? txRow('💰', 'rgba(255,77,106,0.15)', 'Amount (₹)', 'ibf-amt', 'number', 'e.g. 5000', '', 'oninput="App._recalcBuy()"', false) : '')
+        + (isMF ? txRow('📊', 'rgba(139,92,246,0.15)', 'NAV (₹)', 'ibf-nav', 'number', 'e.g. 104.57', '', 'oninput="App._recalcBuy()"', false) : '')
+        + '<div style="' + rowStyle + 'background:rgba(16,208,120,0.05)">'
+          + '<div style="' + iconBg + 'background:rgba(16,208,120,0.15)">🧮</div>'
+          + '<div style="' + lblStyle + '">Total Purchase</div>'
+          + '<div id="ibf-amt-disp" style="color:#10D078;font-size:14px;font-weight:800;margin-left:auto">₹0.00</div>'
+        + '</div>'
       + '</div>'
+    + '</div>'
+    // Charges & Taxes section (stocks only)
+    + (isStock ? '<div style="margin:0 16px 16px">'
+      + '<div style="color:#7C5CFC;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;padding-left:4px">CHARGES &amp; TAXES</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden">'
+        + chargeRow('Brokerage',        'ibf-brok',  false, '20')
+        + chargeRow('STT (0.1%)',        'ibf-stt',   true)
+        + chargeRow('Exchange Charges',  'ibf-exchg', true)
+        + chargeRow('GST (18%)',         'ibf-gst',   true)
+        + chargeRow('Stamp Duty',        'ibf-stamp', true)
+        + chargeRow('SEBI Charges',      'ibf-sebi',  true)
+        + chargeRow('Other Charges',     'ibf-other', false)
+        + '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(16,208,120,0.05)">'
+          + '<div style="color:var(--text);font-size:13px;font-weight:700">Total Charges <span style="color:var(--text-dim);font-size:11px;font-weight:500">(Auto calculated)</span></div>'
+          + '<span id="ibf-total-ch" style="color:#10D078;font-size:14px;font-weight:800">₹0.00</span>'
+        + '</div>'
+      + '</div>'
+    + '</div>' : '')
+    // Additional Details
+    + '<div style="margin:0 16px 16px">'
+      + '<div style="color:var(--text-dim);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;padding-left:4px">ADDITIONAL DETAILS</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden">'
+        + '<div style="' + rowStyle + '">'
+          + '<div style="' + iconBg + 'background:rgba(124,92,252,0.15)">📋</div>'
+          + '<div style="' + lblStyle + '">Order Type</div>'
+          + '<select id="ibf-ordertype" style="background:transparent;border:none;color:var(--text-dim);font-size:13px;outline:none;cursor:pointer">'
+            + '<option value="market">Market Order</option>'
+            + '<option value="limit">Limit Order</option>'
+            + '<option value="sl">SL Order</option>'
+          + '</select>'
+        + '</div>'
+        + txRow('🏦', 'rgba(56,189,248,0.15)', 'Broker Name', 'ibf-broker', 'text', 'e.g. Zerodha', '', '', false)
+        + '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06)">'
+          + '<div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:8px">Notes (optional)</div>'
+          + '<textarea id="ibf-notes" placeholder="Add any notes about this transaction..." style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;color:var(--text);font-size:13px;resize:none;height:70px;outline:none;box-sizing:border-box;font-family:inherit"></textarea>'
+        + '</div>'
+      + '</div>'
+    + '</div>'
+    // Net amount summary
+    + (isStock ? '<div style="margin:0 16px 16px;background:rgba(108,71,255,0.08);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">'
+      + '<div><div style="color:var(--text-dim);font-size:12px;margin-bottom:4px">Net Amount Payable</div><div style="color:var(--text-dim);font-size:11px">Avg Price: <span id="ibf-avg">₹0.00</span></div></div>'
+      + '<div id="ibf-net" style="color:#7C5CFC;font-size:20px;font-weight:900">₹0.00</div>'
+    + '</div>' : '')
+    + '<div style="padding:0 16px">'
       + '<button onclick="App._saveInvBuy(\'' + type + '\')" class="btn btn-primary" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm)">Confirm Buy</button>'
     + '</div>'
   + '</div>';
@@ -6250,30 +6511,30 @@ const App = {
 
   /* ── Investment Module ──────────────────────── */
   _recalcBuy() {
-    var qty   = parseFloat(document.getElementById('ibf-qty')?.value || '0') || 0;
-    var price = parseFloat(document.getElementById('ibf-price')?.value || '0') || 0;
-    var brok  = parseFloat(document.getElementById('ibf-brok')?.value || '0') || 0;
-    var extAmt = parseFloat(document.getElementById('ibf-amt')?.value || '0') || 0;
+    var qty    = parseFloat(document.getElementById('ibf-qty')?.value   || '0') || 0;
+    var price  = parseFloat(document.getElementById('ibf-price')?.value || '0') || 0;
+    var brok   = parseFloat(document.getElementById('ibf-brok')?.value  || '20') || 20;
+    var other  = parseFloat(document.getElementById('ibf-other')?.value || '0') || 0;
+    var extAmt = parseFloat(document.getElementById('ibf-amt')?.value   || '0') || 0;
     var amount = (qty > 0 && price > 0) ? qty * price : extAmt;
-    var stt    = Math.round(amount * 0.001   * 100) / 100;
+    var stt    = Math.round(amount * 0.001     * 100) / 100;
     var exchg  = Math.round(amount * 0.0000345 * 100) / 100;
-    var gst    = Math.round(brok  * 0.18    * 100) / 100;
-    var stamp  = Math.round(amount * 0.00015  * 100) / 100;
-    var sebi   = Math.round(amount * 0.000001 * 100) / 100;
-    var totalCh = brok + stt + exchg + gst + stamp + sebi;
+    var gst    = Math.round(brok   * 0.18      * 100) / 100;
+    var stamp  = Math.round(amount * 0.00015   * 100) / 100;
+    var sebi   = Math.round(amount * 0.000001  * 100) / 100;
+    var totalCh = brok + stt + exchg + gst + stamp + sebi + other;
     var net     = amount + totalCh;
     var avg     = qty > 0 ? net / qty : 0;
     function s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
-    s('ibf-amt-disp',    '₹' + amount.toFixed(2));
-    s('ibf-stt',         '₹' + stt.toFixed(2));
-    s('ibf-exchg',       '₹' + exchg.toFixed(2));
-    s('ibf-gst',         '₹' + gst.toFixed(2));
-    s('ibf-stamp',       '₹' + stamp.toFixed(2));
-    s('ibf-sebi',        '₹' + sebi.toFixed(2));
-    s('ibf-total-ch',    '₹' + totalCh.toFixed(2));
-    s('ibf-charges-disp','₹' + totalCh.toFixed(2));
-    s('ibf-net',         '₹' + net.toFixed(2));
-    s('ibf-avg',         '₹' + avg.toFixed(2));
+    s('ibf-amt-disp', '₹' + amount.toFixed(2));
+    s('ibf-stt',      '₹' + stt.toFixed(2));
+    s('ibf-exchg',    '₹' + exchg.toFixed(2));
+    s('ibf-gst',      '₹' + gst.toFixed(2));
+    s('ibf-stamp',    '₹' + stamp.toFixed(2));
+    s('ibf-sebi',     '₹' + sebi.toFixed(2));
+    s('ibf-total-ch', '₹' + totalCh.toFixed(2));
+    s('ibf-net',      '₹' + net.toFixed(2));
+    s('ibf-avg',      '₹' + avg.toFixed(2));
   },
 
   _recalcSell(avgBuy) {
