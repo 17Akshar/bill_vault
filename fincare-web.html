@@ -3112,8 +3112,15 @@ function _invSign(g) { return g >= 0 ? '+' : ''; }
 function _invGainPct(inv, cur) { return inv > 0 ? ((cur - inv) / inv * 100) : 0; }
 function _invFmtDate(iso) {
   if (!iso) return '—';
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Parse date-only strings (YYYY-MM-DD) manually to avoid UTC-vs-local timezone shift
+  var datePart = String(iso).split('T')[0];
+  var parts = datePart.split('-');
+  if (parts.length === 3) {
+    return parseInt(parts[2], 10) + ' ' + months[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+  }
   var d = new Date(iso);
-  return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getFullYear();
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
 }
 
 var _invBackSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>';
@@ -3169,12 +3176,11 @@ function _invChartSVG(gainPct, period, w, h) {
   }
   d += ' Q' + xs[pts - 2].toFixed(1) + ',' + ys[pts - 2].toFixed(1) + ' ' + xs[pts - 1].toFixed(1) + ',' + ys[pts - 1].toFixed(1);
   var areaD = d + ' L' + xs[pts - 1].toFixed(1) + ',' + (padT + ch) + ' L' + padL + ',' + (padT + ch) + ' Z';
-  var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
   var gridLines = [0.25, 0.5, 0.75].map(function(f) {
     var y = (padT + f * ch).toFixed(1);
     return '<line x1="' + padL + '" y1="' + y + '" x2="' + (padL + cw) + '" y2="' + y + '" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>';
   }).join('');
-  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">'
+  return '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">'
     + '<defs>'
     + '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">'
     + '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.35"/>'
@@ -3430,8 +3436,12 @@ function renderInvestmentDetail() {
     if (item.equity_pct)    detailRows.push(detailRow('Equity Allocation', item.equity_pct + '%'));
     if (item.pran)          detailRows.push(detailRow('PRAN', item.pran));
     if (item.uan)           detailRows.push(detailRow('UAN', item.uan));
-    detailRows.push(detailRow('Invested On', _invFmtDate('2023-01-10')));
-    detailRows.push(detailRow('Last Updated', _invFmtDate(new Date().toISOString())));
+    // Derive "Invested On" from first buy transaction, falling back to opening_year
+    var txDataOv = INV_TRANSACTIONS[id];
+    var firstBuyDate = txDataOv && txDataOv.buys && txDataOv.buys.length > 0 ? txDataOv.buys[0].date : null;
+    if (firstBuyDate) detailRows.push(detailRow('Invested On', _invFmtDate(firstBuyDate)));
+    else if (item.opening_year) detailRows.push(detailRow('Opened', String(item.opening_year)));
+    detailRows.push(detailRow('Last Updated', _invFmtDate(new Date().toISOString().slice(0, 10))));
 
     content = '<div style="padding:0 16px">'
       // 3-col metrics
@@ -3468,7 +3478,7 @@ function renderInvestmentDetail() {
     var buys    = txData.buys  || [];
     var sells   = txData.sells || [];
 
-    function txCard(tx, isBuy) {
+    var txCard = function(tx, isBuy) {
       var tc = isBuy ? '#10D078' : '#FF4D6A';
       var pl = tx.realized_pl;
       var plColor = (pl !== undefined) ? _invGainColor(pl) : '#fff';
@@ -3495,10 +3505,13 @@ function renderInvestmentDetail() {
     var sellCards = sells.map(function(tx) { return txCard(tx, false); }).join('');
 
     var totalBuyAmt  = buys.reduce(function(s, t)  { return s + (t.amount || 0); }, 0);
-    var totalBuyQty  = buys.reduce(function(s, t)  { return s + (t.qty   || 0); }, 0);
+    var totalBuyQty  = buys.reduce(function(s, t)  { return s + (t.qty || t.units || 0); }, 0);
     var avgBuyPrice  = totalBuyQty > 0 ? totalBuyAmt / totalBuyQty : 0;
+    var isMFItem     = (item.category === 'mutual_funds');
+    var qtyLabel     = isMFItem ? 'Total Units' : 'Total Shares';
+    var avgPriceLabel = isMFItem ? 'Avg NAV' : 'Avg Buy Price';
 
-    var totalSellQty = sells.reduce(function(s, t) { return s + (t.qty   || 0); }, 0);
+    var totalSellQty = sells.reduce(function(s, t) { return s + (t.qty || t.units || 0); }, 0);
     var totalSellAmt = sells.reduce(function(s, t) { return s + (t.amount|| 0); }, 0);
     var totalRealPL  = sells.reduce(function(s, t) { return s + (t.realized_pl || 0); }, 0);
     var realPLPct    = totalSellAmt > 0 ? (totalRealPL / (totalSellAmt - totalRealPL) * 100) : 0;
@@ -3512,9 +3525,9 @@ function renderInvestmentDetail() {
       + (buyCards || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px">No buy transactions</div>')
       // Buy summary
       + (buys.length ? '<div style="display:flex;background:rgba(16,208,120,0.06);border:1px solid rgba(16,208,120,0.15);border-radius:var(--radius-sm);padding:12px 0;margin-bottom:20px">'
-          + _invTxCell('Total Shares', totalBuyQty + ' qty')
+          + _invTxCell(qtyLabel, totalBuyQty > 0 ? totalBuyQty + (isMFItem ? ' units' : ' qty') : '—')
           + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
-          + _invTxCell('Avg Buy Price', avgBuyPrice > 0 ? '₹' + avgBuyPrice.toFixed(2) : '—')
+          + _invTxCell(avgPriceLabel, avgBuyPrice > 0 ? '₹' + avgBuyPrice.toFixed(2) : '—')
           + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
           + _invTxCell('Total Invested', formatINR(totalBuyAmt))
         + '</div>' : '')
@@ -5778,6 +5791,13 @@ const App = {
   navigate(screen, params = {}) {
     State.screen = screen;
     State.params = params;
+    // Reset investment detail state when entering a new detail view
+    // so stale tab/filter/period from a previous investment don't bleed over
+    if (screen === 'investment-detail') {
+      State.invDetailTab   = 'overview';
+      State.invNoteFilter  = 'all';
+      State.invChartPeriod = '1Y';
+    }
     this.render();
   },
 
@@ -6513,7 +6533,7 @@ const App = {
   _recalcBuy() {
     var qty    = parseFloat(document.getElementById('ibf-qty')?.value   || '0') || 0;
     var price  = parseFloat(document.getElementById('ibf-price')?.value || '0') || 0;
-    var brok   = parseFloat(document.getElementById('ibf-brok')?.value  || '20') || 20;
+    var brok   = parseFloat(document.getElementById('ibf-brok')?.value  || '0') || 0;
     var other  = parseFloat(document.getElementById('ibf-other')?.value || '0') || 0;
     var extAmt = parseFloat(document.getElementById('ibf-amt')?.value   || '0') || 0;
     var amount = (qty > 0 && price > 0) ? qty * price : extAmt;
@@ -6567,13 +6587,19 @@ const App = {
   },
 
   _saveInvBuy(type) {
-    var name = document.getElementById('ibf-name')?.value?.trim();
-    var qty  = document.getElementById('ibf-qty')?.value;
-    var amt  = document.getElementById('ibf-amt')?.value;
+    var name   = document.getElementById('ibf-name')?.value?.trim();
+    var qty    = document.getElementById('ibf-qty')?.value;
+    var amt    = document.getElementById('ibf-amt')?.value;
+    var editId = State.params && State.params.editId;
     if (!name) { this.showToast('Please enter a name'); return; }
     if (!qty && !amt) { this.showToast('Please enter quantity or amount'); return; }
     this.showToast('Investment recorded! 📈');
-    this.navigate('investment-category', { cat: type });
+    // Return to the detail screen if this was a "Buy More" action
+    if (editId) {
+      this.navigate('investment-detail', { id: editId, cat: type });
+    } else {
+      this.navigate('investment-category', { cat: type });
+    }
   },
 
   _saveInvSell() {
