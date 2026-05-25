@@ -3482,24 +3482,31 @@ function renderInvestmentDetail() {
       var tc = isBuy ? '#10D078' : '#FF4D6A';
       var pl = tx.realized_pl;
       var plColor = (pl !== undefined) ? _invGainColor(pl) : '#fff';
+      var isSIP = !!tx.sip;
+      var qtyDisplay = isSIP
+        ? 'Units: <span style="color:var(--text);font-weight:700">' + (tx.units || '—') + '</span>'
+        : 'Qty: <span style="color:var(--text);font-weight:700">' + (tx.qty || '—') + '</span>';
+      var priceLabel = isSIP ? 'NAV' : (isBuy ? 'Buy Price' : 'Sell Price');
+      var priceVal   = tx.price ? '₹' + tx.price.toLocaleString('en-IN') : (tx.nav ? '₹' + tx.nav : '—');
+      var chargesVal = tx.total_charges ? '₹' + tx.total_charges.toFixed(2) : (isSIP ? '₹0.00' : '—');
       return '<div style="background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px;overflow:hidden">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05)">'
           + '<div style="color:var(--text);font-size:13px;font-weight:700">' + _invFmtDate(tx.date) + '</div>'
-          + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">Qty: <span style="color:var(--text);font-weight:700">' + (tx.qty || '—') + '</span></div>'
+          + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">' + qtyDisplay + '</div>'
         + '</div>'
         + '<div style="display:flex;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
-          + _invTxCell(isBuy ? 'Buy Price' : 'Sell Price', tx.price ? '₹' + tx.price.toLocaleString('en-IN') : (tx.nav ? '₹' + tx.nav : '—'))
+          + _invTxCell(priceLabel, priceVal)
           + '<div style="width:1px;background:var(--border)"></div>'
           + _invTxCell('Amount', tx.amount ? formatINR(tx.amount) : '—')
           + '<div style="width:1px;background:var(--border)"></div>'
-          + _invTxCell('Charges', tx.total_charges ? '₹' + tx.total_charges.toFixed(2) : '—')
+          + _invTxCell('Charges', chargesVal)
         + '</div>'
         + (pl !== undefined ? '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:' + (pl >= 0 ? 'rgba(16,208,120,0.06)' : 'rgba(255,77,106,0.06)') + '">'
           + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">Realized P&amp;L</div>'
           + '<div style="color:' + plColor + ';font-size:13px;font-weight:800">' + _invSign(pl) + formatINR(Math.abs(pl)) + '</div>'
         + '</div>' : '')
       + '</div>';
-    }
+    };
 
     var buyCards  = buys.map(function(tx)  { return txCard(tx, true);  }).join('');
     var sellCards = sells.map(function(tx) { return txCard(tx, false); }).join('');
@@ -3525,7 +3532,7 @@ function renderInvestmentDetail() {
       + (buyCards || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:10px">No buy transactions</div>')
       // Buy summary
       + (buys.length ? '<div style="display:flex;background:rgba(16,208,120,0.06);border:1px solid rgba(16,208,120,0.15);border-radius:var(--radius-sm);padding:12px 0;margin-bottom:20px">'
-          + _invTxCell(qtyLabel, totalBuyQty > 0 ? totalBuyQty + (isMFItem ? ' units' : ' qty') : '—')
+          + _invTxCell(qtyLabel, totalBuyQty > 0 ? (isMFItem ? totalBuyQty.toFixed(3) + ' units' : totalBuyQty + ' qty') : '—')
           + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
           + _invTxCell(avgPriceLabel, avgBuyPrice > 0 ? '₹' + avgBuyPrice.toFixed(2) : '—')
           + '<div style="width:1px;background:rgba(255,255,255,0.08)"></div>'
@@ -3760,7 +3767,24 @@ function renderInvestmentSell() {
   var meta = INV_CAT_META[cat || item.category] || { icon: '📉', color: '#FF4D6A', label: 'Investment' };
   var ins  = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;-webkit-appearance:none';
   var today = new Date().toISOString().slice(0, 10);
-  var avgBuy = item.buy_price || (item.invested && item.qty ? (item.invested / item.qty) : 0);
+
+  // Compute weighted avg buy price from actual transactions when available
+  var txDataSell = INV_TRANSACTIONS[id];
+  var avgBuy = 0;
+  if (txDataSell && txDataSell.buys && txDataSell.buys.length > 0) {
+    var _tAmt = txDataSell.buys.reduce(function(s, t) { return s + (t.amount || 0); }, 0);
+    var _tQty = txDataSell.buys.reduce(function(s, t) { return s + (t.qty || 0); }, 0);
+    avgBuy = _tQty > 0 ? _tAmt / _tQty : 0;
+  }
+  avgBuy = avgBuy || item.buy_price || (item.invested && item.qty ? (item.invested / item.qty) : 0);
+
+  // Compute net available qty (buys - sells from transactions)
+  var availQty = item.qty || 0;
+  if (txDataSell) {
+    var _bQty = (txDataSell.buys  || []).reduce(function(s, t) { return s + (t.qty || 0); }, 0);
+    var _sQty = (txDataSell.sells || []).reduce(function(s, t) { return s + (t.qty || 0); }, 0);
+    if (_bQty > 0) availQty = _bQty - _sQty;
+  }
 
   function fr(lbl, inp) {
     return '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">' + lbl + '</div>' + inp + '</div>';
@@ -3769,16 +3793,16 @@ function renderInvestmentSell() {
   return '<div class="screen-wrap" style="padding-bottom:40px">'
     + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 20px">'
       + '<div class="icon-btn" onclick="App.navigate(\'investment-detail\',{id:\'' + (id || '') + '\',cat:\'' + (cat || '') + '\'})">' + _invBackSVG + '</div>'
-      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">' + meta.icon + ' Sell ' + meta.label + '</div>'
+      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">📉 Sell ' + meta.label + '</div>'
         + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">' + escapeHtml(item.name || 'Investment') + '</div></div>'
     + '</div>'
     + '<div style="padding:0 20px">'
-      // Holding info banner
-      + (item.qty ? '<div style="margin-bottom:16px;background:var(--card);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);display:flex;justify-content:space-between"><div><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Available Qty</div><div style="color:var(--text);font-size:16px;font-weight:800">' + item.qty + ' units</div></div><div style="text-align:right"><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Avg Buy Price</div><div style="color:var(--text);font-size:16px;font-weight:800">₹' + avgBuy.toFixed(2) + '</div></div></div>' : '')
+      // Holding info banner — uses computed avgBuy and availQty
+      + (availQty > 0 ? '<div style="margin-bottom:16px;background:var(--card);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);display:flex;justify-content:space-between"><div><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Available Qty</div><div style="color:var(--text);font-size:16px;font-weight:800">' + availQty + ' shares</div></div><div style="text-align:right"><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Avg Buy Price</div><div style="color:var(--text);font-size:16px;font-weight:800">₹' + avgBuy.toFixed(2) + '</div></div></div>' : '')
       + fr('Date', '<input type="date" id="isf-date" value="' + today + '" style="' + ins + '">')
-      + fr('Sell Quantity', '<input type="number" id="isf-qty" placeholder="Shares to sell" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ')">')
-      + fr('Sell Price (₹ per unit)', '<input type="number" id="isf-price" placeholder="Price per share" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ')">')
-      + fr('Brokerage (₹)', '<input type="number" id="isf-brok" placeholder="e.g. 20" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ')">')
+      + fr('Sell Quantity', '<input type="number" id="isf-qty" placeholder="Max ' + availQty + '" min="1" max="' + availQty + '" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ',' + availQty + ')">')
+      + fr('Sell Price (₹ per unit)', '<input type="number" id="isf-price" placeholder="Price per share" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ',' + availQty + ')">')
+      + fr('Brokerage (₹)', '<input type="number" id="isf-brok" placeholder="e.g. 20" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ',' + availQty + ')">')
       // Summary panel
       + '<div style="margin-bottom:16px;background:rgba(255,77,106,0.08);border:1px solid rgba(255,77,106,0.2);border-radius:var(--radius-sm);padding:16px">'
         + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">SELL SUMMARY</div>'
@@ -6557,10 +6581,16 @@ const App = {
     s('ibf-avg',      '₹' + avg.toFixed(2));
   },
 
-  _recalcSell(avgBuy) {
+  _recalcSell(avgBuy, availQty) {
     var qty   = parseFloat(document.getElementById('isf-qty')?.value || '0') || 0;
     var price = parseFloat(document.getElementById('isf-price')?.value || '0') || 0;
     var brok  = parseFloat(document.getElementById('isf-brok')?.value || '0') || 0;
+    // Clamp qty to available
+    if (availQty > 0 && qty > availQty) {
+      qty = availQty;
+      var qtyEl = document.getElementById('isf-qty');
+      if (qtyEl) qtyEl.value = availQty;
+    }
     var amount   = qty * price;
     var stt      = Math.round(amount * 0.001    * 100) / 100;
     var exchg    = Math.round(amount * 0.0000345 * 100) / 100;
@@ -6577,7 +6607,7 @@ const App = {
       if (color) el.style.color = color;
     }
     s('isf-amt',     '₹' + amount.toFixed(2));
-    s('isf-charges', '-₹' + totalCh.toFixed(2));
+    s('isf-charges', '₹' + totalCh.toFixed(2));
     s('isf-net',     '₹' + net.toFixed(2));
     if (qty > 0 && avgBuy > 0) {
       s('isf-pl', (pl >= 0 ? '+' : '') + '₹' + Math.abs(pl).toFixed(2), plColor);
@@ -6603,11 +6633,24 @@ const App = {
   },
 
   _saveInvSell() {
-    var qty   = document.getElementById('isf-qty')?.value;
-    var price = document.getElementById('isf-price')?.value;
-    if (!qty || !price) { this.showToast('Please enter sell quantity and price'); return; }
-    var id  = State.params.id;
-    var cat = State.params.cat;
+    var qtyStr  = document.getElementById('isf-qty')?.value;
+    var price   = document.getElementById('isf-price')?.value;
+    var id      = State.params.id;
+    var cat     = State.params.cat;
+    if (!qtyStr || !price) { this.showToast('Please enter sell quantity and price'); return; }
+    var qty = parseFloat(qtyStr);
+    if (isNaN(qty) || qty <= 0) { this.showToast('Quantity must be greater than 0'); return; }
+    // Guard against selling more than available
+    var txDataSell = INV_TRANSACTIONS[id];
+    if (txDataSell) {
+      var _bQty = (txDataSell.buys  || []).reduce(function(s, t) { return s + (t.qty || 0); }, 0);
+      var _sQty = (txDataSell.sells || []).reduce(function(s, t) { return s + (t.qty || 0); }, 0);
+      var available = _bQty - _sQty;
+      if (available > 0 && qty > available) {
+        this.showToast('Cannot sell more than ' + available + ' available shares');
+        return;
+      }
+    }
     this.showToast('Sale recorded! 📉');
     this.navigate('investment-detail', { id: id, cat: cat });
   },
