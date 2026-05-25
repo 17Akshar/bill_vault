@@ -7598,9 +7598,8 @@ const App = {
     const icon = document.getElementById('nc-icon')?.value || '📦';
     if (!name) { this.showToast('Please enter a category name'); return; }
     const newCat = { id: uid('cat_'), name, icon, color: '#6C47FF', sub: [], type: tab };
-    if (!DEMO.categories) DEMO.categories = { expense: [], income: [], transfer: [] };
-    if (!DEMO.categories[tab]) DEMO.categories[tab] = [];
-    DEMO.categories[tab].push(newCat);
+    if (!DEMO.categories) DEMO.categories = [];
+    DEMO.categories.push(newCat);
     overlay?.remove();
     this.showToast('Category "'+name+'" added!');
     this.render();
