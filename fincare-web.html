@@ -1626,6 +1626,12 @@ const State = {
   addAcctType:     'bank',
   editAcctId:      null,
   acctColor:       '#6C47FF',
+  // Investment module
+  invCat:        null,
+  invSelId:      null,
+  invDetailTab:  'overview',
+  invCatFilter:  'all',
+  invNoteFilter: 'all',
 };
 
 /* ══════════════════════════════════════════════════════
@@ -1733,6 +1739,120 @@ const DEMO = {
     { id: 'i4', name: 'Fixed Deposit - SBI', type: 'FD',          invested:  50000, current:  53750, returns_pct:  7.50 },
     { id: 'i5', name: 'Reliance Industries', type: 'Stocks',      invested:  25000, current:  31200, returns_pct: 24.80 },
   ],
+};
+
+/* ═══════════════════════════════════════════════════════
+   INVESTMENT MODULE — CONSTANTS
+══════════════════════════════════════════════════════ */
+const INV_CAT_META = {
+  stocks:       { icon:'📈', color:'#7C5CFC', label:'Stocks',         sub:'Direct equity' },
+  mutual_funds: { icon:'🏦', color:'#10D078', label:'Mutual Funds',   sub:'SIP & lumpsum' },
+  etfs:         { icon:'💎', color:'#38BDF8', label:'ETFs',           sub:'Index & sector' },
+  fds:          { icon:'🏧', color:'#FBBF24', label:'Fixed Deposits',  sub:'Bank & NBFC' },
+  ppf:          { icon:'🔐', color:'#EC4899', label:'PPF',            sub:'Tax-free returns' },
+  gold:         { icon:'🥇', color:'#EAB308', label:'Gold',           sub:'Digital & physical' },
+  nps:          { icon:'🛡️', color:'#8B5CF6', label:'NPS',            sub:'Pension fund' },
+  epf:          { icon:'👷', color:'#60A5FA', label:'EPF',            sub:'PF + employer match' },
+};
+
+const INV_TYPE_GROUPS = [
+  { label: 'Market Investments', types: [
+    { id:'stocks',       icon:'📈', name:'Stocks / Shares',  desc:'NSE & BSE listed equities' },
+    { id:'mutual_funds', icon:'🏦', name:'Mutual Funds',     desc:'Equity, Debt, Hybrid SIP' },
+    { id:'etfs',         icon:'💎', name:'ETFs',             desc:'Exchange Traded Funds' },
+  ]},
+  { label: 'Fixed Income', types: [
+    { id:'fds',  icon:'🏧', name:'Fixed Deposit', desc:'Bank & corporate FDs' },
+    { id:'ppf',  icon:'🔐', name:'PPF',           desc:'Public Provident Fund' },
+    { id:'nps',  icon:'🛡️', name:'NPS',           desc:'National Pension Scheme' },
+    { id:'epf',  icon:'👷', name:'EPF',           desc:'Employee Provident Fund' },
+  ]},
+  { label: 'Others', types: [
+    { id:'gold',  icon:'🥇', name:'Gold',   desc:'Digital & Physical gold' },
+    { id:'bonds', icon:'📋', name:'Bonds',  desc:'Govt & corporate bonds' },
+    { id:'reits', icon:'🏠', name:'REITs',  desc:'Real Estate Investment Trusts' },
+    { id:'crypto',icon:'₿',  name:'Crypto', desc:'Digital currencies' },
+  ]},
+];
+
+const INV_PORTFOLIO = {
+  stocks: [
+    { id:'s1', name:'Reliance Industries', symbol:'RELIANCE', exchange:'NSE', qty:10,  buy_price:2250, current_price:2891.5, invested:22500,  current:28915,  status:'active', sector:'Energy'  },
+    { id:'s2', name:'HDFC Bank',           symbol:'HDFCBANK',  exchange:'NSE', qty:15,  buy_price:1580, current_price:1742.3, invested:23700,  current:26135,  status:'active', sector:'Banking' },
+    { id:'s3', name:'Infosys',             symbol:'INFY',      exchange:'NSE', qty:20,  buy_price:1400, current_price:1623.8, invested:28000,  current:32476,  status:'active', sector:'IT'      },
+    { id:'s4', name:'TCS',                 symbol:'TCS',       exchange:'NSE', qty:5,   buy_price:3500, current_price:3821.0, invested:17500,  current:19105,  status:'active', sector:'IT'      },
+    { id:'s5', name:'Tata Motors',         symbol:'TATAMOTORS',exchange:'NSE', qty:50,  buy_price:420,  current_price:618.4,  invested:21000,  current:30920,  status:'active', sector:'Auto'    },
+    { id:'s6', name:'Yes Bank',            symbol:'YESBANK',   exchange:'NSE', qty:500, buy_price:28,   current_price:19.2,   invested:14000,  current:9600,   status:'active', sector:'Banking' },
+  ],
+  mutual_funds: [
+    { id:'m1', name:'Nifty 50 Index Fund',    type:'Index',    invested:120000, current:148500, sip_amt:5000, units:1420.5, nav:104.57, status:'active' },
+    { id:'m2', name:'HDFC Equity Fund',       type:'Equity',   invested:60000,  current:71200,  sip_amt:3000, units:892.3,  nav:79.80,  status:'active' },
+    { id:'m3', name:'Parag Parikh Flexi Cap', type:'Flexi Cap',invested:80000,  current:96400,  sip_amt:4000, units:1023.4, nav:94.19,  status:'active' },
+    { id:'m4', name:'Axis Bluechip Fund',     type:'Large Cap',invested:40000,  current:38200,  sip_amt:2000, units:487.1,  nav:78.43,  status:'active' },
+  ],
+  etfs: [
+    { id:'e1', name:'Nifty BeES',  symbol:'NIFTYBEES', exchange:'NSE', qty:100, buy_price:180.5, current_price:212.3, invested:18050, current:21230, status:'active' },
+    { id:'e2', name:'Gold BeES',   symbol:'GOLDBEES',  exchange:'NSE', qty:50,  buy_price:460.0, current_price:498.6, invested:23000, current:24930, status:'active' },
+    { id:'e3', name:'Bank BeES',   symbol:'BANKBEES',  exchange:'NSE', qty:80,  buy_price:380.0, current_price:352.1, invested:30400, current:28168, status:'active' },
+  ],
+  fds: [
+    { id:'f1', name:'SBI Fixed Deposit',  bank:'SBI',   invested:50000,  current:53750,  interest_rate:7.5, tenure:'1 Year',   maturity_date:'2025-03-15', status:'active' },
+    { id:'f2', name:'HDFC Fixed Deposit', bank:'HDFC',  invested:100000, current:107800, interest_rate:7.8, tenure:'1 Year',   maturity_date:'2025-06-20', status:'active' },
+    { id:'f3', name:'ICICI FD',           bank:'ICICI', invested:25000,  current:26150,  interest_rate:6.9, tenure:'6 Months', maturity_date:'2024-12-01', status:'active' },
+  ],
+  ppf: [
+    { id:'p1', name:'PPF Account', bank:'SBI', invested:150000, current:168000, interest_rate:7.1, opening_year:2019, maturity_year:2034, status:'active' },
+  ],
+  gold: [
+    { id:'g1', name:'Digital Gold',         platform:'Groww', grams:5.2, buy_price:5200, current_price:6180, invested:27040, current:32136, status:'active' },
+    { id:'g2', name:'Sovereign Gold Bond',  platform:'RBI',   grams:8.0, buy_price:5100, current_price:6180, invested:40800, current:49440, status:'active' },
+  ],
+  nps: [
+    { id:'n1', name:'NPS Tier 1', pran:'500123456789', invested:72000, current:84500, equity_pct:60, status:'active' },
+  ],
+  epf: [
+    { id:'ep1', name:'EPF Account', uan:'100234567890', invested:360000, current:389000, interest_rate:8.15, status:'active' },
+  ],
+};
+
+const INV_TRANSACTIONS = {
+  s1: [
+    { id:'it1', type:'buy',  date:'2024-01-15', qty:5, price:2100, amount:10500, brokerage:105, stt:53, other:26, total_charges:184, net_amount:10684 },
+    { id:'it2', type:'buy',  date:'2024-03-20', qty:3, price:2320, amount:6960,  brokerage:70,  stt:35, other:17, total_charges:122, net_amount:7082  },
+    { id:'it3', type:'buy',  date:'2024-08-10', qty:2, price:2480, amount:4960,  brokerage:50,  stt:25, other:12, total_charges:87,  net_amount:5047  },
+  ],
+  s2: [
+    { id:'it4', type:'buy',  date:'2024-02-01', qty:10, price:1550, amount:15500, brokerage:155, stt:78, other:38, total_charges:271, net_amount:15771 },
+    { id:'it5', type:'buy',  date:'2024-05-15', qty:5,  price:1640, amount:8200,  brokerage:82,  stt:41, other:20, total_charges:143, net_amount:8343  },
+  ],
+  s5: [
+    { id:'it6', type:'buy',  date:'2023-12-10', qty:30, price:400, amount:12000, brokerage:120, stt:60, other:30, total_charges:210, net_amount:12210 },
+    { id:'it7', type:'buy',  date:'2024-04-05', qty:20, price:452, amount:9040,  brokerage:90,  stt:45, other:22, total_charges:157, net_amount:9197  },
+  ],
+  m1: [
+    { id:'it8',  type:'buy', date:'2024-01-01', amount:5000, units:49.2, nav:101.63, sip:true },
+    { id:'it9',  type:'buy', date:'2024-02-01', amount:5000, units:48.1, nav:103.95, sip:true },
+    { id:'it10', type:'buy', date:'2024-03-01', amount:5000, units:47.5, nav:105.26, sip:true },
+    { id:'it11', type:'buy', date:'2024-04-01', amount:5000, units:46.8, nav:106.84, sip:true },
+  ],
+};
+
+const INV_NOTES = {
+  s1: [
+    { id:'in1', type:'research', date:'2024-09-01', title:'Q2 Results Analysis',   text:'Strong Q2 performance with 18% revenue growth. JIO platforms showing excellent traction. Retail segment recovering well.' },
+    { id:'in2', type:'updates',  date:'2024-10-15', title:'New 52-Week High',       text:'Stock touched 52-week high of ₹2,972 today. Holding position. Key support at ₹2,650.' },
+    { id:'in3', type:'ideas',    date:'2024-11-01', title:'Target Price Revision',  text:'Upgrading target price to ₹3,200 based on strong fundamentals and energy segment recovery.' },
+  ],
+  s2: [
+    { id:'in4', type:'research', date:'2024-08-20', title:'Post-Merger Analysis',   text:'HDFC Bank post-merger integration progressing well. ROE expansion expected in FY26.' },
+    { id:'in5', type:'private',  date:'2024-09-10', title:'Personal Note',          text:'Planning to add more at ₹1,700 levels. Strong long-term story, comfortable holding 3+ years.' },
+  ],
+  m1: [
+    { id:'in6', type:'research', date:'2024-07-15', title:'Fund Review', text:'Nifty 50 Index Fund tracking well. Expense ratio 0.1% — very competitive.' },
+  ],
+};
+
+Object.assign(DEMO, {
 
   loans: [
     { id: 'l1', name: 'SBI Home Loan',      type: 'Home',     lender: 'SBI',  principal: 4500000, outstanding: 3820000, emi: 38500, interest_rate: 8.5,  tenure_months: 240, paid_months: 36  },
@@ -1785,7 +1905,7 @@ const DEMO = {
       { month: 'May', income: 120000, expense: 68540 },
     ],
   },
-};
+});
 
 /* ══════════════════════════════════════════════════════
    4. UTILITY FUNCTIONS
@@ -2897,6 +3017,505 @@ function renderExpertView() {
     +aiLines.map(function(l){return '<div style="color:var(--text-dim);font-size:13px;line-height:1.6;margin-bottom:8px;padding-left:10px;border-left:2px solid var(--primary)">'+l+'</div>';}).join('')
     +'</div>'
     +'</div>';
+}
+
+/* ═══════════════════════════════════════════════════════
+   INVESTMENT MODULE — HELPERS & RENDER FUNCTIONS
+══════════════════════════════════════════════════════ */
+
+// --- Donut chart SVG (rotation-based, correct across all browsers) ---
+function _invDonut(cats, r, sw) {
+  var C = 2 * Math.PI * r;
+  var cx = r + sw / 2 + 2, cy = cx, size = cx * 2;
+  var circles = cats.map(function(c) {
+    if (c.pct <= 0) return '';
+    var arc = C * c.pct / 100;
+    var rot = (360 * c.cum / 100) - 90;
+    return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none"'
+      + ' stroke="' + c.color + '" stroke-width="' + sw + '"'
+      + ' stroke-dasharray="' + arc.toFixed(2) + ' ' + (C - arc).toFixed(2) + '"'
+      + ' transform="rotate(' + rot.toFixed(1) + ' ' + cx + ' ' + cy + ')"'
+      + ' stroke-linecap="butt"/>';
+  }).join('');
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="flex-shrink:0">'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="' + sw + '"/>'
+    + circles + '</svg>';
+}
+
+// --- Category summaries for dashboard ---
+function _invCatSummaries() {
+  var result = [], cumPct = 0;
+  var liveInvs = State.data.investments;
+  var catData = {};
+  if (liveInvs && liveInvs.length) {
+    liveInvs.forEach(function(inv) {
+      var k = (inv.type || 'other').toLowerCase().replace(/\s+/g, '_');
+      if (!catData[k]) catData[k] = { invested: 0, current: 0, count: 0 };
+      catData[k].invested += inv.invested || 0;
+      catData[k].current  += inv.current  || 0;
+      catData[k].count++;
+    });
+  } else {
+    Object.keys(INV_PORTFOLIO).forEach(function(cat) {
+      var items = INV_PORTFOLIO[cat];
+      catData[cat] = {
+        invested: items.reduce(function(s, i) { return s + (i.invested || 0); }, 0),
+        current:  items.reduce(function(s, i) { return s + (i.current  || 0); }, 0),
+        count: items.length,
+      };
+    });
+  }
+  var totalCur = Object.keys(catData).reduce(function(s, k) { return s + catData[k].current; }, 0);
+  Object.keys(catData).forEach(function(cat) {
+    var meta = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
+    var g = catData[cat];
+    var pct = totalCur > 0 ? (g.current / totalCur * 100) : 0;
+    result.push({ cat: cat, label: meta.label, icon: meta.icon, color: meta.color, sub: meta.sub || '',
+      invested: g.invested, current: g.current, count: g.count, gain: g.current - g.invested, pct: pct, cum: cumPct });
+    cumPct += pct;
+  });
+  return result;
+}
+
+function _invGetItems(cat) {
+  return (INV_PORTFOLIO[cat] || []).map(function(i) { return Object.assign({ category: cat }, i); });
+}
+
+function _invFindItem(id) {
+  var found = null;
+  Object.keys(INV_PORTFOLIO).forEach(function(cat) {
+    (INV_PORTFOLIO[cat] || []).forEach(function(i) {
+      if (i.id === id) found = Object.assign({ category: cat }, i);
+    });
+  });
+  return found;
+}
+
+function _invGainColor(g) { return g >= 0 ? '#10D078' : '#FF4D6A'; }
+function _invSign(g) { return g >= 0 ? '+' : ''; }
+function _invGainPct(inv, cur) { return inv > 0 ? ((cur - inv) / inv * 100) : 0; }
+function _invFmtDate(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getFullYear();
+}
+
+var _invBackSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>';
+var _invChevron = '<svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)" style="flex-shrink:0"><path d="M9 6l6 6-6 6" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var _invPlusSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+/* ─── INVESTMENT DASHBOARD ───────────────────────────── */
+function renderInvestmentDashboard() {
+  var cats = _invCatSummaries();
+  var totalInv = cats.reduce(function(s, c) { return s + c.invested; }, 0);
+  var totalCur = cats.reduce(function(s, c) { return s + c.current; }, 0);
+  var totalGain = totalCur - totalInv;
+  var gainPct = _invGainPct(totalInv, totalCur);
+  var gc = _invGainColor(totalGain);
+
+  var donut = _invDonut(cats, 44, 18);
+
+  var catRows = cats.map(function(c) {
+    var gp = _invGainPct(c.invested, c.current);
+    var cg = _invGainColor(c.current - c.invested);
+    return '<div onclick="App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})"'
+      + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:' + c.color + '20;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + c.icon + '</div>'
+      + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+          + '<div style="color:var(--text);font-size:14px;font-weight:700">' + c.label + '</div>'
+          + '<div style="color:var(--text);font-size:14px;font-weight:800">' + formatINR(c.current) + '</div>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          + '<div style="color:var(--text-dim);font-size:11px">' + c.count + ' holding' + (c.count !== 1 ? 's' : '') + ' · ' + c.pct.toFixed(1) + '%</div>'
+          + '<div style="color:' + cg + ';font-size:12px;font-weight:700">' + _invSign(c.current - c.invested) + gp.toFixed(2) + '%</div>'
+        + '</div>'
+        + '<div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.07);overflow:hidden">'
+          + '<div style="height:100%;width:' + c.pct.toFixed(1) + '%;background:' + c.color + ';border-radius:2px"></div>'
+        + '</div>'
+      + '</div>'
+      + _invChevron
+    + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 8px">'
+      + '<div class="icon-btn" onclick="App.goTab(\'more\')">' + _invBackSVG + '</div>'
+      + '<span style="color:var(--text);font-size:20px;font-weight:800">Portfolio</span>'
+      + '<div onclick="App.navigate(\'investment-type-select\')" style="width:42px;height:42px;border-radius:21px;background:var(--primary);display:flex;align-items:center;justify-content:center;cursor:pointer">' + _invPlusSVG + '</div>'
+    + '</div>'
+    // Hero gradient card
+    + '<div style="margin:12px 20px;background:linear-gradient(135deg,#1E0A5E 0%,#3D1A9E 45%,#6941F0 85%);border-radius:20px;padding:22px 20px;box-shadow:0 12px 40px rgba(105,65,240,0.4);position:relative;overflow:hidden">'
+      + '<div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>'
+      + '<div style="color:rgba(255,255,255,0.65);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px">Total Portfolio Value</div>'
+      + '<div style="color:#fff;font-size:34px;font-weight:900;letter-spacing:-1px;margin-bottom:4px">' + formatINR(totalCur) + '</div>'
+      + '<div style="color:' + gc + ';font-size:13px;font-weight:700;margin-bottom:20px">' + _invSign(totalGain) + formatINR(Math.abs(totalGain)) + ' (' + _invSign(gainPct) + gainPct.toFixed(2) + '%) All time</div>'
+      + '<div style="display:flex;align-items:center;gap:18px">'
+        + donut
+        + '<div style="flex:1">'
+          + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+            + '<div><div style="color:rgba(255,255,255,0.55);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">Invested</div>'
+              + '<div style="color:#fff;font-size:14px;font-weight:800">' + formatINR(totalInv) + '</div></div>'
+            + '<div><div style="color:rgba(255,255,255,0.55);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">' + (totalGain >= 0 ? 'Total Gain' : 'Total Loss') + '</div>'
+              + '<div style="color:' + gc + ';font-size:14px;font-weight:800">' + _invSign(totalGain) + formatINR(Math.abs(totalGain)) + '</div></div>'
+          + '</div>'
+          + cats.slice(0, 3).map(function(c) {
+            return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+              + '<div style="width:7px;height:7px;border-radius:50%;background:' + c.color + ';flex-shrink:0"></div>'
+              + '<div style="color:rgba(255,255,255,0.72);font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + c.label + '</div>'
+              + '<div style="color:rgba(255,255,255,0.92);font-size:11px;font-weight:700">' + c.pct.toFixed(1) + '%</div>'
+            + '</div>';
+          }).join('')
+        + '</div>'
+      + '</div>'
+    + '</div>'
+    // Investment categories list
+    + '<div style="padding:0 20px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">MY INVESTMENTS</div>'
+        + '<div onclick="App.navigate(\'investment-type-select\')" style="color:var(--primary);font-size:12px;font-weight:700;cursor:pointer">+ Add</div>'
+      + '</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius);padding:0 14px;border:1px solid var(--border)">'
+        + (catRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No investments yet. Tap + to add.</div>')
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+/* ─── INVESTMENT CATEGORY ────────────────────────────── */
+function renderInvestmentCategory() {
+  var cat    = State.params.cat || 'stocks';
+  var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
+  var items  = _invGetItems(cat);
+  var filter = State.invCatFilter || 'all';
+
+  var filtered = filter === 'active' ? items.filter(function(i) { return i.status === 'active'; })
+    : filter === 'sold' ? items.filter(function(i) { return i.status === 'sold'; })
+    : items;
+
+  var totalInv = items.reduce(function(s, i) { return s + (i.invested || 0); }, 0);
+  var totalCur = items.reduce(function(s, i) { return s + (i.current  || 0); }, 0);
+  var totalGain = totalCur - totalInv;
+  var gainPct = _invGainPct(totalInv, totalCur);
+  var gc = _invGainColor(totalGain);
+
+  var filterTabs = ['all', 'active', 'sold'].map(function(f) {
+    var active = filter === f;
+    return '<div onclick="State.invCatFilter=\'' + f + '\';App.render()" style="flex:1;text-align:center;padding:9px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (active ? 'var(--primary)' : 'transparent') + ';color:' + (active ? 'var(--primary)' : 'var(--text-dim)') + '">' + f.charAt(0).toUpperCase() + f.slice(1) + '</div>';
+  }).join('');
+
+  var rows = filtered.map(function(item) {
+    var gain = (item.current || 0) - (item.invested || 0);
+    var gp   = _invGainPct(item.invested || 0, item.current || 0);
+    var cg   = _invGainColor(gain);
+    var sym  = (cat === 'stocks' || cat === 'etfs') ? (item.symbol || item.name).slice(0, 5) : (item.name || '').slice(0, 2).toUpperCase();
+    var sub = '';
+    if (cat === 'stocks' || cat === 'etfs') sub = (item.exchange || '') + ' · Qty: ' + (item.qty || '—');
+    else if (cat === 'mutual_funds')         sub = (item.type || '') + ' · NAV: ₹' + (item.nav || '—');
+    else if (cat === 'fds')                  sub = (item.bank || '') + ' · ' + (item.interest_rate || '—') + '% p.a.';
+    else if (cat === 'gold')                 sub = (item.platform || '') + ' · ' + (item.grams || '—') + 'g';
+    else                                     sub = formatINR(item.invested || 0) + ' invested';
+
+    return '<div onclick="App.navigate(\'investment-detail\',{id:\'' + item.id + '\',cat:\'' + cat + '\'})"'
+      + ' style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer">'
+      + '<div style="width:42px;height:42px;border-radius:10px;background:' + meta.color + '18;border:1px solid ' + meta.color + '28;display:flex;align-items:center;justify-content:center;color:' + meta.color + ';font-size:10px;font-weight:900;flex-shrink:0;letter-spacing:0.2px;text-align:center">' + sym + '</div>'
+      + '<div style="flex:1;min-width:0">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(item.name) + '</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + sub + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:800;margin-bottom:2px">' + formatINR(item.current || 0) + '</div>'
+        + '<div style="color:' + cg + ';font-size:11px;font-weight:700">' + _invSign(gain) + gp.toFixed(2) + '%</div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 12px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')">' + _invBackSVG + '</div>'
+      + '<div style="text-align:center">'
+        + '<div style="color:var(--text);font-size:19px;font-weight:800">' + meta.icon + ' ' + meta.label + '</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + items.length + ' holding' + (items.length !== 1 ? 's' : '') + ' · ' + meta.sub + '</div>'
+      + '</div>'
+      + '<div onclick="App.navigate(\'investment-type-select\')" style="width:42px;height:42px;border-radius:21px;background:var(--primary);display:flex;align-items:center;justify-content:center;cursor:pointer">' + _invPlusSVG + '</div>'
+    + '</div>'
+    // Summary card
+    + '<div style="margin:0 20px 14px;background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border)">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+        + '<div><div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Invested</div><div style="color:var(--text);font-size:14px;font-weight:800">' + formatINR(totalInv) + '</div></div>'
+        + '<div><div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Current</div><div style="color:var(--text);font-size:14px;font-weight:800">' + formatINR(totalCur) + '</div></div>'
+        + '<div><div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">' + (totalGain >= 0 ? 'Gain' : 'Loss') + '</div>'
+          + '<div style="color:' + gc + ';font-size:14px;font-weight:800">' + _invSign(totalGain) + formatINR(Math.abs(totalGain)) + '</div>'
+          + '<div style="color:' + gc + ';font-size:10px;font-weight:700">' + _invSign(gainPct) + gainPct.toFixed(2) + '%</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>'
+    // Filter tabs
+    + '<div style="display:flex;margin:0 20px 14px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + filterTabs + '</div>'
+    // List
+    + '<div style="padding:0 20px">'
+      + '<div style="background:var(--card);border-radius:var(--radius);padding:0 14px;border:1px solid var(--border)">'
+        + (rows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No investments found.</div>')
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+/* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
+function renderInvestmentTypeSelect() {
+  var groups = INV_TYPE_GROUPS.map(function(g) {
+    var rows = g.types.map(function(t) {
+      var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
+      return '<div onclick="App.navigate(\'investment-buy\',{type:\'' + t.id + '\'})"'
+        + ' style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer">'
+        + '<div style="width:46px;height:46px;border-radius:12px;background:' + c + '20;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">' + t.icon + '</div>'
+        + '<div style="flex:1"><div style="color:var(--text);font-size:15px;font-weight:700;margin-bottom:3px">' + t.name + '</div>'
+          + '<div style="color:var(--text-dim);font-size:12px">' + t.desc + '</div></div>'
+        + _invChevron
+      + '</div>';
+    }).join('');
+    return '<div style="margin-bottom:22px">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin:0 20px 8px">' + g.label.toUpperCase() + '</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius);padding:0 16px;margin:0 20px;border:1px solid var(--border)">' + rows + '</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 24px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')">' + _invBackSVG + '</div>'
+      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">Add Investment</div>'
+        + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">Choose investment type</div></div>'
+    + '</div>'
+    + groups
+  + '</div>';
+}
+
+/* ─── INVESTMENT DETAIL ──────────────────────────────── */
+function renderInvestmentDetail() {
+  var id   = State.params.id;
+  var cat  = State.params.cat;
+  var item = _invFindItem(id);
+  if (!item) return '<div class="screen-wrap"><div style="text-align:center;padding:60px;color:var(--text-dim)">Investment not found.</div></div>';
+
+  var meta = INV_CAT_META[item.category || cat] || { icon: '💰', color: '#6C47FF', label: 'Investment', sub: '' };
+  var tab  = State.invDetailTab || 'overview';
+  var gain    = (item.current || 0) - (item.invested || 0);
+  var gainPct = _invGainPct(item.invested || 0, item.current || 0);
+  var gc      = _invGainColor(gain);
+
+  var tabBar = ['overview', 'transactions', 'notes'].map(function(t) {
+    var a = tab === t;
+    return '<div onclick="State.invDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (a ? 'var(--primary)' : 'transparent') + ';color:' + (a ? 'var(--primary)' : 'var(--text-dim)') + '">' + t.charAt(0).toUpperCase() + t.slice(1) + '</div>';
+  }).join('');
+
+  function sr(lbl, val, vc) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+      + '<div style="color:var(--text-dim);font-size:13px">' + lbl + '</div>'
+      + '<div style="color:' + (vc || 'var(--text)') + ';font-size:13px;font-weight:700">' + val + '</div>'
+    + '</div>';
+  }
+
+  var content = '';
+
+  if (tab === 'overview') {
+    var rows = [];
+    rows.push(sr('Invested', formatINR(item.invested || 0)));
+    rows.push(sr('Current Value', formatINR(item.current || 0)));
+    rows.push(sr('Gain / Loss', _invSign(gain) + formatINR(Math.abs(gain)), gc));
+    rows.push(sr('Returns', _invSign(gainPct) + gainPct.toFixed(2) + '%', gc));
+    if (item.qty)           rows.push(sr('Quantity', item.qty + ' units'));
+    if (item.buy_price)     rows.push(sr('Avg Buy Price', '₹' + item.buy_price.toLocaleString('en-IN')));
+    if (item.current_price) rows.push(sr('Current Price', '₹' + item.current_price.toLocaleString('en-IN')));
+    if (item.nav)           rows.push(sr('NAV', '₹' + item.nav));
+    if (item.units)         rows.push(sr('Units', item.units.toFixed(3)));
+    if (item.sip_amt)       rows.push(sr('SIP Amount', formatINR(item.sip_amt) + '/mo'));
+    if (item.interest_rate) rows.push(sr('Interest Rate', item.interest_rate + '% p.a.'));
+    if (item.tenure)        rows.push(sr('Tenure', item.tenure));
+    if (item.maturity_date) rows.push(sr('Maturity', _invFmtDate(item.maturity_date)));
+    if (item.grams)         rows.push(sr('Weight', item.grams + 'g'));
+    if (item.equity_pct)    rows.push(sr('Equity Allocation', item.equity_pct + '%'));
+    if (item.pran)          rows.push(sr('PRAN', item.pran));
+    if (item.uan)           rows.push(sr('UAN', item.uan));
+    var stBg  = item.status === 'active' ? 'rgba(16,208,120,0.15)' : 'rgba(255,77,106,0.15)';
+    var stCol = item.status === 'active' ? '#10D078' : '#FF4D6A';
+    rows.push(sr('Status', '<span style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;background:' + stBg + ';color:' + stCol + '">' + (item.status || 'active').toUpperCase() + '</span>'));
+
+    content = '<div style="padding:0 20px">'
+      + '<div style="background:var(--card);border-radius:var(--radius);padding:4px 16px;border:1px solid var(--border)">' + rows.join('') + '</div>'
+      + '<div style="margin-top:14px;display:flex;gap:10px">'
+        + '<button onclick="App.navigate(\'investment-buy\',{type:\'' + (item.category || cat) + '\',editId:\'' + item.id + '\'})" class="btn" style="flex:1;padding:12px;background:rgba(16,208,120,0.12);color:#10D078;border:1.5px solid rgba(16,208,120,0.3);font-size:13px;font-weight:700;border-radius:var(--radius-sm)">📈 Buy More</button>'
+        + '<button onclick="App.navigate(\'investment-sell\',{id:\'' + item.id + '\',cat:\'' + (item.category || cat) + '\'})" class="btn" style="flex:1;padding:12px;background:rgba(255,77,106,0.12);color:#FF4D6A;border:1.5px solid rgba(255,77,106,0.3);font-size:13px;font-weight:700;border-radius:var(--radius-sm)">📉 Sell</button>'
+      + '</div>'
+    + '</div>';
+  } else if (tab === 'transactions') {
+    var txList = INV_TRANSACTIONS[id] || [];
+    var txRows = txList.map(function(tx) {
+      var isBuy = tx.type === 'buy';
+      var tc = isBuy ? '#10D078' : '#FF4D6A';
+      return '<div style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+            + '<div style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:' + tc + '1a;color:' + tc + '">' + (isBuy ? 'BUY' : 'SELL') + '</div>'
+            + '<div style="color:var(--text-dim);font-size:12px">' + _invFmtDate(tx.date) + '</div>'
+          + '</div>'
+          + '<div style="color:var(--text);font-size:14px;font-weight:800">' + formatINR(tx.amount || 0) + '</div>'
+        + '</div>'
+        + (tx.sip
+          ? '<div style="color:var(--text-dim);font-size:12px">SIP · Units: ' + (tx.units || '—') + ' · NAV: ₹' + (tx.nav || '—') + '</div>'
+          : '<div style="color:var(--text-dim);font-size:12px">Qty: ' + (tx.qty || '—') + ' · Price: ₹' + (tx.price || '—') + ' · Charges: ' + formatINR(tx.total_charges || 0) + '</div>')
+      + '</div>';
+    }).join('');
+
+    var txTotalBought = txList.filter(function(t) { return t.type === 'buy'; }).reduce(function(s, t) { return s + (t.amount || 0); }, 0);
+    content = '<div style="padding:0 20px">'
+      + '<div style="background:var(--card);border-radius:var(--radius);padding:0 16px;border:1px solid var(--border)">'
+        + (txRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No transactions yet.</div>')
+      + '</div>'
+      + (txList.length ? '<div style="margin-top:12px;background:rgba(108,71,255,0.1);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:12px 16px;display:flex;justify-content:space-between"><div><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Total Invested (all txs)</div><div style="color:#10D078;font-size:14px;font-weight:800">' + formatINR(txTotalBought) + '</div></div></div>' : '')
+      + '<button onclick="App.navigate(\'investment-buy\',{type:\'' + (item.category || cat) + '\',editId:\'' + item.id + '\'})" class="btn" style="width:100%;margin-top:14px;padding:14px;background:var(--primary);color:#fff;border-radius:var(--radius-sm);font-size:14px;font-weight:700">+ Add Transaction</button>'
+    + '</div>';
+  } else { // notes
+    var nFilter = State.invNoteFilter || 'all';
+    var noteTypeColors = { all: '#7C5CFC', private: '#EC4899', research: '#38BDF8', updates: '#10D078', ideas: '#FBBF24' };
+    var chips = ['all','private','research','updates','ideas'].map(function(nt) {
+      var a = nFilter === nt; var c = noteTypeColors[nt];
+      return '<div onclick="State.invNoteFilter=\'' + nt + '\';App.render()" style="padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;background:' + (a ? c + '22' : 'rgba(255,255,255,0.06)') + ';color:' + (a ? c : 'var(--text-dim)') + ';border:1px solid ' + (a ? c + '44' : 'rgba(255,255,255,0.08)') + '">' + nt.charAt(0).toUpperCase() + nt.slice(1) + '</div>';
+    }).join('');
+
+    var allNotes = INV_NOTES[id] || [];
+    var filteredNotes = nFilter === 'all' ? allNotes : allNotes.filter(function(n) { return n.type === nFilter; });
+    var noteRows = filteredNotes.map(function(n) {
+      var nc = noteTypeColors[n.type] || '#7C5CFC';
+      return '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;border:1px solid var(--border)">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+          + '<div style="padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:' + nc + '1a;color:' + nc + '">' + (n.type || '').toUpperCase() + '</div>'
+          + '<div style="color:var(--text-dim);font-size:11px">' + _invFmtDate(n.date) + '</div>'
+        + '</div>'
+        + '<div style="color:var(--text);font-size:14px;font-weight:700;margin-bottom:6px">' + escapeHtml(n.title) + '</div>'
+        + '<div style="color:var(--text-dim);font-size:13px;line-height:1.6">' + escapeHtml(n.text) + '</div>'
+      + '</div>';
+    }).join('');
+
+    content = '<div style="padding:0 20px">'
+      + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;-ms-overflow-style:none">' + chips + '</div>'
+      + (noteRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No notes found.</div>')
+      + '<button onclick="App.showToast(\'Add note — coming soon!\')" class="btn" style="width:100%;margin-top:4px;padding:14px;background:var(--primary-dim);color:var(--primary);border:1.5px solid var(--primary);border-radius:var(--radius-sm);font-size:14px;font-weight:700">+ Add Note</button>'
+    + '</div>';
+  }
+
+  var sym = (item.category === 'stocks' || item.category === 'etfs') ? (item.symbol || item.name).slice(0, 5) : (item.name || '').slice(0, 2).toUpperCase();
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 12px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-category\',{cat:\'' + (item.category || cat) + '\'})">' + _invBackSVG + '</div>'
+      + '<div style="text-align:center;flex:1;padding:0 8px">'
+        + '<div style="color:var(--text);font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(item.name) + '</div>'
+        + '<div style="color:' + gc + ';font-size:12px;font-weight:700;margin-top:2px">' + _invSign(gain) + formatINR(Math.abs(gain)) + ' (' + _invSign(gainPct) + gainPct.toFixed(2) + '%)</div>'
+      + '</div>'
+      + '<div style="width:42px;height:42px;border-radius:21px;background:' + meta.color + '22;display:flex;align-items:center;justify-content:center;font-size:20px">' + meta.icon + '</div>'
+    + '</div>'
+    // Mini hero
+    + '<div style="margin:0 20px 14px;background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'
+      + '<div><div style="color:var(--text-dim);font-size:11px;margin-bottom:4px">Current Value</div>'
+        + '<div style="color:var(--text);font-size:24px;font-weight:900">' + formatINR(item.current || 0) + '</div></div>'
+      + '<div style="text-align:right"><div style="color:var(--text-dim);font-size:11px;margin-bottom:4px">Invested</div>'
+        + '<div style="color:var(--text-dim);font-size:14px;font-weight:700">' + formatINR(item.invested || 0) + '</div></div>'
+    + '</div>'
+    // Tabs
+    + '<div style="display:flex;margin:0 20px 16px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabBar + '</div>'
+    + content
+  + '</div>';
+}
+
+/* ─── INVESTMENT BUY ─────────────────────────────────── */
+function renderInvestmentBuy() {
+  var type    = State.params.type || 'stocks';
+  var meta    = INV_CAT_META[type] || { icon: '💰', color: '#6C47FF', label: type };
+  var isStock = (type === 'stocks' || type === 'etfs');
+  var isMF    = (type === 'mutual_funds');
+  var today   = new Date().toISOString().slice(0, 10);
+  var ins     = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;-webkit-appearance:none';
+
+  function fr(lbl, inp) {
+    return '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">' + lbl + '</div>' + inp + '</div>';
+  }
+
+  var chargesSection = isStock ? (
+    '<div style="margin-bottom:16px;background:var(--card);border-radius:var(--radius-sm);padding:16px;border:1px solid var(--border)">'
+    + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px">CHARGES BREAKDOWN (Auto)</div>'
+    + ['STT (0.1%)','Exchange Levy','GST on Brokerage','Stamp Duty','SEBI Charges'].map(function(l, i) {
+      var ids = ['ibf-stt','ibf-exchg','ibf-gst','ibf-stamp','ibf-sebi'];
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--text-dim);font-size:13px">' + l + '</span><span id="' + ids[i] + '" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>';
+    }).join('')
+    + '<div style="display:flex;justify-content:space-between;padding:8px 0 0"><span style="color:var(--text);font-size:13px;font-weight:700">Total Charges</span><span id="ibf-total-ch" style="color:#FF4D6A;font-size:13px;font-weight:800">₹0.00</span></div>'
+    + '</div>'
+  ) : '';
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 20px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-type-select\')">' + _invBackSVG + '</div>'
+      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">' + meta.icon + ' Buy ' + meta.label + '</div>'
+        + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">Record a purchase</div></div>'
+    + '</div>'
+    + '<div style="padding:0 20px">'
+      + fr('Date', '<input type="date" id="ibf-date" value="' + today + '" style="' + ins + '" oninput="App._recalcBuy()">')
+      + fr('Name / Symbol', '<input type="text" id="ibf-name" placeholder="' + (isStock ? 'e.g. RELIANCE' : isMF ? 'e.g. Nifty 50 Index Fund' : 'Enter name') + '" style="' + ins + '">')
+      + (isStock ? fr('Quantity', '<input type="number" id="ibf-qty" placeholder="Number of units" style="' + ins + '" oninput="App._recalcBuy()">') : '')
+      + (isStock ? fr('Buy Price (₹ per unit)', '<input type="number" id="ibf-price" placeholder="Price per share" style="' + ins + '" oninput="App._recalcBuy()">') : '')
+      + (!isStock ? fr('Amount (₹)', '<input type="number" id="ibf-amt" placeholder="Amount invested" style="' + ins + '" oninput="App._recalcBuy()">') : '')
+      + (isStock ? fr('Brokerage (₹)', '<input type="number" id="ibf-brok" placeholder="e.g. 20" style="' + ins + '" oninput="App._recalcBuy()">') : '')
+      + chargesSection
+      // Summary panel
+      + '<div id="ibf-summary" style="margin-bottom:16px;background:rgba(108,71,255,0.1);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:16px">'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">SUMMARY</div>'
+        + '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Transaction Amount</span><span id="ibf-amt-disp" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>'
+        + (isStock ? '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Total Charges</span><span id="ibf-charges-disp" style="color:#FF4D6A;font-size:13px;font-weight:700">₹0.00</span></div>' : '')
+        + '<div style="display:flex;justify-content:space-between;padding:7px 0 0"><span style="color:var(--text);font-size:14px;font-weight:800">Net Amount</span><span id="ibf-net" style="color:var(--primary);font-size:16px;font-weight:900">₹0.00</span></div>'
+        + (isStock ? '<div style="display:flex;justify-content:space-between;padding:5px 0 0"><span style="color:var(--text-dim);font-size:13px">Avg Buy Price</span><span id="ibf-avg" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>' : '')
+      + '</div>'
+      + '<button onclick="App._saveInvBuy(\'' + type + '\')" class="btn btn-primary" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm)">Confirm Buy</button>'
+    + '</div>'
+  + '</div>';
+}
+
+/* ─── INVESTMENT SELL ────────────────────────────────── */
+function renderInvestmentSell() {
+  var id   = State.params.id;
+  var cat  = State.params.cat;
+  var item = _invFindItem(id) || {};
+  var meta = INV_CAT_META[cat || item.category] || { icon: '📉', color: '#FF4D6A', label: 'Investment' };
+  var ins  = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;-webkit-appearance:none';
+  var today = new Date().toISOString().slice(0, 10);
+  var avgBuy = item.buy_price || (item.invested && item.qty ? (item.invested / item.qty) : 0);
+
+  function fr(lbl, inp) {
+    return '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">' + lbl + '</div>' + inp + '</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 20px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-detail\',{id:\'' + (id || '') + '\',cat:\'' + (cat || '') + '\'})">' + _invBackSVG + '</div>'
+      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">' + meta.icon + ' Sell ' + meta.label + '</div>'
+        + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">' + escapeHtml(item.name || 'Investment') + '</div></div>'
+    + '</div>'
+    + '<div style="padding:0 20px">'
+      // Holding info banner
+      + (item.qty ? '<div style="margin-bottom:16px;background:var(--card);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);display:flex;justify-content:space-between"><div><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Available Qty</div><div style="color:var(--text);font-size:16px;font-weight:800">' + item.qty + ' units</div></div><div style="text-align:right"><div style="color:var(--text-dim);font-size:11px;margin-bottom:3px">Avg Buy Price</div><div style="color:var(--text);font-size:16px;font-weight:800">₹' + avgBuy.toFixed(2) + '</div></div></div>' : '')
+      + fr('Date', '<input type="date" id="isf-date" value="' + today + '" style="' + ins + '">')
+      + fr('Sell Quantity', '<input type="number" id="isf-qty" placeholder="Shares to sell" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ')">')
+      + fr('Sell Price (₹ per unit)', '<input type="number" id="isf-price" placeholder="Price per share" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ')">')
+      + fr('Brokerage (₹)', '<input type="number" id="isf-brok" placeholder="e.g. 20" style="' + ins + '" oninput="App._recalcSell(' + avgBuy + ')">')
+      // Summary panel
+      + '<div style="margin-bottom:16px;background:rgba(255,77,106,0.08);border:1px solid rgba(255,77,106,0.2);border-radius:var(--radius-sm);padding:16px">'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">SELL SUMMARY</div>'
+        + '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Sale Amount</span><span id="isf-amt" style="color:var(--text);font-size:13px;font-weight:700">₹0.00</span></div>'
+        + '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Total Charges</span><span id="isf-charges" style="color:#FF4D6A;font-size:13px;font-weight:700">₹0.00</span></div>'
+        + '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.08)"><span style="color:var(--text);font-size:14px;font-weight:800">Net Received</span><span id="isf-net" style="color:var(--primary);font-size:16px;font-weight:900">₹0.00</span></div>'
+        + '<div id="isf-pl-row" style="display:flex;justify-content:space-between;padding:7px 8px;border-radius:6px;margin-top:4px;background:rgba(255,255,255,0.04)"><span style="color:var(--text);font-size:13px;font-weight:700">Realized P&amp;L</span><span id="isf-pl" style="font-size:14px;font-weight:800;color:var(--text-dim)">—</span></div>'
+      + '</div>'
+      + '<button onclick="App._saveInvSell()" class="btn" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:rgba(255,77,106,0.12);color:#FF4D6A;border:1.5px solid rgba(255,77,106,0.35)">Confirm Sell</button>'
+    + '</div>'
+  + '</div>';
 }
 
 /* ─── CATEGORY MANAGEMENT ────────────────────────────── */
@@ -4867,6 +5486,10 @@ function renderMore() {
     { icon:'📁', bg:'rgba(96,165,250,0.15)', label:'Categories',           sub:'Manage spending categories',  fn:"App.navigate('category-mgmt',{from:'more'})" },
   ]);
 
+  html += menuSection('Financial Tools', [
+    { icon:'📈', bg:'rgba(34,197,94,0.15)',  label:'Investment',           sub:'Track and manage investments', fn:"App.navigate('investment-dashboard')" },
+  ]);
+
   html += menuSection('Preferences', [
     { icon:'🌙', bg:'rgba(108,71,255,0.15)', label:'Appearance',    sub:'Theme & display settings', fn:"App.showToast('Appearance settings coming soon!')" },
     { icon:'🔒', bg:'rgba(239,68,68,0.15)',  label:'Security',      sub:'PIN, biometrics & privacy',fn:"App.showToast('Security settings coming soon!')" },
@@ -5011,9 +5634,15 @@ const App = {
       case 'add-expense':      html = renderAddExpense();       break;
       case 'add-transfer':     html = renderAddTransfer();      break;
       case 'tx-detail':        html = renderTxDetail();         break;
-      case 'expert-view':      html = renderExpertView();       break;
+      case 'expert-view':           html = renderExpertView();            break;
+      case 'investment-dashboard':  html = renderInvestmentDashboard();   break;
+      case 'investment-category':   html = renderInvestmentCategory();    break;
+      case 'investment-type-select':html = renderInvestmentTypeSelect();  break;
+      case 'investment-detail':     html = renderInvestmentDetail();      break;
+      case 'investment-buy':        html = renderInvestmentBuy();         break;
+      case 'investment-sell':       html = renderInvestmentSell();        break;
       case 'categories':
-      case 'category-mgmt':    html = renderCategoryMgmt();     break;
+      case 'category-mgmt':         html = renderCategoryMgmt();          break;
       case 'wealth':           html = renderWealth();           break;
       case 'group-list':       html = renderGroupList();        break;
       case 'account-detail':   html = renderAccountDetail();    break;
@@ -5617,6 +6246,83 @@ const App = {
   remCalSelectDay(day) {
     State.remCalDay = State.remCalDay === day ? null : day;
     this.render();
+  },
+
+  /* ── Investment Module ──────────────────────── */
+  _recalcBuy() {
+    var qty   = parseFloat(document.getElementById('ibf-qty')?.value || '0') || 0;
+    var price = parseFloat(document.getElementById('ibf-price')?.value || '0') || 0;
+    var brok  = parseFloat(document.getElementById('ibf-brok')?.value || '0') || 0;
+    var extAmt = parseFloat(document.getElementById('ibf-amt')?.value || '0') || 0;
+    var amount = (qty > 0 && price > 0) ? qty * price : extAmt;
+    var stt    = Math.round(amount * 0.001   * 100) / 100;
+    var exchg  = Math.round(amount * 0.0000345 * 100) / 100;
+    var gst    = Math.round(brok  * 0.18    * 100) / 100;
+    var stamp  = Math.round(amount * 0.00015  * 100) / 100;
+    var sebi   = Math.round(amount * 0.000001 * 100) / 100;
+    var totalCh = brok + stt + exchg + gst + stamp + sebi;
+    var net     = amount + totalCh;
+    var avg     = qty > 0 ? net / qty : 0;
+    function s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+    s('ibf-amt-disp',    '₹' + amount.toFixed(2));
+    s('ibf-stt',         '₹' + stt.toFixed(2));
+    s('ibf-exchg',       '₹' + exchg.toFixed(2));
+    s('ibf-gst',         '₹' + gst.toFixed(2));
+    s('ibf-stamp',       '₹' + stamp.toFixed(2));
+    s('ibf-sebi',        '₹' + sebi.toFixed(2));
+    s('ibf-total-ch',    '₹' + totalCh.toFixed(2));
+    s('ibf-charges-disp','₹' + totalCh.toFixed(2));
+    s('ibf-net',         '₹' + net.toFixed(2));
+    s('ibf-avg',         '₹' + avg.toFixed(2));
+  },
+
+  _recalcSell(avgBuy) {
+    var qty   = parseFloat(document.getElementById('isf-qty')?.value || '0') || 0;
+    var price = parseFloat(document.getElementById('isf-price')?.value || '0') || 0;
+    var brok  = parseFloat(document.getElementById('isf-brok')?.value || '0') || 0;
+    var amount   = qty * price;
+    var stt      = Math.round(amount * 0.001    * 100) / 100;
+    var exchg    = Math.round(amount * 0.0000345 * 100) / 100;
+    var gst      = Math.round(brok   * 0.18     * 100) / 100;
+    var totalCh  = brok + stt + exchg + gst;
+    var net      = amount - totalCh;
+    var costBasis = qty * (avgBuy || 0);
+    var pl       = net - costBasis;
+    var plColor  = pl >= 0 ? '#10D078' : '#FF4D6A';
+    function s(id, v, color) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = v;
+      if (color) el.style.color = color;
+    }
+    s('isf-amt',     '₹' + amount.toFixed(2));
+    s('isf-charges', '-₹' + totalCh.toFixed(2));
+    s('isf-net',     '₹' + net.toFixed(2));
+    if (qty > 0 && avgBuy > 0) {
+      s('isf-pl', (pl >= 0 ? '+' : '') + '₹' + Math.abs(pl).toFixed(2), plColor);
+      var row = document.getElementById('isf-pl-row');
+      if (row) row.style.background = pl >= 0 ? 'rgba(16,208,120,0.08)' : 'rgba(255,77,106,0.08)';
+    }
+  },
+
+  _saveInvBuy(type) {
+    var name = document.getElementById('ibf-name')?.value?.trim();
+    var qty  = document.getElementById('ibf-qty')?.value;
+    var amt  = document.getElementById('ibf-amt')?.value;
+    if (!name) { this.showToast('Please enter a name'); return; }
+    if (!qty && !amt) { this.showToast('Please enter quantity or amount'); return; }
+    this.showToast('Investment recorded! 📈');
+    this.navigate('investment-category', { cat: type });
+  },
+
+  _saveInvSell() {
+    var qty   = document.getElementById('isf-qty')?.value;
+    var price = document.getElementById('isf-price')?.value;
+    if (!qty || !price) { this.showToast('Please enter sell quantity and price'); return; }
+    var id  = State.params.id;
+    var cat = State.params.cat;
+    this.showToast('Sale recorded! 📉');
+    this.navigate('investment-detail', { id: id, cat: cat });
   },
 
   /* ── Toast ───────────────────────────────────── */
