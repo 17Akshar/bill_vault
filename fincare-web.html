@@ -1652,6 +1652,14 @@ const State = {
   mfNoteFilter:   'all',
   mfSearch:       '',
   mfHoldingsFilter: 'all',
+  // ETF module
+  etfDetailTab:    'overview',
+  etfChartPeriod:  '1Y',
+  etfTxType:       'purchase',
+  etfNoteFilter:   'all',
+  etfSearch:       '',
+  etfHoldingsFilter: 'all',
+  etfPayMode:      'upi',
   // Transaction advanced filter
   txShowAdvFilter: false,
   txCatFilter:     'all',
@@ -1822,9 +1830,12 @@ const INV_PORTFOLIO = {
     { id:'m4', name:'Axis Bluechip Fund',     type:'Large Cap', invested:40000,  current:38200,  sip_amt:2000, units:487.1,  nav:78.43,  avg_nav:82.12, status:'active', folio_number:'45678901/01', amc:'Axis AMC',  plan:'Regular', option:'Growth', fund_house:'Axis Mutual Fund',  inception_date:'05 Jan 2010', expense_ratio:1.53, risk:'High',      sip_date:10, nav_history:[82.0,81.5,80.2,79.8,80.4,81.1,79.6,78.9,79.4,78.2,78.43,78.43] },
   ],
   etfs: [
-    { id:'e1', name:'Nifty BeES',  symbol:'NIFTYBEES', exchange:'NSE', qty:100, buy_price:180.5, current_price:212.3, invested:18050, current:21230, status:'active' },
-    { id:'e2', name:'Gold BeES',   symbol:'GOLDBEES',  exchange:'NSE', qty:50,  buy_price:460.0, current_price:498.6, invested:23000, current:24930, status:'active' },
-    { id:'e3', name:'Bank BeES',   symbol:'BANKBEES',  exchange:'NSE', qty:80,  buy_price:380.0, current_price:352.1, invested:30400, current:28168, status:'active' },
+    { id:'e1', name:'Nippon India ETF Nifty 50',         symbol:'NIFTYBEES',  exchange:'NSE', qty:936,  buy_price:160.26, current_price:171.44, invested:150000, current:160468, status:'active', folio_id:'IN30021412345678', category:'Equity',       expense_ratio:0.15, dividend_option:'Growth', fund_house:'Nippon India Mutual Fund',    benchmark:'Nifty 50 TR Index',          invested_on:'2023-02-05', nav_history:[155.2,157.8,160.3,158.5,162.4,164.1,166.3,163.8,165.2,167.9,169.4,171.44] },
+    { id:'e2', name:'ICICI Pru Nifty Next 50 ETF',       symbol:'NIFTYJR',    exchange:'NSE', qty:800,  buy_price:43.75,  current_price:45.50,  invested:35000,  current:36400,  status:'active', folio_id:'IN30021423456789', category:'Equity',       expense_ratio:0.20, dividend_option:'Growth', fund_house:'ICICI Prudential AMC',        benchmark:'Nifty Next 50 TR Index',     invested_on:'2023-06-15', nav_history:[41.2,42.0,43.1,42.5,43.8,44.2,44.8,43.9,44.5,45.1,45.3,45.50] },
+    { id:'e3', name:'HDFC Nifty 100 ETF',                symbol:'HDFCNIFTY',  exchange:'NSE', qty:500,  buy_price:50.00,  current_price:51.90,  invested:25000,  current:25950,  status:'active', folio_id:'IN30021434567890', category:'Equity',       expense_ratio:0.20, dividend_option:'Growth', fund_house:'HDFC AMC',                    benchmark:'Nifty 100 TR Index',         invested_on:'2023-08-20', nav_history:[48.2,49.0,49.8,48.9,50.2,50.7,51.1,50.3,50.8,51.2,51.5,51.90] },
+    { id:'e4', name:'Kotak Nifty Bank ETF',              symbol:'KOTAKBKETF', exchange:'NSE', qty:200,  buy_price:50.00,  current_price:52.50,  invested:10000,  current:10500,  status:'active', folio_id:'IN30021445678901', category:'Sector',       expense_ratio:0.20, dividend_option:'Growth', fund_house:'Kotak Mahindra AMC',          benchmark:'Nifty Bank TR Index',        invested_on:'2023-10-12', nav_history:[49.2,50.1,50.8,49.5,51.2,51.8,52.3,51.1,51.9,52.2,52.4,52.50] },
+    { id:'e5', name:'SBI ETF Sensex',                    symbol:'SBISENSEX',  exchange:'NSE', qty:0,    buy_price:580.00, current_price:0,      invested:23200,  current:0,      status:'sold',   folio_id:'IN30021456789012', category:'Equity',       expense_ratio:0.07, dividend_option:'Growth', fund_house:'SBI Funds Management',        benchmark:'BSE SENSEX TR',              invested_on:'2022-12-01', sold_on:'2024-02-10', sold_value:25200, nav_history:[] },
+    { id:'e6', name:'Mirae Asset Nifty Midcap 150 ETF',  symbol:'MAFANG',     exchange:'NSE', qty:0,    buy_price:140.00, current_price:0,      invested:14000,  current:0,      status:'sold',   folio_id:'IN30021467890123', category:'Mid Cap',      expense_ratio:0.25, dividend_option:'Growth', fund_house:'Mirae Asset AMC',             benchmark:'Nifty Midcap 150 TR Index',  invested_on:'2023-03-10', sold_on:'2024-01-15', sold_value:12800, nav_history:[] },
   ],
   fds: [
     { id:'f1', name:'SBI Fixed Deposit',  bank:'SBI',   invested:50000,  current:53750,  interest_rate:7.5, tenure:'1 Year',   maturity_date:'2025-03-15', status:'active' },
@@ -1912,6 +1923,57 @@ const INV_TRANSACTIONS = {
       { id:'m4s1', date:'2024-03-20', amount:20000, units:253.8, nav:78.80, type:'redemption' },
     ],
   },
+  // ETF transactions
+  e1: {
+    buys: [
+      { id:'e1t1', date:'2023-02-05', qty:895, nav:160.26, amount:143432.70, charges:430.30, total:143863.00, payment_mode:'net_banking', ref_id:'NEFT20230205001' },
+      { id:'e1t2', date:'2023-12-05', qty:9,   nav:153.20, amount:1378.80,   charges:4.14,   total:1382.94,   payment_mode:'upi',         ref_id:'UPI1234560012' },
+      { id:'e1t3', date:'2024-01-05', qty:10,  nav:154.30, amount:1543.00,   charges:4.63,   total:1547.63,   payment_mode:'upi',         ref_id:'UPI1234567890' },
+      { id:'e1t4', date:'2024-02-05', qty:12,  nav:155.80, amount:1869.60,   charges:5.61,   total:1875.21,   payment_mode:'upi',         ref_id:'UPI2345678901' },
+      { id:'e1t5', date:'2024-05-20', qty:10,  nav:160.25, amount:1602.50,   charges:4.81,   total:1607.31,   payment_mode:'upi',         ref_id:'UPI1234569012' },
+    ],
+    sells: [
+      { id:'e1s1', date:'2024-04-10', qty:20, nav:163.50, amount:3270.00, charges:9.81,  total:3260.19, payment_mode:'net_banking', ref_id:'NEFT20240410001' },
+      { id:'e1s2', date:'2023-11-15', qty:15, nav:151.80, amount:2277.00, charges:6.83,  total:2270.17, payment_mode:'upi',         ref_id:'UPI9876543210' },
+    ],
+  },
+  e2: {
+    buys: [
+      { id:'e2t1', date:'2023-06-15', qty:600, nav:43.75, amount:26250.00, charges:78.75, total:26328.75, payment_mode:'net_banking', ref_id:'NEFT20230615001' },
+      { id:'e2t2', date:'2024-01-10', qty:100, nav:44.20, amount:4420.00,  charges:13.26, total:4433.26,  payment_mode:'upi',         ref_id:'UPI3456789012' },
+      { id:'e2t3', date:'2024-03-10', qty:100, nav:44.90, amount:4490.00,  charges:13.47, total:4503.47,  payment_mode:'upi',         ref_id:'UPI4567890123' },
+    ],
+    sells: [],
+  },
+  e3: {
+    buys: [
+      { id:'e3t1', date:'2023-08-20', qty:300, nav:50.00, amount:15000.00, charges:45.00, total:15045.00, payment_mode:'net_banking', ref_id:'NEFT20230820001' },
+      { id:'e3t2', date:'2024-02-15', qty:200, nav:50.10, amount:10020.00, charges:30.06, total:10050.06, payment_mode:'upi',         ref_id:'UPI5678901234' },
+    ],
+    sells: [],
+  },
+  e4: {
+    buys: [
+      { id:'e4t1', date:'2023-10-12', qty:200, nav:50.00, amount:10000.00, charges:30.00, total:10030.00, payment_mode:'upi', ref_id:'UPI6789012345' },
+    ],
+    sells: [],
+  },
+  e5: {
+    buys: [
+      { id:'e5t1', date:'2022-12-01', qty:40, nav:580.00, amount:23200.00, charges:69.60, total:23269.60, payment_mode:'net_banking', ref_id:'NEFT20221201001' },
+    ],
+    sells: [
+      { id:'e5s1', date:'2024-02-10', qty:40, nav:630.00, amount:25200.00, charges:75.60, total:25124.40, payment_mode:'net_banking', ref_id:'NEFT20240210001' },
+    ],
+  },
+  e6: {
+    buys: [
+      { id:'e6t1', date:'2023-03-10', qty:100, nav:140.00, amount:14000.00, charges:42.00, total:14042.00, payment_mode:'upi', ref_id:'UPI7890123456' },
+    ],
+    sells: [
+      { id:'e6s1', date:'2024-01-15', qty:100, nav:128.00, amount:12800.00, charges:38.40, total:12761.60, payment_mode:'upi', ref_id:'UPI8901234567' },
+    ],
+  },
 };
 
 const INV_NOTES = {
@@ -1938,6 +2000,21 @@ const INV_NOTES = {
   ],
   m4: [
     { id:'mn5', type:'private',  date:'2024-03-25', title:'Partial Redemption Note', text:'Redeemed ₹20,000 for emergency. Will continue SIP. Axis Bluechip underperforming lately — reviewing in 6 months.' },
+  ],
+  // ETF notes
+  e1: [
+    { id:'en1', type:'research', date:'2024-05-15', title:'Nifty 50 ETF Review',    text:'Nippon India ETF Nifty 50 closely tracks index. Very low tracking error of 0.02%. Expense ratio 0.15% is competitive. Strong long-term hold.' },
+    { id:'en2', type:'ideas',    date:'2024-06-01', title:'Increase SIP Quantity',  text:'Plan to increase monthly ETF purchase to 15 units. Nifty 50 outperforming most active large-cap funds over 5 years.' },
+    { id:'en3', type:'updates',  date:'2024-07-10', title:'Partial Sell Decision',  text:'Sold 20 units at ₹163.50 to book partial profits. Will re-enter on dips below ₹158. Long-term thesis intact.' },
+  ],
+  e2: [
+    { id:'en4', type:'research', date:'2024-04-20', title:'Next 50 Analysis', text:'Nifty Next 50 has historically outperformed Nifty 50 over 10-year periods. Good diversification into quality large-mid cap names.' },
+  ],
+  e3: [
+    { id:'en5', type:'private',  date:'2024-03-10', title:'Target Allocation', text:'Planning to hold HDFC Nifty 100 ETF as core portfolio position. Target 700 units total.' },
+  ],
+  e4: [
+    { id:'en6', type:'ideas',    date:'2024-02-28', title:'Banking Sector Bet', text:'Bank Nifty ETF added as tactical allocation. Banking sector valuations attractive. Will review in 2 quarters.' },
   ],
 };
 
@@ -3343,8 +3420,8 @@ function renderInvestmentDashboard() {
   var catRows = cats.map(function(c) {
     var gp = _invGainPct(c.invested, c.current);
     var cg = _invGainColor(c.current - c.invested);
-    var onClickAttr = c.cat === 'mutual_funds'
-      ? 'App.navigate(\'mf-dashboard\')'
+    var onClickAttr = c.cat === 'mutual_funds' ? 'App.navigate(\'mf-dashboard\')'
+      : c.cat === 'etfs'          ? 'App.navigate(\'etf-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3432,8 +3509,9 @@ function renderInvestmentDashboard() {
 /* ─── INVESTMENT CATEGORY ────────────────────────────── */
 function renderInvestmentCategory() {
   var cat    = State.params.cat || 'stocks';
-  // Redirect mutual funds to dedicated MF dashboard
+  // Redirect mutual funds and ETFs to dedicated modules
   if (cat === 'mutual_funds') { setTimeout(function(){ App.navigate('mf-dashboard'); }, 0); return '<div></div>'; }
+  if (cat === 'etfs')         { setTimeout(function(){ App.navigate('etf-list');      }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -4462,6 +4540,504 @@ function renderMFAddTransaction() {
       + '</div>'
       + '<button onclick="App._saveMFTransaction()" class="btn" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:var(--primary);color:#fff;border:none">'
         + (txType === 'purchase' ? 'Confirm Purchase' : txType === 'redemption' ? 'Confirm Redemption' : 'Confirm Switch')
+      + '</button>'
+    + '</div>'
+  + '</div>';
+}
+
+/* ─── EXCHANGE TRADED FUNDS (ETF) MODULE ─────────────── */
+
+function _etfFunds() { return INV_PORTFOLIO.etfs || []; }
+function _etfFund(id) { return _etfFunds().find(function(f){ return f.id === id; }) || {}; }
+function _etfGain(f) { return (f.current || 0) - (f.invested || 0); }
+function _etfGainPct(f) { return f.invested > 0 ? (_etfGain(f) / f.invested * 100) : 0; }
+function _etfColor(g) { return g >= 0 ? '#10D078' : '#FF4D6A'; }
+function _etfSign(g)  { return g >= 0 ? '+' : ''; }
+function _etfInitials(name) {
+  return (name || '').split(' ').slice(0, 2).map(function(w){ return w[0] || ''; }).join('').toUpperCase();
+}
+function _etfFundColor(id) {
+  var map = { e1:'#38BDF8', e2:'#818CF8', e3:'#34D399', e4:'#FB923C', e5:'#A78BFA', e6:'#F472B6' };
+  return map[id] || '#38BDF8';
+}
+
+function _etfNavChart(fund, period) {
+  var hist = fund.nav_history || [];
+  var sliced = period === '1D' ? hist.slice(-2)
+    : period === '1M'  ? hist.slice(-2)
+    : period === '3M'  ? hist.slice(-4)
+    : period === '6M'  ? hist.slice(-7)
+    : period === '1Y'  ? hist
+    : period === '3Y'  ? hist
+    : period === '5Y'  ? hist
+    : hist;
+  if (sliced.length < 2) return '';
+  var w = 300, h = 90;
+  var min = Math.min.apply(null, sliced), max = Math.max.apply(null, sliced);
+  var range = max - min || 1;
+  var pts = sliced.map(function(v, i) {
+    var x = (i / (sliced.length - 1)) * w;
+    var y = h - ((v - min) / range) * (h - 12) - 6;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+  var color = sliced[sliced.length - 1] >= sliced[0] ? '#10D078' : '#FF4D6A';
+  var last  = pts[pts.length - 1].split(',');
+  var fillPts = pts.join(' ') + ' ' + last[0] + ',' + h + ' 0,' + h;
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:' + h + 'px">'
+    + '<defs><linearGradient id="etfGrad" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.4"/>'
+      + '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>'
+    + '</linearGradient></defs>'
+    + '<polygon points="' + fillPts + '" fill="url(#etfGrad)"/>'
+    + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="4" fill="' + color + '"/>'
+    + '</svg>';
+}
+
+/* ─── ETF LIST ───────────────────────────────────────── */
+function renderETFList() {
+  var funds   = _etfFunds();
+  var filter  = State.etfHoldingsFilter || 'all';
+  var search  = State.etfSearch || '';
+
+  var filtered = funds.filter(function(f) {
+    if (filter === 'active' && f.status !== 'active') return false;
+    if (filter === 'sold'   && f.status !== 'sold')   return false;
+    if (search && f.name.toLowerCase().indexOf(search.toLowerCase()) < 0) return false;
+    return true;
+  });
+
+  var activeFunds = funds.filter(function(f){ return f.status === 'active'; });
+  var totalInv    = activeFunds.reduce(function(s,f){ return s + (f.invested||0); }, 0);
+  var totalCur    = activeFunds.reduce(function(s,f){ return s + (f.current||0); }, 0);
+  var totalGain   = activeFunds.reduce(function(s,f){ return s + Math.max(0, _etfGain(f)); }, 0);
+  var totalLoss   = activeFunds.reduce(function(s,f){ return s + Math.min(0, _etfGain(f)); }, 0);
+  var gainPct     = totalInv > 0 ? (totalGain / totalInv * 100) : 0;
+  var lossPct     = totalInv > 0 ? (Math.abs(totalLoss) / totalInv * 100) : 0;
+
+  var filterTabs = [
+    { key:'all',    label:'All (' + funds.length + ')' },
+    { key:'active', label:'Active (' + activeFunds.length + ')' },
+    { key:'sold',   label:'Sold (' + funds.filter(function(f){ return f.status==='sold'; }).length + ')' },
+  ].map(function(t) {
+    var active = filter === t.key;
+    return '<div onclick="State.etfHoldingsFilter=\'' + t.key + '\';App.render()"'
+      + ' style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (active ? '#38BDF8' : 'transparent') + ';color:' + (active ? '#38BDF8' : 'var(--text-dim)') + '">' + t.label + '</div>';
+  }).join('');
+
+  var cards = filtered.map(function(f) {
+    var gain = _etfGain(f), gp = _etfGainPct(f), gc = _etfColor(gain);
+    var isSold = f.status === 'sold';
+    var col = _etfFundColor(f.id);
+    var displayCur = isSold ? (f.sold_value || 0) : (f.current || 0);
+    var displayGain = isSold ? ((f.sold_value||0) - (f.invested||0)) : gain;
+    var displayGp   = f.invested > 0 ? (displayGain / f.invested * 100) : 0;
+    var gc2 = _etfColor(displayGain);
+
+    return '<div onclick="App.navigate(\'etf-detail\',{id:\'' + f.id + '\'})"'
+      + ' style="background:var(--card2);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);margin-bottom:10px;cursor:pointer">'
+      // Top row: icon + name + exchange + badge
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:' + col + '22;border:1px solid ' + col + '33;display:flex;align-items:center;justify-content:center;color:' + col + ';font-size:11px;font-weight:900;flex-shrink:0">' + _etfInitials(f.name) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+          + '<div style="color:var(--text);font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(f.name) + '</div>'
+          + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + (f.exchange||'NSE') + ' · ' + (f.category||'Equity') + '</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+          + (isSold
+            ? '<span style="background:rgba(255,77,106,0.12);color:#FF4D6A;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,77,106,0.25)">SOLD</span>'
+            : '<span style="background:rgba(16,208,120,0.12);color:#10D078;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;border:1px solid rgba(16,208,120,0.25)">ACTIVE</span>')
+          + '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+        + '</div>'
+      + '</div>'
+      // Metrics grid
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+        + '<div style="background:var(--card);border-radius:8px;padding:8px 10px">'
+          + '<div style="color:var(--text-dim);font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">Invested</div>'
+          + '<div style="color:var(--text);font-size:12px;font-weight:800">' + formatINR(f.invested||0) + '</div>'
+        + '</div>'
+        + '<div style="background:var(--card);border-radius:8px;padding:8px 10px">'
+          + '<div style="color:var(--text-dim);font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">' + (isSold ? 'Redeemed' : 'Current') + '</div>'
+          + '<div style="color:var(--text);font-size:12px;font-weight:800">' + formatINR(displayCur) + '</div>'
+        + '</div>'
+        + '<div style="background:var(--card);border-radius:8px;padding:8px 10px">'
+          + '<div style="color:var(--text-dim);font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">Gain/Loss</div>'
+          + '<div style="color:' + gc2 + ';font-size:12px;font-weight:800">' + _etfSign(displayGain) + formatINR(Math.abs(displayGain)) + '</div>'
+          + '<div style="color:' + gc2 + ';font-size:10px;font-weight:700">' + _etfSign(displayGp) + displayGp.toFixed(2) + '%</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:90px">'
+    // Header
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 12px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')">'
+        + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+      + '</div>'
+      + '<div style="text-align:center">'
+        + '<div style="color:var(--text);font-size:19px;font-weight:800">Exchange Traded Funds</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + funds.length + ' ETFs · NSE/BSE</div>'
+      + '</div>'
+      + '<div onclick="App.navigate(\'etf-add-transaction\',{mode:\'new\'})" style="width:38px;height:38px;border-radius:19px;background:#38BDF8;display:flex;align-items:center;justify-content:center;cursor:pointer">'
+        + '<svg width="18" height="18" viewBox="0 0 24 24" fill="#0a0a0a"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>'
+      + '</div>'
+    + '</div>'
+    // Summary card
+    + '<div style="margin:0 20px 14px;background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border)">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'
+        + '<div>'
+          + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Total Invested</div>'
+          + '<div style="color:var(--text);font-size:18px;font-weight:900">' + formatINR(totalInv) + '</div>'
+        + '</div>'
+        + '<div>'
+          + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Current Value</div>'
+          + '<div style="color:var(--text);font-size:18px;font-weight:900">' + formatINR(totalCur) + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">'
+        + '<div style="background:rgba(16,208,120,0.08);border:1px solid rgba(16,208,120,0.18);border-radius:8px;padding:8px 12px">'
+          + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:3px">Total Gain</div>'
+          + '<div style="color:#10D078;font-size:15px;font-weight:900">' + _etfSign(totalGain) + formatINR(totalGain) + '</div>'
+          + '<div style="color:#10D078;font-size:10px;font-weight:700">(' + gainPct.toFixed(2) + '%)</div>'
+        + '</div>'
+        + '<div style="background:rgba(255,77,106,0.08);border:1px solid rgba(255,77,106,0.18);border-radius:8px;padding:8px 12px">'
+          + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:3px">Total Loss</div>'
+          + '<div style="color:#FF4D6A;font-size:15px;font-weight:900">– ' + formatINR(Math.abs(totalLoss)) + '</div>'
+          + '<div style="color:#FF4D6A;font-size:10px;font-weight:700">(' + lossPct.toFixed(2) + '%)</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>'
+    // Search bar
+    + '<div style="margin:0 20px 12px;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px">'
+      + '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
+      + '<input type="text" placeholder="Search ETFs…" value="' + escapeHtml(search) + '"'
+        + ' oninput="State.etfSearch=this.value;App.render()"'
+        + ' style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px">'
+      + (search ? '<div onclick="State.etfSearch=\'\';App.render()" style="color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1">×</div>' : '')
+    + '</div>'
+    // Filter tabs
+    + '<div style="display:flex;margin:0 20px 14px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + filterTabs + '</div>'
+    // ETF cards
+    + '<div style="padding:0 20px">'
+      + (cards || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:40px 0">No ETFs found.</div>')
+    + '</div>'
+  + '</div>';
+}
+
+/* ─── ETF DETAIL ─────────────────────────────────────── */
+function renderETFDetail() {
+  var id     = (State.params && State.params.id) || ((_etfFunds()[0]||{}).id);
+  var fund   = _etfFund(id);
+  var tab    = State.etfDetailTab || 'overview';
+  var period = State.etfChartPeriod || '1Y';
+  var gain   = _etfGain(fund), gp = _etfGainPct(fund), gc = _etfColor(gain);
+  var col    = _etfFundColor(id);
+  var isSold = fund.status === 'sold';
+
+  var hist = fund.nav_history || [];
+  var curNav = hist.length ? hist[hist.length - 1] : (fund.current_price || 0);
+  var prevNav = hist.length > 1 ? hist[hist.length - 2] : curNav;
+  var navChg = curNav - prevNav, navChgPct = prevNav > 0 ? (navChg / prevNav * 100) : 0;
+  var navGc  = _etfColor(navChg);
+
+  var tabs = ['overview','transactions','notes'].map(function(t) {
+    var lbl = t.charAt(0).toUpperCase() + t.slice(1);
+    var active = tab === t;
+    return '<div onclick="State.etfDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (active ? col : 'transparent') + ';color:' + (active ? col : 'var(--text-dim)') + '">' + lbl + '</div>';
+  }).join('');
+
+  var periodTabs = ['1D','1M','3M','6M','1Y','3Y','5Y','ALL'].map(function(p) {
+    var active = period === p;
+    return '<div onclick="State.etfChartPeriod=\'' + p + '\';App.render()" style="padding:4px 8px;border-radius:6px;background:' + (active ? col : 'transparent') + ';color:' + (active ? '#fff' : 'var(--text-dim)') + ';font-size:11px;font-weight:700;cursor:pointer">' + p + '</div>';
+  }).join('');
+
+  var bodyHtml = '';
+  if (tab === 'overview')      bodyHtml = _etfDetailOverview(fund, col, gc, period, periodTabs, curNav, navChg, navChgPct, navGc, isSold);
+  else if (tab === 'transactions') bodyHtml = _etfDetailTransactions(id);
+  else                         bodyHtml = _etfDetailNotes(id);
+
+  return '<div class="screen-wrap" style="padding-bottom:100px">'
+    // Header
+    + '<div style="display:flex;align-items:center;gap:14px;padding:52px 20px 14px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'etf-list\')">'
+        + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+      + '</div>'
+      + '<div style="flex:1;min-width:0">'
+        + '<div style="color:var(--text);font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(fund.name || 'ETF') + '</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + (fund.exchange||'NSE') + ' · Folio: ' + (fund.folio_id||'—') + '</div>'
+      + '</div>'
+      + '<div style="width:36px;height:36px;background:rgba(255,255,255,0.06);border-radius:18px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="App.showToast(\'Options coming soon\')">'
+        + '<svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>'
+      + '</div>'
+    + '</div>'
+    // ETF identity card
+    + '<div style="margin:0 20px 14px;background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border)">'
+      + '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">'
+        + '<div style="width:52px;height:52px;border-radius:14px;background:' + col + '22;border:1.5px solid ' + col + '44;display:flex;align-items:center;justify-content:center;color:' + col + ';font-size:14px;font-weight:900;flex-shrink:0">' + _etfInitials(fund.name) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+          + '<div style="color:var(--text);font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(fund.name||'') + '</div>'
+          + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">' + (fund.exchange||'NSE') + ' · ' + (fund.symbol||'—') + '</div>'
+        + '</div>'
+        + (isSold
+          ? '<span style="background:rgba(255,77,106,0.12);color:#FF4D6A;font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px;border:1px solid rgba(255,77,106,0.3)">SOLD</span>'
+          : '<span style="background:rgba(16,208,120,0.12);color:#10D078;font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px;border:1px solid rgba(16,208,120,0.3)">Active</span>')
+      + '</div>'
+      + (!isSold ? '<div>'
+        + '<div style="color:var(--text);font-size:28px;font-weight:900;letter-spacing:-0.5px">₹' + curNav.toFixed(2) + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-top:4px">'
+          + '<span style="color:' + navGc + ';font-size:13px;font-weight:700">' + _etfSign(navChg) + navChg.toFixed(2) + ' (' + _etfSign(navChgPct) + navChgPct.toFixed(2) + '%)</span>'
+          + '<span style="color:var(--text-dim);font-size:11px">NAV (' + (new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})) + ')</span>'
+        + '</div>'
+      + '</div>' : '')
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:' + (isSold ? '0' : '14px') + ';padding-top:' + (isSold ? '0' : '14px') + ';border-top:' + (isSold ? 'none' : '1px solid rgba(255,255,255,0.07)') + '">'
+        + _etfMetricCell('Total Invested', formatINR(fund.invested||0), 'var(--text)')
+        + _etfMetricCell('Current Value', formatINR(isSold ? (fund.sold_value||0) : (fund.current||0)), 'var(--text)')
+        + _etfMetricCell('Gain/Loss', _etfSign(gain) + formatINR(Math.abs(gain)) + '\n' + _etfSign(gp) + gp.toFixed(2) + '%', gc)
+      + '</div>'
+    + '</div>'
+    // Tabs
+    + '<div style="display:flex;margin:0 20px 14px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabs + '</div>'
+    + bodyHtml
+    // CTA buttons
+    + (!isSold ? '<div style="position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:14px 20px 22px;display:flex;gap:12px;max-width:480px;margin:auto;box-sizing:border-box">'
+      + '<button onclick="App.navigate(\'etf-add-transaction\',{id:\'' + id + '\',txType:\'purchase\'})" class="btn" style="flex:1;padding:14px;font-size:14px;font-weight:800;border-radius:var(--radius-sm);background:#10D078;color:#000;border:none">Invest More</button>'
+      + '<button onclick="App.navigate(\'etf-add-transaction\',{id:\'' + id + '\',txType:\'redemption\'})" class="btn" style="flex:1;padding:14px;font-size:14px;font-weight:800;border-radius:var(--radius-sm);background:var(--primary);color:#fff;border:none">Redeem</button>'
+    + '</div>' : '')
+  + '</div>';
+}
+
+function _etfMetricCell(label, value, color) {
+  var lines = String(value).split('\n');
+  return '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 10px">'
+    + '<div style="color:var(--text-dim);font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">' + label + '</div>'
+    + '<div style="color:' + color + ';font-size:12px;font-weight:800;line-height:1.4">' + lines.join('<br>') + '</div>'
+  + '</div>';
+}
+
+function _etfDetailOverview(fund, col, gc, period, periodTabs, curNav, navChg, navChgPct, navGc, isSold) {
+  var chart = _etfNavChart(fund, period);
+  return '<div style="padding:0 20px">'
+    // Performance chart
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border);margin-bottom:14px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+        + '<div>'
+          + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Performance</div>'
+          + '<div style="color:var(--text);font-size:18px;font-weight:900">₹' + curNav.toFixed(2) + '</div>'
+          + (navChg !== 0 ? '<div style="color:' + navGc + ';font-size:12px;font-weight:700">' + _etfSign(navChg) + navChg.toFixed(2) + ' (' + _etfSign(navChgPct) + navChgPct.toFixed(2) + '%)</div>' : '')
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px">' + periodTabs + '</div>'
+      + (chart || '<div style="height:90px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;border:1px dashed rgba(255,255,255,0.1);border-radius:8px">' + (isSold ? 'ETF has been redeemed' : 'Chart data unavailable') + '</div>')
+    + '</div>'
+    // ETF info table
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border);margin-bottom:14px">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">ETF INFORMATION</div>'
+      + _etfInfoRow('Units',            (fund.qty||0) + ' units')
+      + _etfInfoRow('Avg. NAV',         '₹' + (fund.buy_price||0).toFixed(2))
+      + _etfInfoRow('Invested On',      fund.invested_on || '—')
+      + _etfInfoRow('Category',         fund.category || '—')
+      + _etfInfoRow('Expense Ratio',    fund.expense_ratio ? fund.expense_ratio + '%' : '—')
+      + _etfInfoRow('Dividend Option',  fund.dividend_option || '—')
+      + _etfInfoRow('Fund House',       fund.fund_house || '—')
+      + _etfInfoRow('Benchmark',        fund.benchmark || '—')
+      + _etfInfoRow('Exchange',         fund.exchange || 'NSE')
+      + _etfInfoRow('Symbol',           fund.symbol || '—')
+      + (fund.status === 'sold' ? _etfInfoRow('Sold On', fund.sold_on || '—') : '')
+      + (fund.status === 'sold' ? _etfInfoRow('Sale Value', formatINR(fund.sold_value||0)) : '')
+    + '</div>'
+  + '</div>';
+}
+
+function _etfInfoRow(label, value) {
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+    + '<div style="color:var(--text-dim);font-size:13px">' + label + '</div>'
+    + '<div style="color:var(--text);font-size:13px;font-weight:700;text-align:right;max-width:60%">' + escapeHtml(String(value)) + '</div>'
+  + '</div>';
+}
+
+function _etfDetailTransactions(id) {
+  var txData = INV_TRANSACTIONS[id] || { buys: [], sells: [] };
+  var buys   = txData.buys  || [];
+  var sells  = txData.sells || [];
+
+  var totBuyAmt  = buys.reduce(function(s,t){ return s+(t.amount||0); }, 0);
+  var totBuyQty  = buys.reduce(function(s,t){ return s+(t.qty||0); }, 0);
+  var avgNav     = totBuyQty > 0 ? (totBuyAmt / totBuyQty) : 0;
+  var totSellAmt = sells.reduce(function(s,t){ return s+(t.amount||0); }, 0);
+  var totSellQty = sells.reduce(function(s,t){ return s+(t.qty||0); }, 0);
+
+  function txRow(t) {
+    var badge = t.payment_mode === 'upi' ? '<span style="background:rgba(56,189,248,0.15);color:#38BDF8;font-size:9px;font-weight:800;padding:2px 5px;border-radius:4px;margin-left:4px">UPI</span>'
+      : t.payment_mode === 'net_banking' ? '<span style="background:rgba(108,71,255,0.15);color:var(--primary);font-size:9px;font-weight:800;padding:2px 5px;border-radius:4px;margin-left:4px">NEFT</span>'
+      : '';
+    return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="App.navigate(\'etf-add-transaction\',{id:\'' + id + '\',txId:\'' + t.id + '\'})">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:700">' + (t.date||'—') + badge + '</div>'
+        + '<div style="color:var(--text);font-size:13px;font-weight:800">' + formatINR(t.amount||0) + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<div style="color:var(--text-dim);font-size:11px">Units: ' + (t.qty||0) + ' · NAV: ₹' + (t.nav||0).toFixed(2) + '</div>'
+        + '<div style="color:var(--text-dim);font-size:11px">Charges: ₹' + (t.charges||0).toFixed(2) + '</div>'
+      + '</div>'
+    + '</div>';
+  }
+
+  var buySection = '<div style="padding:0 20px;margin-bottom:12px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">PURCHASE TRANSACTIONS</div>'
+      + (buys.map(txRow).join('') || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:16px 0">No purchase transactions</div>')
+      + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+          + _etfMetricCell('Total Units', totBuyQty.toFixed(2), '#10D078')
+          + _etfMetricCell('Avg. NAV',    '₹' + avgNav.toFixed(2), 'var(--text)')
+          + _etfMetricCell('Total Invested', formatINR(totBuyAmt), 'var(--text)')
+        + '</div>'
+      + '</div>'
+    + '</div>'
+  + '</div>';
+
+  var realizedPL = totSellAmt - (totSellQty * (avgNav || 0));
+  var sellSection = '<div style="padding:0 20px;margin-bottom:12px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">REDEMPTION TRANSACTIONS</div>'
+      + (sells.length
+          ? (sells.map(txRow).join('')
+            + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)">'
+              + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+                + _etfMetricCell('Units Sold',  totSellQty.toFixed(2), '#FF4D6A')
+                + _etfMetricCell('Sale Value',  formatINR(totSellAmt), 'var(--text)')
+                + _etfMetricCell('Realized P&L', _etfSign(realizedPL) + formatINR(Math.abs(realizedPL)), _etfColor(realizedPL))
+              + '</div>'
+            + '</div>')
+          : '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:16px 0">No redemptions yet</div>')
+    + '</div>'
+  + '</div>';
+
+  return buySection + sellSection;
+}
+
+function _etfDetailNotes(id) {
+  var allNotes = INV_NOTES[id] || [];
+  var filter   = State.etfNoteFilter || 'all';
+  var filtered = filter === 'all' ? allNotes : allNotes.filter(function(n){ return n.type === filter; });
+  var noteColors = { research:'#38BDF8', ideas:'#10D078', updates:'#F59E0B', private:'#EF4444' };
+  var noteIcons  = { research:'🔬', ideas:'💡', updates:'📢', private:'🔒' };
+
+  var chips = ['all','research','ideas','updates','private'].map(function(t) {
+    var active = filter === t;
+    return '<div onclick="State.etfNoteFilter=\'' + t + '\';App.render()" style="padding:5px 12px;border-radius:20px;background:' + (active ? '#38BDF8' : 'var(--card2)') + ';color:' + (active ? '#000' : 'var(--text-dim)') + ';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid ' + (active ? '#38BDF8' : 'var(--border)') + '">'
+      + (t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1))
+    + '</div>';
+  }).join('');
+
+  var noteCards = filtered.map(function(n) {
+    var c = noteColors[n.type] || '#38BDF8';
+    var ic = noteIcons[n.type] || '📝';
+    return '<div style="background:var(--card2);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);border-left:3px solid ' + c + ';margin-bottom:10px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+          + '<span style="font-size:14px">' + ic + '</span>'
+          + '<div style="color:var(--text);font-size:13px;font-weight:800">' + escapeHtml(n.title||'') + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px">'
+          + '<div onclick="App._etfEditNote(\'' + id + '\',\'' + n.id + '\')" style="color:var(--text-dim);font-size:12px;cursor:pointer">✏️</div>'
+          + '<div onclick="App._etfDeleteNote(\'' + id + '\',\'' + n.id + '\')" style="color:var(--text-dim);font-size:12px;cursor:pointer">🗑️</div>'
+        + '</div>'
+      + '</div>'
+      + '<div style="color:var(--text-dim);font-size:12px;line-height:1.5;margin-bottom:6px">' + escapeHtml(n.text||'') + '</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<div style="color:' + c + ';font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px">' + (n.type||'') + '</div>'
+        + '<div style="color:var(--text-dim);font-size:10px">' + (n.date||'').split('T')[0] + '</div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div style="padding:0 20px">'
+    + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:12px;scrollbar-width:none">' + chips + '</div>'
+    + (noteCards || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:40px 0">No notes yet.</div>')
+    + '<button onclick="App._etfAddNote(\'' + id + '\')" class="btn" style="width:100%;padding:12px;font-size:13px;font-weight:800;border-radius:var(--radius-sm);background:#38BDF8;color:#000;border:none;margin-top:4px">+ Add Note</button>'
+  + '</div>';
+}
+
+/* ─── ETF ADD TRANSACTION ────────────────────────────── */
+function renderETFAddTransaction() {
+  var params  = State.params || {};
+  var fundId  = params.id || '';
+  var txType  = State.etfTxType || params.txType || 'purchase';
+  var payMode = State.etfPayMode || 'upi';
+  var today   = new Date().toISOString().slice(0, 10);
+  var funds   = _etfFunds();
+  var fund    = fundId ? _etfFund(fundId) : funds[0] || {};
+  if (!fundId && fund.id) fundId = fund.id;
+
+  var ins = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;-webkit-appearance:none';
+  var selStyle = ins + ';cursor:pointer';
+  var secHdr = function(label) {
+    return '<div style="color:#38BDF8;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:18px 0 10px">' + label + '</div>';
+  };
+  function fr(lbl, inp) {
+    return '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">' + lbl + '</div>' + inp + '</div>';
+  }
+
+  var fundOptions = funds.map(function(f) {
+    return '<option value="' + f.id + '"' + (f.id === fundId ? ' selected' : '') + '>' + escapeHtml(f.name) + '</option>';
+  }).join('');
+
+  var curNavDisplay = fund.nav_history && fund.nav_history.length
+    ? fund.nav_history[fund.nav_history.length - 1].toFixed(2)
+    : (fund.current_price || 0).toFixed(2);
+
+  var typeButtons = [
+    { val:'purchase',   label:'Purchase' },
+    { val:'redemption', label:'Redemption' },
+    { val:'switch',     label:'Switch' },
+  ].map(function(o) {
+    var active = o.val === txType;
+    return '<div onclick="State.etfTxType=\'' + o.val + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:800;cursor:pointer;border-radius:8px;background:' + (active ? '#38BDF8' : 'rgba(255,255,255,0.05)') + ';color:' + (active ? '#000' : 'var(--text-dim)') + ';transition:all 0.2s">' + o.label + '</div>';
+  }).join('');
+
+  var payButtons = ['upi','net_banking','other'].map(function(p) {
+    var label = p === 'upi' ? 'UPI' : p === 'net_banking' ? 'Net Banking' : 'Other';
+    var active = payMode === p;
+    return '<div onclick="State.etfPayMode=\'' + p + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:800;cursor:pointer;border-radius:8px;background:' + (active ? '#38BDF8' : 'rgba(255,255,255,0.05)') + ';color:' + (active ? '#000' : 'var(--text-dim)') + '">' + label + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 20px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'' + (fundId ? 'etf-detail' : 'etf-list') + '\'' + (fundId ? ',{id:\'' + fundId + '\'}' : '') + ')">'
+        + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+      + '</div>'
+      + '<div style="color:var(--text);font-size:18px;font-weight:800">Add ETF Transaction</div>'
+      + '<div onclick="App._saveETFTransaction()" style="color:#38BDF8;font-size:14px;font-weight:800;cursor:pointer;padding:4px 8px">Save</div>'
+    + '</div>'
+    + '<div style="padding:0 20px">'
+      + secHdr('Transaction Details')
+      + fr('Date of Purchase', '<input type="date" id="etf-date" value="' + today + '" style="' + ins + '">')
+      + fr('ETF Name', '<select onchange="State.params.id=this.value;App.render()" style="' + selStyle + '">' + fundOptions + '</select>')
+      + fr('Folio / Investor ID', '<input type="text" id="etf-folio" value="' + escapeHtml(fund.folio_id||'') + '" placeholder="e.g. IN300214XXXXXXXX" style="' + ins + '">')
+      + fr('Exchange', '<input type="text" id="etf-exchange" value="' + escapeHtml(fund.exchange||'NSE') + '" placeholder="NSE / BSE" style="' + ins + '">')
+      // Transaction type
+      + '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:8px">Transaction Type</div>'
+        + '<div style="display:flex;gap:6px;background:rgba(255,255,255,0.04);border-radius:10px;padding:4px">' + typeButtons + '</div>'
+      + '</div>'
+      // Current NAV info
+      + '<div style="margin-bottom:14px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;justify-content:space-between">'
+        + '<div><div style="color:var(--text-dim);font-size:11px;margin-bottom:2px">Current NAV</div><div style="color:#38BDF8;font-size:14px;font-weight:800">₹' + curNavDisplay + '</div></div>'
+        + '<div style="text-align:right"><div style="color:var(--text-dim);font-size:11px;margin-bottom:2px">Available Units</div><div style="color:var(--text);font-size:14px;font-weight:800">' + (fund.qty||0) + '</div></div>'
+      + '</div>'
+      + fr('Units', '<input type="number" id="etf-units" placeholder="e.g. 10" step="0.001" style="' + ins + '" oninput="App._etfRecalc()">')
+      + fr('NAV at ' + (txType === 'purchase' ? 'Purchase' : 'Redemption') + ' (₹)', '<input type="number" id="etf-nav" placeholder="e.g. 160.25" step="0.01" value="' + curNavDisplay + '" style="' + ins + '" oninput="App._etfRecalc()">')
+      + fr('Amount ' + (txType === 'purchase' ? 'Invested' : 'Redeemed') + ' (₹)', '<input type="number" id="etf-amount" placeholder="Auto-calculated" step="0.01" style="' + ins + ';opacity:0.7" readonly>')
+      + fr('Charges (incl. taxes) (₹)', '<input type="number" id="etf-charges" placeholder="Auto-calculated (0.30%)" step="0.01" style="' + ins + ';opacity:0.7" readonly>')
+      + fr('Total Amount Paid (₹)', '<input type="number" id="etf-total" placeholder="Auto-calculated" step="0.01" style="' + ins + ';background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.3)" readonly>')
+      // Payment mode
+      + secHdr('Payment Mode')
+      + '<div style="display:flex;gap:6px;background:rgba(255,255,255,0.04);border-radius:10px;padding:4px;margin-bottom:14px">' + payButtons + '</div>'
+      + fr('Reference / Transaction ID', '<input type="text" id="etf-ref" placeholder="e.g. UPI1234567890" style="' + ins + '">')
+      + fr('Notes (Optional)', '<input type="text" id="etf-notes-inp" placeholder="e.g. Monthly SIP investment" style="' + ins + '">')
+      + '<button onclick="App._saveETFTransaction()" class="btn" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#38BDF8;color:#000;border:none;margin-top:6px">'
+        + (txType === 'purchase' ? '✓ Confirm Purchase' : txType === 'redemption' ? '✓ Confirm Redemption' : '✓ Confirm Switch')
       + '</button>'
     + '</div>'
   + '</div>';
@@ -7450,6 +8026,9 @@ const App = {
       case 'mf-dashboard':          html = renderMFDashboard();           break;
       case 'mf-detail':             html = renderMFDetail();              break;
       case 'mf-add-transaction':    html = renderMFAddTransaction();      break;
+      case 'etf-list':              html = renderETFList();               break;
+      case 'etf-detail':            html = renderETFDetail();             break;
+      case 'etf-add-transaction':   html = renderETFAddTransaction();     break;
       case 'investment-type-select':html = renderInvestmentTypeSelect();  break;
       case 'investment-detail':     html = renderInvestmentDetail();      break;
       case 'investment-buy':        html = renderInvestmentBuy();         break;
@@ -8517,6 +9096,129 @@ const App = {
     }
     this.showToast('Sale recorded! 📉');
     this.navigate('investment-detail', { id: id, cat: cat });
+  },
+
+  /* ── ETF Module ──────────────────────────────── */
+  _etfRecalc() {
+    var units    = parseFloat(document.getElementById('etf-units')?.value);
+    var nav      = parseFloat(document.getElementById('etf-nav')?.value);
+    var amtEl    = document.getElementById('etf-amount');
+    var chgEl    = document.getElementById('etf-charges');
+    var totEl    = document.getElementById('etf-total');
+    if (!isNaN(units) && !isNaN(nav) && units > 0 && nav > 0) {
+      var amt     = parseFloat((units * nav).toFixed(2));
+      var charges = parseFloat((amt * 0.003).toFixed(2));
+      var total   = parseFloat((amt + charges).toFixed(2));
+      if (amtEl)  amtEl.value  = amt;
+      if (chgEl)  chgEl.value  = charges;
+      if (totEl)  totEl.value  = total;
+    }
+  },
+
+  _saveETFTransaction() {
+    var id      = (State.params && State.params.id) || '';
+    var type    = State.etfTxType || 'purchase';
+    var units   = parseFloat(document.getElementById('etf-units')?.value);
+    var nav     = parseFloat(document.getElementById('etf-nav')?.value);
+    var date    = document.getElementById('etf-date')?.value;
+    var ref     = document.getElementById('etf-ref')?.value || '';
+    var payMode = State.etfPayMode || 'upi';
+    if (!id)                          { this.showToast('Please select an ETF'); return; }
+    if (!date)                        { this.showToast('Please enter a date'); return; }
+    if (isNaN(units) || units <= 0)   { this.showToast('Please enter valid units'); return; }
+    if (isNaN(nav)   || nav   <= 0)   { this.showToast('Please enter valid NAV'); return; }
+
+    var amt     = parseFloat((units * nav).toFixed(2));
+    var charges = parseFloat((amt * 0.003).toFixed(2));
+    var total   = parseFloat((amt + charges).toFixed(2));
+    var fund    = _etfFund(id);
+
+    if (!INV_TRANSACTIONS[id]) INV_TRANSACTIONS[id] = { buys: [], sells: [] };
+    var tx = { id: uid(), date, qty: parseFloat(units.toFixed(3)), nav, amount: amt, charges, total, payment_mode: payMode, ref_id: ref };
+
+    if (type === 'purchase') {
+      INV_TRANSACTIONS[id].buys.push(tx);
+      fund.invested = (fund.invested || 0) + amt;
+      fund.qty      = (fund.qty      || 0) + units;
+      fund.current  = (fund.current  || 0) + amt;
+      fund.buy_price = fund.invested / fund.qty;
+      this.showToast('Purchase saved! 📈');
+    } else if (type === 'redemption') {
+      if (units > (fund.qty || 0)) { this.showToast('Cannot redeem more units than held'); return; }
+      tx.type = 'redemption';
+      INV_TRANSACTIONS[id].sells.push(tx);
+      fund.qty     = (fund.qty     || 0) - units;
+      fund.current = (fund.current || 0) - amt;
+      this.showToast('Redemption saved! 📤');
+    } else {
+      this.showToast('Switch saved! 🔄');
+    }
+    this.navigate('etf-detail', { id });
+  },
+
+  _etfAddNote(fundId) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay center';
+    overlay.innerHTML = '<div class="modal-card">'
+      + '<div style="color:var(--text);font-size:17px;font-weight:800;margin-bottom:16px">Add Note</div>'
+      + '<select id="etn-type" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box">'
+        + '<option value="research">🔬 Research</option><option value="ideas">💡 Ideas</option><option value="updates">📢 Updates</option><option value="private">🔒 Private</option>'
+      + '</select>'
+      + '<input id="etn-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none">'
+      + '<textarea id="etn-text" placeholder="Your note…" rows="4" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box;outline:none;resize:vertical"></textarea>'
+      + '<div style="display:flex;gap:10px">'
+        + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+        + '<button onclick="App._etfSaveNote(\'' + fundId + '\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;background:#38BDF8;color:#000;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Save</button>'
+      + '</div>'
+    + '</div>';
+    document.body.appendChild(overlay);
+  },
+
+  _etfSaveNote(fundId, overlay) {
+    var type  = document.getElementById('etn-type')?.value  || 'research';
+    var title = document.getElementById('etn-title')?.value.trim();
+    var text  = document.getElementById('etn-text')?.value.trim();
+    if (!title || !text) { this.showToast('Title and text required'); return; }
+    if (!INV_NOTES[fundId]) INV_NOTES[fundId] = [];
+    INV_NOTES[fundId].push({ id: uid(), type, date: new Date().toISOString().slice(0,10), title, text });
+    overlay.remove(); this.showToast('Note saved!'); App.render();
+  },
+
+  _etfEditNote(fundId, noteId) {
+    var notes = INV_NOTES[fundId] || [];
+    var n = notes.find(function(n){ return n.id === noteId; });
+    if (!n) return;
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay center';
+    overlay.innerHTML = '<div class="modal-card">'
+      + '<div style="color:var(--text);font-size:17px;font-weight:800;margin-bottom:16px">Edit Note</div>'
+      + '<input id="etn-etitle" type="text" value="' + escapeHtml(n.title) + '" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none">'
+      + '<textarea id="etn-etext" rows="4" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box;outline:none;resize:vertical">' + escapeHtml(n.text) + '</textarea>'
+      + '<div style="display:flex;gap:10px">'
+        + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+        + '<button onclick="App._etfSaveNoteEdit(\'' + fundId + '\',\'' + noteId + '\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;background:#38BDF8;color:#000;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Update</button>'
+      + '</div>'
+    + '</div>';
+    document.body.appendChild(overlay);
+  },
+
+  _etfSaveNoteEdit(fundId, noteId, overlay) {
+    var notes = INV_NOTES[fundId] || [];
+    var n = notes.find(function(n){ return n.id === noteId; });
+    if (!n) return;
+    var title = document.getElementById('etn-etitle')?.value.trim();
+    var text  = document.getElementById('etn-etext')?.value.trim();
+    if (!title || !text) { this.showToast('Title and text required'); return; }
+    n.title = title; n.text = text;
+    overlay.remove(); this.showToast('Note updated!'); App.render();
+  },
+
+  _etfDeleteNote(fundId, noteId) {
+    var notes = INV_NOTES[fundId] || [];
+    var idx = notes.findIndex(function(n){ return n.id === noteId; });
+    if (idx < 0) return;
+    notes.splice(idx, 1);
+    this.showToast('Note deleted'); App.render();
   },
 
   /* ── MF Module ───────────────────────────────── */
