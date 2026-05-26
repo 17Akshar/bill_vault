@@ -1645,6 +1645,13 @@ const State = {
   invCatFilter:   'all',
   invNoteFilter:  'all',
   invChartPeriod: '1Y',
+  // MF module
+  mfDetailTab:    'overview',
+  mfChartPeriod:  '1Y',
+  mfTxType:       'purchase',
+  mfNoteFilter:   'all',
+  mfSearch:       '',
+  mfHoldingsFilter: 'all',
   // Transaction advanced filter
   txShowAdvFilter: false,
   txCatFilter:     'all',
@@ -1809,10 +1816,10 @@ const INV_PORTFOLIO = {
     { id:'s6', name:'Yes Bank',            symbol:'YESBANK',   exchange:'NSE', qty:500, buy_price:28,   current_price:19.2,   invested:14000,  current:9600,   status:'active', sector:'Banking' },
   ],
   mutual_funds: [
-    { id:'m1', name:'Nifty 50 Index Fund',    type:'Index',    invested:120000, current:148500, sip_amt:5000, units:1420.5, nav:104.57, status:'active' },
-    { id:'m2', name:'HDFC Equity Fund',       type:'Equity',   invested:60000,  current:71200,  sip_amt:3000, units:892.3,  nav:79.80,  status:'active' },
-    { id:'m3', name:'Parag Parikh Flexi Cap', type:'Flexi Cap',invested:80000,  current:96400,  sip_amt:4000, units:1023.4, nav:94.19,  status:'active' },
-    { id:'m4', name:'Axis Bluechip Fund',     type:'Large Cap',invested:40000,  current:38200,  sip_amt:2000, units:487.1,  nav:78.43,  status:'active' },
+    { id:'m1', name:'Nifty 50 Index Fund',    type:'Index',     invested:120000, current:148500, sip_amt:5000, units:1420.5, nav:104.57, avg_nav:84.48, status:'active', folio_number:'12345678/01', amc:'UTI AMC',   plan:'Direct',  option:'Growth', fund_house:'UTI Mutual Fund',   inception_date:'01 Jan 2002', expense_ratio:0.10, risk:'Very High', sip_date:1,  nav_history:[88.2,91.0,93.5,96.1,99.2,97.4,98.8,100.3,102.1,101.5,103.2,104.57] },
+    { id:'m2', name:'HDFC Flexi Cap Fund',    type:'Flexi Cap', invested:60000,  current:71200,  sip_amt:3000, units:892.3,  nav:79.80,  avg_nav:67.25, status:'active', folio_number:'23456789/01', amc:'HDFC AMC',  plan:'Direct',  option:'Growth', fund_house:'HDFC Mutual Fund',  inception_date:'01 Jan 1995', expense_ratio:0.75, risk:'Very High', sip_date:5,  nav_history:[68.0,70.2,72.1,71.5,73.4,74.8,75.6,77.1,76.3,77.9,79.0,79.80] },
+    { id:'m3', name:'Parag Parikh Flexi Cap', type:'Flexi Cap', invested:80000,  current:96400,  sip_amt:4000, units:1023.4, nav:94.19,  avg_nav:78.18, status:'active', folio_number:'34567890/01', amc:'PPFAS AMC', plan:'Direct',  option:'Growth', fund_house:'PPFAS Mutual Fund', inception_date:'24 May 2013', expense_ratio:0.62, risk:'Very High', sip_date:7,  nav_history:[80.3,82.5,84.1,85.2,87.4,86.1,88.0,89.5,91.2,92.4,93.1,94.19] },
+    { id:'m4', name:'Axis Bluechip Fund',     type:'Large Cap', invested:40000,  current:38200,  sip_amt:2000, units:487.1,  nav:78.43,  avg_nav:82.12, status:'active', folio_number:'45678901/01', amc:'Axis AMC',  plan:'Regular', option:'Growth', fund_house:'Axis Mutual Fund',  inception_date:'05 Jan 2010', expense_ratio:1.53, risk:'High',      sip_date:10, nav_history:[82.0,81.5,80.2,79.8,80.4,81.1,79.6,78.9,79.4,78.2,78.43,78.43] },
   ],
   etfs: [
     { id:'e1', name:'Nifty BeES',  symbol:'NIFTYBEES', exchange:'NSE', qty:100, buy_price:180.5, current_price:212.3, invested:18050, current:21230, status:'active' },
@@ -1874,6 +1881,37 @@ const INV_TRANSACTIONS = {
     ],
     sells: [],
   },
+  m2: {
+    buys: [
+      { id:'m2t0', date:'2024-01-20', amount:20000, units:286.9, nav:69.71, sip:false },
+      { id:'m2t1', date:'2024-01-05', amount:3000,  units:43.2,  nav:69.44, sip:true  },
+      { id:'m2t2', date:'2024-02-05', amount:3000,  units:41.8,  nav:71.77, sip:true  },
+      { id:'m2t3', date:'2024-03-05', amount:3000,  units:41.5,  nav:72.29, sip:true  },
+      { id:'m2t4', date:'2024-04-05', amount:3000,  units:40.9,  nav:73.35, sip:true  },
+    ],
+    sells: [],
+  },
+  m3: {
+    buys: [
+      { id:'m3t1', date:'2024-01-07', amount:4000, units:49.8, nav:80.32, sip:true },
+      { id:'m3t2', date:'2024-02-07', amount:4000, units:47.5, nav:84.21, sip:true },
+      { id:'m3t3', date:'2024-03-07', amount:4000, units:47.2, nav:84.75, sip:true },
+      { id:'m3t4', date:'2024-04-07', amount:4000, units:44.6, nav:89.69, sip:true },
+    ],
+    sells: [],
+  },
+  m4: {
+    buys: [
+      { id:'m4t1', date:'2023-06-10', amount:30000, units:370.4, nav:81.00, sip:false },
+      { id:'m4t2', date:'2024-01-10', amount:2000,  units:24.9,  nav:80.32, sip:true  },
+      { id:'m4t3', date:'2024-02-10', amount:2000,  units:25.1,  nav:79.68, sip:true  },
+      { id:'m4t4', date:'2024-03-10', amount:2000,  units:25.4,  nav:78.74, sip:true  },
+      { id:'m4t5', date:'2024-04-10', amount:2000,  units:25.5,  nav:78.43, sip:true  },
+    ],
+    sells: [
+      { id:'m4s1', date:'2024-03-20', amount:20000, units:253.8, nav:78.80, type:'redemption' },
+    ],
+  },
 };
 
 const INV_NOTES = {
@@ -1888,6 +1926,18 @@ const INV_NOTES = {
   ],
   m1: [
     { id:'in6', type:'research', date:'2024-07-15', title:'Fund Review', text:'Nifty 50 Index Fund tracking well. Expense ratio 0.1% — very competitive.' },
+    { id:'in7', type:'ideas',    date:'2024-09-01', title:'Increase SIP', text:'Plan to increase SIP to ₹7000 from Oct. Index funds outperforming most active funds over 5Y.' },
+  ],
+  m2: [
+    { id:'mn1', type:'research', date:'2024-05-10', title:'HDFC Flexi Cap Review', text:'Strong performance in FY24. Fund manager shifted to quality large caps. Expense ratio 0.75%. Good long-term hold.' },
+    { id:'mn2', type:'ideas',    date:'2024-07-01', title:'Increase SIP',          text:'Plan to increase SIP to ₹5000 from Aug. HDFC Flexi Cap has great flexibility for market cycles.' },
+  ],
+  m3: [
+    { id:'mn3', type:'research', date:'2024-06-15', title:'PPFAS Analysis',  text:'Parag Parikh Flexi Cap holds 35% international exposure. Good hedge against INR depreciation. Long-term conviction hold.' },
+    { id:'mn4', type:'updates',  date:'2024-07-20', title:'AUM Milestone',   text:'Fund crossed ₹50,000 Cr AUM. Expense ratio stable at 0.62%. Management quality remains top-notch.' },
+  ],
+  m4: [
+    { id:'mn5', type:'private',  date:'2024-03-25', title:'Partial Redemption Note', text:'Redeemed ₹20,000 for emergency. Will continue SIP. Axis Bluechip underperforming lately — reviewing in 6 months.' },
   ],
 };
 
@@ -3293,7 +3343,10 @@ function renderInvestmentDashboard() {
   var catRows = cats.map(function(c) {
     var gp = _invGainPct(c.invested, c.current);
     var cg = _invGainColor(c.current - c.invested);
-    return '<div onclick="App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})"'
+    var onClickAttr = c.cat === 'mutual_funds'
+      ? 'App.navigate(\'mf-dashboard\')'
+      : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
+    return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
       + '<div style="width:44px;height:44px;border-radius:12px;background:' + c.color + '20;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + c.icon + '</div>'
       + '<div style="flex:1;min-width:0">'
@@ -3379,6 +3432,8 @@ function renderInvestmentDashboard() {
 /* ─── INVESTMENT CATEGORY ────────────────────────────── */
 function renderInvestmentCategory() {
   var cat    = State.params.cat || 'stocks';
+  // Redirect mutual funds to dedicated MF dashboard
+  if (cat === 'mutual_funds') { setTimeout(function(){ App.navigate('mf-dashboard'); }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3917,6 +3972,497 @@ function renderInvestmentSell() {
         + '<div id="isf-pl-row" style="display:flex;justify-content:space-between;padding:7px 8px;border-radius:6px;margin-top:4px;background:rgba(255,255,255,0.04)"><span style="color:var(--text);font-size:13px;font-weight:700">Realized P&amp;L</span><span id="isf-pl" style="font-size:14px;font-weight:800;color:var(--text-dim)">—</span></div>'
       + '</div>'
       + '<button onclick="App._saveInvSell()" class="btn" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:rgba(255,77,106,0.12);color:#FF4D6A;border:1.5px solid rgba(255,77,106,0.35)">Confirm Sell</button>'
+    + '</div>'
+  + '</div>';
+}
+
+/* ─── MUTUAL FUNDS MODULE ─────────────────────────────── */
+
+function _mfFunds() { return INV_PORTFOLIO.mutual_funds || []; }
+function _mfFund(id) { return _mfFunds().find(function(f){ return f.id === id; }) || {}; }
+function _mfGain(f) { return (f.current||0) - (f.invested||0); }
+function _mfGainPct(f) { return f.invested > 0 ? (_mfGain(f) / f.invested * 100) : 0; }
+function _mfGainColor(g) { return g >= 0 ? '#10D078' : '#FF4D6A'; }
+function _mfSign(g) { return g >= 0 ? '+' : ''; }
+
+function _mfInitials(name) {
+  return (name || '').split(' ').slice(0,2).map(function(w){ return w[0]||''; }).join('').toUpperCase();
+}
+
+function _mfNavChart(fund, period) {
+  var hist = fund.nav_history || [];
+  var sliced = period === '1M' ? hist.slice(-2)
+    : period === '3M' ? hist.slice(-4)
+    : period === '6M' ? hist.slice(-7)
+    : period === '1Y' ? hist
+    : hist;
+  if (sliced.length < 2) return '';
+  var w = 280, h = 80;
+  var min = Math.min.apply(null, sliced), max = Math.max.apply(null, sliced);
+  var range = max - min || 1;
+  var pts = sliced.map(function(v, i) {
+    var x = (i / (sliced.length - 1)) * w;
+    var y = h - ((v - min) / range) * (h - 10) - 5;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+  var color = (sliced[sliced.length-1] >= sliced[0]) ? '#10D078' : '#FF4D6A';
+  var polyline = '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  var first = pts[0].split(','), last = pts[pts.length-1].split(',');
+  var fillPts = pts.join(' ') + ' ' + last[0] + ',' + h + ' 0,' + h;
+  var fill = '<polygon points="' + fillPts + '" fill="url(#mfGrad)" opacity="0.3"/>';
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:' + h + 'px">'
+    + '<defs><linearGradient id="mfGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + color + '" stop-opacity="0.5"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>'
+    + fill + polyline
+    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="4" fill="' + color + '"/>'
+    + '</svg>';
+}
+
+function renderMFDashboard() {
+  var funds  = _mfFunds();
+  var totalInv = funds.reduce(function(s, f) { return s + (f.invested||0); }, 0);
+  var totalCur = funds.reduce(function(s, f) { return s + (f.current||0); }, 0);
+  var totalGain = totalCur - totalInv;
+  var gainPct = totalInv > 0 ? (totalGain / totalInv * 100) : 0;
+  var gc = _mfGainColor(totalGain);
+
+  // Donut for fund allocation
+  var cumPct = 0;
+  var donutSlices = funds.map(function(f) {
+    var pct = totalCur > 0 ? (f.current / totalCur * 100) : 0;
+    var obj = { color: _mfFundColor(f.id), pct: pct, cum: cumPct };
+    cumPct += pct;
+    return obj;
+  });
+  var r = 40, sw = 16, C = 2 * Math.PI * r;
+  var cx = r + sw / 2 + 2, cy = cx, sz = cx * 2;
+  var donutCircles = donutSlices.map(function(c) {
+    if (c.pct <= 0) return '';
+    var arc = C * c.pct / 100;
+    var rot = (360 * c.cum / 100) - 90;
+    return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none"'
+      + ' stroke="' + c.color + '" stroke-width="' + sw + '"'
+      + ' stroke-dasharray="' + arc.toFixed(2) + ' ' + (C - arc).toFixed(2) + '"'
+      + ' transform="rotate(' + rot.toFixed(1) + ' ' + cx + ' ' + cy + ')"'
+      + ' stroke-linecap="butt"/>';
+  }).join('');
+  var donutSvg = '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 ' + sz + ' ' + sz + '" style="flex-shrink:0">'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="' + sw + '"/>'
+    + donutCircles + '</svg>';
+
+  var search = State.mfSearch || '';
+  var filtered = search
+    ? funds.filter(function(f){ return f.name.toLowerCase().indexOf(search.toLowerCase()) >= 0; })
+    : funds;
+
+  var fundRows = filtered.map(function(f) {
+    var gain = _mfGain(f), gp = _mfGainPct(f), gc2 = _mfGainColor(gain);
+    var col = _mfFundColor(f.id);
+    return '<div onclick="App.navigate(\'mf-detail\',{id:\'' + f.id + '\'})" style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:' + col + '22;border:1px solid ' + col + '33;display:flex;align-items:center;justify-content:center;color:' + col + ';font-size:11px;font-weight:900;flex-shrink:0;letter-spacing:0">' + _mfInitials(f.name) + '</div>'
+      + '<div style="flex:1;min-width:0">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(f.name) + '</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + (f.type||'') + ' · ' + (f.plan||'') + ' · NAV ₹' + (f.nav||0).toFixed(2) + '</div>'
+        + '<div style="margin-top:5px;height:2px;border-radius:1px;background:rgba(255,255,255,0.07);overflow:hidden">'
+          + '<div style="height:100%;width:' + ((f.current/totalCur)*100).toFixed(1) + '%;background:' + col + ';border-radius:1px"></div>'
+        + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:800;margin-bottom:2px">' + formatINR(f.current||0) + '</div>'
+        + '<div style="color:' + gc2 + ';font-size:11px;font-weight:700">' + _mfSign(gain) + gp.toFixed(2) + '%</div>'
+        + '<div style="color:var(--text-dim);font-size:10px;margin-top:1px">SIP ₹' + formatINR(f.sip_amt||0).replace('₹','') + '</div>'
+      + '</div>'
+      + '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)" style="margin-left:4px;flex-shrink:0"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+    + '</div>';
+  }).join('');
+
+  var legend = funds.slice(0,4).map(function(f) {
+    return '<div style="display:flex;align-items:center;gap:5px">'
+      + '<div style="width:7px;height:7px;border-radius:50%;background:' + _mfFundColor(f.id) + ';flex-shrink:0"></div>'
+      + '<div style="color:rgba(255,255,255,0.72);font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px">' + escapeHtml(f.name.split(' ').slice(0,2).join(' ')) + '</div>'
+      + '<div style="color:rgba(255,255,255,0.9);font-size:10px;font-weight:700;margin-left:auto">' + ((f.current/totalCur)*100).toFixed(1) + '%</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:90px">'
+    // Header
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:52px 20px 12px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')">'
+        + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+      + '</div>'
+      + '<div style="text-align:center">'
+        + '<div style="color:var(--text);font-size:19px;font-weight:800">🏦 Mutual Funds</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">' + funds.length + ' funds · Direct Plans</div>'
+      + '</div>'
+      + '<div onclick="App.navigate(\'mf-add-transaction\',{mode:\'new\'})" style="width:38px;height:38px;border-radius:19px;background:var(--primary);display:flex;align-items:center;justify-content:center;cursor:pointer">'
+        + '<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>'
+      + '</div>'
+    + '</div>'
+    // Hero card
+    + '<div style="margin:0 20px 16px;background:linear-gradient(135deg,#1E0A5E 0%,#3D1A9E 45%,#6941F0 85%);border-radius:20px;padding:20px;box-shadow:0 12px 40px rgba(105,65,240,0.4);position:relative;overflow:hidden">'
+      + '<div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);border-radius:50%;pointer-events:none"></div>'
+      + '<div style="color:rgba(255,255,255,0.6);font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">PORTFOLIO VALUE</div>'
+      + '<div style="color:#fff;font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">' + formatINR(totalCur) + '</div>'
+      + '<div style="color:' + gc + ';font-size:12px;font-weight:700;margin-bottom:16px">' + _mfSign(totalGain) + formatINR(Math.abs(totalGain)) + ' (' + _mfSign(gainPct) + gainPct.toFixed(2) + '%) All time</div>'
+      + '<div style="display:flex;align-items:center;gap:16px">'
+        + donutSvg
+        + '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' + legend + '</div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1)">'
+        + '<div><div style="color:rgba(255,255,255,0.55);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">Invested</div>'
+          + '<div style="color:#fff;font-size:14px;font-weight:800">' + formatINR(totalInv) + '</div></div>'
+        + '<div><div style="color:rgba(255,255,255,0.55);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px">' + (totalGain >= 0 ? 'Total Gain' : 'Total Loss') + '</div>'
+          + '<div style="color:' + gc + ';font-size:14px;font-weight:800">' + _mfSign(totalGain) + formatINR(Math.abs(totalGain)) + '</div></div>'
+      + '</div>'
+    + '</div>'
+    // Search bar
+    + '<div style="margin:0 20px 12px;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px">'
+      + '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
+      + '<input id="mf-search-inp" type="text" placeholder="Search funds…" value="' + escapeHtml(search) + '"'
+        + ' oninput="State.mfSearch=this.value;App.render()"'
+        + ' style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px">'
+      + (search ? '<div onclick="State.mfSearch=\'\';App.render()" style="color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1">×</div>' : '')
+    + '</div>'
+    // Fund list
+    + '<div style="padding:0 20px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px">MY FUNDS (' + filtered.length + ')</div>'
+        + '<div onclick="App.navigate(\'mf-add-transaction\',{mode:\'new\'})" style="color:var(--primary);font-size:12px;font-weight:700;cursor:pointer">+ Invest</div>'
+      + '</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius);padding:0 14px;border:1px solid var(--border)">'
+        + (fundRows || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:32px 0">No funds found.</div>')
+      + '</div>'
+    + '</div>'
+    // Quick action tiles
+    + '<div style="padding:16px 20px 0">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">QUICK ACTIONS</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        + _mfActionTile('💰', 'Lumpsum', "App.navigate('mf-add-transaction',{txType:'purchase'})")
+        + _mfActionTile('🔄', 'Add SIP', "App.navigate('mf-add-transaction',{txType:'purchase',sip:true})")
+        + _mfActionTile('📤', 'Redeem', "App.navigate('mf-add-transaction',{txType:'redemption'})")
+        + _mfActionTile('📊', 'Allocation', "App.navigate('portfolio-allocation')")
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+function _mfFundColor(id) {
+  var map = { m1:'#6C47FF', m2:'#10D078', m3:'#F59E0B', m4:'#EF4444' };
+  return map[id] || '#6C47FF';
+}
+
+function _mfActionTile(icon, label, fn) {
+  return '<div onclick="' + fn + '" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer">'
+    + '<div style="font-size:22px">' + icon + '</div>'
+    + '<div style="color:var(--text);font-size:13px;font-weight:700">' + label + '</div>'
+  + '</div>';
+}
+
+function renderMFDetail() {
+  var id   = (State.params && State.params.id) || ((_mfFunds()[0]||{}).id);
+  var fund = _mfFund(id);
+  var tab  = State.mfDetailTab || 'overview';
+  var period = State.mfChartPeriod || '1Y';
+  var gain = _mfGain(fund), gp = _mfGainPct(fund), gc = _mfGainColor(gain);
+  var col  = _mfFundColor(id);
+
+  var tabs = ['overview','transactions','notes'].map(function(t) {
+    var lbl = t === 'overview' ? 'Overview' : t === 'transactions' ? 'Transactions' : 'Notes';
+    var active = tab === t;
+    return '<div onclick="State.mfDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (active ? col : 'transparent') + ';color:' + (active ? col : 'var(--text-dim)') + '">' + lbl + '</div>';
+  }).join('');
+
+  var periodTabs = ['1M','3M','6M','1Y','All'].map(function(p) {
+    var active = period === p;
+    return '<div onclick="State.mfChartPeriod=\'' + p + '\';App.render()" style="padding:5px 10px;border-radius:6px;background:' + (active ? col : 'transparent') + ';color:' + (active ? '#fff' : 'var(--text-dim)') + ';font-size:12px;font-weight:700;cursor:pointer">' + p + '</div>';
+  }).join('');
+
+  var navHistory = fund.nav_history || [];
+  var latestNav = navHistory.length ? navHistory[navHistory.length - 1] : (fund.nav || 0);
+  var firstNav  = navHistory.length ? navHistory[0] : latestNav;
+  var navChange = latestNav - firstNav;
+  var navChangePct = firstNav > 0 ? (navChange / firstNav * 100) : 0;
+
+  var bodyHtml = '';
+  if (tab === 'overview') {
+    bodyHtml = _mfDetailOverview(fund, id, gc, col, gain, gp, period, periodTabs, navChange, navChangePct);
+  } else if (tab === 'transactions') {
+    bodyHtml = _mfDetailTransactions(id);
+  } else {
+    bodyHtml = _mfDetailNotes(id);
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:100px">'
+    // Header
+    + '<div style="display:flex;align-items:center;gap:14px;padding:52px 20px 14px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'mf-dashboard\')">'
+        + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+      + '</div>'
+      + '<div style="flex:1;min-width:0">'
+        + '<div style="color:var(--text);font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(fund.name || 'Mutual Fund') + '</div>'
+        + '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">Folio: ' + (fund.folio_number || '—') + ' · ' + (fund.plan || '') + ' ' + (fund.option || '') + '</div>'
+      + '</div>'
+      + '<div style="width:36px;height:36px;border-radius:10px;background:' + col + '22;border:1px solid ' + col + '33;display:flex;align-items:center;justify-content:center;color:' + col + ';font-size:11px;font-weight:900;flex-shrink:0">' + _mfInitials(fund.name) + '</div>'
+    + '</div>'
+    // Key metrics
+    + '<div style="margin:0 20px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + _mfMetricCard('Invested', formatINR(fund.invested||0), 'var(--text-dim)', col)
+      + _mfMetricCard('Current', formatINR(fund.current||0), gc, col)
+      + _mfMetricCard('Units', (fund.units||0).toFixed(3), 'var(--text-dim)', col)
+      + _mfMetricCard('Avg NAV', '₹' + (fund.avg_nav||fund.nav||0).toFixed(2), gc, col)
+    + '</div>'
+    // Gain banner
+    + '<div style="margin:0 20px 14px;background:' + (gain >= 0 ? 'rgba(16,208,120,0.08)' : 'rgba(255,77,106,0.08)') + ';border:1px solid ' + (gain >= 0 ? 'rgba(16,208,120,0.2)' : 'rgba(255,77,106,0.2)') + ';border-radius:var(--radius-sm);padding:12px 16px;display:flex;justify-content:space-between;align-items:center">'
+      + '<div>'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:600;margin-bottom:3px">Total Returns</div>'
+        + '<div style="color:' + gc + ';font-size:18px;font-weight:900">' + _mfSign(gain) + formatINR(Math.abs(gain)) + '</div>'
+      + '</div>'
+      + '<div style="text-align:right">'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:600;margin-bottom:3px">Return %</div>'
+        + '<div style="color:' + gc + ';font-size:18px;font-weight:900">' + _mfSign(gp) + gp.toFixed(2) + '%</div>'
+      + '</div>'
+    + '</div>'
+    // Tabs
+    + '<div style="display:flex;margin:0 20px 14px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabs + '</div>'
+    // Tab content
+    + bodyHtml
+    // CTA buttons (sticky bottom)
+    + '<div style="position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:16px 20px 24px;display:flex;gap:12px;max-width:480px;margin:auto;box-sizing:border-box">'
+      + '<button onclick="App.navigate(\'mf-add-transaction\',{id:\'' + id + '\',txType:\'purchase\'})" class="btn" style="flex:1;padding:14px;font-size:14px;font-weight:800;border-radius:var(--radius-sm);background:' + col + ';color:#fff;border:none">+ Invest</button>'
+      + '<button onclick="App.navigate(\'mf-add-transaction\',{id:\'' + id + '\',txType:\'redemption\'})" class="btn" style="flex:1;padding:14px;font-size:14px;font-weight:800;border-radius:var(--radius-sm);background:rgba(255,77,106,0.12);color:#FF4D6A;border:1.5px solid rgba(255,77,106,0.3)">Redeem</button>'
+    + '</div>'
+  + '</div>';
+}
+
+function _mfMetricCard(label, value, valueColor, accentColor) {
+  return '<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px">'
+    + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">' + label + '</div>'
+    + '<div style="color:' + valueColor + ';font-size:15px;font-weight:800">' + value + '</div>'
+  + '</div>';
+}
+
+function _mfDetailOverview(fund, id, gc, col, gain, gp, period, periodTabs, navChange, navChangePct) {
+  var chart = _mfNavChart(fund, period);
+  var navGc = _mfGainColor(navChange);
+  return '<div style="padding:0 20px">'
+    // Performance chart
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border);margin-bottom:14px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+        + '<div>'
+          + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">NAV Performance</div>'
+          + '<div style="color:var(--text);font-size:20px;font-weight:900">₹' + (fund.nav||0).toFixed(2) + '</div>'
+          + '<div style="color:' + navGc + ';font-size:12px;font-weight:700">' + _mfSign(navChange) + navChange.toFixed(2) + ' (' + _mfSign(navChangePct) + navChangePct.toFixed(2) + '%)</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">' + periodTabs + '</div>'
+      + '</div>'
+      + (chart || '<div style="height:80px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px">No chart data</div>')
+    + '</div>'
+    // Fund info
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border);margin-bottom:14px">'
+      + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">FUND DETAILS</div>'
+      + _mfInfoRow('Category', fund.type || '—')
+      + _mfInfoRow('AMC', fund.amc || '—')
+      + _mfInfoRow('Fund House', fund.fund_house || '—')
+      + _mfInfoRow('Plan', fund.plan || '—')
+      + _mfInfoRow('Option', fund.option || '—')
+      + _mfInfoRow('Folio Number', fund.folio_number || '—')
+      + _mfInfoRow('Expense Ratio', fund.expense_ratio ? fund.expense_ratio + '%' : '—')
+      + _mfInfoRow('Risk', fund.risk || '—')
+      + _mfInfoRow('Inception Date', fund.inception_date || '—')
+      + _mfInfoRow('SIP Date', fund.sip_date ? fund.sip_date + 'th every month' : '—')
+      + _mfInfoRow('Current NAV', '₹' + (fund.nav||0).toFixed(2))
+      + _mfInfoRow('Total Units', (fund.units||0).toFixed(3))
+    + '</div>'
+  + '</div>';
+}
+
+function _mfInfoRow(label, value) {
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+    + '<div style="color:var(--text-dim);font-size:13px">' + label + '</div>'
+    + '<div style="color:var(--text);font-size:13px;font-weight:700;text-align:right;max-width:60%">' + escapeHtml(String(value)) + '</div>'
+  + '</div>';
+}
+
+function _mfDetailTransactions(id) {
+  var txData = INV_TRANSACTIONS[id] || { buys: [], sells: [] };
+  var buys   = txData.buys  || [];
+  var sells  = txData.sells || [];
+
+  var totBuyAmt  = buys.reduce(function(s,t){ return s + (t.amount||0); }, 0);
+  var totBuyUnits = buys.reduce(function(s,t){ return s + (t.units||0); }, 0);
+  var totSellAmt  = sells.reduce(function(s,t){ return s + (t.amount||0); }, 0);
+  var totSellUnits = sells.reduce(function(s,t){ return s + (t.units||0); }, 0);
+
+  function txRow(t, type) {
+    var badge = t.sip ? '<span style="background:rgba(108,71,255,0.15);color:var(--primary);font-size:9px;font-weight:800;padding:2px 5px;border-radius:4px;margin-left:6px">SIP</span>' : '';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'
+      + '<div style="color:var(--text-dim);font-size:11px;flex:1">' + (t.date || '—') + badge + '</div>'
+      + '<div style="color:var(--text-dim);font-size:11px;text-align:right;width:56px">₹' + (t.nav||0).toFixed(2) + '</div>'
+      + '<div style="color:var(--text);font-size:12px;font-weight:700;text-align:right;width:64px">' + formatINR(t.amount||0) + '</div>'
+      + '<div style="color:var(--text-dim);font-size:11px;text-align:right;width:60px">' + (t.units||0).toFixed(3) + 'u</div>'
+    + '</div>';
+  }
+
+  var buySection = '<div style="padding:0 20px;margin-bottom:12px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:800">📈 Purchases</div>'
+        + '<div style="color:#10D078;font-size:12px;font-weight:700">' + buys.length + ' transactions</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:4px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.08)">'
+        + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;flex:1">DATE</div>'
+        + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-align:right;width:56px">NAV</div>'
+        + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-align:right;width:64px">AMOUNT</div>'
+        + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-align:right;width:60px">UNITS</div>'
+      + '</div>'
+      + (buys.map(function(t){ return txRow(t,'buy'); }).join('') || '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:16px 0">No purchases yet</div>')
+      + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between">'
+        + '<div style="color:var(--text-dim);font-size:12px;font-weight:700">Total</div>'
+        + '<div style="color:#10D078;font-size:13px;font-weight:800">' + formatINR(totBuyAmt) + ' · ' + totBuyUnits.toFixed(3) + ' units</div>'
+      + '</div>'
+    + '</div>'
+  + '</div>';
+
+  var sellSection = '<div style="padding:0 20px;margin-bottom:12px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        + '<div style="color:var(--text);font-size:13px;font-weight:800">📤 Redemptions</div>'
+        + '<div style="color:#FF4D6A;font-size:12px;font-weight:700">' + sells.length + ' transactions</div>'
+      + '</div>'
+      + (sells.length ? (
+          '<div style="display:flex;gap:4px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.08)">'
+            + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;flex:1">DATE</div>'
+            + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-align:right;width:56px">NAV</div>'
+            + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-align:right;width:64px">AMOUNT</div>'
+            + '<div style="color:var(--text-dim);font-size:10px;font-weight:700;text-align:right;width:60px">UNITS</div>'
+          + '</div>'
+          + sells.map(function(t){ return txRow(t,'sell'); }).join('')
+          + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between">'
+            + '<div style="color:var(--text-dim);font-size:12px;font-weight:700">Total</div>'
+            + '<div style="color:#FF4D6A;font-size:13px;font-weight:800">' + formatINR(totSellAmt) + ' · ' + totSellUnits.toFixed(3) + ' units</div>'
+          + '</div>'
+        ) : '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:16px 0">No redemptions</div>')
+    + '</div>'
+  + '</div>';
+
+  return buySection + sellSection;
+}
+
+function _mfDetailNotes(id) {
+  var allNotes = INV_NOTES[id] || [];
+  var filter   = State.mfNoteFilter || 'all';
+  var filtered = filter === 'all' ? allNotes : allNotes.filter(function(n){ return n.type === filter; });
+  var noteColors = { research:'#6C47FF', ideas:'#10D078', updates:'#F59E0B', private:'#EF4444' };
+  var noteIcons  = { research:'🔬', ideas:'💡', updates:'📢', private:'🔒' };
+
+  var chips = ['all','research','ideas','updates','private'].map(function(t) {
+    var active = filter === t;
+    return '<div onclick="State.mfNoteFilter=\'' + t + '\';App.render()" style="padding:5px 12px;border-radius:20px;background:' + (active ? 'var(--primary)' : 'var(--card2)') + ';color:' + (active ? '#fff' : 'var(--text-dim)') + ';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid ' + (active ? 'var(--primary)' : 'var(--border)') + '">'
+      + (t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1))
+    + '</div>';
+  }).join('');
+
+  var noteCards = filtered.map(function(n) {
+    var c = noteColors[n.type] || '#6C47FF';
+    var ic = noteIcons[n.type] || '📝';
+    return '<div style="background:var(--card2);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);border-left:3px solid ' + c + ';margin-bottom:10px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+          + '<span style="font-size:14px">' + ic + '</span>'
+          + '<div style="color:var(--text);font-size:13px;font-weight:800">' + escapeHtml(n.title||'') + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px">'
+          + '<div onclick="App._mfEditNote(\'' + id + '\',\'' + n.id + '\')" style="color:var(--text-dim);font-size:12px;cursor:pointer">✏️</div>'
+          + '<div onclick="App._mfDeleteNote(\'' + id + '\',\'' + n.id + '\')" style="color:var(--text-dim);font-size:12px;cursor:pointer">🗑️</div>'
+        + '</div>'
+      + '</div>'
+      + '<div style="color:var(--text-dim);font-size:12px;line-height:1.5;margin-bottom:6px">' + escapeHtml(n.text||'') + '</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<div style="color:' + c + ';font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px">' + (n.type||'') + '</div>'
+        + '<div style="color:var(--text-dim);font-size:10px">' + (n.date||'').split('T')[0] + '</div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div style="padding:0 20px">'
+    + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;margin-bottom:12px;scrollbar-width:none">' + chips + '</div>'
+    + (noteCards || '<div style="color:var(--text-dim);font-size:14px;text-align:center;padding:40px 0">No notes yet.</div>')
+    + '<button onclick="App._mfAddNote(\'' + id + '\')" class="btn" style="width:100%;padding:12px;font-size:13px;font-weight:800;border-radius:var(--radius-sm);background:var(--primary);color:#fff;border:none;margin-top:4px">+ Add Note</button>'
+  + '</div>';
+}
+
+function renderMFAddTransaction() {
+  var params = State.params || {};
+  var fundId  = params.id || '';
+  var txType  = State.mfTxType || params.txType || 'purchase';
+  var isSip   = !!(params.sip);
+  var today   = new Date().toISOString().slice(0,10);
+  var funds   = _mfFunds();
+  var fund    = fundId ? _mfFund(fundId) : funds[0] || {};
+  if (!fundId && fund.id) fundId = fund.id;
+
+  var ins = 'width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;-webkit-appearance:none';
+  var selStyle = ins + ';cursor:pointer';
+
+  function fr(lbl, inp) {
+    return '<div style="margin-bottom:14px"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:6px">' + lbl + '</div>' + inp + '</div>';
+  }
+
+  var fundOptions = funds.map(function(f) {
+    return '<option value="' + f.id + '"' + (f.id === fundId ? ' selected' : '') + '>' + escapeHtml(f.name) + '</option>';
+  }).join('');
+
+  var typeOptions = [
+    { val:'purchase',   label:'Purchase (Buy)' },
+    { val:'redemption', label:'Redemption (Sell)' },
+    { val:'switch',     label:'Switch' },
+  ].map(function(o) {
+    return '<option value="' + o.val + '"' + (o.val === txType ? ' selected' : '') + '>' + o.label + '</option>';
+  }).join('');
+
+  var currentFundInfo = fund.id ? '<div style="margin-bottom:14px;background:rgba(108,71,255,0.08);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:12px 14px">'
+    + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+      + '<span style="color:var(--text-dim);font-size:12px">Current NAV</span>'
+      + '<span style="color:var(--primary);font-size:13px;font-weight:800">₹' + (fund.nav||0).toFixed(2) + '</span>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between">'
+      + '<span style="color:var(--text-dim);font-size:12px">Available Units</span>'
+      + '<span style="color:var(--text);font-size:13px;font-weight:800">' + (fund.units||0).toFixed(3) + '</span>'
+    + '</div>'
+  + '</div>' : '';
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 20px">'
+      + '<div class="icon-btn" onclick="App.navigate(\'' + (fundId ? 'mf-detail' : 'mf-dashboard') + '\'' + (fundId ? ',{id:\'' + fundId + '\'}' : '') + ')">'
+        + '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg>'
+      + '</div>'
+      + '<div>'
+        + '<div style="color:var(--text);font-size:20px;font-weight:800">Add MF Transaction</div>'
+        + '<div style="color:var(--text-dim);font-size:12px;margin-top:2px">' + (txType === 'purchase' ? '📈 Purchase' : txType === 'redemption' ? '📤 Redemption' : '🔄 Switch') + '</div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="padding:0 20px">'
+      + fr('Fund', '<select onchange="State.params.id=this.value;App.render()" style="' + selStyle + '">' + fundOptions + '</select>')
+      + fr('Transaction Type', '<select onchange="State.mfTxType=this.value;App.render()" style="' + selStyle + '">' + typeOptions + '</select>')
+      + currentFundInfo
+      + fr('Date', '<input type="date" id="mf-date" value="' + today + '" style="' + ins + '">')
+      + fr('NAV (₹)', '<input type="number" id="mf-nav" placeholder="e.g. 104.57" step="0.01" style="' + ins + '" oninput="App._mfRecalc()" value="' + (fund.nav||'') + '">')
+      + fr('Amount (₹)', '<input type="number" id="mf-amount" placeholder="e.g. 5000" step="1" style="' + ins + '" oninput="App._mfRecalcFromAmt()">')
+      + fr('Units (auto-calculated)', '<input type="number" id="mf-units" placeholder="Auto-calculated from Amount ÷ NAV" step="0.001" style="' + ins + ';opacity:0.7" readonly>')
+      + (txType === 'purchase' ? '<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">'
+          + '<input type="checkbox" id="mf-sip" style="width:18px;height:18px;cursor:pointer"' + (isSip ? ' checked' : '') + '>'
+          + '<label for="mf-sip" style="color:var(--text-dim);font-size:13px;font-weight:600;cursor:pointer">Mark as SIP installment</label>'
+        + '</div>' : '')
+      + fr('Notes (optional)', '<input type="text" id="mf-notes" placeholder="e.g. Monthly SIP" style="' + ins + '">')
+      // Summary
+      + '<div id="mf-tx-summary" style="margin-bottom:16px;background:rgba(108,71,255,0.08);border:1px solid rgba(108,71,255,0.2);border-radius:var(--radius-sm);padding:16px;display:none">'
+        + '<div style="color:var(--text-dim);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px">TRANSACTION SUMMARY</div>'
+        + '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">Amount</span><span id="mf-sum-amt" style="color:var(--text);font-size:13px;font-weight:700">—</span></div>'
+        + '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:var(--text-dim);font-size:13px">NAV</span><span id="mf-sum-nav" style="color:var(--text);font-size:13px;font-weight:700">—</span></div>'
+        + '<div style="display:flex;justify-content:space-between;padding:7px 0"><span style="color:var(--text);font-size:14px;font-weight:800">Units</span><span id="mf-sum-units" style="color:var(--primary);font-size:16px;font-weight:900">—</span></div>'
+      + '</div>'
+      + '<button onclick="App._saveMFTransaction()" class="btn" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:var(--primary);color:#fff;border:none">'
+        + (txType === 'purchase' ? 'Confirm Purchase' : txType === 'redemption' ? 'Confirm Redemption' : 'Confirm Switch')
+      + '</button>'
     + '</div>'
   + '</div>';
 }
@@ -6901,6 +7447,9 @@ const App = {
       case 'expert-view':           html = renderExpertView();            break;
       case 'investment-dashboard':  html = renderInvestmentDashboard();   break;
       case 'investment-category':   html = renderInvestmentCategory();    break;
+      case 'mf-dashboard':          html = renderMFDashboard();           break;
+      case 'mf-detail':             html = renderMFDetail();              break;
+      case 'mf-add-transaction':    html = renderMFAddTransaction();      break;
       case 'investment-type-select':html = renderInvestmentTypeSelect();  break;
       case 'investment-detail':     html = renderInvestmentDetail();      break;
       case 'investment-buy':        html = renderInvestmentBuy();         break;
@@ -7968,6 +8517,158 @@ const App = {
     }
     this.showToast('Sale recorded! 📉');
     this.navigate('investment-detail', { id: id, cat: cat });
+  },
+
+  /* ── MF Module ───────────────────────────────── */
+  _mfRecalcFromAmt() {
+    var amt  = parseFloat(document.getElementById('mf-amount')?.value);
+    var nav  = parseFloat(document.getElementById('mf-nav')?.value);
+    var unitsEl = document.getElementById('mf-units');
+    if (!isNaN(amt) && !isNaN(nav) && nav > 0 && unitsEl) {
+      var units = amt / nav;
+      unitsEl.value = units.toFixed(3);
+      this._mfShowSummary(amt, nav, units);
+    }
+  },
+
+  _mfRecalcFromUnits() {
+    var units = parseFloat(document.getElementById('mf-units')?.value);
+    var nav   = parseFloat(document.getElementById('mf-nav')?.value);
+    var amtEl = document.getElementById('mf-amount');
+    if (!isNaN(units) && !isNaN(nav) && nav > 0 && amtEl) {
+      var amt = units * nav;
+      amtEl.value = amt.toFixed(2);
+      this._mfShowSummary(amt, nav, units);
+    }
+  },
+
+  _mfRecalc() {
+    this._mfRecalcFromAmt();
+  },
+
+  _mfShowSummary(amt, nav, units) {
+    var sum = document.getElementById('mf-tx-summary');
+    if (!sum) return;
+    sum.style.display = 'block';
+    var sumAmt = document.getElementById('mf-sum-amt');
+    var sumNav = document.getElementById('mf-sum-nav');
+    var sumUnits = document.getElementById('mf-sum-units');
+    if (sumAmt) sumAmt.textContent = '₹' + amt.toFixed(2);
+    if (sumNav) sumNav.textContent = '₹' + nav.toFixed(2);
+    if (sumUnits) sumUnits.textContent = units.toFixed(3) + ' units';
+  },
+
+  _saveMFTransaction() {
+    var id   = (State.params && State.params.id) || '';
+    var type = State.mfTxType || 'purchase';
+    var amt  = parseFloat(document.getElementById('mf-amount')?.value);
+    var nav  = parseFloat(document.getElementById('mf-nav')?.value);
+    var date = document.getElementById('mf-date')?.value;
+    var sipCb = document.getElementById('mf-sip');
+    var isSip = sipCb ? sipCb.checked : false;
+
+    if (!id) { this.showToast('Please select a fund'); return; }
+    if (!date) { this.showToast('Please enter a date'); return; }
+    if (isNaN(amt) || amt <= 0) { this.showToast('Please enter a valid amount'); return; }
+    if (isNaN(nav) || nav <= 0) { this.showToast('Please enter a valid NAV'); return; }
+
+    var units = amt / nav;
+    var fund  = _mfFund(id);
+    if (!INV_TRANSACTIONS[id]) INV_TRANSACTIONS[id] = { buys: [], sells: [] };
+
+    var tx = { id: uid(), date: date, amount: amt, units: parseFloat(units.toFixed(3)), nav: nav, sip: isSip };
+
+    if (type === 'purchase') {
+      INV_TRANSACTIONS[id].buys.push(tx);
+      fund.invested = (fund.invested || 0) + amt;
+      fund.units    = (fund.units    || 0) + units;
+      fund.current  = (fund.current  || 0) + amt;
+      this.showToast('Purchase recorded! 📈');
+    } else if (type === 'redemption') {
+      tx.type = 'redemption';
+      if (units > (fund.units || 0)) { this.showToast('Cannot redeem more units than available'); return; }
+      INV_TRANSACTIONS[id].sells.push(tx);
+      fund.units   = (fund.units   || 0) - units;
+      fund.current = (fund.current || 0) - amt;
+      this.showToast('Redemption recorded! 📤');
+    } else {
+      this.showToast('Switch recorded! 🔄');
+    }
+
+    this.navigate('mf-detail', { id: id });
+  },
+
+  _mfAddNote(fundId) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay center';
+    overlay.innerHTML = '<div class="modal-card">'
+      + '<div style="color:var(--text);font-size:17px;font-weight:800;margin-bottom:16px">Add Note</div>'
+      + '<select id="mn-type" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box">'
+        + '<option value="research">🔬 Research</option>'
+        + '<option value="ideas">💡 Ideas</option>'
+        + '<option value="updates">📢 Updates</option>'
+        + '<option value="private">🔒 Private</option>'
+      + '</select>'
+      + '<input id="mn-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none">'
+      + '<textarea id="mn-text" placeholder="Your note…" rows="4" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box;outline:none;resize:vertical"></textarea>'
+      + '<div style="display:flex;gap:10px">'
+        + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+        + '<button onclick="App._mfSaveNote(\'' + fundId + '\',this.closest(\'.modal-overlay\'))" class="btn" style="flex:1;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Save</button>'
+      + '</div>'
+    + '</div>';
+    document.body.appendChild(overlay);
+  },
+
+  _mfSaveNote(fundId, overlay) {
+    var type  = document.getElementById('mn-type')?.value || 'research';
+    var title = document.getElementById('mn-title')?.value.trim();
+    var text  = document.getElementById('mn-text')?.value.trim();
+    if (!title || !text) { this.showToast('Title and text are required'); return; }
+    if (!INV_NOTES[fundId]) INV_NOTES[fundId] = [];
+    INV_NOTES[fundId].push({ id: uid(), type, date: new Date().toISOString().slice(0,10), title, text });
+    overlay.remove();
+    this.showToast('Note saved!');
+    App.render();
+  },
+
+  _mfEditNote(fundId, noteId) {
+    var notes = INV_NOTES[fundId] || [];
+    var n = notes.find(function(n){ return n.id === noteId; });
+    if (!n) return;
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay center';
+    overlay.innerHTML = '<div class="modal-card">'
+      + '<div style="color:var(--text);font-size:17px;font-weight:800;margin-bottom:16px">Edit Note</div>'
+      + '<input id="mn-etitle" type="text" value="' + escapeHtml(n.title) + '" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none">'
+      + '<textarea id="mn-etext" rows="4" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box;outline:none;resize:vertical">' + escapeHtml(n.text) + '</textarea>'
+      + '<div style="display:flex;gap:10px">'
+        + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+        + '<button onclick="App._mfSaveNoteEdit(\'' + fundId + '\',\'' + noteId + '\',this.closest(\'.modal-overlay\'))" class="btn" style="flex:1;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Update</button>'
+      + '</div>'
+    + '</div>';
+    document.body.appendChild(overlay);
+  },
+
+  _mfSaveNoteEdit(fundId, noteId, overlay) {
+    var notes = INV_NOTES[fundId] || [];
+    var n = notes.find(function(n){ return n.id === noteId; });
+    if (!n) return;
+    var title = document.getElementById('mn-etitle')?.value.trim();
+    var text  = document.getElementById('mn-etext')?.value.trim();
+    if (!title || !text) { this.showToast('Title and text are required'); return; }
+    n.title = title; n.text = text;
+    overlay.remove();
+    this.showToast('Note updated!');
+    App.render();
+  },
+
+  _mfDeleteNote(fundId, noteId) {
+    var notes = INV_NOTES[fundId] || [];
+    var idx = notes.findIndex(function(n){ return n.id === noteId; });
+    if (idx < 0) return;
+    notes.splice(idx, 1);
+    this.showToast('Note deleted');
+    App.render();
   },
 
   /* ── Toast ───────────────────────────────────── */
