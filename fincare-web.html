@@ -1671,6 +1671,16 @@ const State = {
   fdPayout:        'on_maturity',
   fdMaturityAction:'close',
   fdReceiptMode:   'credit',
+  // Corporate Deposit module
+  cdDetailTab:     'overview',
+  cdChartPeriod:   '1Y',
+  cdHoldingsFilter:'all',
+  cdSearch:        '',
+  cdNoteFilter:    'all',
+  cdTxMode:        'investment',
+  cdInterestType:  'Cumulative',
+  cdPayout:        'On Maturity',
+  cdReceiptMode:   'credit',
   // Transaction advanced filter
   txShowAdvFilter: false,
   txCatFilter:     'all',
@@ -1795,32 +1805,34 @@ const DEMO = {
    INVESTMENT MODULE — CONSTANTS
 ══════════════════════════════════════════════════════ */
 const INV_CAT_META = {
-  stocks:       { icon:'📈', color:'#7C5CFC', label:'Stocks',         sub:'Direct equity' },
-  mutual_funds: { icon:'🏦', color:'#10D078', label:'Mutual Funds',   sub:'SIP & lumpsum' },
-  etfs:         { icon:'💎', color:'#38BDF8', label:'ETFs',           sub:'Index & sector' },
-  fds:          { icon:'🏧', color:'#FBBF24', label:'Fixed Deposits',  sub:'Bank & NBFC' },
-  ppf:          { icon:'🔐', color:'#EC4899', label:'PPF',            sub:'Tax-free returns' },
-  gold:         { icon:'🥇', color:'#EAB308', label:'Gold',           sub:'Digital & physical' },
-  nps:          { icon:'🛡️', color:'#8B5CF6', label:'NPS',            sub:'Pension fund' },
-  epf:          { icon:'👷', color:'#60A5FA', label:'EPF',            sub:'PF + employer match' },
+  stocks:              { icon:'📈', color:'#7C5CFC', label:'Stocks',             sub:'Direct equity' },
+  mutual_funds:        { icon:'🏦', color:'#10D078', label:'Mutual Funds',       sub:'SIP & lumpsum' },
+  etfs:                { icon:'💎', color:'#38BDF8', label:'ETFs',               sub:'Index & sector' },
+  fds:                 { icon:'🏧', color:'#FBBF24', label:'Fixed Deposits',     sub:'Bank & NBFC' },
+  corporate_deposits:  { icon:'🏢', color:'#A855F7', label:'Corporate Deposits', sub:'Company FDs' },
+  ppf:                 { icon:'🔐', color:'#EC4899', label:'PPF',                sub:'Tax-free returns' },
+  gold:                { icon:'🥇', color:'#EAB308', label:'Gold',               sub:'Digital & physical' },
+  nps:                 { icon:'🛡️', color:'#8B5CF6', label:'NPS',               sub:'Pension fund' },
+  epf:                 { icon:'👷', color:'#60A5FA', label:'EPF',               sub:'PF + employer match' },
 };
 
 const INV_TYPE_GROUPS = [
   { label: 'Market Investments', types: [
-    { id:'stocks',       icon:'📈', name:'Stocks / Shares',  desc:'NSE & BSE listed equities' },
-    { id:'mutual_funds', icon:'🏦', name:'Mutual Funds',     desc:'Equity, Debt, Hybrid SIP' },
-    { id:'etfs',         icon:'💎', name:'ETFs',             desc:'Exchange Traded Funds' },
+    { id:'stocks',       icon:'📈', name:'Shares / Stocks',   desc:'Invest in company shares' },
+    { id:'mutual_funds', icon:'🏦', name:'Mutual Funds',      desc:'Invest in diversified funds' },
+    { id:'etfs',         icon:'💎', name:'Exchange Traded Funds', desc:'Track ETFs in real time' },
+    { id:'bonds',        icon:'📋', name:'Bonds',             desc:'Government or Corporate Bonds' },
+    { id:'reits',        icon:'🏠', name:'REIT',              desc:'Real Estate Investment Trust' },
   ]},
-  { label: 'Fixed Income', types: [
-    { id:'fds',  icon:'🏧', name:'Fixed Deposit', desc:'Bank & corporate FDs' },
-    { id:'ppf',  icon:'🔐', name:'PPF',           desc:'Public Provident Fund' },
-    { id:'nps',  icon:'🛡️', name:'NPS',           desc:'National Pension Scheme' },
-    { id:'epf',  icon:'👷', name:'EPF',           desc:'Employee Provident Fund' },
+  { label: 'Fund Income', types: [
+    { id:'fds',                icon:'🏧', name:'Fixed Deposit (FD)',    desc:'Bank FD investments' },
+    { id:'corporate_deposits', icon:'🏢', name:'Corporate Deposit',     desc:'Corporate FD investments' },
+    { id:'ppf',                icon:'🔐', name:'PPF',                  desc:'Public Provident Fund' },
+    { id:'nps',                icon:'🛡️', name:'NPS',                  desc:'National Pension Scheme' },
+    { id:'epf',                icon:'👷', name:'EPF',                  desc:'Employee Provident Fund' },
   ]},
   { label: 'Others', types: [
     { id:'gold',  icon:'🥇', name:'Gold',   desc:'Digital & Physical gold' },
-    { id:'bonds', icon:'📋', name:'Bonds',  desc:'Govt & corporate bonds' },
-    { id:'reits', icon:'🏠', name:'REITs',  desc:'Real Estate Investment Trusts' },
     { id:'crypto',icon:'₿',  name:'Crypto', desc:'Digital currencies' },
   ]},
 ];
@@ -1849,10 +1861,15 @@ const INV_PORTFOLIO = {
     { id:'e6', name:'Mirae Asset Nifty Midcap 150 ETF',  symbol:'MAFANG',     exchange:'NSE', qty:0,    buy_price:140.00, current_price:0,      invested:14000,  current:0,      status:'sold',   folio_id:'IN30021467890123', category:'Mid Cap',      expense_ratio:0.25, dividend_option:'Growth', fund_house:'Mirae Asset AMC',             benchmark:'Nifty Midcap 150 TR Index',  invested_on:'2023-03-10', sold_on:'2024-01-15', sold_value:12800, nav_history:[] },
   ],
   fds: [
-    { id:'f1', name:'HDFC Bank FD',  bank:'HDFC Bank',  bank_short:'HDFC',  invested:200000, interest_rate:6.75, tenure:'18 Months', tenure_months:18, invested_on:'2023-05-20', maturity_date:'2024-11-20', interest_type:'Cumulative',     payout:'On Maturity', auto_renewal:false, status:'active',  product:'HDFC Regular Fixed Deposit' },
-    { id:'f2', name:'SBI Bank FD',   bank:'SBI Bank',   bank_short:'SBI',   invested:150000, interest_rate:6.50, tenure:'12 Months', tenure_months:12, invested_on:'2023-08-15', maturity_date:'2025-01-15', interest_type:'Cumulative',     payout:'On Maturity', auto_renewal:true,  status:'active',  product:'SBI Wecare FD' },
-    { id:'f3', name:'ICICI Bank FD', bank:'ICICI Bank', bank_short:'ICICI', invested:100000, interest_rate:6.60, tenure:'12 Months', tenure_months:12, invested_on:'2023-10-10', maturity_date:'2025-03-10', interest_type:'Non-Cumulative', payout:'On Interest',  auto_renewal:false, status:'active',  product:'ICICI iWish FD' },
-    { id:'f4', name:'Axis Bank FD',  bank:'Axis Bank',  bank_short:'Axis',  invested:100000, interest_rate:7.65, tenure:'12 Months', tenure_months:12, invested_on:'2023-04-05', maturity_date:'2024-04-05', interest_type:'Cumulative',     payout:'On Maturity', auto_renewal:false, status:'matured', product:'Axis Bank Max Saver FD' },
+    { id:'f1', name:'HDFC Bank FD',  bank:'HDFC Bank',  bank_short:'HDFC',  invested:200000, current:221520, interest_rate:6.75, tenure:'18 Months', tenure_months:18, invested_on:'2023-05-20', maturity_date:'2026-11-20', interest_type:'Cumulative',     payout:'On Maturity', auto_renewal:false, status:'active',  product:'HDFC Regular Fixed Deposit' },
+    { id:'f2', name:'SBI Bank FD',   bank:'SBI Bank',   bank_short:'SBI',   invested:150000, current:163000, interest_rate:6.50, tenure:'24 Months', tenure_months:24, invested_on:'2024-05-15', maturity_date:'2026-05-15', interest_type:'Cumulative',     payout:'On Maturity', auto_renewal:true,  status:'active',  product:'SBI Wecare FD' },
+    { id:'f3', name:'ICICI Bank FD', bank:'ICICI Bank', bank_short:'ICICI', invested:100000, current:108900, interest_rate:6.60, tenure:'18 Months', tenure_months:18, invested_on:'2024-11-10', maturity_date:'2026-05-10', interest_type:'Non-Cumulative', payout:'On Interest',  auto_renewal:false, status:'active',  product:'ICICI iWish FD' },
+    { id:'f4', name:'Axis Bank FD',  bank:'Axis Bank',  bank_short:'Axis',  invested:100000, current:107650, interest_rate:7.65, tenure:'12 Months', tenure_months:12, invested_on:'2023-04-05', maturity_date:'2024-04-05', interest_type:'Cumulative',     payout:'On Maturity', auto_renewal:false, status:'matured', product:'Axis Bank Max Saver FD' },
+  ],
+  corporate_deposits: [
+    { id:'cd1', name:'Mahindra Finance', company:'Mahindra Finance', company_short:'MF', product:'Corporate Deposit', rating:'AAA', isin:'INE774D07HY7', invested:300000, current:347500, interest_rate:7.25, tenure:'36 Months', tenure_months:36, invested_on:'2024-05-10', maturity_date:'2027-05-10', interest_type:'Cumulative', payout:'On Maturity', status:'active' },
+    { id:'cd2', name:'L&T Finance',      company:'L&T Finance',      company_short:'LT', product:'Corporate Deposit', rating:'AA+', isin:'INE918I07GH4', invested:150000, current:168200, interest_rate:6.90, tenure:'36 Months', tenure_months:36, invested_on:'2024-09-15', maturity_date:'2027-09-15', interest_type:'Cumulative', payout:'On Maturity', status:'active' },
+    { id:'cd3', name:'Bajaj Finance',    company:'Bajaj Finance',    company_short:'BJ', product:'Corporate Deposit', rating:'AAA', isin:'INE296A07LF1', invested:200000, current:214400, interest_rate:7.60, tenure:'24 Months', tenure_months:24, invested_on:'2023-12-01', maturity_date:'2025-12-01', interest_type:'Cumulative', payout:'On Maturity', status:'matured' },
   ],
   ppf: [
     { id:'p1', name:'PPF Account', bank:'SBI', invested:150000, current:168000, interest_rate:7.1, opening_year:2019, maturity_year:2034, status:'active' },
@@ -2013,6 +2030,27 @@ const INV_TRANSACTIONS = {
       { id:'f4m1', date:'2024-04-05', maturity_amount:107650, interest_earned:7650, receipt_mode:'Credit to Account', bank_account:'HDFC Savings A/c - 4321', action_after:'Close FD', ref_id:'AXIS-MAT-2024-001', notes:'FD matured as expected. Reinvested in higher rate FD elsewhere.' },
     ],
   },
+  // Corporate Deposit transactions
+  cd1: {
+    investments: [
+      { id:'cd1i1', date:'2024-05-10', principal:300000, rate:7.25, tenure:'36 Months', interest_type:'Cumulative', payout:'On Maturity', company:'Mahindra Finance', ref_id:'MF-CD-2024-001', notes:'Mahindra Finance AAA rated. Better than bank FD at same tenure.' },
+    ],
+    maturities: [],
+  },
+  cd2: {
+    investments: [
+      { id:'cd2i1', date:'2024-09-15', principal:150000, rate:6.90, tenure:'36 Months', interest_type:'Cumulative', payout:'On Maturity', company:'L&T Finance', ref_id:'LT-CD-2024-007', notes:'L&T Finance AA+ rated. Diversifying corporate deposit across issuers.' },
+    ],
+    maturities: [],
+  },
+  cd3: {
+    investments: [
+      { id:'cd3i1', date:'2023-12-01', principal:200000, rate:7.60, tenure:'24 Months', interest_type:'Cumulative', payout:'On Maturity', company:'Bajaj Finance', ref_id:'BJ-CD-2023-034', notes:'Bajaj Finance AAA — highest rate available at the time.' },
+    ],
+    maturities: [
+      { id:'cd3m1', date:'2025-12-01', maturity_amount:234400, interest_earned:34400, receipt_mode:'Credit to Account', bank_account:'HDFC Savings A/c - 4567', action_after:'Close FD', ref_id:'BJ-MAT-2025-001', notes:'Matured smoothly. Credited to account same day.' },
+    ],
+  },
 };
 
 const INV_NOTES = {
@@ -2068,6 +2106,18 @@ const INV_NOTES = {
   ],
   f4: [
     { id:'fn5', type:'private',  date:'2024-04-06', title:'Maturity Note',     text:'Axis Bank FD matured on 05 Apr 2024. Total received ₹1,07,650 — credited to savings account. Will reinvest in higher-rate FD.' },
+  ],
+  // Corporate Deposit notes
+  cd1: [
+    { id:'cdn1', type:'research', date:'2024-05-08', title:'Mahindra Finance Analysis',    text:'AAA rated by CRISIL & ICRA. Strong parentage from Mahindra Group. Asset quality improving with declining GNPA. Safe long-term hold.' },
+    { id:'cdn2', type:'ideas',    date:'2024-06-15', title:'Consider Top-Up on Renewal',   text:'At maturity in May 2027, consider reinvesting ₹3,00,000 + interest if rates remain above 7%. Compare with HDFC, Bajaj, LIC HFL.' },
+  ],
+  cd2: [
+    { id:'cdn3', type:'research', date:'2024-09-12', title:'L&T Finance Credit Profile',   text:'AA+ CARE rating. L&T Finance transitioning to retail-focused book — improving risk profile. Good diversification from Mahindra.' },
+  ],
+  cd3: [
+    { id:'cdn4', type:'updates',  date:'2025-11-20', title:'Bajaj Finance Maturity Alert', text:'Bajaj Finance CD maturing Dec 1, 2025. Confirmed maturity amount ₹2,34,400. Decide reinvestment plan — current rate is 7.85% for 24M.' },
+    { id:'cdn5', type:'private',  date:'2025-12-01', title:'Maturity Processed',           text:'₹2,34,400 credited to HDFC Savings. TDS deducted ₹3,440. Effective net: ₹2,30,960. Reinvested ₹2,00,000 in Mahindra Finance at 7.65%.' },
   ],
 };
 
@@ -3473,9 +3523,10 @@ function renderInvestmentDashboard() {
   var catRows = cats.map(function(c) {
     var gp = _invGainPct(c.invested, c.current);
     var cg = _invGainColor(c.current - c.invested);
-    var onClickAttr = c.cat === 'mutual_funds' ? 'App.navigate(\'mf-dashboard\')'
-      : c.cat === 'etfs'          ? 'App.navigate(\'etf-list\')'
-      : c.cat === 'fds'           ? 'App.navigate(\'fd-list\')'
+    var onClickAttr = c.cat === 'mutual_funds'       ? 'App.navigate(\'mf-dashboard\')'
+      : c.cat === 'etfs'               ? 'App.navigate(\'etf-list\')'
+      : c.cat === 'fds'                ? 'App.navigate(\'fd-list\')'
+      : c.cat === 'corporate_deposits' ? 'App.navigate(\'cd-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3564,9 +3615,10 @@ function renderInvestmentDashboard() {
 function renderInvestmentCategory() {
   var cat    = State.params.cat || 'stocks';
   // Redirect mutual funds and ETFs to dedicated modules
-  if (cat === 'mutual_funds') { setTimeout(function(){ App.navigate('mf-dashboard'); }, 0); return '<div></div>'; }
-  if (cat === 'etfs')         { setTimeout(function(){ App.navigate('etf-list');      }, 0); return '<div></div>'; }
-  if (cat === 'fds')          { setTimeout(function(){ App.navigate('fd-list');       }, 0); return '<div></div>'; }
+  if (cat === 'mutual_funds')       { setTimeout(function(){ App.navigate('mf-dashboard'); }, 0); return '<div></div>'; }
+  if (cat === 'etfs')               { setTimeout(function(){ App.navigate('etf-list');      }, 0); return '<div></div>'; }
+  if (cat === 'fds')                { setTimeout(function(){ App.navigate('fd-list');        }, 0); return '<div></div>'; }
+  if (cat === 'corporate_deposits') { setTimeout(function(){ App.navigate('cd-list');        }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3645,10 +3697,12 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
-      return '<div onclick="App.navigate(\'investment-buy\',{type:\'' + t.id + '\'})"'
+      var dest = _specialNav[t.id] ? 'App.navigate(\'' + _specialNav[t.id] + '\')' : 'App.navigate(\'investment-buy\',{type:\'' + t.id + '\'})';
+      return '<div onclick="' + dest + '"'
         + ' style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer">'
         + '<div style="width:46px;height:46px;border-radius:12px;background:' + c + '20;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">' + t.icon + '</div>'
         + '<div style="flex:1"><div style="color:var(--text);font-size:15px;font-weight:700;margin-bottom:3px">' + t.name + '</div>'
@@ -3665,7 +3719,7 @@ function renderInvestmentTypeSelect() {
   return '<div class="screen-wrap" style="padding-bottom:32px">'
     + '<div style="display:flex;align-items:center;gap:16px;padding:52px 20px 24px">'
       + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')">' + _invBackSVG + '</div>'
-      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">Add Investment</div>'
+      + '<div><div style="color:var(--text);font-size:20px;font-weight:800">Select Investment Type</div>'
         + '<div style="color:var(--text-dim);font-size:12px;margin-top:3px">Choose investment type</div></div>'
     + '</div>'
     + groups
@@ -5096,6 +5150,417 @@ function renderETFAddTransaction() {
       + '</button>'
     + '</div>'
   + '</div>';
+}
+
+/* ─── CORPORATE DEPOSIT MODULE ──────────────────────── */
+function _cdAll() { return INV_PORTFOLIO.corporate_deposits || []; }
+function _cdFunds(filter) {
+  var cds = _cdAll();
+  if (filter === 'active')  return cds.filter(function(c){ return c.status === 'active'; });
+  if (filter === 'matured') return cds.filter(function(c){ return c.status === 'matured'; });
+  if (filter === 'closed')  return cds.filter(function(c){ return c.status === 'closed'; });
+  return cds;
+}
+function _cdFund(id) { return _cdAll().find(function(c){ return c.id === id; }) || {}; }
+function _cdCalcMaturity(principal, rate, tenureMonths, type) {
+  var years = tenureMonths / 12;
+  if (type === 'Non-Cumulative') return principal + principal * (rate/100) * years;
+  return principal * Math.pow(1 + (rate/100)/4, 4*years);
+}
+function _cdCalcAccruedInterest(principal, rate, investedOn, type) {
+  var start = new Date(investedOn);
+  var now   = new Date();
+  var days  = Math.max(0, (now - start) / (1000 * 86400));
+  var years = days / 365;
+  if (type === 'Non-Cumulative') return principal * (rate/100) * years;
+  return principal * Math.pow(1 + (rate/100)/4, 4*years) - principal;
+}
+function _cdDaysRemaining(maturityDate) {
+  var mat = new Date(maturityDate);
+  var now = new Date();
+  return Math.max(0, Math.ceil((mat - now) / (1000 * 86400)));
+}
+function _cdCompanyColor(id) {
+  var map = { cd1:'#7C3AED', cd2:'#0EA5E9', cd3:'#F97316' };
+  return map[id] || '#A855F7';
+}
+function _cdCompanyInitials(company) {
+  return (company||'CD').split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+}
+function _cdGrowthChart(f, period) {
+  var months = f.tenure_months || 36;
+  var chartMonths = period === '1M' ? 1 : period === '3M' ? 3 : period === '6M' ? 6 : period === '1Y' ? 12 : months;
+  chartMonths = Math.min(chartMonths, months);
+  var pts = Math.min(chartMonths + 1, 25);
+  var points = [];
+  for (var i = 0; i < pts; i++) {
+    var t = (i / (pts-1)) * (chartMonths/12);
+    var v = f.invested * Math.pow(1 + (f.interest_rate/100)/4, 4*t);
+    points.push(v);
+  }
+  var min = points[0], max = points[points.length-1];
+  var w = 320, h = 100;
+  var coords = points.map(function(v, i) {
+    var x = (i / (pts-1)) * w;
+    var y = h - ((v-min) / (max-min+0.01)) * (h-14) - 7;
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  var d = 'M'+coords[0];
+  for (var j=0;j<coords.length-1;j++) {
+    var cx = coords[j], nx = coords[j+1];
+    var cxp = cx.split(','), nxp = nx.split(',');
+    var mx = ((parseFloat(cxp[0])+parseFloat(nxp[0]))/2).toFixed(1);
+    var my1 = cxp[1], my2 = nxp[1];
+    d += ' Q'+cxp[0]+','+my1+' '+mx+','+((parseFloat(my1)+parseFloat(my2))/2).toFixed(1);
+  }
+  d += ' L'+coords[coords.length-1];
+  var area = d + ' L'+w+','+h+' L0,'+h+' Z';
+  var gridLines = [0.25,0.5,0.75].map(function(f){ var y=(h*f).toFixed(1); return '<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>'; }).join('');
+  var lastX = coords[coords.length-1].split(',')[0], lastY = coords[coords.length-1].split(',')[1];
+  return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'
+    +'<defs><linearGradient id="cdg'+period+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A855F7" stop-opacity="0.4"/><stop offset="100%" stop-color="#A855F7" stop-opacity="0.03"/></linearGradient></defs>'
+    +gridLines
+    +'<path d="'+area+'" fill="url(#cdg'+period+')"/>'
+    +'<path d="'+d+'" fill="none" stroke="#A855F7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    +'<circle cx="'+lastX+'" cy="'+lastY+'" r="4" fill="#A855F7" stroke="#0f0f1a" stroke-width="2"/>'
+    +'</svg>';
+}
+
+function renderCDList() {
+  var filter = State.cdHoldingsFilter || 'all';
+  var search = (State.cdSearch||'').toLowerCase();
+  var allCDs = _cdAll();
+  var filtered = _cdFunds(filter);
+  if (search) filtered = filtered.filter(function(c){ return (c.name||'').toLowerCase().includes(search)||(c.company||'').toLowerCase().includes(search); });
+
+  var activeCDs   = _cdFunds('active');
+  var totalInv    = activeCDs.reduce(function(s,c){ return s+(c.invested||0); }, 0);
+  var totalCur    = activeCDs.reduce(function(s,c){
+    return s + (c.invested + _cdCalcAccruedInterest(c.invested, c.interest_rate, c.invested_on, c.interest_type));
+  }, 0);
+  var totalGain   = totalCur - totalInv;
+  var totalLoss   = 0;
+  var gainPct     = totalInv > 0 ? (totalGain/totalInv*100) : 0;
+
+  var filterTabs = ['all','active','matured','closed'].map(function(t){
+    var lbl = t.charAt(0).toUpperCase()+t.slice(1);
+    var ct  = _cdFunds(t).length;
+    var active = filter === t;
+    return '<div style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;'+(active?'background:#A855F7;color:#fff;':'color:var(--text-dim);"')+'" onclick="State.cdHoldingsFilter=\''+t+'\';App.render()">'+lbl+'&nbsp;<span style="opacity:.7;font-size:11px">('+ct+')</span></div>';
+  }).join('');
+
+  var cards = filtered.length === 0
+    ? '<div style="padding:40px 20px;text-align:center;color:var(--text-dim)">No corporate deposits found</div>'
+    : filtered.map(function(c) {
+        var accrued = _cdCalcAccruedInterest(c.invested, c.interest_rate, c.invested_on, c.interest_type);
+        var curVal  = c.invested + accrued;
+        var isActive = c.status === 'active';
+        var statusBg = isActive ? '#16A34A22' : c.status==='matured' ? '#A855F722' : '#6B728022';
+        var statusColor = isActive ? '#22C55E' : c.status==='matured' ? '#A855F7' : '#9CA3AF';
+        var statusLabel = c.status.charAt(0).toUpperCase()+c.status.slice(1);
+        var color = _cdCompanyColor(c.id);
+        var initials = _cdCompanyInitials(c.company);
+        var daysLeft = isActive ? _cdDaysRemaining(c.maturity_date) : 0;
+        return '<div style="background:var(--card);border-radius:var(--radius);margin:0 16px 12px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)" onclick="State.params={id:\''+c.id+'\'};State.cdDetailTab=\'overview\';App.navigate(\'cd-detail\')">'
+          +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+          +'<div style="width:46px;height:46px;border-radius:50%;background:'+color+'22;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:'+color+';flex-shrink:0">'+initials+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+          +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+c.name+'</div>'
+          +'<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:'+color+'22;color:'+color+'">'+c.rating+'</span>'
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--text-dim)">'+c.product+'</div>'
+          +'</div>'
+          +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;flex-shrink:0">'+statusLabel+'</div>'
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:10px">'
+          +'<div><div style="font-size:11px;color:var(--text-dim)">Invested</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(c.invested)+'</div></div>'
+          +'<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Interest Earned</div><div style="font-size:15px;font-weight:700;color:#A855F7">+'+formatINR(Math.round(accrued))+'</div></div>'
+          +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Current Value</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(Math.round(curVal))+'</div></div>'
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)">'
+          +'<span>Maturity: '+c.maturity_date+'</span>'
+          +'<span>'+c.interest_rate+'% p.a. · '+c.tenure+'</span>'
+          +(isActive?'<span style="color:#A855F7;font-weight:700">'+daysLeft+' days left</span>':'')
+          +'</div>'
+          +'</div>';
+      }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Corporate Deposit</div>'
+    +'<div class="icon-btn" onclick="App.navigate(\'cd-add-transaction\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>'
+    +'</div>'
+    // Summary row
+    +'<div style="margin:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid rgba(255,255,255,.06)">'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Invested</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--text)">'+formatINR(totalInv)+'</div>'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">Current Value</div>'
+    +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(Math.round(totalCur))+'</div>'
+    +'</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid rgba(255,255,255,.06)">'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Gain</div>'
+    +'<div style="font-size:18px;font-weight:800;color:#22C55E">+'+formatINR(Math.round(totalGain))+'</div>'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px;display:flex;align-items:center;gap:4px"><span style="color:#22C55E;font-weight:700">('+gainPct.toFixed(2)+'%)</span></div>'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">Total Loss <span style="color:#FF4D6A;font-weight:700">-'+formatINR(totalLoss)+'</span></div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 12px"><input type="text" placeholder="Search corporate deposits..." value="'+escapeHtml(State.cdSearch||'')+'" oninput="State.cdSearch=this.value;App.render()" style="width:100%;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;scrollbar-width:none">'+filterTabs+'</div>'
+    + cards
+    +'<div style="margin:4px 16px 8px"><button onclick="App.navigate(\'cd-add-transaction\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(168,85,247,.15);color:#A855F7;border:1px solid rgba(168,85,247,.3);font-size:14px;font-weight:700;cursor:pointer">+ Add Corporate Deposit</button></div>'
+    +'</div>';
+}
+
+function renderCDDetail() {
+  var id = (State.params && State.params.id) || 'cd1';
+  var c = _cdFund(id);
+  if (!c.id) return '<div class="screen-wrap"><div style="padding:40px;text-align:center;color:var(--text-dim)">Deposit not found</div></div>';
+  var tab = State.cdDetailTab || 'overview';
+  var color = _cdCompanyColor(id);
+  var initials = _cdCompanyInitials(c.company);
+  var isActive = c.status === 'active';
+  var maturityAmt   = _cdCalcMaturity(c.invested, c.interest_rate, c.tenure_months, c.interest_type);
+  var accruedInt    = _cdCalcAccruedInterest(c.invested, c.interest_rate, c.invested_on, c.interest_type);
+  var daysLeft      = isActive ? _cdDaysRemaining(c.maturity_date) : 0;
+  var statusBg      = isActive ? '#16A34A22' : '#A855F722';
+  var statusColor   = isActive ? '#22C55E' : '#A855F7';
+  var statusLabel   = c.status.charAt(0).toUpperCase()+c.status.slice(1);
+  var period        = State.cdChartPeriod || '1Y';
+
+  var tabs = ['overview','transactions','notes'].map(function(t){
+    var lbl = t.charAt(0).toUpperCase()+t.slice(1);
+    return '<div style="flex:1;text-align:center;padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid '+(tab===t?color:'transparent')+';color:'+(tab===t?color:'var(--text-dim)')+'" onclick="State.cdDetailTab=\''+t+'\';App.render()">'+lbl+'</div>';
+  }).join('');
+
+  var header = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'cd-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">'+c.name+'</div>'
+    +'<div style="width:36px"></div>'
+    +'</div>';
+
+  var actionBtns = '<div style="margin:0 16px 20px;display:flex;gap:10px">'
+    +'<button onclick="State.params={id:\''+id+'\',mode:\'investment\'};App.navigate(\'cd-add-transaction\')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:#22C55E;color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer">+ Add Investment</button>'
+    +(isActive?'<button onclick="State.params={id:\''+id+'\',mode:\'maturity\'};App.navigate(\'cd-add-transaction\')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:#A855F7;color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer">Maturity (Add)</button>':'')
+    +'</div>';
+
+  var body = '';
+  if (tab === 'overview') {
+    // Identity card
+    var identCard = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:18px">'
+      +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+      +'<div style="width:52px;height:52px;border-radius:50%;background:'+color+'22;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:'+color+'">'+initials+'</div>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:16px;font-weight:800;color:var(--text)">'+c.name+'</div>'
+      +'<div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+c.product+(c.rating?' · <span style="color:'+color+'">'+c.rating+'</span>':'')+'</div>'
+      +'</div>'
+      +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px">'+statusLabel+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);padding:14px 0;margin-bottom:14px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Principal</div><div style="font-size:22px;font-weight:800;color:var(--text)">'+formatINR(c.invested)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Rate (p.a.)</div><div style="font-size:22px;font-weight:800;color:#A855F7">'+c.interest_rate+'%</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Invested On</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+_invFmtDate(c.invested_on)+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Maturity Date</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+_invFmtDate(c.maturity_date)+(isActive?'<div style="font-size:10px;color:#A855F7;font-weight:700">('+daysLeft+' Days to maturity)</div>':'')+'</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Tenure</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+c.tenure+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Interest Type</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+c.interest_type+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Payout</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+c.payout+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">ISIN</div><div style="font-size:11px;font-weight:600;color:var(--text-dim)">'+c.isin+'</div></div>'
+      +'</div>'
+      +'</div>';
+
+    // Summary metrics
+    var summaryCard = '<div style="margin:0 16px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+      +'<div style="background:var(--card);border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Principal Amount</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(c.invested)+'</div></div>'
+      +'<div style="background:var(--card);border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Interest Earned (Till Now)</div><div style="font-size:13px;font-weight:700;color:#A855F7">'+formatINR(Math.round(accruedInt))+'</div></div>'
+      +'<div style="background:var(--card);border-radius:10px;padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Maturity Amount (Est.)</div><div style="font-size:13px;font-weight:700;color:#22C55E">'+formatINR(Math.round(maturityAmt))+'</div></div>'
+      +'</div>';
+
+    // Performance chart
+    var periodBtns = ['1M','3M','6M','1Y','ALL'].map(function(p){
+      return '<div style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(period===p?'background:#A855F7;color:#fff;':'color:var(--text-dim);"')+'" onclick="State.cdChartPeriod=\''+p+'\';App.render()">'+p+'</div>';
+    }).join('');
+    var chartCard = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">Performance</div>'
+      +'<div style="display:flex;gap:4px">'+periodBtns+'</div>'
+      +'</div>'
+      +_cdGrowthChart(c, period)
+      +'<div style="display:flex;justify-content:space-between;margin-top:8px">'
+      +'<div style="font-size:11px;color:var(--text-dim)">'+_invFmtDate(c.invested_on)+'</div>'
+      +'<div style="font-size:11px;color:var(--text-dim)">'+_invFmtDate(c.maturity_date)+'</div>'
+      +'</div>'
+      +'</div>';
+
+    body = identCard + summaryCard + chartCard + actionBtns;
+
+  } else if (tab === 'transactions') {
+    var txData = INV_TRANSACTIONS[id] || { investments: [], maturities: [] };
+    var invRows = (txData.investments||[]).map(function(t){
+      return '<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div><div style="font-size:13px;font-weight:700;color:var(--text)">'+_invFmtDate(t.date)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">Invested: '+formatINR(t.principal)+' | Rate: '+t.rate+'% | Tenure: '+t.tenure+'</div>'
+        +'</div>'
+        +'<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+        +'</div>'
+        +(t.notes?'<div style="font-size:11px;color:var(--text-dim);margin-top:6px;font-style:italic">'+escapeHtml(t.notes)+'</div>':'')
+        +'</div>';
+    }).join('');
+    var matRows = (txData.maturities||[]).map(function(m){
+      return '<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div><div style="font-size:13px;font-weight:700;color:#22C55E">'+_invFmtDate(m.date)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'
+        +'Maturity Amount: '+formatINR(m.maturity_amount)+' | Interest Earned: '+formatINR(m.interest_earned)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:1px">Received via: '+m.receipt_mode+'</div>'
+        +'</div>'
+        +'<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+        +'</div>'
+        +(m.notes?'<div style="font-size:11px;color:var(--text-dim);margin-top:6px;font-style:italic">'+escapeHtml(m.notes)+'</div>':'')
+        +'</div>';
+    }).join('');
+
+    // Bottom summary row
+    var sumRow = '<div style="display:flex;justify-content:space-between;padding:12px 0 0;border-top:1px solid rgba(255,255,255,.08)">'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text-dim)">Principal Amount</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(c.invested)+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text-dim)">Interest Earned</div><div style="font-size:13px;font-weight:700;color:#A855F7">'+formatINR(Math.round(accruedInt))+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text-dim)">Maturity Amount (Est.)</div><div style="font-size:13px;font-weight:700;color:#22C55E">'+formatINR(Math.round(maturityAmt))+'</div></div>'
+      +'</div>';
+
+    body = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:#A855F7;margin-bottom:8px">Deposit Transactions</div>'
+      +(invRows||'<div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:13px">No investment records</div>')
+      + sumRow
+      +'</div>'
+      +'<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:#22C55E;margin-bottom:8px">Maturity Transactions</div>'
+      +(matRows||'<div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:13px">No maturity transaction yet</div>')
+      +'</div>'
+      + actionBtns;
+
+  } else {
+    // Notes tab
+    var notes = INV_NOTES[id] || [];
+    var noteFilter = State.cdNoteFilter || 'all';
+    var noteFilterBtns = ['all','research','ideas','updates','private'].map(function(t){
+      return '<div style="padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;'+(noteFilter===t?'background:#A855F7;color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.07);')+'" onclick="State.cdNoteFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+    }).join('');
+    var filtNotes = noteFilter==='all' ? notes : notes.filter(function(n){ return n.type===noteFilter; });
+    var noteTypeColors = { research:'#38BDF8',ideas:'#A78BFA',updates:'#34D399',private:'#FB923C' };
+    var noteCards = filtNotes.map(function(n){
+      var tc = noteTypeColors[n.type]||'#9CA3AF';
+      return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:10px;border-left:3px solid '+tc+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+        +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:'+tc+'22;color:'+tc+'">'+n.type.charAt(0).toUpperCase()+n.type.slice(1)+'</span>'
+        +'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-top:4px">'+escapeHtml(n.title)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+n.date+'</div>'
+        +'<div style="font-size:13px;color:var(--text-dim);margin-top:8px;line-height:1.5">'+escapeHtml(n.text)+'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px;margin-left:10px">'
+        +'<div onclick="App._cdEditNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;color:var(--text-dim)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
+        +'<div onclick="App._cdDeleteNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;color:#EF4444"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div>'
+        +'</div></div></div>';
+    }).join('');
+    body = '<div style="margin:0 16px 14px">'
+      +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+noteFilterBtns+'</div>'
+      +(noteCards||'<div style="padding:30px;text-align:center;color:var(--text-dim);font-size:13px">No notes yet</div>')
+      +'</div>'
+      +'<div style="margin:0 16px 20px">'
+      +'<button onclick="App._cdAddNote(\''+id+'\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:#A855F7;color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer">+ Add Note</button>'
+      +'</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + header
+    +'<div style="display:flex;margin:0 16px 14px;background:var(--card);border-radius:var(--radius)">'+tabs+'</div>'
+    + body
+    +'</div>';
+}
+
+function renderCDAddTransaction() {
+  var id   = (State.params && State.params.id) || '';
+  var mode = (State.params && State.params.mode) || State.cdTxMode || 'investment';
+  var cds  = _cdAll();
+  var selCD = id ? _cdFund(id) : cds[0] || {};
+  var ins  = 'width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle = ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:#A855F7;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+
+  var cdOptions = cds.map(function(c){ return '<option value="'+c.id+'"'+(selCD.id===c.id?' selected':'')+'>'+c.name+'</option>'; }).join('');
+  var modeButtons = ['investment','maturity'].map(function(m){
+    return '<div style="flex:1;padding:10px;text-align:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;'+(mode===m?'background:#A855F7;color:#fff;':'color:var(--text-dim);"')+'" onclick="State.cdTxMode=\''+m+'\';State.params.mode=\''+m+'\';App.render()">'+(m==='investment'?'Investment':'Maturity')+'</div>';
+  }).join('');
+
+  var formBody = '';
+  if (mode === 'investment') {
+    var estMat = selCD.invested ? Math.round(_cdCalcMaturity(selCD.invested, selCD.interest_rate, selCD.tenure_months, selCD.interest_type)) : '';
+    var estInt = selCD.invested ? Math.round(_cdCalcMaturity(selCD.invested, selCD.interest_rate, selCD.tenure_months, selCD.interest_type) - selCD.invested) : '';
+    formBody = secHdr('Deposit Details')
+      + fr('Date of Investment', '<input type="date" id="cd-date" style="'+ins+'" value="'+new Date().toISOString().slice(0,10)+'">')
+      + fr('Company Name', '<input type="text" id="cd-company" placeholder="e.g. Mahindra Finance" value="'+(selCD.company||'')+'" style="'+ins+'">')
+      + fr('Deposit Amount (₹)', '<input type="number" id="cd-principal" placeholder="e.g. 100000" value="'+(selCD.invested||'')+'" style="'+ins+'" oninput="App._cdRecalc()">')
+      + fr('Interest Rate (% p.a.)', '<input type="number" id="cd-rate" placeholder="e.g. 7.25" step="0.01" value="'+(selCD.interest_rate||'')+'" style="'+ins+'" oninput="App._cdRecalc()">')
+      + fr('Tenure', '<div style="display:flex;gap:8px"><input type="number" id="cd-tenure-val" placeholder="36" value="'+(selCD.tenure_months||36)+'" min="1" style="'+ins+';width:60px;flex-shrink:0" oninput="App._cdRecalc()"><select id="cd-tenure-unit" style="'+selStyle+';flex:1"><option>Months</option><option>Years</option></select></div>')
+      + '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Interest Type</div>'
+      + '<div style="display:flex;gap:8px">'
+      + ['Cumulative','Non-Cumulative'].map(function(t){ var a=(State.cdInterestType||'Cumulative')===t; return '<div style="flex:1;padding:10px;text-align:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(a?'background:#A855F7;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);"')+'" onclick="State.cdInterestType=\''+t+'\';App.render()">'+t+'</div>'; }).join('')
+      + '</div></div>'
+      + '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Payout</div>'
+      + '<div style="display:flex;gap:8px">'
+      + ['On Maturity','On Interest'].map(function(p){ var a=(State.cdPayout||'On Maturity')===p; return '<div style="flex:1;padding:10px;text-align:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(a?'background:#A855F7;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);"')+'" onclick="State.cdPayout=\''+p+'\';App.render()">'+p+'</div>'; }).join('')
+      + '</div></div>'
+      + fr('Maturity Date', '<input type="date" id="cd-maturity-date" style="'+ins+'" value="'+(selCD.maturity_date||'')+'">')
+      + '<div id="cd-calc-preview" style="background:rgba(168,85,247,.1);border-radius:10px;padding:12px;margin-bottom:14px">'
+      + '<div style="font-size:11px;color:#A855F7;font-weight:700;margin-bottom:6px">Auto Calculations</div>'
+      + '<div style="display:flex;justify-content:space-between">'
+      + '<div><div style="font-size:10px;color:var(--text-dim)">Interest Earned</div><div style="font-size:13px;font-weight:700;color:#A855F7" id="cd-est-int">'+(estInt?formatINR(estInt):'—')+'</div></div>'
+      + '<div style="text-align:center"><div style="font-size:10px;color:var(--text-dim)">Maturity Amount</div><div style="font-size:13px;font-weight:700;color:#22C55E" id="cd-est-mat">'+(estMat?formatINR(estMat):'—')+'</div></div>'
+      + '<div style="text-align:right"><div style="font-size:10px;color:var(--text-dim)">Effective Yield</div><div style="font-size:13px;font-weight:700;color:var(--text)" id="cd-est-yield">'+(selCD.interest_rate?selCD.interest_rate+'%':'—')+'</div></div>'
+      + '</div></div>'
+      + secHdr('Notes (Optional)')
+      + fr('', '<input type="text" id="cd-notes-inp" placeholder="Enter any notes..." style="'+ins+'">')
+      + '<button onclick="App._saveCDInvestment()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#A855F7;color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>';
+  } else {
+    var receiptOpts = ['Credit to Account','Cash'].map(function(r){ return '<option value="'+r+'">'+r+'</option>'; }).join('');
+    var estMatAmt = selCD.invested ? Math.round(_cdCalcMaturity(selCD.invested, selCD.interest_rate, selCD.tenure_months, selCD.interest_type)) : '';
+    var estIntAmt = selCD.invested ? Math.round(_cdCalcMaturity(selCD.invested, selCD.interest_rate, selCD.tenure_months, selCD.interest_type) - selCD.invested) : '';
+    formBody = secHdr('Maturity Details')
+      + '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Select Deposit</div>'
+      + '<select id="cd-mat-sel" style="'+selStyle+'" onchange="State.params.id=this.value;App.render()">'+cdOptions+'</select></div>'
+      + fr('Maturity Date', '<input type="date" id="cd-mat-date" style="'+ins+'" value="'+(selCD.maturity_date||new Date().toISOString().slice(0,10))+'">')
+      + fr('Maturity Amount Received (₹)', '<input type="number" id="cd-mat-amount" placeholder="e.g. 319842" value="'+estMatAmt+'" style="'+ins+'">')
+      + fr('Interest Earned (₹)', '<input type="number" id="cd-mat-interest" placeholder="e.g. 19842" value="'+estIntAmt+'" style="'+ins+'">')
+      + secHdr('Mode of Receipt')
+      + '<div style="display:flex;gap:8px;margin-bottom:14px">'
+      + ['Credit to Account','Cash'].map(function(r){ var a=(State.cdReceiptMode||'credit')===(r==='Cash'?'cash':'credit'); return '<div style="flex:1;padding:11px;text-align:center;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;'+(a?'background:#A855F7;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);"')+'" onclick="State.cdReceiptMode=\''+(r==='Cash'?'cash':'credit')+'\';App.render()">'+r+'</div>'; }).join('')
+      + '</div>'
+      + fr('Bank Account', '<select id="cd-bank-account" style="'+selStyle+'"><option>HDFC Savings A/c - 4567</option><option>SBI Savings A/c - 1234</option><option>ICICI Current A/c - 9876</option></select>')
+      + secHdr('Notes (Optional)')
+      + fr('', '<input type="text" id="cd-mat-notes" placeholder="Enter any notes..." style="'+ins+'">')
+      + '<button onclick="App._saveCDMaturity()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#A855F7;color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>';
+  }
+
+  var title = mode === 'investment' ? 'Add Corporate Deposit' : 'Add Maturity';
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(id?\'cd-detail\':\'cd-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">'+title+'</div>'
+    +'<div style="color:#A855F7;font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="'+(mode==='investment'?'App._saveCDInvestment()':'App._saveCDMaturity()')+'">Save</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 0">'
+    +'<div style="display:flex;background:rgba(255,255,255,.07);border-radius:10px;padding:4px;margin-bottom:4px">'+modeButtons+'</div>'
+    + formBody
+    +'</div>'
+    +'</div>';
 }
 
 /* ─── FIXED DEPOSIT MODULE ───────────────────────────── */
@@ -8448,6 +8913,9 @@ const App = {
       case 'fd-list':               html = renderFDList();                break;
       case 'fd-detail':             html = renderFDDetail();              break;
       case 'fd-add-transaction':    html = renderFDAddTransaction();      break;
+      case 'cd-list':               html = renderCDList();                break;
+      case 'cd-detail':             html = renderCDDetail();              break;
+      case 'cd-add-transaction':    html = renderCDAddTransaction();      break;
       case 'investment-type-select':html = renderInvestmentTypeSelect();  break;
       case 'investment-detail':     html = renderInvestmentDetail();      break;
       case 'investment-buy':        html = renderInvestmentBuy();         break;
@@ -9637,6 +10105,142 @@ const App = {
     var idx = notes.findIndex(function(n){ return n.id === noteId; });
     if (idx < 0) return;
     notes.splice(idx, 1);
+    this.showToast('Note deleted'); App.render();
+  },
+
+  /* ── Corporate Deposit Module ───────────────── */
+  _cdRecalc() {
+    var principal = parseFloat(document.getElementById('cd-principal')?.value);
+    var rate = parseFloat(document.getElementById('cd-rate')?.value);
+    var tenureVal = parseFloat(document.getElementById('cd-tenure-val')?.value);
+    var tenureUnit = document.getElementById('cd-tenure-unit')?.value;
+    var intEst = document.getElementById('cd-est-int');
+    var matEst = document.getElementById('cd-est-mat');
+    var yieldEst = document.getElementById('cd-est-yield');
+    if (!isNaN(principal) && !isNaN(rate) && !isNaN(tenureVal) && tenureVal > 0) {
+      var months = tenureUnit === 'Years' ? tenureVal * 12 : tenureVal;
+      var itype = State.cdInterestType || 'Cumulative';
+      var mat = _cdCalcMaturity(principal, rate, months, itype);
+      var interest = mat - principal;
+      var effectiveYield = (interest / principal / (months/12) * 100);
+      if (intEst) intEst.textContent = formatINR(Math.round(interest));
+      if (matEst) matEst.textContent = formatINR(Math.round(mat));
+      if (yieldEst) yieldEst.textContent = effectiveYield.toFixed(2)+'%';
+    }
+  },
+
+  _saveCDInvestment() {
+    var company   = document.getElementById('cd-company')?.value.trim();
+    var principal = parseFloat(document.getElementById('cd-principal')?.value);
+    var rate      = parseFloat(document.getElementById('cd-rate')?.value);
+    var tenureVal = parseFloat(document.getElementById('cd-tenure-val')?.value);
+    var tenureUnit= document.getElementById('cd-tenure-unit')?.value;
+    var date      = document.getElementById('cd-date')?.value;
+    var matDate   = document.getElementById('cd-maturity-date')?.value;
+    var itype     = State.cdInterestType || 'Cumulative';
+    var payout    = State.cdPayout || 'On Maturity';
+    var notes     = document.getElementById('cd-notes-inp')?.value.trim();
+    if (!company) { this.showToast('Enter company name'); return; }
+    if (isNaN(principal) || principal <= 0) { this.showToast('Enter a valid deposit amount'); return; }
+    if (isNaN(rate) || rate <= 0) { this.showToast('Enter a valid interest rate'); return; }
+    if (isNaN(tenureVal) || tenureVal <= 0) { this.showToast('Enter a valid tenure'); return; }
+    if (!date) { this.showToast('Enter investment date'); return; }
+    var months = tenureUnit === 'Years' ? tenureVal * 12 : tenureVal;
+    var newId  = 'cd' + uid();
+    var maturity = _cdCalcMaturity(principal, rate, months, itype);
+    var newCD = {
+      id: newId, name: company+' CD', company, company_short: company.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase(),
+      product:'Corporate Deposit', rating:'—', isin:'—', invested: principal, current: Math.round(principal + _cdCalcAccruedInterest(principal, rate, date, itype)),
+      interest_rate: rate, tenure: tenureVal+' '+tenureUnit, tenure_months: months,
+      invested_on: date, maturity_date: matDate || '', interest_type: itype, payout, status:'active',
+    };
+    INV_PORTFOLIO.corporate_deposits = INV_PORTFOLIO.corporate_deposits || [];
+    INV_PORTFOLIO.corporate_deposits.push(newCD);
+    INV_TRANSACTIONS[newId] = { investments: [{ id:uid(), date, principal, rate, tenure: tenureVal+' '+tenureUnit, interest_type: itype, payout, company, ref_id:'', notes }], maturities: [] };
+    this.showToast('Deposit added!');
+    State.params = { id: newId };
+    App.navigate('cd-detail');
+  },
+
+  _saveCDMaturity() {
+    var cdId    = document.getElementById('cd-mat-sel')?.value;
+    var amount  = parseFloat(document.getElementById('cd-mat-amount')?.value);
+    var interest= parseFloat(document.getElementById('cd-mat-interest')?.value);
+    var date    = document.getElementById('cd-mat-date')?.value;
+    var receipt = State.cdReceiptMode === 'cash' ? 'Cash' : 'Credit to Account';
+    var bankAcc = document.getElementById('cd-bank-account')?.value || '';
+    var notes   = document.getElementById('cd-mat-notes')?.value.trim();
+    if (!cdId) { this.showToast('Please select a deposit'); return; }
+    if (isNaN(amount) || amount <= 0) { this.showToast('Enter maturity amount'); return; }
+    if (!date) { this.showToast('Enter maturity date'); return; }
+    var tx = { id:uid(), date, maturity_amount: amount, interest_earned: isNaN(interest)?0:interest, receipt_mode: receipt, bank_account: bankAcc, action_after:'Close FD', notes };
+    if (!INV_TRANSACTIONS[cdId]) INV_TRANSACTIONS[cdId] = { investments:[], maturities:[] };
+    INV_TRANSACTIONS[cdId].maturities.push(tx);
+    var cd = _cdFund(cdId);
+    if (cd) { cd.status = 'matured'; cd.current = amount; }
+    this.showToast('Maturity recorded!');
+    State.params = { id: cdId };
+    App.navigate('cd-detail');
+  },
+
+  _cdAddNote(fundId) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal-card" style="padding:20px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Add Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Type</div>'
+      +'<select id="cdn-type" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px"><option value="research">Research</option><option value="ideas">Ideas</option><option value="updates">Updates</option><option value="private">Private</option></select></div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="cdn-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="cdn-text" rows="4" placeholder="Your note..." style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._cdSaveNote(\''+fundId+'\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#A855F7;color:#fff;border:none;font-weight:700;cursor:pointer">Save</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+
+  _cdSaveNote(fundId, overlay) {
+    var type  = document.getElementById('cdn-type')?.value || 'research';
+    var title = document.getElementById('cdn-title')?.value.trim();
+    var text  = document.getElementById('cdn-text')?.value.trim();
+    if (!title || !text) { this.showToast('Title and text required'); return; }
+    if (!INV_NOTES[fundId]) INV_NOTES[fundId] = [];
+    INV_NOTES[fundId].push({ id:uid(), type, date: new Date().toISOString().slice(0,10), title, text });
+    overlay.remove(); this.showToast('Note added!'); App.render();
+  },
+
+  _cdEditNote(fundId, noteId) {
+    var n = (INV_NOTES[fundId]||[]).find(function(n){ return n.id===noteId; });
+    if (!n) return;
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal-card" style="padding:20px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Edit Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="cdn-etitle" type="text" value="'+escapeHtml(n.title)+'" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="cdn-etext" rows="4" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical">'+escapeHtml(n.text)+'</textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._cdSaveNoteEdit(\''+fundId+'\',\''+noteId+'\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#A855F7;color:#fff;border:none;font-weight:700;cursor:pointer">Update</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+
+  _cdSaveNoteEdit(fundId, noteId, overlay) {
+    var notes = INV_NOTES[fundId]||[];
+    var n = notes.find(function(n){ return n.id===noteId; });
+    if (!n) return;
+    var title = document.getElementById('cdn-etitle')?.value.trim();
+    var text  = document.getElementById('cdn-etext')?.value.trim();
+    if (!title||!text) { this.showToast('Title and text required'); return; }
+    n.title = title; n.text = text;
+    overlay.remove(); this.showToast('Note updated!'); App.render();
+  },
+
+  _cdDeleteNote(fundId, noteId) {
+    var notes = INV_NOTES[fundId]||[];
+    var idx = notes.findIndex(function(n){ return n.id===noteId; });
+    if (idx<0) return;
+    notes.splice(idx,1);
     this.showToast('Note deleted'); App.render();
   },
 
