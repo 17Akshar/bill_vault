@@ -1689,6 +1689,13 @@ const State = {
   rdNoteFilter:    'all',
   rdPayMode:       'auto_debit',
   rdFrequency:     'Monthly',
+  // Bonds module
+  bondDetailTab:   'overview',
+  bondChartPeriod: '1Y',
+  bondFilter:      'all',
+  bondSearch:      '',
+  bondNoteFilter:  'all',
+  bondPayMode:     'bank_transfer',
   // Transaction advanced filter
   txShowAdvFilter: false,
   txCatFilter:     'all',
@@ -1823,6 +1830,7 @@ const INV_CAT_META = {
   gold:                { icon:'🥇', color:'#EAB308', label:'Gold',               sub:'Digital & physical' },
   nps:                 { icon:'🛡️', color:'#8B5CF6', label:'NPS',               sub:'Pension fund' },
   epf:                 { icon:'👷', color:'#60A5FA', label:'EPF',               sub:'PF + employer match' },
+  bonds:               { icon:'📋', color:'#F97316', label:'Bonds',             sub:'Govt & corporate bonds' },
 };
 
 const INV_TYPE_GROUPS = [
@@ -1887,6 +1895,10 @@ const INV_PORTFOLIO = {
   ],
   ppf: [
     { id:'p1', name:'PPF Account', bank:'SBI', invested:150000, current:168000, interest_rate:7.1, opening_year:2019, maturity_year:2034, status:'active' },
+  ],
+  bonds: [
+    { id:'b1', name:'Government Bond 2030', type:'Government Bond', sub_type:'G-Sec Bond', face_value:100000, qty:2, purchase_price:96000, coupon_rate:7.15, invested:192000, current:212600, current_price:106300, invested_on:'2020-08-15', maturity_date:'2030-08-15', status:'active', isin:'IN0020200089', credit_rating:'Sovereign' },
+    { id:'b2', name:'NHAI Tax Free Bond 2032', type:'Tax Free Bond', sub_type:'Corporate Bond (Tax Free)', face_value:1000, qty:50, purchase_price:1000, coupon_rate:5.20, invested:50000, current:52500, current_price:1050, invested_on:'2021-06-15', maturity_date:'2032-03-15', status:'active', isin:'INE202E07080', credit_rating:'AAA' },
   ],
   gold: [
     { id:'g1', name:'Digital Gold',         platform:'Groww', grams:5.2, buy_price:5200, current_price:6180, invested:27040, current:32136, status:'active' },
@@ -2065,6 +2077,19 @@ const INV_TRANSACTIONS = {
       { id:'cd3m1', date:'2025-12-01', maturity_amount:234400, interest_earned:34400, receipt_mode:'Credit to Account', bank_account:'HDFC Savings A/c - 4567', action_after:'Close FD', ref_id:'BJ-MAT-2025-001', notes:'Matured smoothly. Credited to account same day.' },
     ],
   },
+  // Bond transactions
+  b1: {
+    purchases: [
+      { id:'b1p1', date:'2020-08-15', qty:2, purchase_price:96000, total_amount:192000, coupon_rate:7.15, payment_mode:'bank_transfer', ref_id:'UTR123456789012', notes:'Purchased G-Sec bonds at discount. Sovereign rated zero credit risk.' },
+    ],
+    sells: [],
+  },
+  b2: {
+    purchases: [
+      { id:'b2p1', date:'2021-06-15', qty:50, purchase_price:1000, total_amount:50000, coupon_rate:5.20, payment_mode:'net_banking', ref_id:'NEFT20210615001', notes:'NHAI Tax Free Bond - tax-exempt coupon income at AAA rating.' },
+    ],
+    sells: [],
+  },
   // Recurring Deposit transactions (installments)
   rd1: { installments: (function(){
     var r=[], base=new Date('2024-11-01');
@@ -2150,6 +2175,15 @@ const INV_NOTES = {
   cd3: [
     { id:'cdn4', type:'updates',  date:'2025-11-20', title:'Bajaj Finance Maturity Alert', text:'Bajaj Finance CD maturing Dec 1, 2025. Confirmed maturity amount ₹2,34,400. Decide reinvestment plan — current rate is 7.85% for 24M.' },
     { id:'cdn5', type:'private',  date:'2025-12-01', title:'Maturity Processed',           text:'₹2,34,400 credited to HDFC Savings. TDS deducted ₹3,440. Effective net: ₹2,30,960. Reinvested ₹2,00,000 in Mahindra Finance at 7.65%.' },
+  ],
+  // Bond notes
+  b1: [
+    { id:'bn1', type:'research', date:'2024-04-15', title:'G-Sec Bond Analysis', text:'Government Bond 2030 is sovereign-rated, zero credit risk. YTM at current price approximately 7.2%. Steady coupon income plus capital appreciation toward maturity.' },
+    { id:'bn2', type:'ideas',    date:'2024-07-01', title:'Add More on Dips', text:'Plan to add another unit if price dips below ₹95,000. Current yield attractive vs FDs. Holding until maturity for full face value redemption.' },
+  ],
+  b2: [
+    { id:'bn3', type:'research', date:'2024-05-10', title:'NHAI Bond Review', text:'NHAI AAA rated. Tax-free interest income is highly efficient at 30% tax bracket. Effective pre-tax yield approximately 7.43%. Holding until 2032 maturity.' },
+    { id:'bn4', type:'private',  date:'2025-01-20', title:'Portfolio Allocation', text:'Bonds now 8% of total portfolio. Target is 15% fixed income. Will add more G-Sec or SDL bonds over next 6 months.' },
   ],
   // Recurring Deposit notes
   rd1: [
@@ -3569,6 +3603,7 @@ function renderInvestmentDashboard() {
       : c.cat === 'fds'                 ? 'App.navigate(\'fd-list\')'
       : c.cat === 'corporate_deposits'  ? 'App.navigate(\'cd-list\')'
       : c.cat === 'recurring_deposits'  ? 'App.navigate(\'rd-list\')'
+      : c.cat === 'bonds'               ? 'App.navigate(\'bonds-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3662,6 +3697,7 @@ function renderInvestmentCategory() {
   if (cat === 'fds')                 { setTimeout(function(){ App.navigate('fd-list');        }, 0); return '<div></div>'; }
   if (cat === 'corporate_deposits')  { setTimeout(function(){ App.navigate('cd-list');        }, 0); return '<div></div>'; }
   if (cat === 'recurring_deposits')  { setTimeout(function(){ App.navigate('rd-list');        }, 0); return '<div></div>'; }
+  if (cat === 'bonds')               { setTimeout(function(){ App.navigate('bonds-list');     }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3740,7 +3776,7 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
-  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list' };
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
