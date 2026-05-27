@@ -1696,6 +1696,11 @@ const State = {
   cashSearch:      '',
   cashNoteFilter:  'all',
   cashPayMode:     'upi',
+  // LIC module
+  licDetailTab:    'overview',
+  licTxFilter:     'all',
+  licNoteFilter:   'all',
+  licBuyData:      {},
   // Gold module
   goldDetailTab:   'overview',
   goldChartPeriod: '6M',
@@ -1870,6 +1875,7 @@ const INV_CAT_META = {
   epf:                 { icon:'👷', color:'#60A5FA', label:'EPF',               sub:'PF + employer match' },
   bonds:               { icon:'📋', color:'#F97316', label:'Bonds',             sub:'Govt & corporate bonds' },
   cash_investment:     { icon:'💵', color:'#10B981', label:'Cash Investment',   sub:'Emergency fund & savings' },
+  lic:                 { icon:'🏛️', color:'#6C47FF', label:'LIC',               sub:'Life Insurance Corp' },
 };
 
 const INV_TYPE_GROUPS = [
@@ -1887,6 +1893,7 @@ const INV_TYPE_GROUPS = [
     { id:'ppf',                icon:'🔐', name:'PPF',                    desc:'Public Provident Fund' },
     { id:'nps',                icon:'🛡️', name:'NPS',                    desc:'National Pension Scheme' },
     { id:'epf',                icon:'👷', name:'EPF',                    desc:'Employee Provident Fund' },
+    { id:'lic',                icon:'🏛️', name:'LIC',                    desc:'LIC Jeevan Anand' },
   ]},
   { label: 'Others', types: [
     { id:'gold',  icon:'🥇', name:'Gold',   desc:'Digital & Physical gold' },
@@ -1953,6 +1960,9 @@ const INV_PORTFOLIO = {
   ],
   cash_investment: [
     { id:'ci1', name:'Emergency Fund', type:'Cash Investment', purpose:'Emergency Fund', linked_account:'SBI Savings ••• 5678', invested:200000, current:200000, interest_rate:0.00, invested_on:'2024-01-01', status:'active' },
+  ],
+  lic: [
+    { id:'lic1', name:'LIC Jeevan Anand', plan_type:'Whole Life Insurance Plan', policy_number:'9876543210', premium:25000, gst:4500, total_payable:29500, sum_assured:2000000, start_date:'2023-04-01', maturity_date:'2033-04-01', policy_term:10, payment_term:10, mode:'Yearly', next_premium_due:'2025-04-01', linked_account:'SBI Savings •••• 5678', invested:50000, current:50000, status:'active' },
   ],
 };
 
@@ -2188,6 +2198,16 @@ const INV_TRANSACTIONS = {
     }
     return r;
   })() },
+  // LIC transactions
+  lic1: {
+    premiums: [
+      { id:'lp1', date:'2024-04-01', type:'Premium Paid', amount:25000, gst:4500, total:29500, mode:'upi', ref_id:'UPI20240401001', status:'success' },
+      { id:'lp2', date:'2023-04-01', type:'Premium Paid', amount:25000, gst:4500, total:29500, mode:'upi', ref_id:'UPI20230401001', status:'success' },
+    ],
+    others: [
+      { id:'lo1', date:'2023-04-01', type:'Policy Issued', amount:0, gst:0, total:0, mode:'', ref_id:'', status:'success' },
+    ],
+  },
 };
 
 const INV_NOTES = {
@@ -2298,6 +2318,11 @@ const INV_NOTES = {
   rd2: [
     { id:'rdn3', type:'research', date:'2025-01-20', title:'HDFC RD Analysis',            text:'HDFC 7.1% for 24 months competitive. Using for short-term savings goal. Emergency fund target ₹1,92,000 at maturity.' },
     { id:'rdn4', type:'private',  date:'2025-04-05', title:'Goal: Travel Fund',           text:'This RD is earmarked for Europe trip in early 2027. Total maturity ₹2,02,000 should cover flights + hotel.' },
+  ],
+  // LIC notes
+  lic1: [
+    { id:'licn1', type:'important', date:'2025-09-10T16:00:00', title:'Next Premium Due',          text:'Next premium due 01 Apr 2025. Ensure sufficient balance in linked SBI account.' },
+    { id:'licn2', type:'personal',  date:'2025-09-10T16:00:00', title:'Policy Purpose',            text:'Bought this policy for long term financial security.' },
   ],
 };
 
@@ -3714,6 +3739,7 @@ function renderInvestmentDashboard() {
       : c.cat === 'ppf'                 ? 'App.navigate(\'ppf-list\')'
       : c.cat === 'epf'                 ? 'App.navigate(\'epf-list\')'
       : c.cat === 'gold'                ? 'App.navigate(\'gold-list\')'
+      : c.cat === 'lic'                 ? 'App.navigate(\'lic-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3813,6 +3839,7 @@ function renderInvestmentCategory() {
   if (cat === 'ppf')                 { setTimeout(function(){ App.navigate('ppf-list');                  }, 0); return '<div></div>'; }
   if (cat === 'epf')                 { setTimeout(function(){ App.navigate('epf-list');                  }, 0); return '<div></div>'; }
   if (cat === 'gold')                { setTimeout(function(){ App.navigate('gold-list');                  }, 0); return '<div></div>'; }
+  if (cat === 'lic')                 { setTimeout(function(){ App.navigate('lic-list');                    }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3891,7 +3918,7 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
-  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list', ppf:'ppf-list', epf:'epf-list', gold:'gold-list' };
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list', ppf:'ppf-list', epf:'epf-list', gold:'gold-list', lic:'lic-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
@@ -6168,6 +6195,458 @@ function renderWithdrawCash() {
 }
 
 /* ─── EPF MODULE ─────────────────────────────────────── */
+// ─── LIC MODULE ────────────────────────────────────────────────────────────
+var LIC_COLOR = '#6C47FF';
+var LIC_PLANS = [
+  { id:'jeevan_anand',    name:'LIC Jeevan Anand',       type:'Whole Life Insurance Plan',    features:['Whole life coverage','Guaranteed maturity benefits','Participation in profits','Loan facility available','Tax benefits under Sec 80C & 10(10D)'], min_age:18, max_age:50, min_sum:200000 },
+  { id:'jeevan_labh',     name:'LIC Jeevan Labh',        type:'Limited Premium Endowment',    features:['Limited premium payment term','Guaranteed lump sum at maturity','Loan facility available','Tax benefits under Sec 80C & 10(10D)'], min_age:8, max_age:59, min_sum:200000 },
+  { id:'jeevan_umang',    name:'LIC Jeevan Umang',       type:'Whole Life Insurance Plan',    features:['Whole life coverage','Annual survival benefits','Guaranteed maturity benefits','Loan facility available'], min_age:90, max_age:55, min_sum:200000 },
+  { id:'new_endowment',   name:'LIC New Endowment Plan', type:'Endowment Plan',               features:['Life coverage + savings','Guaranteed maturity sum','Participation in profits','Tax benefits under Sec 80C'], min_age:8, max_age:55, min_sum:100000 },
+  { id:'bima_jyoti',      name:'LIC Bima Jyoti',         type:'Money Back Plan',              features:['Regular money back payouts','Life coverage throughout','Guaranteed additions','Tax benefits under Sec 80C'], min_age:90, max_age:55, min_sum:200000 },
+];
+
+function _licAll() { return INV_PORTFOLIO.lic || []; }
+function _licPolicy(id) { return _licAll().find(function(p){ return p.id===id; }) || {}; }
+function _licPremiums(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].premiums) || []; }
+function _licOthers(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].others) || []; }
+function _licAllTx(id) {
+  var prems  = _licPremiums(id).map(function(t){ return Object.assign({}, t, {tx_group:'premium'}); });
+  var others = _licOthers(id).map(function(t){ return Object.assign({}, t, {tx_group:'other'}); });
+  return prems.concat(others).sort(function(a,b){ return b.date < a.date ? -1 : 1; });
+}
+function _licPlan(planId) { return LIC_PLANS.find(function(p){ return p.id===planId; }) || LIC_PLANS[0]; }
+
+function renderLICList() {
+  var all       = _licAll();
+  var totalPrem = all.reduce(function(s,p){ return s + (p.premium||0); }, 0);
+  var totalSum  = all.reduce(function(s,p){ return s + (p.sum_assured||0); }, 0);
+  var activeCount = all.filter(function(p){ return p.status==='active'; }).length;
+
+  var policyCards = all.length===0
+    ? '<div style="padding:40px;text-align:center;color:var(--text-dim)">No LIC policies found.<br>Tap + Buy New LIC to add one.</div>'
+    : all.map(function(p) {
+        var isAct = p.status === 'active';
+        return '<div onclick="App.navigate(\'lic-detail\',{id:\'' + p.id + '\'})" style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer;border:1px solid rgba(108,71,255,.15)">'
+          + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+          + '<div style="width:46px;height:46px;border-radius:12px;background:' + LIC_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏛️</div>'
+          + '<div style="flex:1">'
+          + '<div style="font-size:15px;font-weight:700;color:var(--text)">' + escapeHtml(p.name) + '</div>'
+          + '<div style="font-size:12px;color:var(--text-dim);margin-top:1px">' + escapeHtml(p.plan_type||'') + ' · No. ' + (p.policy_number||'—') + '</div>'
+          + '</div>'
+          + '<div style="background:' + (isAct?'#16A34A22':'#EF444422') + ';color:' + (isAct?'#22C55E':'#EF4444') + ';font-size:12px;font-weight:700;padding:4px 10px;border-radius:10px">' + (isAct?'Active':'Lapsed') + '</div>'
+          + '</div>'
+          + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">'
+          + '<div><div style="font-size:10px;color:var(--text-dim)">Premium (Yearly)</div><div style="font-size:13px;font-weight:800;color:var(--text)">' + formatINR(p.premium||0) + '</div></div>'
+          + '<div><div style="font-size:10px;color:var(--text-dim)">Sum Assured</div><div style="font-size:13px;font-weight:800;color:' + LIC_COLOR + '">' + formatINR(p.sum_assured||0) + '</div></div>'
+          + '<div style="text-align:right"><div style="font-size:10px;color:var(--text-dim)">Maturity Date</div><div style="font-size:13px;font-weight:800;color:var(--text)">' + (p.maturity_date||'—') + '</div></div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">LIC</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="margin:8px 16px 14px;background:linear-gradient(135deg,' + LIC_COLOR + '22,' + LIC_COLOR + '08);border:1px solid ' + LIC_COLOR + '30;border-radius:var(--radius);padding:16px">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Total Premium (Yearly)</div><div style="font-size:22px;font-weight:800;color:var(--text)">' + formatINR(totalPrem) + '</div></div>'
+    + '<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Sum Assured</div><div style="font-size:20px;font-weight:800;color:' + LIC_COLOR + '">' + formatINR(totalSum) + '</div></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Status</div><div style="font-size:14px;font-weight:700;color:#22C55E">' + (activeCount > 0 ? 'Active' : 'No Active') + '</div></div>'
+    + '<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Maturity Date</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + (all[0] ? all[0].maturity_date : '—') + '</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="margin:0 16px 8px;font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Your LIC Polic' + (all.length===1?'y':'ies') + '</div>'
+    + policyCards
+    + '<div style="margin:8px 16px 8px"><button onclick="App.navigate(\'lic-buy\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px">+ Buy New LIC</button></div>'
+    + '</div>';
+}
+
+function renderLICDetail() {
+  var id  = (State.params && State.params.id) || (_licAll()[0] && _licAll()[0].id) || 'lic1';
+  var p   = _licPolicy(id);
+  if (!p.id) return '<div class="screen-wrap"><div style="padding:40px;text-align:center;color:var(--text-dim)">Policy not found</div></div>';
+  var tab = State.licDetailTab || 'overview';
+  var isAct = p.status === 'active';
+
+  var tabBar = ['overview','transactions','notes'].map(function(t) {
+    var isActive = tab === t;
+    return '<div onclick="State.licDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (isActive ? LIC_COLOR : 'transparent') + ';color:' + (isActive ? LIC_COLOR : 'var(--text-dim)') + '">' + t.charAt(0).toUpperCase() + t.slice(1) + '</div>';
+  }).join('');
+
+  var body = '';
+
+  if (tab === 'overview') {
+    body = '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Policy Number</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + (p.policy_number||'—') + '</div></div>'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Premium Amount (Yearly)</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(p.premium||0) + '</div></div>'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Sum Assured</div><div style="font-size:13px;font-weight:700;color:' + LIC_COLOR + '">' + formatINR(p.sum_assured||0) + '</div></div>'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Start Date</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + (p.start_date||'—') + '</div></div>'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Maturity Date</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + (p.maturity_date||'—') + '</div></div>'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Policy Term</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + (p.policy_term||'—') + ' Years</div></div>'
+      + '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">Next Premium Due</div><div style="font-size:13px;font-weight:700;color:#F59E0B">' + (p.next_premium_due||'—') + '</div></div>'
+      + '<div><div style="font-size:11px;color:var(--text-dim)">Status</div><div style="font-size:13px;font-weight:700;color:' + (isAct?'#22C55E':'#EF4444') + '">' + (isAct?'Active':'Lapsed') + '</div></div>'
+      + '</div>'
+      + '</div>'
+      + '<div style="margin:0 16px 10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + '<button onclick="State.licDetailTab=\'transactions\';App.render()" style="padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.08));color:#22C55E;border:1px solid rgba(34,197,94,.3);font-size:14px;font-weight:700;cursor:pointer">View Transactions</button>'
+      + '<button onclick="App._licAddNote(\'' + id + '\')" style="padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + '25,' + LIC_COLOR + '08);color:' + LIC_COLOR + ';border:1px solid ' + LIC_COLOR + '30;font-size:14px;font-weight:700;cursor:pointer">Add Note</button>'
+      + '</div>';
+  }
+
+  else if (tab === 'transactions') {
+    var txFilter = State.licTxFilter || 'all';
+    var allTx = _licAllTx(id);
+    var premiums = _licPremiums(id);
+    var others   = _licOthers(id);
+    var counts = { all: allTx.length, premium: premiums.length, other: others.length };
+
+    var txTabs = ['all','premium','other'].map(function(f) {
+      var isAct = txFilter === f;
+      return '<div onclick="State.licTxFilter=\'' + f + '\';App.render()" style="padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' + (isAct ? 'background:' + LIC_COLOR + ';color:#fff;' : 'color:var(--text-dim);background:rgba(255,255,255,.05);') + '">' + f.charAt(0).toUpperCase() + f.slice(1) + '&nbsp;<span style="opacity:.7;font-size:11px">(' + counts[f] + ')</span></div>';
+    }).join('');
+
+    var filteredTx = txFilter === 'all' ? allTx : allTx.filter(function(t){ return t.tx_group === txFilter; });
+    var txRows = filteredTx.length === 0
+      ? '<div style="padding:32px;text-align:center;color:var(--text-dim)">No transactions found</div>'
+      : filteredTx.map(function(t) {
+          var isPrem = t.tx_group === 'premium';
+          return '<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.05)">'
+            + '<div style="width:40px;height:40px;border-radius:11px;background:' + (isPrem ? 'rgba(108,71,255,.15)' : 'rgba(100,116,139,.12)') + ';display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">' + (isPrem ? '💳' : '📋') + '</div>'
+            + '<div style="flex:1">'
+            + '<div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(t.type||'') + '</div>'
+            + '<div style="font-size:11px;color:var(--text-dim)">' + (t.date||'') + '</div>'
+            + '</div>'
+            + '<div style="text-align:right">'
+            + (isPrem && t.amount ? '<div style="font-size:13px;font-weight:800;color:var(--text)">' + formatINR(t.amount) + '</div>' : '<div style="font-size:12px;color:var(--text-dim)">—</div>')
+            + '<div style="display:inline-block;background:rgba(34,197,94,.12);color:#22C55E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:3px">' + (t.status||'success') + '</div>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+
+    body = '<div style="display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none">' + txTabs + '</div>'
+      + '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius)">' + txRows + '</div>'
+      + '<div style="margin:0 16px 10px"><button onclick="" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(108,71,255,.12);color:' + LIC_COLOR + ';border:1px solid rgba(108,71,255,.25);font-size:14px;font-weight:700;cursor:pointer">View All Transactions</button></div>';
+  }
+
+  else {
+    var noteFilter = State.licNoteFilter || 'all';
+    var allNotes = INV_NOTES[id] || [];
+    var noteCounts = { all: allNotes.length, personal: allNotes.filter(function(n){ return n.type==='personal'; }).length, important: allNotes.filter(function(n){ return n.type==='important'; }).length };
+    var noteTypes = ['all','personal','important'].filter(function(nt){ return noteCounts[nt] > 0 || nt==='all'; });
+    var noteTabs = noteTypes.map(function(nt) {
+      var isAct = noteFilter === nt;
+      return '<div onclick="State.licNoteFilter=\'' + nt + '\';App.render()" style="padding:6px 14px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' + (isAct ? 'background:' + LIC_COLOR + ';color:#fff;' : 'color:var(--text-dim);background:rgba(255,255,255,.05);') + '">' + nt.charAt(0).toUpperCase() + nt.slice(1) + (noteCounts[nt] !== undefined && nt !== 'all' ? '&nbsp;<span style="opacity:.7;font-size:10px">(' + noteCounts[nt] + ')</span>' : '') + '</div>';
+    }).join('');
+
+    var filteredNotes = noteFilter === 'all' ? allNotes : allNotes.filter(function(n){ return n.type === noteFilter; });
+    var typeColors = { research:'#6C47FF', important:'#EF4444', personal:'#22C55E', private:'#F59E0B', general:'#64748B', ideas:'#0EA5E9' };
+    var noteRows = filteredNotes.length === 0
+      ? '<div style="padding:32px;text-align:center;color:var(--text-dim)">No notes yet</div>'
+      : filteredNotes.map(function(n) {
+          var tc = typeColors[n.type] || '#64748B';
+          return '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);padding:14px">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+            + '<div style="display:flex;align-items:center;gap:8px">'
+            + '<div style="background:' + tc + '22;color:' + tc + ';font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">' + (n.type||'').toUpperCase() + '</div>'
+            + '<div style="font-size:11px;color:var(--text-dim)">' + (n.date||'').slice(0,10) + '</div>'
+            + '</div>'
+            + '<div style="display:flex;gap:8px">'
+            + '<span onclick="App._licEditNote(\'' + id + '\',\'' + n.id + '\')" style="color:var(--text-dim);cursor:pointer;font-size:13px">✏️</span>'
+            + '<span onclick="App._licDeleteNote(\'' + id + '\',\'' + n.id + '\')" style="color:#EF4444;cursor:pointer;font-size:13px">🗑️</span>'
+            + '</div>'
+            + '</div>'
+            + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">' + escapeHtml(n.title||'') + '</div>'
+            + '<div style="font-size:12px;color:var(--text-dim);line-height:1.5">' + escapeHtml(n.text||'') + '</div>'
+            + '</div>';
+        }).join('');
+
+    body = '<div style="display:flex;justify-content:flex-end;padding:8px 16px 4px"><button onclick="App._licAddNote(\'' + id + '\')" style="padding:7px 14px;border-radius:12px;background:' + LIC_COLOR + ';color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer">+ Add Note</button></div>'
+      + '<div style="display:flex;gap:6px;padding:4px 16px 10px;overflow-x:auto;scrollbar-width:none">' + noteTabs + '</div>'
+      + noteRows
+      + '<div style="margin:8px 16px 10px;background:rgba(108,71,255,.08);border:1px solid rgba(108,71,255,.18);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">'
+      + '<div style="font-size:18px">🔐</div>'
+      + '<div><div style="font-size:12px;font-weight:700;color:' + LIC_COLOR + '">Your notes are private and secure</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Only you can view your notes. They are encrypted and stored securely.</div></div>'
+      + '</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">' + escapeHtml(p.name||'LIC') + '</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="margin:8px 16px 0;background:linear-gradient(135deg,' + LIC_COLOR + '22,' + LIC_COLOR + '08);border:1px solid ' + LIC_COLOR + '30;border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div style="width:48px;height:48px;border-radius:13px;background:' + LIC_COLOR + '25;display:flex;align-items:center;justify-content:center;font-size:24px">🏛️</div>'
+    + '<div style="flex:1">'
+    + '<div style="font-size:16px;font-weight:800;color:var(--text)">' + escapeHtml(p.name||'') + '</div>'
+    + '<div style="font-size:12px;color:var(--text-dim);margin-top:2px">' + escapeHtml(p.plan_type||'') + '</div>'
+    + '</div>'
+    + '<div style="background:' + (isAct?'#16A34A22':'#EF444422') + ';color:' + (isAct?'#22C55E':'#EF4444') + ';font-size:12px;font-weight:700;padding:5px 12px;border-radius:10px">' + (isAct?'Active':'Lapsed') + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="display:flex;margin:0 16px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabBar + '</div>'
+    + body
+    + '</div>';
+}
+
+function renderLICBuy() {
+  var bd   = State.licBuyData || {};
+  var plan = _licPlan(bd.plan || 'jeevan_anand');
+  var planOptions = LIC_PLANS.map(function(pl) {
+    return '<option value="' + pl.id + '"' + (bd.plan===pl.id?' selected':'') + '>' + pl.name + ' — ' + pl.type + '</option>';
+  }).join('');
+  var modeOpts = ['online','bank_transfer','other'];
+  var selMode = bd.mode || 'online';
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Buy LIC</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div class="form-group"><label class="form-label">Select Plan Type</label>'
+    + '<select class="form-input" onchange="var bd=State.licBuyData||{};bd.plan=this.value;State.licBuyData=bd;App.render()">' + planOptions + '</select></div>'
+    + '<div class="form-group"><label class="form-label">Premium Payment Term (Years)</label>'
+    + '<input type="number" min="5" max="30" placeholder="e.g. 10" value="' + escapeHtml(String(bd.term||'')) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.term=this.value;State.licBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Premium Amount (Yearly ₹)</label>'
+    + '<input type="number" min="1000" placeholder="Enter Amount" value="' + escapeHtml(String(bd.premium||'')) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.premium=this.value;State.licBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Sum Assured (₹)</label>'
+    + '<input type="number" min="200000" placeholder="Enter Amount" value="' + escapeHtml(String(bd.sum_assured||'')) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.sum_assured=this.value;State.licBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Date of Investment</label>'
+    + '<input type="date" value="' + escapeHtml(bd.start_date||new Date().toISOString().slice(0,10)) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.start_date=this.value;State.licBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Payment Mode</label>'
+    + '<div style="display:flex;gap:8px">'
+    + modeOpts.map(function(m){
+        var labels={online:'Online',bank_transfer:'Bank Transfer',other:'Other'};
+        var isSel=selMode===m;
+        return '<div onclick="var bd=State.licBuyData||{};bd.mode=\'' + m + '\';State.licBuyData=bd;App.render()" style="flex:1;text-align:center;padding:10px 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;border:1px solid;border-color:' + (isSel?LIC_COLOR:'rgba(255,255,255,.12)') + ';background:' + (isSel?LIC_COLOR+'20':'rgba(255,255,255,.04)') + ';color:' + (isSel?LIC_COLOR:'var(--text-dim)') + '">' + labels[m] + '</div>';
+      }).join('')
+    + '</div></div>'
+    + '<button onclick="App._licBuyProceed()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">Continue</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLICBuySelectPlan() {
+  var bd = State.licBuyData || {};
+  var selPlan = bd.plan || 'jeevan_anand';
+
+  var planCards = LIC_PLANS.map(function(pl) {
+    var isSel = selPlan === pl.id;
+    return '<div onclick="var bd=State.licBuyData||{};bd.plan=\'' + pl.id + '\';State.licBuyData=bd;App.render()" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-radius:var(--radius);margin:0 16px 10px;border:1px solid ' + (isSel?LIC_COLOR+'60':'rgba(255,255,255,.06)') + ';cursor:pointer">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:' + LIC_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏛️</div>'
+      + '<div style="flex:1">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">' + pl.name + '</div>'
+      + '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + pl.type + '</div>'
+      + '</div>'
+      + '<div style="width:22px;height:22px;border-radius:50%;border:2px solid ' + (isSel?LIC_COLOR:'rgba(255,255,255,.2)') + ';background:' + (isSel?LIC_COLOR:'transparent') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      + (isSel ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-buy\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Select Plan</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 0 0">'
+    + planCards
+    + '<div style="padding:8px 16px"><button onclick="App.navigate(\'lic-buy-plan-detail\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Continue</button></div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLICBuyPlanDetail() {
+  var bd   = State.licBuyData || {};
+  var plan = _licPlan(bd.plan || 'jeevan_anand');
+
+  var featureRows = plan.features.map(function(f) {
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+      + '<div style="width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="#22C55E"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>'
+      + '<div style="font-size:13px;color:var(--text)">' + escapeHtml(f) + '</div>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-buy-plan\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Plan Details</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Plan Details</div>'
+    + '<div style="margin-bottom:14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<div style="width:44px;height:44px;border-radius:12px;background:' + LIC_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:20px">🏛️</div>'
+    + '<div><div style="font-size:15px;font-weight:800;color:var(--text)">' + plan.name + '</div><div style="font-size:12px;color:var(--text-dim)">' + plan.type + '</div></div>'
+    + '</div>'
+    + featureRows
+    + '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Entry Criteria</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Min Entry Age</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + plan.min_age + ' Years</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Max Entry Age</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + plan.max_age + ' Years</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Min Sum Assured</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(plan.min_sum) + '</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<button onclick="App.navigate(\'lic-buy-premium\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Continue</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLICBuyPremium() {
+  var bd = State.licBuyData || {};
+  var premium    = bd.premium    || '';
+  var sumAssured = bd.sum_assured|| '';
+  var term       = bd.term       || '';
+  var payMode    = bd.pay_mode   || 'Yearly';
+  var startDate  = bd.start_date || new Date().toISOString().slice(0,10);
+  var nextDue    = bd.next_due   || (function(){
+    var d = new Date(startDate); d.setFullYear(d.getFullYear()+1); return d.toISOString().slice(0,10);
+  })();
+  var modeOpts = ['Yearly','Half-Yearly','Quarterly','Monthly'];
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-buy-plan-detail\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Premium Details</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div class="form-group"><label class="form-label">Premium Payment Term (Years)</label>'
+    + '<input type="number" min="5" max="30" placeholder="e.g. 10" value="' + escapeHtml(String(term)) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.term=this.value;State.licBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Premium Amount (Yearly ₹)</label>'
+    + '<input type="number" min="1000" placeholder="e.g. 25000" value="' + escapeHtml(String(premium)) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.premium=this.value;State.licBuyData=bd;App.render()"/></div>'
+    + '<div class="form-group"><label class="form-label">Sum Assured (₹)</label>'
+    + '<input type="number" min="200000" placeholder="e.g. 2000000" value="' + escapeHtml(String(sumAssured)) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.sum_assured=this.value;State.licBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Mode</label>'
+    + '<select class="form-input" onchange="var bd=State.licBuyData||{};bd.pay_mode=this.value;State.licBuyData=bd;App.render()">'
+    + modeOpts.map(function(m){ return '<option value="' + m + '"' + (payMode===m?' selected':'') + '>' + m + '</option>'; }).join('')
+    + '</select></div>'
+    + '<div class="form-group"><label class="form-label">Next Premium Due</label>'
+    + '<input type="date" value="' + escapeHtml(nextDue) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.next_due=this.value;State.licBuyData=bd"/></div>'
+    + '<button onclick="App.navigate(\'lic-buy-payment\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">Continue</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLICBuyPayment() {
+  var bd      = State.licBuyData || {};
+  var premium = parseFloat(bd.premium || 0);
+  var gst     = Math.round(premium * 0.18);
+  var total   = premium + gst;
+  var payMethod = bd.payment_method || 'upi';
+  var account   = bd.account || 'SBI Savings •••• 5678';
+  var upiRef    = bd.upi_ref || '';
+  var methods   = ['upi','net_banking','card'];
+  var methodLabels = { upi:'UPI', net_banking:'Net Banking', card:'Card' };
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-buy-premium\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Payment</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Premium Summary</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:13px;color:var(--text-dim)">Premium (Yearly)</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(premium) + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:13px;color:var(--text-dim)">GST (18%)</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(gst) + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 0"><div style="font-size:14px;font-weight:700;color:var(--text)">Total Payable</div><div style="font-size:18px;font-weight:800;color:' + LIC_COLOR + '">' + formatINR(total) + '</div></div>'
+    + '</div>'
+    + '<div class="form-group"><label class="form-label">Select Payment Mode</label>'
+    + '<div style="display:flex;gap:8px">'
+    + methods.map(function(m){
+        var isSel = payMethod===m;
+        return '<div onclick="var bd=State.licBuyData||{};bd.payment_method=\'' + m + '\';State.licBuyData=bd;App.render()" style="flex:1;text-align:center;padding:11px 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;border:2px solid;border-color:' + (isSel?LIC_COLOR:'rgba(255,255,255,.12)') + ';background:' + (isSel?LIC_COLOR+'20':'transparent') + ';color:' + (isSel?LIC_COLOR:'var(--text-dim)') + '">' + methodLabels[m] + '</div>';
+      }).join('')
+    + '</div></div>'
+    + '<div class="form-group"><label class="form-label">Linked Account</label>'
+    + '<select class="form-input" onchange="var bd=State.licBuyData||{};bd.account=this.value;State.licBuyData=bd">'
+    + '<option value="SBI Savings •••• 5678"' + (account==='SBI Savings •••• 5678'?' selected':'') + '>SBI Savings •••• 5678</option>'
+    + '<option value="HDFC Savings •••• 9876"' + (account==='HDFC Savings •••• 9876'?' selected':'') + '>HDFC Savings •••• 9876</option>'
+    + '</select></div>'
+    + '<div class="form-group"><label class="form-label">UPI / Reference Number</label>'
+    + '<input type="text" placeholder="Enter UPI ID or Ref No." value="' + escapeHtml(upiRef) + '" class="form-input" oninput="var bd=State.licBuyData||{};bd.upi_ref=this.value;State.licBuyData=bd"/></div>'
+    + '<button onclick="App.navigate(\'lic-buy-confirm\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:16px;font-weight:800;cursor:pointer;margin-top:4px">Pay ' + formatINR(total) + '</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLICBuyConfirm() {
+  var bd     = State.licBuyData || {};
+  var plan   = _licPlan(bd.plan || 'jeevan_anand');
+  var premium = parseFloat(bd.premium || 0);
+  var gst     = Math.round(premium * 0.18);
+  var total   = premium + gst;
+  var term    = bd.term || '10';
+  var nextDue = bd.next_due || '';
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'lic-buy-payment\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Confirm Purchase</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:8px 16px 0">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">Policy Summary</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Plan</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + plan.name + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Premium (Yearly)</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(premium) + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Sum Assured</div><div style="font-size:13px;font-weight:700;color:' + LIC_COLOR + '">' + formatINR(parseFloat(bd.sum_assured||0)) + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Policy Term</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(String(term)) + ' Years</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Next Premium Due</div><div style="font-size:13px;font-weight:700;color:#F59E0B">' + (nextDue||'—') + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Total Payable</div><div style="font-size:15px;font-weight:800;color:' + LIC_COLOR + '">' + formatINR(total) + '</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="background:rgba(108,71,255,.08);border:1px solid rgba(108,71,255,.2);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">'
+    + '<input type="checkbox" id="lic-confirm-check" style="width:18px;height:18px;accent-color:' + LIC_COLOR + ';flex-shrink:0"/>'
+    + '<label for="lic-confirm-check" style="font-size:13px;color:var(--text);cursor:pointer">I confirm that the above details are correct.</label>'
+    + '</div>'
+    + '<button onclick="App._licConfirmPurchase()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Confirm Purchase</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderLICBuySuccess() {
+  var bd     = State.licBuyData || {};
+  var polNum = bd.policy_number || '9876543210';
+
+  return '<div class="screen-wrap" style="padding-bottom:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center">'
+    + '<div style="width:84px;height:84px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">'
+    + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="#22C55E" stroke-width="2"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    + '</div>'
+    + '<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px">LIC Policy Purchased Successfully!</div>'
+    + '<div style="font-size:14px;color:var(--text-dim);margin-bottom:28px">Policy details have been saved in your portfolio.</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:20px;margin:0 16px 28px;width:calc(100% - 32px);text-align:left;box-sizing:border-box">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<div style="width:48px;height:48px;border-radius:12px;background:' + LIC_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:24px">🏛️</div>'
+    + '<div><div style="font-size:15px;font-weight:700;color:var(--text)">' + _licPlan(bd.plan||'jeevan_anand').name + '</div><div style="font-size:12px;color:var(--text-dim)">' + _licPlan(bd.plan||'jeevan_anand').type + '</div></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">'
+    + '<div style="font-size:12px;color:var(--text-dim)">Policy Number</div>'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(polNum) + '</div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">'
+    + '<div style="font-size:12px;color:var(--text-dim)">&#9432; Policy details have been saved in your portfolio.</div>'
+    + '</div>'
+    + '</div>'
+    + '<button onclick="App.navigate(\'lic-detail\',{id:State.licBuyData&&State.licBuyData.newId||\'lic1\'})" style="margin:0 16px;width:calc(100% - 32px);padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + LIC_COLOR + ',#8B5CF6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">View Policy</button>'
+    + '</div>';
+}
+// ─── END LIC MODULE ─────────────────────────────────────────────────────────
+
 // ─── GOLD MODULE ───────────────────────────────────────────────────────────
 var GOLD_COLOR = '#EAB308';
 function _goldAll() { return INV_PORTFOLIO.gold || []; }
@@ -12009,6 +12488,15 @@ const App = {
       case 'add-cash-investment':   html = renderAddCashInvestment();     break;
       case 'add-cash-fund':         html = renderAddCashFund();           break;
       case 'withdraw-cash':         html = renderWithdrawCash();          break;
+      case 'lic-list':              html = renderLICList();              break;
+      case 'lic-detail':            html = renderLICDetail();            break;
+      case 'lic-buy':               html = renderLICBuy();               break;
+      case 'lic-buy-plan':          html = renderLICBuySelectPlan();     break;
+      case 'lic-buy-plan-detail':   html = renderLICBuyPlanDetail();     break;
+      case 'lic-buy-premium':       html = renderLICBuyPremium();        break;
+      case 'lic-buy-payment':       html = renderLICBuyPayment();        break;
+      case 'lic-buy-confirm':       html = renderLICBuyConfirm();        break;
+      case 'lic-buy-success':       html = renderLICBuySuccess();        break;
       case 'gold-list':             html = renderGoldList();             break;
       case 'gold-detail':           html = renderGoldDetail();           break;
       case 'gold-buy':              html = renderGoldBuy();              break;
@@ -14079,6 +14567,102 @@ const App = {
     var idx=notes.findIndex(function(n){return n.id===noteId;});
     if (idx<0) return;
     notes.splice(idx,1);
+    this.showToast('Note deleted'); App.render();
+  },
+
+  /* ── LIC Module ─────────────────────────────── */
+  _licBuyProceed() {
+    var bd = State.licBuyData || {};
+    App.navigate('lic-buy-plan');
+  },
+  _licConfirmPurchase() {
+    var check = document.getElementById('lic-confirm-check');
+    if (!check || !check.checked) { this.showToast('Please confirm the details to proceed'); return; }
+    var bd = State.licBuyData || {};
+    var premium    = parseFloat(bd.premium || 25000);
+    var sumAssured = parseFloat(bd.sum_assured || 2000000);
+    var term       = parseInt(bd.term || 10);
+    var plan       = _licPlan(bd.plan || 'jeevan_anand');
+    var startDate  = bd.start_date || new Date().toISOString().slice(0,10);
+    var nextDue    = bd.next_due || (function(){ var d=new Date(startDate); d.setFullYear(d.getFullYear()+1); return d.toISOString().slice(0,10); })();
+    var gst        = Math.round(premium * 0.18);
+    var total      = premium + gst;
+    var polNum     = '98' + Date.now().toString().slice(-8);
+    var newId      = 'lic' + Date.now();
+    var matDate    = (function(){ var d=new Date(startDate); d.setFullYear(d.getFullYear()+term); return d.toISOString().slice(0,10); })();
+    // Add new policy to portfolio
+    INV_PORTFOLIO.lic.push({
+      id:newId, name:plan.name, plan_type:plan.type, policy_number:polNum,
+      premium:premium, gst:gst, total_payable:total, sum_assured:sumAssured,
+      start_date:startDate, maturity_date:matDate, policy_term:term, payment_term:term,
+      mode:bd.pay_mode||'Yearly', next_premium_due:nextDue,
+      linked_account:bd.account||'SBI Savings •••• 5678', invested:total, current:total, status:'active'
+    });
+    // Add initial transactions
+    INV_TRANSACTIONS[newId] = {
+      premiums: [{ id:'lp'+Date.now(), date:startDate, type:'Premium Paid', amount:premium, gst:gst, total:total, mode:bd.payment_method||'upi', ref_id:bd.upi_ref||('UPI'+Date.now()), status:'success' }],
+      others:   [{ id:'lo'+Date.now(), date:startDate, type:'Policy Issued', amount:0, gst:0, total:0, mode:'', ref_id:'', status:'success' }],
+    };
+    INV_NOTES[newId] = [];
+    State.licBuyData = Object.assign({}, bd, { policy_number:polNum, newId:newId });
+    this.showToast('LIC Policy purchased successfully!');
+    App.navigate('lic-buy-success');
+  },
+  _licAddNote(policyId) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal-card" style="padding:20px">'
+      + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Add Note</div>'
+      + '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Type</div><select id="licnote-type" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px"><option value="personal">Personal</option><option value="important">Important</option><option value="general">General</option></select></div>'
+      + '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="licnote-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      + '<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="licnote-text" rows="4" placeholder="Your note..." style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>'
+      + '<div style="display:flex;gap:10px">'
+      + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      + '<button onclick="App._licSaveNote(\'' + policyId + '\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#6C47FF;color:#fff;border:none;font-weight:700;cursor:pointer">Save</button>'
+      + '</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _licSaveNote(policyId, overlay) {
+    var type  = document.getElementById('licnote-type')?.value || 'general';
+    var title = (document.getElementById('licnote-title')?.value || '').trim();
+    var text  = (document.getElementById('licnote-text')?.value || '').trim();
+    if (!title || !text) { this.showToast('Title and text required'); return; }
+    if (!INV_NOTES[policyId]) INV_NOTES[policyId] = [];
+    INV_NOTES[policyId].push({ id:'licn'+Date.now(), type:type, date:new Date().toISOString(), title:title, text:text });
+    if (overlay) overlay.remove();
+    this.showToast('Note added!'); App.render();
+  },
+  _licEditNote(policyId, noteId) {
+    var n = (INV_NOTES[policyId]||[]).find(function(x){ return x.id===noteId; });
+    if (!n) return;
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal-card" style="padding:20px">'
+      + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Edit Note</div>'
+      + '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="licnote-etitle" type="text" value="' + escapeHtml(n.title) + '" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      + '<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="licnote-etext" rows="4" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical">' + escapeHtml(n.text) + '</textarea></div>'
+      + '<div style="display:flex;gap:10px">'
+      + '<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      + '<button onclick="App._licSaveNoteEdit(\'' + policyId + '\',\'' + noteId + '\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#6C47FF;color:#fff;border:none;font-weight:700;cursor:pointer">Update</button>'
+      + '</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _licSaveNoteEdit(policyId, noteId, overlay) {
+    var notes = INV_NOTES[policyId] || [];
+    var n = notes.find(function(x){ return x.id===noteId; });
+    if (!n) return;
+    var title = (document.getElementById('licnote-etitle')?.value || '').trim();
+    var text  = (document.getElementById('licnote-etext')?.value || '').trim();
+    if (!title || !text) { this.showToast('Title and text required'); return; }
+    n.title = title; n.text = text;
+    if (overlay) overlay.remove();
+    this.showToast('Note updated!'); App.render();
+  },
+  _licDeleteNote(policyId, noteId) {
+    var notes = INV_NOTES[policyId] || [];
+    var idx = notes.findIndex(function(x){ return x.id===noteId; });
+    if (idx < 0) return;
+    notes.splice(idx, 1);
     this.showToast('Note deleted'); App.render();
   },
 
