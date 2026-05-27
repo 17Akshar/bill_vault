@@ -1689,6 +1689,13 @@ const State = {
   rdNoteFilter:    'all',
   rdPayMode:       'auto_debit',
   rdFrequency:     'Monthly',
+  // NPS module
+  npsDetailTab:    'overview',
+  npsChartPeriod:  '1Y',
+  npsFilter:       'all',
+  npsSearch:       '',
+  npsNoteFilter:   'all',
+  npsPayMode:      'upi',
   // Bonds module
   bondDetailTab:   'overview',
   bondChartPeriod: '1Y',
@@ -1828,7 +1835,7 @@ const INV_CAT_META = {
   recurring_deposits:  { icon:'🔄', color:'#8B5CF6', label:'Recurring Deposits', sub:'Monthly savings' },
   ppf:                 { icon:'🔐', color:'#EC4899', label:'PPF',                sub:'Tax-free returns' },
   gold:                { icon:'🥇', color:'#EAB308', label:'Gold',               sub:'Digital & physical' },
-  nps:                 { icon:'🛡️', color:'#8B5CF6', label:'NPS',               sub:'Pension fund' },
+  nps:                 { icon:'🛡️', color:'#0EA5E9', label:'NPS',               sub:'Pension fund' },
   epf:                 { icon:'👷', color:'#60A5FA', label:'EPF',               sub:'PF + employer match' },
   bonds:               { icon:'📋', color:'#F97316', label:'Bonds',             sub:'Govt & corporate bonds' },
 };
@@ -1852,6 +1859,9 @@ const INV_TYPE_GROUPS = [
   { label: 'Others', types: [
     { id:'gold',  icon:'🥇', name:'Gold',   desc:'Digital & Physical gold' },
     { id:'crypto',icon:'₿',  name:'Crypto', desc:'Digital currencies' },
+  ]},
+  { label: 'Cash Investments', types: [
+    { id:'cash_investment', icon:'💵', name:'Cash Investment', desc:'Emergency fund & savings' },
   ]},
 ];
 
@@ -1905,7 +1915,7 @@ const INV_PORTFOLIO = {
     { id:'g2', name:'Sovereign Gold Bond',  platform:'RBI',   grams:8.0, buy_price:5100, current_price:6180, invested:40800, current:49440, status:'active' },
   ],
   nps: [
-    { id:'n1', name:'NPS Tier 1', pran:'500123456789', invested:72000, current:84500, equity_pct:60, status:'active' },
+    { id:'n1', name:'National Pension Scheme', pran:'110011001122', tier:'Tier 1', allocation:'Aggressive', linked_account:'HDFC Bank ••• 9876', fund_manager:'HDFC Pension Management Co.', invested:100000, current:111200, equity_pct:75, debt_pct:15, alts_pct:10, return_pct:11.20, invested_on:'2023-04-01', status:'active' },
   ],
   epf: [
     { id:'ep1', name:'EPF Account', uan:'100234567890', invested:360000, current:389000, interest_rate:8.15, status:'active' },
@@ -2077,6 +2087,14 @@ const INV_TRANSACTIONS = {
       { id:'cd3m1', date:'2025-12-01', maturity_amount:234400, interest_earned:34400, receipt_mode:'Credit to Account', bank_account:'HDFC Savings A/c - 4567', action_after:'Close FD', ref_id:'BJ-MAT-2025-001', notes:'Matured smoothly. Credited to account same day.' },
     ],
   },
+  // NPS transactions
+  n1: {
+    investments: [
+      { id:'n1i1', date:'2023-04-01', amount:50000, tier:'Tier 1', allocation:'Aggressive', linked_account:'HDFC Bank ••• 9876', mode:'upi', ref_id:'UPI20230401001', notes:'', type:'initial' },
+      { id:'n1i2', date:'2023-10-01', amount:25000, tier:'Tier 1', allocation:'Aggressive', linked_account:'HDFC Bank ••• 9876', mode:'net_banking', ref_id:'NEFT20231001001', notes:'', type:'additional' },
+      { id:'n1i3', date:'2024-04-01', amount:25000, tier:'Tier 1', allocation:'Aggressive', linked_account:'HDFC Bank ••• 9876', mode:'upi', ref_id:'UPI20240401001', notes:'', type:'additional' },
+    ],
+  },
   // Bond transactions
   b1: {
     purchases: [
@@ -2175,6 +2193,11 @@ const INV_NOTES = {
   cd3: [
     { id:'cdn4', type:'updates',  date:'2025-11-20', title:'Bajaj Finance Maturity Alert', text:'Bajaj Finance CD maturing Dec 1, 2025. Confirmed maturity amount ₹2,34,400. Decide reinvestment plan — current rate is 7.85% for 24M.' },
     { id:'cdn5', type:'private',  date:'2025-12-01', title:'Maturity Processed',           text:'₹2,34,400 credited to HDFC Savings. TDS deducted ₹3,440. Effective net: ₹2,30,960. Reinvested ₹2,00,000 in Mahindra Finance at 7.65%.' },
+  ],
+  // NPS notes
+  n1: [
+    { id:'nn1', type:'important', date:'2024-05-01T10:30:00', title:'Increase Allocation', text:'Plan to increase investment allocation to Aggressive from next quarter.' },
+    { id:'nn2', type:'general',   date:'2024-03-15T16:20:00', title:'Long Term Goal',       text:'Retirement planning target for 2045. Keep investing regularly.' },
   ],
   // Bond notes
   b1: [
@@ -3604,6 +3627,7 @@ function renderInvestmentDashboard() {
       : c.cat === 'corporate_deposits'  ? 'App.navigate(\'cd-list\')'
       : c.cat === 'recurring_deposits'  ? 'App.navigate(\'rd-list\')'
       : c.cat === 'bonds'               ? 'App.navigate(\'bonds-list\')'
+      : c.cat === 'nps'                 ? 'App.navigate(\'nps-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3698,6 +3722,7 @@ function renderInvestmentCategory() {
   if (cat === 'corporate_deposits')  { setTimeout(function(){ App.navigate('cd-list');        }, 0); return '<div></div>'; }
   if (cat === 'recurring_deposits')  { setTimeout(function(){ App.navigate('rd-list');        }, 0); return '<div></div>'; }
   if (cat === 'bonds')               { setTimeout(function(){ App.navigate('bonds-list');     }, 0); return '<div></div>'; }
+  if (cat === 'nps')                 { setTimeout(function(){ App.navigate('nps-list');       }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3776,7 +3801,7 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
-  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list' };
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
