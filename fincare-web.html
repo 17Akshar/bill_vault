@@ -5653,6 +5653,390 @@ function renderRDAddInstallment() {
     +'</div>';
 }
 
+/* ─── NPS MODULE ─────────────────────────────────────── */
+function _npsAll() { return INV_PORTFOLIO.nps || []; }
+function _npsFunds(filter) {
+  var all = _npsAll();
+  if (filter === 'active')  return all.filter(function(n){ return n.status === 'active'; });
+  if (filter === 'closed')  return all.filter(function(n){ return n.status === 'closed'; });
+  return all;
+}
+function _npsFund(id) { return _npsAll().find(function(n){ return n.id === id; }) || {}; }
+function _npsInvestments(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].investments) || []; }
+function _npsTotalInvested(id) {
+  return _npsInvestments(id).reduce(function(s,t){ return s + (t.amount||0); }, 0);
+}
+function _npsCurrentValue(id) {
+  var n = _npsFund(id);
+  var inv = _npsTotalInvested(id);
+  var ret = n.return_pct || 11.2;
+  return Math.round(inv * (1 + ret/100));
+}
+function _npsGain(id) { return _npsCurrentValue(id) - _npsTotalInvested(id); }
+function _npsGainPct(id) {
+  var inv = _npsTotalInvested(id);
+  return inv > 0 ? (_npsGain(id) / inv * 100) : 0;
+}
+function _npsColor() { return '#0EA5E9'; }
+function _npsGrowthChart(n, period) {
+  var inv = _npsTotalInvested(n.id) || n.invested || 0;
+  var cur = _npsCurrentValue(n.id) || n.current || inv;
+  var startDate = new Date(n.invested_on||'2023-04-01');
+  var now = new Date();
+  var totalDays = Math.max(1, (now - startDate) / 86400000);
+  var maxDays = period==='1M'?30:period==='3M'?90:period==='6M'?180:period==='1Y'?365:totalDays;
+  maxDays = Math.min(maxDays, totalDays);
+  var pts = 25;
+  var points = [];
+  for (var i=0;i<pts;i++) {
+    var d=(i/(pts-1))*maxDays;
+    var pct=d/totalDays;
+    points.push(Math.round(inv+(cur-inv)*pct));
+  }
+  var min=inv*0.97,max=cur*1.03;
+  var w=320,h=90;
+  var coords=points.map(function(v,i){
+    var x=(i/(pts-1))*w;
+    var y=h-((v-min)/(max-min+0.01))*(h-12)-6;
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  var d2='M'+coords[0];
+  for(var j=0;j<coords.length-1;j++){
+    var cp=coords[j].split(','),np=coords[j+1].split(',');
+    var mx=((+cp[0]+(+np[0]))/2).toFixed(1);
+    var my=((+cp[1]+(+np[1]))/2).toFixed(1);
+    d2+=' Q'+cp[0]+','+cp[1]+' '+mx+','+my;
+  }
+  d2+=' L'+coords[coords.length-1];
+  var area=d2+' L'+w+','+h+' L0,'+h+' Z';
+  var gl=[0.25,0.5,0.75].map(function(f){var y=(h*f+6).toFixed(1);return '<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';}).join('');
+  var lx=coords[coords.length-1].split(',')[0],ly=coords[coords.length-1].split(',')[1];
+  return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'
+    +'<defs><linearGradient id="npsg'+period+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0EA5E9" stop-opacity="0.4"/><stop offset="100%" stop-color="#0EA5E9" stop-opacity="0.03"/></linearGradient></defs>'
+    +gl
+    +'<path d="'+area+'" fill="url(#npsg'+period+')"/>'
+    +'<path d="'+d2+'" fill="none" stroke="#0EA5E9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    +'<circle cx="'+lx+'" cy="'+ly+'" r="4" fill="#0EA5E9" stroke="#0f0f1a" stroke-width="2"/>'
+    +'</svg>';
+}
+
+function renderNPSList() {
+  var filter = State.npsFilter || 'all';
+  var search  = (State.npsSearch||'').toLowerCase();
+  var allNPS  = _npsAll();
+  var filtered= _npsFunds(filter);
+  if (search) filtered=filtered.filter(function(n){ return (n.name||'').toLowerCase().includes(search)||(n.pran||'').toLowerCase().includes(search); });
+
+  var totalInv=0,totalCur=0;
+  allNPS.filter(function(n){ return n.status==='active'; }).forEach(function(n){
+    totalInv+=_npsTotalInvested(n.id)||n.invested||0;
+    totalCur+=_npsCurrentValue(n.id)||n.current||0;
+  });
+  var totalGain=totalCur-totalInv;
+  var gainPct=totalInv>0?(totalGain/totalInv*100):0;
+  var gainColor=totalGain>=0?'#22C55E':'#FF4D6A';
+  var NPS_COLOR='#0EA5E9';
+
+  var filterTabs=['all','active','closed'].map(function(t){
+    var ct=_npsFunds(t).length;
+    var isAct=filter===t;
+    return '<div style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+NPS_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.npsFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'&nbsp;<span style="opacity:.7;font-size:11px">('+ct+')</span></div>';
+  }).join('');
+
+  var cards=filtered.length===0
+    ?'<div style="padding:40px;text-align:center;color:var(--text-dim)">No NPS accounts found</div>'
+    :filtered.map(function(n){
+        var inv=_npsTotalInvested(n.id)||n.invested||0;
+        var cur=_npsCurrentValue(n.id)||n.current||0;
+        var gain=cur-inv;
+        var gp=inv>0?(gain/inv*100):0;
+        var gc=gain>=0?'#22C55E':'#FF4D6A';
+        var isActive=n.status==='active';
+        var statusBg=isActive?'#16A34A22':'#EF444422';
+        var statusColor=isActive?'#22C55E':'#EF4444';
+        var upSVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="'+gc+'"><path d="M7 14l5-5 5 5z"/></svg>';
+        return '<div style="background:var(--card);border-radius:var(--radius);margin:0 16px 12px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)" onclick="State.params={id:\''+n.id+'\'};State.npsDetailTab=\'overview\';App.navigate(\'nps-detail\')">'
+          +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+          +'<div style="width:46px;height:46px;border-radius:12px;background:'+NPS_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🛡️</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+n.name+'</div>'
+          +'<div style="font-size:12px;color:var(--text-dim);margin-top:1px">NPS · PRAN: '+n.pran+'</div>'
+          +'</div>'
+          +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;flex-shrink:0">'+n.status.charAt(0).toUpperCase()+n.status.slice(1)+'</div>'
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-end">'
+          +'<div><div style="font-size:11px;color:var(--text-dim)">Invested</div><div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(inv)+'</div></div>'
+          +'<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Current Value</div><div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(cur)+'</div></div>'
+          +'<div style="text-align:right;display:flex;align-items:center;gap:4px">'+upSVG+'<div><div style="font-size:11px;color:var(--text-dim)">Gain (p.a.)</div><div style="font-size:15px;font-weight:800;color:'+gc+'">'+gp.toFixed(2)+'%</div></div></div>'
+          +'</div>'
+          +'</div>';
+      }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">NPS</div>'
+    +'<div class="icon-btn" onclick="App.navigate(\'add-nps\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>'
+    +'</div>'
+    +'<div style="margin:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid rgba(255,255,255,.06)">'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Invested</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--text)">'+formatINR(totalInv)+'</div>'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">Current Value</div>'
+    +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(totalCur)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid rgba(255,255,255,.06)">'
+    +'<div style="display:flex;gap:12px">'
+    +'<div style="flex:1"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Gain</div>'
+    +'<div style="display:flex;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#22C55E"><path d="M7 14l5-5 5 5z"/></svg><div style="font-size:15px;font-weight:800;color:#22C55E">+'+formatINR(totalGain>=0?totalGain:0)+'</div></div>'
+    +'<div style="font-size:11px;color:#22C55E;font-weight:700;margin-top:2px">('+gainPct.toFixed(2)+'%)</div></div>'
+    +'<div style="flex:1"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Loss</div>'
+    +'<div style="display:flex;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#FF4D6A"><path d="M7 10l5 5 5-5z"/></svg><div style="font-size:15px;font-weight:800;color:#FF4D6A">-₹0</div></div>'
+    +'<div style="font-size:11px;color:#FF4D6A;font-weight:700;margin-top:2px">(0.00%)</div></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 12px"><input type="text" placeholder="Search NPS accounts..." value="'+escapeHtml(State.npsSearch||'')+'" oninput="State.npsSearch=this.value;App.render()" style="width:100%;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;scrollbar-width:none">'+filterTabs+'</div>'
+    +cards
+    +'<div style="margin:4px 16px 8px"><button onclick="App.navigate(\'add-nps\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(14,165,233,.15);color:#0EA5E9;border:1px solid rgba(14,165,233,.3);font-size:14px;font-weight:700;cursor:pointer">+ Add NPS</button></div>'
+    +'</div>';
+}
+
+function renderNPSDetail() {
+  var id  = (State.params && State.params.id) || 'n1';
+  var n   = _npsFund(id);
+  if (!n.id) return '<div class="screen-wrap"><div style="padding:40px;text-align:center;color:var(--text-dim)">NPS account not found</div></div>';
+  var tab      = State.npsDetailTab || 'overview';
+  var NPS_COLOR= '#0EA5E9';
+  var isActive = n.status === 'active';
+  var inv      = _npsTotalInvested(id) || n.invested || 0;
+  var cur      = _npsCurrentValue(id) || n.current || 0;
+  var gain     = cur - inv;
+  var gainPct  = inv > 0 ? (gain/inv*100) : 0;
+  var gainColor= gain >= 0 ? '#22C55E' : '#FF4D6A';
+  var period   = State.npsChartPeriod || '1Y';
+  var statusBg = isActive ? '#16A34A22' : '#EF444422';
+  var statusColor = isActive ? '#22C55E' : '#EF4444';
+
+  var tabs = ['overview','transactions','notes'].map(function(t){
+    return '<div style="flex:1;text-align:center;padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid '+(tab===t?NPS_COLOR:'transparent')+';color:'+(tab===t?NPS_COLOR:'var(--text-dim)')+'" onclick="State.npsDetailTab=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+  }).join('');
+
+  var header = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'nps-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">'+n.name+'</div>'
+    +'<div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>'
+    +'</div>';
+
+  var body = '';
+  if (tab === 'overview') {
+    var identCard = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:18px">'
+      +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+      +'<div style="width:52px;height:52px;border-radius:14px;background:'+NPS_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:24px">🛡️</div>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:16px;font-weight:800;color:var(--text)">'+n.name+'</div>'
+      +'<div style="font-size:12px;color:var(--text-dim);margin-top:2px">NPS</div>'
+      +'</div>'
+      +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px">'+n.status.charAt(0).toUpperCase()+n.status.slice(1)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;padding:14px 0;border-top:1px solid rgba(255,255,255,.07);margin-bottom:14px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Total Invested</div><div style="font-size:24px;font-weight:800;color:var(--text)">'+formatINR(inv)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Return (p.a.)</div><div style="font-size:24px;font-weight:800;color:'+NPS_COLOR+'">'+n.return_pct+'%</div></div>'
+      +'</div>'
+      +[
+        ['PRAN Number',   n.pran],
+        ['Tier',          n.tier],
+        ['Invested On',   _invFmtDate(n.invested_on)],
+        ['Linked Account',n.linked_account],
+        ['Allocation',    n.allocation],
+        ['Current Value', '<span style="color:'+gainColor+';font-weight:700">'+formatINR(cur)+' +'+(gain>=0?'+':'')+formatINR(gain)+' ('+gainPct.toFixed(2)+'%)</span>'],
+      ].map(function(row){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+          +'<div style="font-size:13px;color:var(--text-dim)">'+row[0]+'</div>'
+          +'<div style="font-size:13px;text-align:right;color:var(--text)">'+row[1]+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+
+    var periodBtns=['1M','3M','6M','1Y','ALL'].map(function(p){
+      return '<div style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(period===p?'background:'+NPS_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.npsChartPeriod=\''+p+'\';App.render()">'+p+'</div>';
+    }).join('');
+    var chartCard='<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+NPS_COLOR+';margin-bottom:12px">Performance</div>'
+      +'<div style="display:flex;justify-content:flex-end;gap:4px;margin-bottom:8px">'+periodBtns+'</div>'
+      +_npsGrowthChart(n,period)
+      +'</div>';
+
+    var actionBtns='<div style="margin:0 16px 20px;display:flex;gap:10px">'
+      +'<button onclick="State.params={id:\''+id+'\'};App.navigate(\'add-nps-investment\')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:'+NPS_COLOR+';color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer">+ Add Investment</button>'
+      +'<button onclick="State.npsDetailTab=\'transactions\';App.render()" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:rgba(255,255,255,.1);color:var(--text);font-weight:700;font-size:14px;border:1px solid rgba(255,255,255,.15);cursor:pointer">View Transactions</button>'
+      +'</div>';
+
+    body = identCard + chartCard + actionBtns;
+
+  } else if (tab === 'transactions') {
+    var investments = _npsInvestments(id);
+    var sorted = investments.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+    var latestId = sorted.length>0 ? sorted[0].id : null;
+
+    var txRows = sorted.map(function(t){
+      var isLatest=t.id===latestId;
+      var label=t.type==='initial'?'Initial Investment':'Additional Investment';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="App.navigate(\'nps-detail\')">'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+_invFmtDate(t.date)+'</div>'
+        +'<div style="font-size:12px;color:var(--text-dim);margin-top:1px">'+label+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;display:flex;align-items:center;gap:8px">'
+        +(isLatest?'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:'+NPS_COLOR+'22;color:'+NPS_COLOR+'">Latest</span>':'')
+        +'<div>'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(t.amount)+'</div>'
+        +'</div>'
+        +'<svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,.3)"><path d="M9 18l6-6-6-6"/></svg>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+    var summary='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Total Investments</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(inv)+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Current Value</div><div style="font-size:14px;font-weight:700;color:'+NPS_COLOR+'">'+formatINR(cur)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Gain / Loss</div><div style="font-size:14px;font-weight:700;color:'+gainColor+'">'+(gain>=0?'+':'')+formatINR(gain)+' ('+gainPct.toFixed(2)+'%)</div></div>'
+      +'</div>';
+
+    body='<div style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+NPS_COLOR+';margin-bottom:8px">Investment Transactions</div>'
+      +(txRows||'<div style="padding:20px 0;text-align:center;color:var(--text-dim)">No transactions yet</div>')
+      +summary
+      +'</div>'
+      +'<div style="margin:0 16px 20px">'
+      +'<button onclick="State.params={id:\''+id+'\'};App.navigate(\'add-nps-investment\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(14,165,233,.15);color:'+NPS_COLOR+';border:1px solid rgba(14,165,233,.3);font-weight:700;font-size:14px;cursor:pointer">+ Add Investment</button>'
+      +'</div>';
+
+  } else {
+    // Notes tab
+    var notes=INV_NOTES[id]||[];
+    var nf=State.npsNoteFilter||'all';
+    var nfBtns=['all','important','updates','general'].map(function(t){
+      return '<div style="padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;'+(nf===t?'background:'+NPS_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.07);')+'" onclick="State.npsNoteFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+    }).join('');
+    var typeColors={important:'#EF4444',updates:'#3B82F6',general:'#9CA3AF',research:'#10B981'};
+    var visNotes=nf==='all'?notes:notes.filter(function(n){ return n.type===nf; });
+    var ncards=visNotes.map(function(n){
+      var tc=typeColors[n.type]||'#9CA3AF';
+      var dStr=n.date?n.date.replace('T',' ').slice(0,16):'';
+      return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06)">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+        +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+tc+'22;color:'+tc+'">'+n.type.charAt(0).toUpperCase()+n.type.slice(1)+'</span>'
+        +'<span style="font-size:11px;color:var(--text-dim)">'+dStr+'</span>'
+        +'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">'+escapeHtml(n.title)+'</div>'
+        +'<div style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:8px">'+escapeHtml(n.text)+'</div>'
+        +'<div style="display:flex;gap:16px">'
+        +'<div onclick="App._npsEditNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg> Edit</div>'
+        +'<div onclick="App._npsDeleteNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:#EF4444;font-size:12px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Delete</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+    body='<div style="margin:0 16px 14px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">Notes ('+notes.length+')</div>'
+      +'<button onclick="App._npsAddNote(\''+id+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:rgba(14,165,233,.15);color:'+NPS_COLOR+';font-size:13px;font-weight:700;border:1px solid rgba(14,165,233,.3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Note</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+nfBtns+'</div>'
+      +(ncards||'<div style="padding:30px;text-align:center;color:var(--text-dim)">No notes yet</div>')
+      +'</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +header
+    +'<div style="display:flex;margin:0 16px 14px;background:var(--card);border-radius:var(--radius)">'+tabs+'</div>'
+    +body
+    +'</div>';
+}
+
+function renderAddNPS() {
+  var ins='width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle=ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:#0EA5E9;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+  var today=new Date().toISOString().slice(0,10);
+  var allocOpts=['Aggressive','Moderate (Auto)','Conservative','LC75 - G25','LC50 - G50','LC25 - G75'].map(function(a){
+    return '<option value="'+a+'"'+(a==='Aggressive'?' selected':'')+'>'+a+'</option>';
+  }).join('');
+  var accounts=['HDFC Bank ••• 9876','SBI ••• 1234','ICICI Bank ••• 5678','Axis Bank ••• 3456'].map(function(a){
+    return '<option value="'+a+'">'+a+'</option>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'nps-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Add NPS</div>'
+    +'<div style="color:#0EA5E9;font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="App._saveNPS()">Save</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 0">'
+    +secHdr('NPS Details')
+    +fr('PRAN Number',       '<input type="text"   id="nps-pran"    placeholder="e.g. 110011001122" style="'+ins+'">')
+    +fr('Tier',              '<select id="nps-tier" style="'+selStyle+'"><option value="Tier 1">Tier 1</option><option value="Tier 2">Tier 2</option></select>')
+    +fr('Investment Amount', '<input type="number" id="nps-amount"  placeholder="e.g. 50000" style="'+ins+'">')
+    +fr('Allocation',        '<select id="nps-alloc" style="'+selStyle+'">'+allocOpts+'</select>')
+    +fr('Linked Account',    '<select id="nps-account" style="'+selStyle+'">'+accounts+'</select>')
+    +fr('Investment Date',   '<input type="date"   id="nps-date" style="'+ins+'" value="'+today+'">')
+    +secHdr('Notes (Optional)')
+    +fr('', '<input type="text" id="nps-notes-inp" placeholder="Enter any notes..." style="'+ins+'">')
+    +'<button onclick="App._saveNPS()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#0EA5E9;color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderAddNPSInvestment() {
+  var id=(State.params&&State.params.id)||'';
+  var n=id?_npsFund(id):{};
+  var ins='width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle=ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:#0EA5E9;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+  var today=new Date().toISOString().slice(0,10);
+  var allocOpts=['Aggressive','Moderate (Auto)','Conservative','LC75 - G25','LC50 - G50','LC25 - G75'].map(function(a){
+    return '<option value="'+a+'"'+(a===(n.allocation||'Aggressive')?' selected':'')+'>'+a+'</option>';
+  }).join('');
+  var accounts=['HDFC Bank ••• 9876','SBI ••• 1234','ICICI Bank ••• 5678','Axis Bank ••• 3456'].map(function(a){
+    return '<option value="'+a+'"'+(a===(n.linked_account||'')?' selected':'')+'>'+a+'</option>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="State.npsDetailTab=\'transactions\';App.navigate(\'nps-detail\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Add Investment</div>'
+    +'<div style="color:#0EA5E9;font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="App._saveNPSInvestment()">Save</div>'
+    +'</div>'
+    +(n.name?'<div style="margin:0 16px 12px;background:rgba(14,165,233,.1);border-radius:10px;padding:12px"><div style="font-size:12px;color:var(--text-dim)">Adding to</div><div style="font-size:14px;font-weight:700;color:#0EA5E9">'+n.name+'</div></div>':'')
+    +'<div style="margin:0 16px 0">'
+    +secHdr('Investment Details')
+    +fr('Date',     '<input type="date"   id="ni-date"   style="'+ins+'" value="'+today+'">')
+    +fr('Amount',   '<input type="number" id="ni-amount" placeholder="e.g. 25000" style="'+ins+'">')
+    +fr('Tier',     '<select id="ni-tier" style="'+selStyle+'"><option value="Tier 1"'+(n.tier==='Tier 1'?' selected':'')+'>Tier 1</option><option value="Tier 2"'+(n.tier==='Tier 2'?' selected':'')+'>Tier 2</option></select>')
+    +fr('Allocation','<select id="ni-alloc" style="'+selStyle+'">'+allocOpts+'</select>')
+    +fr('Linked Account','<select id="ni-account" style="'+selStyle+'">'+accounts+'</select>')
+    +secHdr('Payment Details')
+    +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Payment Mode</div>'
+    +'<div style="display:flex;gap:8px">'
+    +['UPI','Net Banking','Other'].map(function(m,i){
+      var val=m.toLowerCase().replace(' ','_');
+      var isFirst=i===0;
+      return '<div id="ni-mode-'+val+'" onclick="App._npsSelectMode(\''+val+'\')" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(isFirst?'background:#0EA5E9;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);')+'">'+m+'</div>';
+    }).join('')
+    +'</div></div>'
+    +fr('Reference / UTR No.','<input type="text" id="ni-ref" placeholder="e.g. UPI123456789012" style="'+ins+'">')
+    +secHdr('Notes (Optional)')
+    +fr('', '<textarea id="ni-notes" rows="3" placeholder="Enter any notes..." style="'+ins+';resize:vertical"></textarea>')
+    +'<input type="hidden" id="ni-pay-mode" value="upi">'
+    +'<button onclick="App._saveNPSInvestment()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#0EA5E9;color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>'
+    +'</div>'
+    +'</div>';
+}
+
 /* ─── BONDS MODULE ──────────────────────────────────── */
 function _bondsAll() { return INV_PORTFOLIO.bonds || []; }
 function _bondsFunds(filter) {
@@ -9857,6 +10241,10 @@ const App = {
       case 'rd-detail':             html = renderRDDetail();              break;
       case 'rd-add':                html = renderRDAdd();                 break;
       case 'rd-add-installment':    html = renderRDAddInstallment();      break;
+      case 'nps-list':              html = renderNPSList();               break;
+      case 'nps-detail':            html = renderNPSDetail();             break;
+      case 'add-nps':               html = renderAddNPS();                break;
+      case 'add-nps-investment':    html = renderAddNPSInvestment();      break;
       case 'bonds-list':            html = renderBondsList();             break;
       case 'bond-detail':           html = renderBondDetail();            break;
       case 'add-bond':              html = renderAddBond();               break;
@@ -11220,6 +11608,134 @@ const App = {
   },
 
   _rdDeleteNote(fundId, noteId) {
+    var notes=INV_NOTES[fundId]||[];
+    var idx=notes.findIndex(function(n){return n.id===noteId;});
+    if (idx<0) return;
+    notes.splice(idx,1);
+    this.showToast('Note deleted'); App.render();
+  },
+
+  /* ── NPS Module ─────────────────────────────── */
+  _npsSelectMode(val) {
+    document.getElementById('ni-pay-mode').value = val;
+    ['upi','net_banking','other'].forEach(function(m) {
+      var el = document.getElementById('ni-mode-'+m);
+      if (el) { el.style.background=m===val?'#0EA5E9':'rgba(255,255,255,.07)'; el.style.color=m===val?'#fff':'var(--text-dim)'; }
+    });
+  },
+
+  _saveNPS() {
+    var pran    = document.getElementById('nps-pran')?.value.trim();
+    var tier    = document.getElementById('nps-tier')?.value || 'Tier 1';
+    var amount  = parseFloat(document.getElementById('nps-amount')?.value);
+    var alloc   = document.getElementById('nps-alloc')?.value || 'Aggressive';
+    var account = document.getElementById('nps-account')?.value || '';
+    var date    = document.getElementById('nps-date')?.value;
+    var notes   = document.getElementById('nps-notes-inp')?.value.trim();
+    if (!pran)               { this.showToast('Enter PRAN number'); return; }
+    if (isNaN(amount)||amount<=0){ this.showToast('Enter investment amount'); return; }
+    if (!date)               { this.showToast('Enter investment date'); return; }
+    var newId = 'n'+uid();
+    var newNPS = {
+      id:newId, name:'National Pension Scheme', pran, tier, allocation:alloc,
+      linked_account:account, fund_manager:'HDFC Pension Management Co.',
+      invested:amount, current:Math.round(amount*1.112), equity_pct:75, debt_pct:15, alts_pct:10,
+      return_pct:11.20, invested_on:date, status:'active',
+    };
+    INV_PORTFOLIO.nps = INV_PORTFOLIO.nps||[];
+    INV_PORTFOLIO.nps.push(newNPS);
+    INV_TRANSACTIONS[newId] = { investments:[] };
+    INV_TRANSACTIONS[newId].investments.push({
+      id:uid('ni'), date, amount, tier, allocation:alloc, linked_account:account,
+      mode:'upi', ref_id:'', notes, type:'initial',
+    });
+    if (notes) { if (!INV_NOTES[newId]) INV_NOTES[newId]=[]; INV_NOTES[newId].push({id:uid(),type:'general',date:new Date().toISOString().slice(0,10),title:'Setup Note',text:notes}); }
+    this.showToast('NPS account added!');
+    State.params={id:newId}; State.npsDetailTab='overview';
+    App.navigate('nps-detail');
+  },
+
+  _saveNPSInvestment() {
+    var npsId   = (State.params && State.params.id);
+    var date    = document.getElementById('ni-date')?.value;
+    var amount  = parseFloat(document.getElementById('ni-amount')?.value);
+    var tier    = document.getElementById('ni-tier')?.value || 'Tier 1';
+    var alloc   = document.getElementById('ni-alloc')?.value || 'Aggressive';
+    var account = document.getElementById('ni-account')?.value || '';
+    var mode    = document.getElementById('ni-pay-mode')?.value || 'upi';
+    var ref     = document.getElementById('ni-ref')?.value.trim();
+    var notes   = document.getElementById('ni-notes')?.value.trim();
+    if (!npsId)                  { this.showToast('NPS account not selected'); return; }
+    if (!date)                   { this.showToast('Enter investment date'); return; }
+    if (isNaN(amount)||amount<=0){ this.showToast('Enter investment amount'); return; }
+    if (!INV_TRANSACTIONS[npsId]) INV_TRANSACTIONS[npsId]={investments:[]};
+    INV_TRANSACTIONS[npsId].investments.push({
+      id:uid('ni'), date, amount, tier, allocation:alloc, linked_account:account,
+      mode, ref_id:ref||'', notes, type:'additional',
+    });
+    var n = _npsFund(npsId);
+    if (n) {
+      n.invested = _npsTotalInvested(npsId);
+      n.current  = _npsCurrentValue(npsId);
+    }
+    this.showToast('Investment added!');
+    State.npsDetailTab='transactions'; State.params={id:npsId};
+    App.navigate('nps-detail');
+  },
+
+  _npsAddNote(fundId) {
+    var overlay=document.createElement('div');
+    overlay.className='modal-overlay';
+    overlay.innerHTML='<div class="modal-card" style="padding:20px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Add Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Type</div><select id="nnote-type" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px"><option value="important">Important</option><option value="updates">Updates</option><option value="general">General</option><option value="research">Research</option></select></div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="nnote-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="nnote-text" rows="4" placeholder="Your note..." style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._npsSaveNote(\''+fundId+'\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#0EA5E9;color:#fff;border:none;font-weight:700;cursor:pointer">Save</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+
+  _npsSaveNote(fundId,overlay) {
+    var type=document.getElementById('nnote-type')?.value||'general';
+    var title=document.getElementById('nnote-title')?.value.trim();
+    var text=document.getElementById('nnote-text')?.value.trim();
+    if (!title||!text){ this.showToast('Title and text required'); return; }
+    if (!INV_NOTES[fundId]) INV_NOTES[fundId]=[];
+    INV_NOTES[fundId].push({id:uid(),type,date:new Date().toISOString(),title,text});
+    overlay.remove(); this.showToast('Note added!'); App.render();
+  },
+
+  _npsEditNote(fundId,noteId) {
+    var n=(INV_NOTES[fundId]||[]).find(function(n){return n.id===noteId;});
+    if (!n) return;
+    var overlay=document.createElement('div');
+    overlay.className='modal-overlay';
+    overlay.innerHTML='<div class="modal-card" style="padding:20px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Edit Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="nnote-etitle" type="text" value="'+escapeHtml(n.title)+'" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="nnote-etext" rows="4" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical">'+escapeHtml(n.text)+'</textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._npsSaveNoteEdit(\''+fundId+'\',\''+noteId+'\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#0EA5E9;color:#fff;border:none;font-weight:700;cursor:pointer">Update</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+
+  _npsSaveNoteEdit(fundId,noteId,overlay) {
+    var notes=INV_NOTES[fundId]||[];
+    var n=notes.find(function(n){return n.id===noteId;});
+    if (!n) return;
+    var title=document.getElementById('nnote-etitle')?.value.trim();
+    var text=document.getElementById('nnote-etext')?.value.trim();
+    if (!title||!text){ this.showToast('Title and text required'); return; }
+    n.title=title; n.text=text;
+    overlay.remove(); this.showToast('Note updated!'); App.render();
+  },
+
+  _npsDeleteNote(fundId,noteId) {
     var notes=INV_NOTES[fundId]||[];
     var idx=notes.findIndex(function(n){return n.id===noteId;});
     if (idx<0) return;
