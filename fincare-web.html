@@ -1696,6 +1696,13 @@ const State = {
   cashSearch:      '',
   cashNoteFilter:  'all',
   cashPayMode:     'upi',
+  // EPF module
+  epfDetailTab:        'overview',
+  epfChartPeriod:      '1Y',
+  epfFilter:           'all',
+  epfSearch:           '',
+  epfNoteFilter:       'all',
+  epfWithdrawalFilter: 'all',
   // PPF module
   ppfDetailTab:    'overview',
   ppfChartPeriod:  '1Y',
@@ -1933,7 +1940,7 @@ const INV_PORTFOLIO = {
     { id:'n1', name:'National Pension Scheme', pran:'110011001122', tier:'Tier 1', allocation:'Aggressive', linked_account:'HDFC Bank ••• 9876', fund_manager:'HDFC Pension Management Co.', invested:100000, current:111200, equity_pct:75, debt_pct:15, alts_pct:10, return_pct:11.20, invested_on:'2023-04-01', status:'active' },
   ],
   epf: [
-    { id:'ep1', name:'EPF Account', uan:'100234567890', invested:360000, current:389000, interest_rate:8.15, status:'active' },
+    { id:'ep1', name:'Employee Provident Fund', uan:'101234567890', employee_share:120000, employer_share:120000, invested:240000, current:240000, interest_rate:8.15, last_updated:'May 2024', linked_account:'SBI Savings •••• 5678', status:'active' },
   ],
   cash_investment: [
     { id:'ci1', name:'Emergency Fund', type:'Cash Investment', purpose:'Emergency Fund', linked_account:'SBI Savings ••• 5678', invested:200000, current:200000, interest_rate:0.00, invested_on:'2024-01-01', status:'active' },
@@ -2105,6 +2112,12 @@ const INV_TRANSACTIONS = {
       { id:'cd3m1', date:'2025-12-01', maturity_amount:234400, interest_earned:34400, receipt_mode:'Credit to Account', bank_account:'HDFC Savings A/c - 4567', action_after:'Close FD', ref_id:'BJ-MAT-2025-001', notes:'Matured smoothly. Credited to account same day.' },
     ],
   },
+  // EPF withdrawals
+  ep1: {
+    withdrawals: [
+      { id:'epw1', date:'2024-04-10', purpose:'Education',         type:'partial', amount:40000, payment_mode:'bank_transfer', bank_account:'SBI Savings •••• 5678', status:'completed', notes:'' },
+    ],
+  },
   // PPF transactions
   p1: {
     contributions: [
@@ -2230,6 +2243,11 @@ const INV_NOTES = {
   ci1: [
     { id:'cin1', type:'general', date:'2024-01-05', title:'Emergency Fund Setup', text:'3 months of expenses as emergency fund. Target: ₹3,00,000 (6 months).' },
     { id:'cin2', type:'goals',   date:'2024-05-20', title:'Top-up Complete',      text:'Added ₹50,000 to bring total to ₹2,00,000. Will add ₹25,000 monthly to reach target.' },
+  ],
+  // EPF notes
+  ep1: [
+    { id:'en1', type:'personal',  date:'2024-05-15T11:30:00', title:'EPF Balance Review',   text:'Reviewed EPF balance and planned partial withdrawal for medical treatment.' },
+    { id:'en2', type:'important', date:'2024-04-05T09:45:00', title:'Keep UAN Updated',     text:'Keep UAN and bank details updated for smooth withdrawal.' },
   ],
   // PPF notes
   p1: [
@@ -3672,6 +3690,7 @@ function renderInvestmentDashboard() {
       : c.cat === 'nps'                 ? 'App.navigate(\'nps-list\')'
       : c.cat === 'cash_investment'     ? 'App.navigate(\'cash-investment-list\')'
       : c.cat === 'ppf'                 ? 'App.navigate(\'ppf-list\')'
+      : c.cat === 'epf'                 ? 'App.navigate(\'epf-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3769,6 +3788,7 @@ function renderInvestmentCategory() {
   if (cat === 'nps')                 { setTimeout(function(){ App.navigate('nps-list');                 }, 0); return '<div></div>'; }
   if (cat === 'cash_investment')     { setTimeout(function(){ App.navigate('cash-investment-list');     }, 0); return '<div></div>'; }
   if (cat === 'ppf')                 { setTimeout(function(){ App.navigate('ppf-list');                  }, 0); return '<div></div>'; }
+  if (cat === 'epf')                 { setTimeout(function(){ App.navigate('epf-list');                  }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3847,7 +3867,7 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
-  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list', ppf:'ppf-list' };
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list', ppf:'ppf-list', epf:'epf-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
@@ -6120,6 +6140,405 @@ function renderWithdrawCash() {
     +'</div>'
     +'<button onclick="App._saveCashWithdraw()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#8B5CF6;color:#fff;border:none;cursor:pointer">Withdraw</button>'
     +'</div>'
+    +'</div>';
+}
+
+/* ─── EPF MODULE ─────────────────────────────────────── */
+var EPF_COLOR = '#60A5FA';
+function _epfAll() { return INV_PORTFOLIO.epf || []; }
+function _epfFunds(filter) {
+  var all = _epfAll();
+  if (filter === 'active')   return all.filter(function(e){ return e.status === 'active'; });
+  if (filter === 'inactive') return all.filter(function(e){ return e.status === 'inactive'; });
+  return all;
+}
+function _epfFund(id) { return _epfAll().find(function(e){ return e.id === id; }) || {}; }
+function _epfWithdrawals(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].withdrawals) || []; }
+function _epfCurrentBalance(id) {
+  var e = _epfFund(id);
+  return e.current || e.invested || 0;
+}
+function _epfEmployeeShare(id) { return Math.round(_epfCurrentBalance(id) * 0.5); }
+function _epfEmployerShare(id) { return Math.round(_epfCurrentBalance(id) * 0.5); }
+function _epfGrowthChart(e, period) {
+  var inv = e.invested || 0;
+  var cur = _epfCurrentBalance(e.id) || inv;
+  var startDate = new Date('2022-04-01');
+  var now = new Date();
+  var totalDays = Math.max(1, (now - startDate) / 86400000);
+  var maxDays = period==='1M'?30:period==='3M'?90:period==='6M'?180:period==='1Y'?365:totalDays;
+  maxDays = Math.min(maxDays, totalDays);
+  var pts=25, points=[];
+  for(var i=0;i<pts;i++){ var d=(i/(pts-1))*maxDays,pct=d/totalDays; points.push(Math.round(inv+(cur-inv)*pct)); }
+  var min=inv*0.96,max=cur*1.04,w=320,h=90;
+  var coords=points.map(function(v,i){ var x=(i/(pts-1))*w,y=h-((v-min)/(max-min+0.01))*(h-12)-6; return x.toFixed(1)+','+y.toFixed(1); });
+  var d2='M'+coords[0];
+  for(var j=0;j<coords.length-1;j++){ var cp=coords[j].split(','),np=coords[j+1].split(','),mx=((+cp[0]+(+np[0]))/2).toFixed(1),my=((+cp[1]+(+np[1]))/2).toFixed(1); d2+=' Q'+cp[0]+','+cp[1]+' '+mx+','+my; }
+  d2+=' L'+coords[coords.length-1];
+  var area=d2+' L'+w+','+h+' L0,'+h+' Z';
+  var gl=[0.25,0.5,0.75].map(function(f){var y=(h*f+6).toFixed(1);return '<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';}).join('');
+  var lx=coords[coords.length-1].split(',')[0],ly=coords[coords.length-1].split(',')[1];
+  return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'
+    +'<defs><linearGradient id="epfg'+period+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+EPF_COLOR+'" stop-opacity="0.4"/><stop offset="100%" stop-color="'+EPF_COLOR+'" stop-opacity="0.03"/></linearGradient></defs>'
+    +gl+'<path d="'+area+'" fill="url(#epfg'+period+')"/>'
+    +'<path d="'+d2+'" fill="none" stroke="'+EPF_COLOR+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    +'<circle cx="'+lx+'" cy="'+ly+'" r="4" fill="'+EPF_COLOR+'" stroke="#0f0f1a" stroke-width="2"/></svg>';
+}
+
+function renderEPFList() {
+  var filter = State.epfFilter || 'all';
+  var search  = (State.epfSearch || '').toLowerCase();
+  var all = _epfAll();
+  var totalBal = all.reduce(function(s,e){ return s + _epfCurrentBalance(e.id); }, 0);
+  var totalEmp = all.reduce(function(s,e){ return s + _epfEmployeeShare(e.id); }, 0);
+  var totalEr  = all.reduce(function(s,e){ return s + _epfEmployerShare(e.id); }, 0);
+  var counts = { all:all.length, active:all.filter(function(e){return e.status==='active';}).length, inactive:all.filter(function(e){return e.status==='inactive';}).length };
+  var filtered = _epfFunds(filter);
+  if (search) filtered = filtered.filter(function(e){ return (e.name||'').toLowerCase().indexOf(search)>=0||(e.uan||'').indexOf(search)>=0; });
+
+  var tabs = ['all','active','inactive'].map(function(t){
+    var isAct=filter===t;
+    return '<div style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+EPF_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.epfFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'&nbsp;<span style="opacity:.7;font-size:11px">('+counts[t]+')</span></div>';
+  }).join('');
+
+  var cards = filtered.length===0
+    ? '<div style="padding:40px;text-align:center;color:var(--text-dim)">No EPF accounts found</div>'
+    : filtered.map(function(e){
+        var bal  = _epfCurrentBalance(e.id);
+        var emp  = _epfEmployeeShare(e.id);
+        var er   = _epfEmployerShare(e.id);
+        var isAct= e.status==='active';
+        return '<div onclick="App.navigate(\'epf-detail\',{id:\''+e.id+'\'})" style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer">'
+          +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+          +'<div style="width:46px;height:46px;border-radius:12px;background:'+EPF_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">👷</div>'
+          +'<div style="flex:1">'
+          +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+e.name+'</div>'
+          +'<div style="font-size:12px;color:var(--text-dim);margin-top:1px">EPF · UAN: '+e.uan+'</div>'
+          +'</div>'
+          +'<div style="background:'+(isAct?'#16A34A22':'#EF444422')+';color:'+(isAct?'#22C55E':'#EF4444')+';font-size:12px;font-weight:700;padding:4px 10px;border-radius:10px">'+(isAct?'Active':'Inactive')+'</div>'
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between">'
+          +'<div><div style="font-size:11px;color:var(--text-dim)">UAN Number</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+e.uan+'</div></div>'
+          +'<div><div style="font-size:11px;color:var(--text-dim)">Total Balance</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(bal)+'</div></div>'
+          +'<div><div style="font-size:11px;color:var(--text-dim)">Employee Share</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(emp)+'</div></div>'
+          +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Employer Share</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(er)+'</div></div>'
+          +'</div>'
+          +'</div>';
+      }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">EPF</div>'
+    +'<div style="width:36px"></div>'
+    +'</div>'
+    +'<div style="margin:8px 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+    +'<div><div style="font-size:11px;color:var(--text-dim)">Total Balance</div><div style="font-size:22px;font-weight:800;color:var(--text)">'+formatINR(totalBal)+'</div></div>'
+    +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Employee Share</div><div style="font-size:16px;font-weight:700;color:'+EPF_COLOR+'">'+formatINR(totalEmp)+'</div></div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between">'
+    +'<div><div style="font-size:11px;color:var(--text-dim)">Employer Share</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(totalEr)+'</div></div>'
+    +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Last Updated</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+(all[0]&&all[0].last_updated||'—')+'</div></div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 12px"><input type="text" placeholder="Search EPF accounts..." value="'+escapeHtml(State.epfSearch||'')+'" oninput="State.epfSearch=this.value;App.render()" style="width:100%;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none">'+tabs+'</div>'
+    +cards
+    +'<div style="margin:4px 16px 8px"><button onclick="App.navigate(\'epf-detail\',{id:\''+(all[0]&&all[0].id||'ep1')+'\'})" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(96,165,250,.15);color:'+EPF_COLOR+';border:1px solid rgba(96,165,250,.3);font-size:14px;font-weight:700;cursor:pointer">+ View EPF Details</button></div>'
+    +'</div>';
+}
+
+function renderEPFDetail() {
+  var id  = (State.params && State.params.id) || 'ep1';
+  var e   = _epfFund(id);
+  if (!e.id) return '<div class="screen-wrap"><div style="padding:40px;text-align:center;color:var(--text-dim)">EPF account not found</div></div>';
+  var tab     = State.epfDetailTab || 'overview';
+  var isAct   = e.status === 'active';
+  var bal     = _epfCurrentBalance(id);
+  var emp     = _epfEmployeeShare(id);
+  var er      = _epfEmployerShare(id);
+  var empPct  = bal > 0 ? (emp/bal*100).toFixed(2) : '50.00';
+  var erPct   = bal > 0 ? (er/bal*100).toFixed(2) : '50.00';
+  var period  = State.epfChartPeriod || '1Y';
+  var statusBg    = isAct ? '#16A34A22' : '#EF444422';
+  var statusColor = isAct ? '#22C55E'   : '#EF4444';
+
+  var tabsHtml = ['overview','transactions','withdrawals','notes'].map(function(t){
+    return '<div style="flex:1;text-align:center;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;border-bottom:2px solid '+(tab===t?EPF_COLOR:'transparent')+';color:'+(tab===t?EPF_COLOR:'var(--text-dim)')+'" onclick="State.epfDetailTab=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+  }).join('');
+
+  var header = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'epf-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">'+e.name+'</div>'
+    +'<div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>'
+    +'</div>';
+
+  var body = '';
+  if (tab === 'overview') {
+    var identCard = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:18px">'
+      +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+      +'<div style="width:52px;height:52px;border-radius:14px;background:'+EPF_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:24px">👷</div>'
+      +'<div style="flex:1"><div style="font-size:16px;font-weight:800;color:var(--text)">'+e.name+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">EPF</div></div>'
+      +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px">'+e.status.charAt(0).toUpperCase()+e.status.slice(1)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;padding:14px 0;border-top:1px solid rgba(255,255,255,.07);margin-bottom:14px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Total Balance</div><div style="font-size:26px;font-weight:800;color:var(--text)">'+formatINR(bal)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Last Updated</div><div style="font-size:16px;font-weight:700;color:var(--text)">'+(e.last_updated||'—')+'</div></div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:14px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Employee Share</div><div style="font-size:16px;font-weight:700;color:'+EPF_COLOR+'">'+formatINR(emp)+'</div><div style="font-size:11px;color:var(--text-dim)">('+empPct+'%)</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Employer Share</div><div style="font-size:16px;font-weight:700;color:var(--text)">'+formatINR(er)+'</div><div style="font-size:11px;color:var(--text-dim)">('+erPct+'%)</div></div>'
+      +'</div>'
+      +[
+        ['UAN Number',    e.uan],
+        ['Employee Share',formatINR(emp)],
+        ['Employer Share',formatINR(er)],
+        ['Last Updated',  e.last_updated||'—'],
+      ].map(function(row){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+          +'<div style="font-size:13px;color:var(--text-dim)">'+row[0]+'</div>'
+          +'<div style="font-size:13px;text-align:right;color:var(--text)">'+row[1]+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+
+    var periodBtns=['1M','3M','6M','1Y','ALL'].map(function(pr){
+      return '<div style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(period===pr?'background:'+EPF_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.epfChartPeriod=\''+pr+'\';App.render()">'+pr+'</div>';
+    }).join('');
+    var chartCard='<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+EPF_COLOR+';margin-bottom:12px">Performance</div>'
+      +'<div style="display:flex;justify-content:flex-end;gap:4px;margin-bottom:8px">'+periodBtns+'</div>'
+      +_epfGrowthChart(e,period)
+      +'</div>';
+
+    var actionBtn='<div style="margin:0 16px 20px">'
+      +'<button onclick="App.navigate(\'epf-withdrawal\',{id:\''+id+'\'})" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:'+EPF_COLOR+';color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer">+ Withdrawal</button>'
+      +'</div>';
+
+    body = identCard + chartCard + actionBtn;
+
+  } else if (tab === 'transactions') {
+    body = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+EPF_COLOR+';margin-bottom:16px">EPF Contributions</div>'
+      +'<div style="padding:20px 0;text-align:center;color:var(--text-dim)">EPF contributions are managed by your employer.<br>Contact your HR or EPFO portal for detailed transaction history.</div>'
+      +'<div style="margin-top:16px;padding:14px;background:rgba(96,165,250,.08);border-radius:10px;border:1px solid rgba(96,165,250,.15)">'
+      +'<div style="font-size:12px;color:'+EPF_COLOR+';font-weight:700;margin-bottom:6px">Current Contribution Split</div>'
+      +'<div style="display:flex;justify-content:space-between">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Employee (12% of Basic)</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(_epfEmployeeShare(id))+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Employer (3.67% of Basic)</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(_epfEmployerShare(id))+'</div></div>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+
+  } else if (tab === 'withdrawals') {
+    var withdrawals = _epfWithdrawals(id);
+    var wFilter = State.epfWithdrawalFilter || 'all';
+    var wCounts = { all:withdrawals.length, completed:withdrawals.filter(function(w){return w.status==='completed';}).length, pending:withdrawals.filter(function(w){return w.status==='pending';}).length };
+    var wFiltered = wFilter==='all' ? withdrawals : withdrawals.filter(function(w){ return w.status===wFilter; });
+    var sorted = wFiltered.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+    var stColors = { pending:'#F59E0B', completed:'#22C55E', rejected:'#EF4444', processing:'#3B82F6' };
+    var wTabs=['all','completed','pending'].map(function(t){
+      return '<div style="padding:6px 14px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;'+(wFilter===t?'background:'+EPF_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.07);')+'" onclick="State.epfWithdrawalFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'&nbsp;('+wCounts[t]+')</div>';
+    }).join('');
+    var wCards = sorted.map(function(w){
+      var sc = stColors[w.status] || '#9CA3AF';
+      var typeLabel = w.type==='partial'?'Partial Withdrawal':w.type==='full'?'Full Withdrawal':'Withdrawal';
+      return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+        +'<div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+w.purpose+'</div>'
+        +'<div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+typeLabel+'</div>'
+        +'</div>'
+        +'<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:'+sc+'22;color:'+sc+'">'+w.status.charAt(0).toUpperCase()+w.status.slice(1)+'</span>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div><div style="font-size:11px;color:var(--text-dim)">Amount</div><div style="font-size:15px;font-weight:800;color:var(--text)">'+formatINR(w.amount)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Date</div><div style="font-size:13px;color:var(--text)">'+_invFmtDate(w.date)+'</div></div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+    body = '<div style="margin:0 16px 12px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">Withdrawals</div>'
+      +'<button onclick="App.navigate(\'epf-withdrawal\',{id:\''+id+'\'})" style="padding:8px 14px;border-radius:10px;background:rgba(96,165,250,.15);color:'+EPF_COLOR+';font-size:13px;font-weight:700;border:1px solid rgba(96,165,250,.3);cursor:pointer">+ New Request</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+wTabs+'</div>'
+      +(wCards||'<div style="padding:30px;text-align:center;color:var(--text-dim)">No withdrawals yet</div>')
+      +'</div>';
+
+  } else {
+    // Notes tab
+    var notes    = INV_NOTES[id] || [];
+    var nf       = State.epfNoteFilter || 'all';
+    var typeColors={ important:'#EF4444', personal:'#8B5CF6', general:'#9CA3AF', research:'#10B981', goals:'#F59E0B' };
+    var nfBtns   = ['all','personal','important','general'].map(function(t){
+      return '<div style="padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;'+(nf===t?'background:'+EPF_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.07);')+'" onclick="State.epfNoteFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+    }).join('');
+    var visNotes = nf==='all' ? notes : notes.filter(function(n){ return n.type===nf; });
+    var ncards   = visNotes.map(function(n){
+      var tc=typeColors[n.type]||'#9CA3AF', dStr=n.date?n.date.replace('T',' ').slice(0,16):'';
+      return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06)">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+        +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+tc+'22;color:'+tc+'">'+n.type.charAt(0).toUpperCase()+n.type.slice(1)+'</span>'
+        +'<span style="font-size:11px;color:var(--text-dim)">'+dStr+'</span>'
+        +'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">'+escapeHtml(n.title)+'</div>'
+        +'<div style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:8px">'+escapeHtml(n.text)+'</div>'
+        +'<div style="display:flex;gap:16px">'
+        +'<div onclick="App._epfEditNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg> Edit</div>'
+        +'<div onclick="App._epfDeleteNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:#EF4444;font-size:12px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Delete</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    var privacyNote='<div style="margin-top:12px;display:flex;align-items:flex-start;gap:10px;padding:12px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.06)">'
+      +'<div style="font-size:20px;margin-top:2px">🔒</div>'
+      +'<div><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Your notes are private and secure</div>'
+      +'<div style="font-size:12px;color:var(--text-dim);line-height:1.5">Only you can view your notes. They are encrypted and stored securely.</div></div>'
+      +'</div>';
+
+    body='<div style="margin:0 16px 14px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">Notes ('+notes.length+')</div>'
+      +'<button onclick="App._epfAddNote(\''+id+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:rgba(96,165,250,.15);color:'+EPF_COLOR+';font-size:13px;font-weight:700;border:1px solid rgba(96,165,250,.3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Note</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+nfBtns+'</div>'
+      +(ncards||'<div style="padding:30px;text-align:center;color:var(--text-dim)">No notes yet</div>')
+      +privacyNote
+      +'</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +header
+    +'<div style="display:flex;margin:0 16px 14px;background:var(--card);border-radius:var(--radius)">'+tabsHtml+'</div>'
+    +body
+    +'</div>';
+}
+
+function renderEPFWithdrawal() {
+  var id = (State.params && State.params.id) || 'ep1';
+  var e  = _epfFund(id);
+  var bal= _epfCurrentBalance(id);
+  var emp= _epfEmployeeShare(id);
+  var er = _epfEmployerShare(id);
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'epf-detail\',{id:\''+id+'\'})"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Withdrawal</div>'
+    +'<div onclick="App.navigate(\'epf-withdrawal-history\',{id:\''+id+'\'})" style="font-size:13px;font-weight:700;color:'+EPF_COLOR+';cursor:pointer;padding:4px 0">History</div>'
+    +'</div>'
+    +'<div style="margin:8px 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    +'<div style="width:46px;height:46px;border-radius:12px;background:'+EPF_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px">👷</div>'
+    +'<div><div style="font-size:15px;font-weight:700;color:var(--text)">'+(e.name||'Employee Provident Fund')+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:1px">EPF</div></div>'
+    +'</div>'
+    +'<div style="padding:14px 0;border-top:1px solid rgba(255,255,255,.07);margin-bottom:14px">'
+    +'<div style="font-size:11px;color:var(--text-dim)">Available Balance</div>'
+    +'<div style="font-size:28px;font-weight:800;color:var(--text)">'+formatINR(bal)+'</div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between">'
+    +'<div><div style="font-size:11px;color:var(--text-dim)">Employee Share</div><div style="font-size:16px;font-weight:700;color:'+EPF_COLOR+'">'+formatINR(emp)+'</div></div>'
+    +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Employer Share</div><div style="font-size:16px;font-weight:700;color:var(--text)">'+formatINR(er)+'</div></div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 20px">'
+    +'<button onclick="App.navigate(\'epf-withdrawal-form\',{id:\''+id+'\'})" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:'+EPF_COLOR+';color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer">+ New Withdrawal Request</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderEPFWithdrawalForm() {
+  var id = (State.params && State.params.id) || 'ep1';
+  var e  = _epfFund(id);
+  var bal= _epfCurrentBalance(id);
+  var ins='width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle=ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:'+EPF_COLOR+';text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+  var purposeOpts=['Medical Treatment','Education','Marriage','Home Purchase','Home Loan Repayment','Unemployment','Retirement','Emergency','Other'].map(function(p){
+    return '<option value="'+p+'">'+p+'</option>';
+  }).join('');
+  var typeOpts=['Partial Withdrawal','Full Withdrawal','Pension Withdrawal'].map(function(t){
+    return '<option value="'+t.toLowerCase().replace(' ','_')+'">'+t+'</option>';
+  }).join('');
+  var accountOpts=['SBI Savings •••• 5678','HDFC Bank ••• 9876','ICICI Bank ••• 5678','Axis Bank ••• 3456'].map(function(a){
+    return '<option value="'+a+'"'+(a===(e.linked_account||'')?' selected':'')+'>'+a+'</option>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'epf-withdrawal\',{id:\''+id+'\'})"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Withdrawal Details</div>'
+    +'<div style="color:'+EPF_COLOR+';font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="App._saveEPFWithdrawal()">Save</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 12px;background:rgba(96,165,250,.08);border-radius:10px;padding:12px">'
+    +'<div style="font-size:12px;color:var(--text-dim)">Available Balance</div>'
+    +'<div style="font-size:20px;font-weight:800;color:var(--text)">'+formatINR(bal)+'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 0">'
+    +secHdr('Withdrawal Information')
+    +fr('Purpose',          '<select id="ew-purpose" style="'+selStyle+'"><option value="">Select Purpose</option>'+purposeOpts+'</select>')
+    +fr('Withdrawal Type',  '<select id="ew-type" style="'+selStyle+'"><option value="">Select Type</option>'+typeOpts+'</select>')
+    +fr('Amount (₹)',        '<input type="number" id="ew-amount" placeholder="₹ Enter Amount" style="'+ins+'">')
+    +secHdr('Preferred Payment Mode')
+    +'<div style="display:flex;gap:8px;margin-bottom:14px">'
+    +['Bank Transfer','UPI','Other'].map(function(m,i){
+      var val=['bank_transfer','upi','other'][i];
+      return '<div id="ew-pmode-'+val+'" onclick="App._epfSelectPayMode(\''+val+'\')" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(i===0?'background:'+EPF_COLOR+';color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);')+'">'+m+'</div>';
+    }).join('')
+    +'</div>'
+    +'<input type="hidden" id="ew-pay-mode" value="bank_transfer">'
+    +fr('Bank Account', '<select id="ew-account" style="'+selStyle+'"><option value="">Select Bank Account</option>'+accountOpts+'</select>')
+    +secHdr('Notes (Optional)')
+    +fr('', '<textarea id="ew-notes" rows="3" placeholder="Enter any notes..." style="'+ins+';resize:vertical"></textarea>')
+    +'<button onclick="App._saveEPFWithdrawal()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:'+EPF_COLOR+';color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderEPFWithdrawalHistory() {
+  var id = (State.params && State.params.id) || 'ep1';
+  var withdrawals = _epfWithdrawals(id);
+  var wf = State.epfWithdrawalFilter || 'all';
+  var counts = { all:withdrawals.length, completed:withdrawals.filter(function(w){return w.status==='completed';}).length, pending:withdrawals.filter(function(w){return w.status==='pending';}).length };
+  var filtered = wf==='all' ? withdrawals : withdrawals.filter(function(w){ return w.status===wf; });
+  var sorted = filtered.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+  var stColors={ pending:'#F59E0B', completed:'#22C55E', rejected:'#EF4444', processing:'#3B82F6' };
+
+  var tabs=['all','completed','pending'].map(function(t){
+    return '<div style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;'+(wf===t?'background:'+EPF_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.epfWithdrawalFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'&nbsp;<span style="opacity:.7;font-size:11px">('+counts[t]+')</span></div>';
+  }).join('');
+
+  var cards = sorted.map(function(w){
+    var sc=stColors[w.status]||'#9CA3AF';
+    var typeLabel=w.type==='partial'?'Partial Withdrawal':w.type==='full'?'Full Withdrawal':'Withdrawal';
+    return '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+      +'<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:'+sc+'22;color:'+sc+'">'+w.status.charAt(0).toUpperCase()+w.status.slice(1)+'</span>'
+      +'<span style="font-size:12px;color:var(--text-dim)">'+_invFmtDate(w.date)+'</span>'
+      +'</div>'
+      +'<div style="margin-bottom:8px">'
+      +'<div style="font-size:11px;color:var(--text-dim)">Purpose</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+w.purpose+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Type</div><div style="font-size:13px;color:var(--text)">'+typeLabel+'</div></div>'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Amount</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(w.amount)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Status</div><div style="font-size:13px;font-weight:700;color:'+sc+'">'+w.status.charAt(0).toUpperCase()+w.status.slice(1)+'</div></div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'epf-withdrawal\',{id:\''+id+'\'})"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Withdrawal History</div>'
+    +'<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none">'+tabs+'</div>'
+    +(cards||'<div style="padding:40px;text-align:center;color:var(--text-dim)">No withdrawals found</div>')
     +'</div>';
 }
 
@@ -11078,6 +11497,11 @@ const App = {
       case 'add-cash-investment':   html = renderAddCashInvestment();     break;
       case 'add-cash-fund':         html = renderAddCashFund();           break;
       case 'withdraw-cash':         html = renderWithdrawCash();          break;
+      case 'epf-list':                    html = renderEPFList();                   break;
+      case 'epf-detail':                  html = renderEPFDetail();                 break;
+      case 'epf-withdrawal':              html = renderEPFWithdrawal();             break;
+      case 'epf-withdrawal-form':         html = renderEPFWithdrawalForm();         break;
+      case 'epf-withdrawal-history':      html = renderEPFWithdrawalHistory();      break;
       case 'ppf-list':              html = renderPPFList();               break;
       case 'ppf-detail':            html = renderPPFDetail();             break;
       case 'add-ppf':               html = renderAddPPF();                break;
@@ -12599,6 +13023,107 @@ const App = {
     var idx=notes.findIndex(function(n){return n.id===noteId;});
     if(idx<0)return;notes.splice(idx,1);
     this.showToast('Note deleted');App.render();
+  },
+
+  /* ── EPF Module ─────────────────────────────── */
+  _epfSelectPayMode(val) {
+    ['bank_transfer','upi','other'].forEach(function(v){
+      var el=document.getElementById('ew-pmode-'+v);
+      if(el) el.style.cssText=el.style.cssText.replace(/background:[^;]+;color:[^;]+;/,'')+'background:'+(v===val?EPF_COLOR+';color:#fff;':'rgba(255,255,255,.07);color:var(--text-dim);');
+    });
+    var h=document.getElementById('ew-pay-mode');
+    if(h) h.value=val;
+  },
+  _saveEPFWithdrawal() {
+    var id      = (State.params&&State.params.id)||'ep1';
+    var purpose = (document.getElementById('ew-purpose')||{}).value||'';
+    var type    = (document.getElementById('ew-type')||{}).value||'';
+    var amount  = parseFloat((document.getElementById('ew-amount')||{}).value||'0');
+    var mode    = (document.getElementById('ew-pay-mode')||{}).value||'bank_transfer';
+    var acct    = (document.getElementById('ew-account')||{}).value||'';
+    var notes   = (document.getElementById('ew-notes')||{}).value||'';
+    if (!purpose)  { this.showToast('Select withdrawal purpose'); return; }
+    if (!type)     { this.showToast('Select withdrawal type'); return; }
+    if (amount<=0) { this.showToast('Enter valid amount'); return; }
+    var bal = _epfCurrentBalance(id);
+    if (amount > bal) { this.showToast('Amount exceeds available balance'); return; }
+    if (!INV_TRANSACTIONS[id]) INV_TRANSACTIONS[id]={ withdrawals:[] };
+    INV_TRANSACTIONS[id].withdrawals.push({
+      id:'epw'+Date.now(), date:new Date().toISOString().slice(0,10),
+      purpose:purpose, type:type.replace(/_/g,' '), amount:amount,
+      payment_mode:mode, bank_account:acct, status:'pending', notes:notes
+    });
+    var ef=_epfFund(id);
+    if(ef&&ef.id){ ef.current=Math.max(0,(ef.current||0)-amount); }
+    this.showToast('Withdrawal request submitted!');
+    State.epfDetailTab='overview';
+    App.navigate('epf-detail',{id:id});
+  },
+  _epfAddNote(fundId) {
+    var overlay=document.createElement('div');
+    overlay.id='epf-note-modal';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+    overlay.innerHTML='<div style="background:var(--card);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;box-sizing:border-box">'
+      +'<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:16px">Add Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Type</div>'
+      +'<select id="epf-note-type" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box;-webkit-appearance:none">'
+      +['important','personal','general','goals'].map(function(t){ return '<option value="'+t+'">'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>'; }).join('')
+      +'</select></div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="epf-note-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box"></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="epf-note-text" rows="4" placeholder="Write your note..." style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="document.getElementById(\'epf-note-modal\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._epfSaveNote(\''+fundId+'\')" style="flex:1;padding:12px;border-radius:10px;background:'+EPF_COLOR+';color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Save</button>'
+      +'</div>'
+      +'</div>';
+    document.body.appendChild(overlay);
+  },
+  _epfSaveNote(fundId) {
+    var type  = (document.getElementById('epf-note-type')||{}).value||'general';
+    var title = (document.getElementById('epf-note-title')||{}).value||'';
+    var text  = (document.getElementById('epf-note-text')||{}).value||'';
+    if (!title&&!text) { this.showToast('Enter note content'); return; }
+    if (!INV_NOTES[fundId]) INV_NOTES[fundId]=[];
+    INV_NOTES[fundId].push({ id:'en'+Date.now(), type:type, date:new Date().toISOString(), title:title, text:text });
+    var m=document.getElementById('epf-note-modal');
+    if(m) m.remove();
+    this.showToast('Note added'); App.render();
+  },
+  _epfEditNote(fundId, noteId) {
+    var notes=INV_NOTES[fundId]||[], note=notes.find(function(n){ return n.id===noteId; });
+    if(!note) return;
+    var overlay=document.createElement('div');
+    overlay.id='epf-note-edit-modal';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+    overlay.innerHTML='<div style="background:var(--card);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;box-sizing:border-box">'
+      +'<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:16px">Edit Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Type</div>'
+      +'<select id="epf-note-edit-type" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box;-webkit-appearance:none">'
+      +['important','personal','general','goals'].map(function(t){ return '<option value="'+t+'"'+(t===note.type?' selected':'')+'>'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>'; }).join('')
+      +'</select></div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="epf-note-edit-title" type="text" value="'+escapeHtml(note.title)+'" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box"></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="epf-note-edit-text" rows="4" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical">'+escapeHtml(note.text)+'</textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="document.getElementById(\'epf-note-edit-modal\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._epfSaveNoteEdit(\''+fundId+'\',\''+noteId+'\')" style="flex:1;padding:12px;border-radius:10px;background:'+EPF_COLOR+';color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Save</button>'
+      +'</div>'
+      +'</div>';
+    document.body.appendChild(overlay);
+  },
+  _epfSaveNoteEdit(fundId, noteId) {
+    var notes=INV_NOTES[fundId]||[], note=notes.find(function(n){ return n.id===noteId; });
+    if(!note) return;
+    note.type  = (document.getElementById('epf-note-edit-type')||{}).value  || note.type;
+    note.title = (document.getElementById('epf-note-edit-title')||{}).value || note.title;
+    note.text  = (document.getElementById('epf-note-edit-text')||{}).value  || note.text;
+    var m=document.getElementById('epf-note-edit-modal');
+    if(m) m.remove();
+    this.showToast('Note updated'); App.render();
+  },
+  _epfDeleteNote(fundId, noteId) {
+    if(!INV_NOTES[fundId]) return;
+    INV_NOTES[fundId]=INV_NOTES[fundId].filter(function(n){ return n.id!==noteId; });
+    this.showToast('Note deleted'); App.render();
   },
 
   /* ── PPF Module ─────────────────────────────── */
