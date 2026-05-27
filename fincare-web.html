@@ -1689,6 +1689,13 @@ const State = {
   rdNoteFilter:    'all',
   rdPayMode:       'auto_debit',
   rdFrequency:     'Monthly',
+  // Cash Investment module
+  cashDetailTab:   'overview',
+  cashChartPeriod: '1Y',
+  cashFilter:      'all',
+  cashSearch:      '',
+  cashNoteFilter:  'all',
+  cashPayMode:     'upi',
   // NPS module
   npsDetailTab:    'overview',
   npsChartPeriod:  '1Y',
@@ -1838,6 +1845,7 @@ const INV_CAT_META = {
   nps:                 { icon:'🛡️', color:'#0EA5E9', label:'NPS',               sub:'Pension fund' },
   epf:                 { icon:'👷', color:'#60A5FA', label:'EPF',               sub:'PF + employer match' },
   bonds:               { icon:'📋', color:'#F97316', label:'Bonds',             sub:'Govt & corporate bonds' },
+  cash_investment:     { icon:'💵', color:'#10B981', label:'Cash Investment',   sub:'Emergency fund & savings' },
 };
 
 const INV_TYPE_GROUPS = [
@@ -1919,6 +1927,9 @@ const INV_PORTFOLIO = {
   ],
   epf: [
     { id:'ep1', name:'EPF Account', uan:'100234567890', invested:360000, current:389000, interest_rate:8.15, status:'active' },
+  ],
+  cash_investment: [
+    { id:'ci1', name:'Emergency Fund', type:'Cash Investment', purpose:'Emergency Fund', linked_account:'SBI Savings ••• 5678', invested:200000, current:200000, interest_rate:0.00, invested_on:'2024-01-01', status:'active' },
   ],
 };
 
@@ -2087,6 +2098,14 @@ const INV_TRANSACTIONS = {
       { id:'cd3m1', date:'2025-12-01', maturity_amount:234400, interest_earned:34400, receipt_mode:'Credit to Account', bank_account:'HDFC Savings A/c - 4567', action_after:'Close FD', ref_id:'BJ-MAT-2025-001', notes:'Matured smoothly. Credited to account same day.' },
     ],
   },
+  // Cash Investment transactions
+  ci1: {
+    investments: [
+      { id:'ci1i1', date:'2024-01-01', amount:150000, purpose:'Emergency Fund', linked_account:'SBI Savings ••• 5678', mode:'net_banking', ref_id:'NEFT20240101001', notes:'', type:'initial' },
+      { id:'ci1i2', date:'2024-05-20', amount:50000,  purpose:'Emergency Fund', linked_account:'SBI Savings ••• 5678', mode:'upi',         ref_id:'UPI20240520001', notes:'', type:'additional' },
+    ],
+    withdrawals: [],
+  },
   // NPS transactions
   n1: {
     investments: [
@@ -2193,6 +2212,11 @@ const INV_NOTES = {
   cd3: [
     { id:'cdn4', type:'updates',  date:'2025-11-20', title:'Bajaj Finance Maturity Alert', text:'Bajaj Finance CD maturing Dec 1, 2025. Confirmed maturity amount ₹2,34,400. Decide reinvestment plan — current rate is 7.85% for 24M.' },
     { id:'cdn5', type:'private',  date:'2025-12-01', title:'Maturity Processed',           text:'₹2,34,400 credited to HDFC Savings. TDS deducted ₹3,440. Effective net: ₹2,30,960. Reinvested ₹2,00,000 in Mahindra Finance at 7.65%.' },
+  ],
+  // Cash Investment notes
+  ci1: [
+    { id:'cin1', type:'general', date:'2024-01-05', title:'Emergency Fund Setup', text:'3 months of expenses as emergency fund. Target: ₹3,00,000 (6 months).' },
+    { id:'cin2', type:'goals',   date:'2024-05-20', title:'Top-up Complete',      text:'Added ₹50,000 to bring total to ₹2,00,000. Will add ₹25,000 monthly to reach target.' },
   ],
   // NPS notes
   n1: [
@@ -3628,6 +3652,7 @@ function renderInvestmentDashboard() {
       : c.cat === 'recurring_deposits'  ? 'App.navigate(\'rd-list\')'
       : c.cat === 'bonds'               ? 'App.navigate(\'bonds-list\')'
       : c.cat === 'nps'                 ? 'App.navigate(\'nps-list\')'
+      : c.cat === 'cash_investment'     ? 'App.navigate(\'cash-investment-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3722,7 +3747,8 @@ function renderInvestmentCategory() {
   if (cat === 'corporate_deposits')  { setTimeout(function(){ App.navigate('cd-list');        }, 0); return '<div></div>'; }
   if (cat === 'recurring_deposits')  { setTimeout(function(){ App.navigate('rd-list');        }, 0); return '<div></div>'; }
   if (cat === 'bonds')               { setTimeout(function(){ App.navigate('bonds-list');     }, 0); return '<div></div>'; }
-  if (cat === 'nps')                 { setTimeout(function(){ App.navigate('nps-list');       }, 0); return '<div></div>'; }
+  if (cat === 'nps')                 { setTimeout(function(){ App.navigate('nps-list');                 }, 0); return '<div></div>'; }
+  if (cat === 'cash_investment')     { setTimeout(function(){ App.navigate('cash-investment-list');     }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3801,7 +3827,7 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
-  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list' };
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
@@ -5649,6 +5675,430 @@ function renderRDAddInstallment() {
     + secHdr('Notes (Optional)')
     + fr('', '<textarea id="rd-inst-notes" rows="3" placeholder="Enter any notes..." style="'+ins+';resize:vertical"></textarea>')
     +'<button onclick="App._saveRDInstallment()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#8B5CF6;color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>'
+    +'</div>'
+    +'</div>';
+}
+
+/* ─── CASH INVESTMENT MODULE ────────────────────────── */
+function _cashAll() { return INV_PORTFOLIO.cash_investment || []; }
+function _cashFunds(filter) {
+  var all = _cashAll();
+  if (filter === 'active')  return all.filter(function(c){ return c.status === 'active'; });
+  if (filter === 'closed')  return all.filter(function(c){ return c.status === 'closed'; });
+  return all;
+}
+function _cashFund(id) { return _cashAll().find(function(c){ return c.id === id; }) || {}; }
+function _cashInvestments(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].investments) || []; }
+function _cashWithdrawals(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].withdrawals) || []; }
+function _cashTotalInvested(id) {
+  return _cashInvestments(id).reduce(function(s,t){ return s + (t.amount||0); }, 0);
+}
+function _cashTotalWithdrawn(id) {
+  return _cashWithdrawals(id).reduce(function(s,t){ return s + (t.amount||0); }, 0);
+}
+function _cashCurrentValue(id) {
+  return Math.max(0, _cashTotalInvested(id) - _cashTotalWithdrawn(id));
+}
+function _cashColor() { return '#10B981'; }
+function _cashGrowthChart(c, period) {
+  var inv = _cashTotalInvested(c.id) || c.invested || 0;
+  var cur = _cashCurrentValue(c.id) || c.current || inv;
+  var startDate = new Date(c.invested_on||'2024-01-01');
+  var now = new Date();
+  var totalDays = Math.max(1, (now - startDate) / 86400000);
+  var maxDays = period==='1M'?30:period==='3M'?90:period==='6M'?180:period==='1Y'?365:totalDays;
+  maxDays = Math.min(maxDays, totalDays);
+  var pts = 25;
+  var points = [];
+  for (var i=0;i<pts;i++) {
+    var d=(i/(pts-1))*maxDays;
+    var pct=d/totalDays;
+    points.push(Math.round(inv * 0.75 + (cur - inv * 0.75) * pct));
+  }
+  var min=Math.min.apply(null,points)*0.97, max=cur*1.03;
+  if (max<=min) max=min+1;
+  var w=320,h=90;
+  var coords=points.map(function(v,i){
+    var x=(i/(pts-1))*w;
+    var y=h-((v-min)/(max-min))*(h-16)-8;
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  var d2='M'+coords[0];
+  for(var j=0;j<coords.length-1;j++){
+    var cp=coords[j].split(','),np=coords[j+1].split(',');
+    var mx=((+cp[0]+(+np[0]))/2).toFixed(1);
+    var my=((+cp[1]+(+np[1]))/2).toFixed(1);
+    d2+=' Q'+cp[0]+','+cp[1]+' '+mx+','+my;
+  }
+  d2+=' L'+coords[coords.length-1];
+  var area=d2+' L'+w+','+h+' L0,'+h+' Z';
+  var gl=[0.25,0.5,0.75].map(function(f){var y=(h*f+8).toFixed(1);return '<line x1="0" y1="'+y+'" x2="'+w+'" y2="'+y+'" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';}).join('');
+  var lx=coords[coords.length-1].split(',')[0],ly=coords[coords.length-1].split(',')[1];
+  return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'
+    +'<defs><linearGradient id="cashg'+period+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10B981" stop-opacity="0.4"/><stop offset="100%" stop-color="#10B981" stop-opacity="0.03"/></linearGradient></defs>'
+    +gl
+    +'<path d="'+area+'" fill="url(#cashg'+period+')"/>'
+    +'<path d="'+d2+'" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    +'<circle cx="'+lx+'" cy="'+ly+'" r="4" fill="#10B981" stroke="#0f0f1a" stroke-width="2"/>'
+    +'</svg>';
+}
+
+function renderCashInvestmentList() {
+  var filter  = State.cashFilter || 'all';
+  var search  = (State.cashSearch||'').toLowerCase();
+  var allCI   = _cashAll();
+  var filtered= _cashFunds(filter);
+  if (search) filtered=filtered.filter(function(c){ return (c.name||'').toLowerCase().includes(search)||(c.purpose||'').toLowerCase().includes(search); });
+
+  var totalInv=0, totalCur=0;
+  allCI.filter(function(c){ return c.status==='active'; }).forEach(function(c){
+    totalInv+=_cashTotalInvested(c.id)||c.invested||0;
+    totalCur+=_cashCurrentValue(c.id)||c.current||0;
+  });
+  var totalGain=totalCur-totalInv;
+  var gainColor=totalGain>=0?'#22C55E':'#FF4D6A';
+  var CASH_COLOR='#10B981';
+
+  var filterTabs=['all','active','closed'].map(function(t){
+    var ct=_cashFunds(t).length;
+    var isAct=filter===t;
+    return '<div style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+CASH_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.cashFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'&nbsp;<span style="opacity:.7;font-size:11px">('+ct+')</span></div>';
+  }).join('');
+
+  var cards=filtered.length===0
+    ?'<div style="padding:40px;text-align:center;color:var(--text-dim)">No cash investments found</div>'
+    :filtered.map(function(c){
+        var inv=_cashTotalInvested(c.id)||c.invested||0;
+        var cur=_cashCurrentValue(c.id)||c.current||0;
+        var gain=cur-inv;
+        var gc=gain>=0?'#22C55E':'#FF4D6A';
+        var isActive=c.status==='active';
+        var statusBg=isActive?'#16A34A22':'#EF444422';
+        var statusColor=isActive?'#22C55E':'#EF4444';
+        var upSVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="'+(gain>=0?'#22C55E':'#FF4D6A')+'"><path d="'+(gain>=0?'M7 14l5-5 5 5z':'M7 10l5 5 5-5z')+'"/></svg>';
+        return '<div style="background:var(--card);border-radius:var(--radius);margin:0 16px 12px;padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,0.06)" onclick="State.params={id:\''+c.id+'\'};State.cashDetailTab=\'overview\';App.navigate(\'cash-investment-detail\')">'
+          +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+          +'<div style="width:46px;height:46px;border-radius:12px;background:'+CASH_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏦</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+c.name+'</div>'
+          +'<div style="font-size:12px;color:var(--text-dim);margin-top:1px">'+c.type+'</div>'
+          +'</div>'
+          +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;flex-shrink:0">'+c.status.charAt(0).toUpperCase()+c.status.slice(1)+'</div>'
+          +'</div>'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-end">'
+          +'<div><div style="font-size:11px;color:var(--text-dim)">Invested</div><div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(inv)+'</div></div>'
+          +'<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Current Value</div><div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(cur)+'</div></div>'
+          +'<div style="text-align:right;display:flex;align-items:center;gap:4px">'+upSVG+'<div><div style="font-size:11px;color:var(--text-dim)">Gain / Loss</div><div style="font-size:15px;font-weight:800;color:'+gc+'">'+(gain>=0?'₹0':'-'+formatINR(Math.abs(gain)))+' ('+(totalInv>0?(gain/inv*100):0).toFixed(2)+'%)</div></div></div>'
+          +'</div>'
+          +'</div>';
+      }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Cash Investment</div>'
+    +'<div class="icon-btn" onclick="App.navigate(\'add-cash-investment\')"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>'
+    +'</div>'
+    +'<div style="margin:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid rgba(255,255,255,.06)">'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Invested</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--text)">'+formatINR(totalInv)+'</div>'
+    +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">Current Value</div>'
+    +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(totalCur)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid rgba(255,255,255,.06)">'
+    +'<div style="display:flex;gap:12px">'
+    +'<div style="flex:1"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Gain</div>'
+    +'<div style="display:flex;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#22C55E"><path d="M7 14l5-5 5 5z"/></svg><div style="font-size:14px;font-weight:800;color:#22C55E">₹0</div></div>'
+    +'<div style="font-size:11px;color:#22C55E;font-weight:700;margin-top:2px">(0.00%)</div></div>'
+    +'<div style="flex:1"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Loss</div>'
+    +'<div style="display:flex;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#FF4D6A"><path d="M7 10l5 5 5-5z"/></svg><div style="font-size:14px;font-weight:800;color:#FF4D6A">-₹0</div></div>'
+    +'<div style="font-size:11px;color:#FF4D6A;font-weight:700;margin-top:2px">(0.00%)</div></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 12px"><input type="text" placeholder="Search cash investments..." value="'+escapeHtml(State.cashSearch||'')+'" oninput="State.cashSearch=this.value;App.render()" style="width:100%;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;scrollbar-width:none">'+filterTabs+'</div>'
+    +cards
+    +'<div style="margin:4px 16px 8px"><button onclick="App.navigate(\'add-cash-investment\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);font-size:14px;font-weight:700;cursor:pointer">+ Add Cash Investment</button></div>'
+    +'</div>';
+}
+
+function renderCashInvestmentDetail() {
+  var id  = (State.params && State.params.id) || 'ci1';
+  var c   = _cashFund(id);
+  if (!c.id) return '<div class="screen-wrap"><div style="padding:40px;text-align:center;color:var(--text-dim)">Cash investment not found</div></div>';
+  var tab       = State.cashDetailTab || 'overview';
+  var CASH_COLOR= '#10B981';
+  var isActive  = c.status === 'active';
+  var inv       = _cashTotalInvested(id) || c.invested || 0;
+  var cur       = _cashCurrentValue(id) || c.current || 0;
+  var withdrawn = _cashTotalWithdrawn(id);
+  var period    = State.cashChartPeriod || '1Y';
+  var statusBg  = isActive ? '#16A34A22' : '#EF444422';
+  var statusColor = isActive ? '#22C55E' : '#EF4444';
+
+  var tabs = ['overview','transactions','notes'].map(function(t){
+    return '<div style="flex:1;text-align:center;padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid '+(tab===t?CASH_COLOR:'transparent')+';color:'+(tab===t?CASH_COLOR:'var(--text-dim)')+'" onclick="State.cashDetailTab=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+  }).join('');
+
+  var header = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'cash-investment-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">'+c.name+'</div>'
+    +'<div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>'
+    +'</div>';
+
+  var body = '';
+  if (tab === 'overview') {
+    var identCard = '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:18px">'
+      +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+      +'<div style="width:52px;height:52px;border-radius:14px;background:'+CASH_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:24px">🏦</div>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:16px;font-weight:800;color:var(--text)">'+c.name+'</div>'
+      +'<div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+c.type+'</div>'
+      +'</div>'
+      +'<div style="background:'+statusBg+';color:'+statusColor+';font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px">'+c.status.charAt(0).toUpperCase()+c.status.slice(1)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;padding:14px 0;border-top:1px solid rgba(255,255,255,.07);margin-bottom:14px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Balance</div><div style="font-size:28px;font-weight:900;color:var(--text)">'+formatINR(cur)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Interest Rate (p.a.)</div><div style="font-size:22px;font-weight:800;color:'+CASH_COLOR+'">'+c.interest_rate.toFixed(2)+'%</div></div>'
+      +'</div>'
+      +[
+        ['Invested On',       _invFmtDate(c.invested_on)],
+        ['Linked Account',    c.linked_account],
+        ['Purpose',           c.purpose],
+        ['Current Value',     formatINR(cur)],
+        ['Available Balance', formatINR(cur)],
+      ].map(function(row){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+          +'<div style="font-size:13px;color:var(--text-dim)">'+row[0]+'</div>'
+          +'<div style="font-size:13px;text-align:right;color:var(--text);font-weight:600">'+row[1]+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+
+    var periodBtns=['1M','3M','6M','1Y','ALL'].map(function(p){
+      return '<div style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(period===p?'background:'+CASH_COLOR+';color:#fff;':'color:var(--text-dim);')+'" onclick="State.cashChartPeriod=\''+p+'\';App.render()">'+p+'</div>';
+    }).join('');
+    var chartCard='<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+CASH_COLOR+';margin-bottom:12px">Performance</div>'
+      +'<div style="display:flex;justify-content:flex-end;gap:4px;margin-bottom:8px">'+periodBtns+'</div>'
+      +_cashGrowthChart(c,period)
+      +'</div>';
+
+    var actionBtns='<div style="margin:0 16px 20px;display:flex;gap:10px">'
+      +'<button onclick="State.params={id:\''+id+'\'};App.navigate(\'add-cash-fund\')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:'+CASH_COLOR+';color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer">+ Add Investment</button>'
+      +(isActive?'<button onclick="State.params={id:\''+id+'\'};App.navigate(\'withdraw-cash\')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:#8B5CF6;color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer">Withdraw</button>':'')
+      +'</div>';
+
+    body = identCard + chartCard + actionBtns;
+
+  } else if (tab === 'transactions') {
+    var investments  = _cashInvestments(id);
+    var withdrawals  = _cashWithdrawals(id);
+    var allTx = investments.map(function(t){ return Object.assign({},t,{tx_type:'investment'}); })
+      .concat(withdrawals.map(function(t){ return Object.assign({},t,{tx_type:'withdrawal'}); }));
+    allTx.sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+
+    var txRows = allTx.map(function(t){
+      var isInv = t.tx_type==='investment';
+      var label = isInv ? (t.type==='initial'?'Initial Investment':'Additional Investment') : 'Withdrawal';
+      var amtColor = isInv ? CASH_COLOR : '#FF4D6A';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer">'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+_invFmtDate(t.date)+'</div>'
+        +'<div style="font-size:12px;color:var(--text-dim);margin-top:1px">Amount: '+formatINR(t.amount)+' · Purpose: '+(t.purpose||t.notes||label)+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;display:flex;align-items:center;gap:8px">'
+        +'<div style="font-size:14px;font-weight:700;color:'+amtColor+'">'+(isInv?'':'-')+formatINR(t.amount)+'</div>'
+        +'<svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,.3)"><path d="M9 18l6-6-6-6"/></svg>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+    var summary='<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);margin-top:4px">'
+      +'<div><div style="font-size:11px;color:var(--text-dim)">Total Investments</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+investments.length+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Total Invested</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(inv)+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Current Value</div><div style="font-size:14px;font-weight:700;color:'+CASH_COLOR+'">'+formatINR(cur)+'</div></div>'
+      +'</div>';
+
+    body='<div style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+CASH_COLOR+';margin-bottom:8px">Investment Transactions</div>'
+      +(txRows||'<div style="padding:20px 0;text-align:center;color:var(--text-dim)">No transactions yet</div>')
+      +summary
+      +'</div>'
+      +'<div style="margin:0 16px 20px;display:flex;gap:10px">'
+      +'<button onclick="State.params={id:\''+id+'\'};App.navigate(\'add-cash-fund\')" style="flex:1;padding:13px;border-radius:var(--radius-sm);background:rgba(16,185,129,.15);color:'+CASH_COLOR+';border:1px solid rgba(16,185,129,.3);font-weight:700;font-size:14px;cursor:pointer">+ Add Investment</button>'
+      +'</div>';
+
+  } else {
+    var notes=INV_NOTES[id]||[];
+    var nf=State.cashNoteFilter||'all';
+    var nfBtns=['all','emergency','savings','goals','general'].map(function(t){
+      return '<div style="padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;'+(nf===t?'background:'+CASH_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.07);')+'" onclick="State.cashNoteFilter=\''+t+'\';App.render()">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+    }).join('');
+    var typeColors={emergency:'#EF4444',savings:'#3B82F6',goals:'#F59E0B',general:'#9CA3AF',updates:'#10B981'};
+    var visNotes=nf==='all'?notes:notes.filter(function(n){ return n.type===nf; });
+    var ncards=visNotes.map(function(n){
+      var tc=typeColors[n.type]||'#9CA3AF';
+      var dStr=n.date?String(n.date).replace('T',' ').slice(0,10):'';
+      return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06)">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+        +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+tc+'22;color:'+tc+'">'+n.type.charAt(0).toUpperCase()+n.type.slice(1)+'</span>'
+        +'<span style="font-size:11px;color:var(--text-dim)">'+dStr+'</span>'
+        +'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">'+escapeHtml(n.title)+'</div>'
+        +'<div style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:8px">'+escapeHtml(n.text)+'</div>'
+        +'<div style="display:flex;gap:16px">'
+        +'<div onclick="App._cashEditNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--text-dim);font-size:12px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg> Edit</div>'
+        +'<div onclick="App._cashDeleteNote(\''+id+'\',\''+n.id+'\')" style="cursor:pointer;display:flex;align-items:center;gap:4px;color:#EF4444;font-size:12px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8a2 2 0 002-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Delete</div>'
+        +'</div></div>';
+    }).join('');
+
+    body='<div style="margin:0 16px 14px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">Notes ('+notes.length+')</div>'
+      +'<button onclick="App._cashAddNote(\''+id+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:rgba(16,185,129,.15);color:'+CASH_COLOR+';font-size:13px;font-weight:700;border:1px solid rgba(16,185,129,.3);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Note</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none">'+nfBtns+'</div>'
+      +(ncards||'<div style="padding:30px;text-align:center;color:var(--text-dim)">No notes yet</div>')
+      +'</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +header
+    +'<div style="display:flex;margin:0 16px 14px;background:var(--card);border-radius:var(--radius)">'+tabs+'</div>'
+    +body
+    +'</div>';
+}
+
+function renderAddCashInvestment() {
+  var ins='width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle=ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:#10B981;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+  var today=new Date().toISOString().slice(0,10);
+  var purposeOpts=['Emergency Fund','Vacation Savings','Short-Term Goals','Family Reserve','Opportunity Fund','Business Emergency Fund'].map(function(p){
+    return '<option value="'+p+'"'+(p==='Emergency Fund'?' selected':'')+'>'+p+'</option>';
+  }).join('');
+  var accounts=['SBI Savings ••• 5678','HDFC Bank ••• 9876','ICICI Bank ••• 5678','Axis Bank ••• 3456'].map(function(a){
+    return '<option value="'+a+'">'+a+'</option>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'cash-investment-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Add Cash Investment</div>'
+    +'<div style="color:#10B981;font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="App._saveCashInvestment()">Save</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 0">'
+    +secHdr('Investment Details')
+    +fr('Date of Investment', '<input type="date"   id="ci-date"    style="'+ins+'" value="'+today+'">')
+    +fr('Purpose',            '<select id="ci-purpose" style="'+selStyle+'">'+purposeOpts+'</select>')
+    +fr('Amount',             '<input type="number" id="ci-amount"  placeholder="e.g. 50000" style="'+ins+'">')
+    +fr('Linked Account',     '<select id="ci-account" style="'+selStyle+'">'+accounts+'</select>')
+    +secHdr('Payment Details')
+    +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Payment Mode</div>'
+    +'<div style="display:flex;gap:8px">'
+    +['UPI','Net Banking','Other'].map(function(m,i){
+      var val=['upi','net_banking','other'][i];
+      return '<div id="ci-mode-'+val+'" onclick="App._cashSelectMode(\''+val+'\')" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(i===0?'background:#10B981;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);')+'">'+m+'</div>';
+    }).join('')
+    +'</div></div>'
+    +'<input type="hidden" id="ci-pay-mode" value="upi">'
+    +fr('Reference / UTR No.', '<input type="text" id="ci-ref" placeholder="e.g. UPI123456789012" style="'+ins+'">')
+    +secHdr('Notes (Optional)')
+    +fr('', '<textarea id="ci-notes" rows="3" placeholder="Enter any notes..." style="'+ins+';resize:vertical"></textarea>')
+    +'<button onclick="App._saveCashInvestment()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#10B981;color:#fff;border:none;margin-top:6px;cursor:pointer">Save</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderAddCashFund() {
+  var id=(State.params&&State.params.id)||'';
+  var c=id?_cashFund(id):{};
+  var ins='width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle=ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:#10B981;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+  var today=new Date().toISOString().slice(0,10);
+  var accounts=['SBI Savings ••• 5678','HDFC Bank ••• 9876','ICICI Bank ••• 5678','Axis Bank ••• 3456'].map(function(a){
+    return '<option value="'+a+'"'+(a===(c.linked_account||'')?' selected':'')+'>'+a+'</option>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="State.cashDetailTab=\'transactions\';App.navigate(\'cash-investment-detail\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Add Investment</div>'
+    +'<div style="color:#10B981;font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="App._saveCashFund()">Save</div>'
+    +'</div>'
+    +(c.name?'<div style="margin:0 16px 12px;background:rgba(16,185,129,.1);border-radius:10px;padding:12px"><div style="font-size:12px;color:var(--text-dim)">Adding to</div><div style="font-size:14px;font-weight:700;color:#10B981">'+c.name+'</div></div>':'')
+    +'<div style="margin:0 16px 0">'
+    +secHdr('Investment Details')
+    +fr('Date',           '<input type="date"   id="caf-date"   style="'+ins+'" value="'+today+'">')
+    +fr('Amount',         '<input type="number" id="caf-amount" placeholder="e.g. 25000" style="'+ins+'">')
+    +fr('Linked Account', '<select id="caf-account" style="'+selStyle+'">'+accounts+'</select>')
+    +secHdr('Payment Details')
+    +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Payment Mode</div>'
+    +'<div style="display:flex;gap:8px">'
+    +['UPI','Net Banking','Other'].map(function(m,i){
+      var val=['upi','net_banking','other'][i];
+      return '<div id="caf-mode-'+val+'" onclick="App._cashSelectMode2(\''+val+'\')" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(i===0?'background:#10B981;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);')+'">'+m+'</div>';
+    }).join('')
+    +'</div></div>'
+    +'<input type="hidden" id="caf-pay-mode" value="upi">'
+    +fr('Reference / UTR No.', '<input type="text" id="caf-ref" placeholder="e.g. UPI123456789012" style="'+ins+'">')
+    +secHdr('Notes (Optional)')
+    +fr('', '<textarea id="caf-notes" rows="3" placeholder="Enter any notes..." style="'+ins+';resize:vertical"></textarea>')
+    +'<button onclick="App._saveCashFund()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#10B981;color:#fff;border:none;margin-top:6px;cursor:pointer">Save Investment</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderWithdrawCash() {
+  var id=(State.params&&State.params.id)||'';
+  var c=id?_cashFund(id):{};
+  var cur=_cashCurrentValue(id)||c.current||0;
+  var ins='width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;box-sizing:border-box';
+  var selStyle=ins+';-webkit-appearance:none;';
+  function secHdr(t){ return '<div style="font-size:12px;font-weight:700;color:#10B981;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px">'+t+'</div>'; }
+  function fr(label,inp){ return '<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">'+label+'</div>'+inp+'</div>'; }
+  var today=new Date().toISOString().slice(0,10);
+  var accounts=['SBI Savings ••• 5678','HDFC Bank ••• 9876','ICICI Bank ••• 5678','Axis Bank ••• 3456'].map(function(a){
+    return '<option value="'+a+'"'+(a===(c.linked_account||'')?' selected':'')+'>'+a+'</option>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    +'<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'cash-investment-detail\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    +'<div class="form-header-title">Withdraw from '+(c.name||'Fund')+'</div>'
+    +'<div style="color:#8B5CF6;font-size:14px;font-weight:700;cursor:pointer;min-width:36px;text-align:right" onclick="App._saveCashWithdraw()">Save</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 12px;background:rgba(139,92,246,.1);border-radius:10px;padding:12px">'
+    +'<div style="font-size:12px;color:var(--text-dim)">Available Balance</div>'
+    +'<div style="font-size:18px;font-weight:800;color:#10B981">'+formatINR(cur)+'</div>'
+    +'</div>'
+    +'<div style="margin:0 16px 0">'
+    +secHdr('Withdraw Details')
+    +fr('Amount to Withdraw', '<input type="number" id="cw-amount" placeholder="e.g. 25000" style="'+ins+'" oninput="App._cashWithdrawRecalc()">')
+    +fr('Linked Account',     '<select id="cw-account" style="'+selStyle+'">'+accounts+'</select>')
+    +secHdr('Payment Details')
+    +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Payment Mode</div>'
+    +'<div style="display:flex;gap:8px">'
+    +['UPI','Net Banking','Other'].map(function(m,i){
+      var val=['upi','net_banking','other'][i];
+      return '<div id="cw-mode-'+val+'" onclick="App._cashSelectMode3(\''+val+'\')" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(i===0?'background:#10B981;color:#fff;':'background:rgba(255,255,255,.07);color:var(--text-dim);')+'">'+m+'</div>';
+    }).join('')
+    +'</div></div>'
+    +'<input type="hidden" id="cw-pay-mode" value="upi">'
+    +fr('Reference / UTR No.', '<input type="text" id="cw-ref" placeholder="e.g. UPI123456789012" style="'+ins+'">')
+    +secHdr('Notes (Optional)')
+    +fr('', '<textarea id="cw-notes" rows="3" placeholder="Enter any notes..." style="'+ins+';resize:vertical"></textarea>')
+    +'<div id="cw-balance-preview" style="background:rgba(16,185,129,.1);border-radius:10px;padding:12px;margin-bottom:14px">'
+    +'<div style="font-size:12px;color:var(--text-dim)">Available Balance After Withdraw</div>'
+    +'<div style="font-size:18px;font-weight:800;color:#10B981" id="cw-after-balance">'+formatINR(cur)+'</div>'
+    +'</div>'
+    +'<button onclick="App._saveCashWithdraw()" style="width:100%;padding:16px;font-size:15px;font-weight:800;border-radius:var(--radius-sm);background:#8B5CF6;color:#fff;border:none;cursor:pointer">Withdraw</button>'
     +'</div>'
     +'</div>';
 }
@@ -10241,6 +10691,11 @@ const App = {
       case 'rd-detail':             html = renderRDDetail();              break;
       case 'rd-add':                html = renderRDAdd();                 break;
       case 'rd-add-installment':    html = renderRDAddInstallment();      break;
+      case 'cash-investment-list':  html = renderCashInvestmentList();    break;
+      case 'cash-investment-detail':html = renderCashInvestmentDetail();  break;
+      case 'add-cash-investment':   html = renderAddCashInvestment();     break;
+      case 'add-cash-fund':         html = renderAddCashFund();           break;
+      case 'withdraw-cash':         html = renderWithdrawCash();          break;
       case 'nps-list':              html = renderNPSList();               break;
       case 'nps-detail':            html = renderNPSDetail();             break;
       case 'add-nps':               html = renderAddNPS();                break;
@@ -11613,6 +12068,151 @@ const App = {
     if (idx<0) return;
     notes.splice(idx,1);
     this.showToast('Note deleted'); App.render();
+  },
+
+  /* ── Cash Investment Module ─────────────────── */
+  _cashSelectMode(val) {
+    document.getElementById('ci-pay-mode').value=val;
+    ['upi','net_banking','other'].forEach(function(m){
+      var el=document.getElementById('ci-mode-'+m);
+      if(el){el.style.background=m===val?'#10B981':'rgba(255,255,255,.07)';el.style.color=m===val?'#fff':'var(--text-dim)';}
+    });
+  },
+  _cashSelectMode2(val) {
+    document.getElementById('caf-pay-mode').value=val;
+    ['upi','net_banking','other'].forEach(function(m){
+      var el=document.getElementById('caf-mode-'+m);
+      if(el){el.style.background=m===val?'#10B981':'rgba(255,255,255,.07)';el.style.color=m===val?'#fff':'var(--text-dim)';}
+    });
+  },
+  _cashSelectMode3(val) {
+    document.getElementById('cw-pay-mode').value=val;
+    ['upi','net_banking','other'].forEach(function(m){
+      var el=document.getElementById('cw-mode-'+m);
+      if(el){el.style.background=m===val?'#10B981':'rgba(255,255,255,.07)';el.style.color=m===val?'#fff':'var(--text-dim)';}
+    });
+  },
+  _cashWithdrawRecalc() {
+    var ciId=(State.params&&State.params.id)||'';
+    var cur=_cashCurrentValue(ciId)||0;
+    var amt=parseFloat(document.getElementById('cw-amount')?.value)||0;
+    var el=document.getElementById('cw-after-balance');
+    if(el) el.textContent=formatINR(Math.max(0,cur-amt));
+  },
+  _saveCashInvestment() {
+    var date    =document.getElementById('ci-date')?.value;
+    var purpose =document.getElementById('ci-purpose')?.value||'Emergency Fund';
+    var amount  =parseFloat(document.getElementById('ci-amount')?.value);
+    var account =document.getElementById('ci-account')?.value||'';
+    var mode    =document.getElementById('ci-pay-mode')?.value||'upi';
+    var ref     =document.getElementById('ci-ref')?.value.trim();
+    var notes   =document.getElementById('ci-notes')?.value.trim();
+    if(!date)                   {this.showToast('Enter investment date');return;}
+    if(isNaN(amount)||amount<=0){this.showToast('Enter investment amount');return;}
+    var newId='ci'+uid();
+    var newCI={
+      id:newId, name:purpose, type:'Cash Investment', purpose,
+      linked_account:account, invested:amount, current:amount,
+      interest_rate:0.00, invested_on:date, status:'active',
+    };
+    INV_PORTFOLIO.cash_investment=INV_PORTFOLIO.cash_investment||[];
+    INV_PORTFOLIO.cash_investment.push(newCI);
+    INV_TRANSACTIONS[newId]={investments:[],withdrawals:[]};
+    INV_TRANSACTIONS[newId].investments.push({id:uid('cii'),date,amount,purpose,linked_account:account,mode,ref_id:ref||'',notes,type:'initial'});
+    if(notes){if(!INV_NOTES[newId])INV_NOTES[newId]=[];INV_NOTES[newId].push({id:uid(),type:'general',date:date,title:'Setup Note',text:notes});}
+    this.showToast('Cash investment added!');
+    State.params={id:newId};State.cashDetailTab='overview';
+    App.navigate('cash-investment-detail');
+  },
+  _saveCashFund() {
+    var ciId  =(State.params&&State.params.id);
+    var date  =document.getElementById('caf-date')?.value;
+    var amount=parseFloat(document.getElementById('caf-amount')?.value);
+    var account=document.getElementById('caf-account')?.value||'';
+    var mode  =document.getElementById('caf-pay-mode')?.value||'upi';
+    var ref   =document.getElementById('caf-ref')?.value.trim();
+    var notes =document.getElementById('caf-notes')?.value.trim();
+    if(!ciId)                   {this.showToast('Cash investment not selected');return;}
+    if(!date)                   {this.showToast('Enter investment date');return;}
+    if(isNaN(amount)||amount<=0){this.showToast('Enter investment amount');return;}
+    var c=_cashFund(ciId);
+    if(!INV_TRANSACTIONS[ciId])INV_TRANSACTIONS[ciId]={investments:[],withdrawals:[]};
+    INV_TRANSACTIONS[ciId].investments.push({id:uid('cii'),date,amount,purpose:c.purpose||'',linked_account:account,mode,ref_id:ref||'',notes,type:'additional'});
+    if(c){c.invested=_cashTotalInvested(ciId);c.current=_cashCurrentValue(ciId);}
+    this.showToast('Investment added!');
+    State.cashDetailTab='overview';State.params={id:ciId};
+    App.navigate('cash-investment-detail');
+  },
+  _saveCashWithdraw() {
+    var ciId  =(State.params&&State.params.id);
+    var amount=parseFloat(document.getElementById('cw-amount')?.value);
+    var account=document.getElementById('cw-account')?.value||'';
+    var mode  =document.getElementById('cw-pay-mode')?.value||'upi';
+    var ref   =document.getElementById('cw-ref')?.value.trim();
+    var notes =document.getElementById('cw-notes')?.value.trim();
+    var date  =new Date().toISOString().slice(0,10);
+    if(!ciId)                   {this.showToast('Cash investment not selected');return;}
+    if(isNaN(amount)||amount<=0){this.showToast('Enter withdrawal amount');return;}
+    var c=_cashFund(ciId);
+    var cur=_cashCurrentValue(ciId);
+    if(amount>cur){this.showToast('Amount exceeds available balance');return;}
+    if(!INV_TRANSACTIONS[ciId])INV_TRANSACTIONS[ciId]={investments:[],withdrawals:[]};
+    INV_TRANSACTIONS[ciId].withdrawals.push({id:uid('ciw'),date,amount,linked_account:account,mode,ref_id:ref||'',notes});
+    if(c){c.current=_cashCurrentValue(ciId);}
+    this.showToast('Withdrawal processed!');
+    State.cashDetailTab='overview';State.params={id:ciId};
+    App.navigate('cash-investment-detail');
+  },
+  _cashAddNote(fundId) {
+    var overlay=document.createElement('div');overlay.className='modal-overlay';
+    overlay.innerHTML='<div class="modal-card" style="padding:20px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Add Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Type</div><select id="cashn-type" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px"><option value="emergency">Emergency</option><option value="savings">Savings</option><option value="goals">Goals</option><option value="general" selected>General</option><option value="updates">Updates</option></select></div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="cashn-title" type="text" placeholder="Note title" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="cashn-text" rows="4" placeholder="Your note..." style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._cashSaveNote(\''+fundId+'\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#10B981;color:#fff;border:none;font-weight:700;cursor:pointer">Save</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _cashSaveNote(fundId,overlay){
+    var type=document.getElementById('cashn-type')?.value||'general';
+    var title=document.getElementById('cashn-title')?.value.trim();
+    var text=document.getElementById('cashn-text')?.value.trim();
+    if(!title||!text){this.showToast('Title and text required');return;}
+    if(!INV_NOTES[fundId])INV_NOTES[fundId]=[];
+    INV_NOTES[fundId].push({id:uid(),type,date:new Date().toISOString().slice(0,10),title,text});
+    overlay.remove();this.showToast('Note added!');App.render();
+  },
+  _cashEditNote(fundId,noteId){
+    var n=(INV_NOTES[fundId]||[]).find(function(n){return n.id===noteId;});
+    if(!n)return;
+    var overlay=document.createElement('div');overlay.className='modal-overlay';
+    overlay.innerHTML='<div class="modal-card" style="padding:20px">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px">Edit Note</div>'
+      +'<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Title</div><input id="cashn-etitle" type="text" value="'+escapeHtml(n.title)+'" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box"/></div>'
+      +'<div style="margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><textarea id="cashn-etext" rows="4" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box;resize:vertical">'+escapeHtml(n.text)+'</textarea></div>'
+      +'<div style="display:flex;gap:10px">'
+      +'<button onclick="this.closest(\'.modal-overlay\').remove()" style="flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--text);border:none;font-weight:700;cursor:pointer">Cancel</button>'
+      +'<button onclick="App._cashSaveNoteEdit(\''+fundId+'\',\''+noteId+'\',this.closest(\'.modal-overlay\'))" style="flex:1;padding:12px;border-radius:10px;background:#10B981;color:#fff;border:none;font-weight:700;cursor:pointer">Update</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _cashSaveNoteEdit(fundId,noteId,overlay){
+    var n=(INV_NOTES[fundId]||[]).find(function(n){return n.id===noteId;});
+    if(!n)return;
+    var title=document.getElementById('cashn-etitle')?.value.trim();
+    var text=document.getElementById('cashn-etext')?.value.trim();
+    if(!title||!text){this.showToast('Title and text required');return;}
+    n.title=title;n.text=text;
+    overlay.remove();this.showToast('Note updated!');App.render();
+  },
+  _cashDeleteNote(fundId,noteId){
+    var notes=INV_NOTES[fundId]||[];
+    var idx=notes.findIndex(function(n){return n.id===noteId;});
+    if(idx<0)return;notes.splice(idx,1);
+    this.showToast('Note deleted');App.render();
   },
 
   /* ── NPS Module ─────────────────────────────── */
