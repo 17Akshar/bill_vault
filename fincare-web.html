@@ -1696,6 +1696,11 @@ const State = {
   cashSearch:      '',
   cashNoteFilter:  'all',
   cashPayMode:     'upi',
+  // Term Insurance module
+  termInsDetailTab:  'overview',
+  termInsTxFilter:   'all',
+  termInsNoteFilter: 'all',
+  termInsBuyData:    {},
   // LIC module
   licDetailTab:    'overview',
   licTxFilter:     'all',
@@ -1876,6 +1881,7 @@ const INV_CAT_META = {
   bonds:               { icon:'📋', color:'#F97316', label:'Bonds',             sub:'Govt & corporate bonds' },
   cash_investment:     { icon:'💵', color:'#10B981', label:'Cash Investment',   sub:'Emergency fund & savings' },
   lic:                 { icon:'🏛️', color:'#6C47FF', label:'LIC',               sub:'Life Insurance Corp' },
+  term_insurance:      { icon:'🛡️', color:'#0891B2', label:'Term Insurance',    sub:'Life protection' },
 };
 
 const INV_TYPE_GROUPS = [
@@ -1894,6 +1900,7 @@ const INV_TYPE_GROUPS = [
     { id:'nps',                icon:'🛡️', name:'NPS',                    desc:'National Pension Scheme' },
     { id:'epf',                icon:'👷', name:'EPF',                    desc:'Employee Provident Fund' },
     { id:'lic',                icon:'🏛️', name:'LIC',                    desc:'LIC Jeevan Anand' },
+    { id:'term_insurance',     icon:'🛡️', name:'Term Insurance',          desc:'HDFC Life, Max Life, etc.' },
   ]},
   { label: 'Others', types: [
     { id:'gold',  icon:'🥇', name:'Gold',   desc:'Digital & Physical gold' },
@@ -1963,6 +1970,9 @@ const INV_PORTFOLIO = {
   ],
   lic: [
     { id:'lic1', name:'LIC Jeevan Anand', plan_type:'Whole Life Insurance Plan', policy_number:'9876543210', premium:25000, gst:4500, total_payable:29500, sum_assured:2000000, start_date:'2023-04-01', maturity_date:'2033-04-01', policy_term:10, payment_term:10, mode:'Yearly', next_premium_due:'2025-04-01', linked_account:'SBI Savings •••• 5678', invested:50000, current:50000, status:'active' },
+  ],
+  term_insurance: [
+    { id:'ti1', name:'HDFC Life Term Plan', provider:'HDFC Life', plan_type:'Pure Term Insurance', policy_number:'100200300400', premium:12000, gst:2160, total_payable:14160, sum_assured:10000000, start_date:'2023-01-01', maturity_date:'2053-12-31', policy_term:30, payment_term:30, mode:'Yearly', next_premium_due:'2025-01-01', nominee:'Spouse', nominee_relation:'Spouse', linked_account:'SBI Savings •••• 1234', invested:24000, current:24000, status:'active' },
   ],
 };
 
@@ -2198,6 +2208,18 @@ const INV_TRANSACTIONS = {
     }
     return r;
   })() },
+  // Term Insurance transactions
+  ti1: {
+    premiums: [
+      { id:'tip1', date:'2024-01-01', type:'Premium Paid', amount:12000, gst:2160, total:14160, mode:'upi', ref_id:'UPI20240101001', status:'success' },
+      { id:'tip2', date:'2023-01-01', type:'Premium Paid', amount:12000, gst:2160, total:14160, mode:'upi', ref_id:'UPI20230101001', status:'success' },
+    ],
+    renewals: [],
+    claims:   [],
+    others: [
+      { id:'tio1', date:'2023-01-01', type:'Policy Issued', amount:0, gst:0, total:0, mode:'', ref_id:'', status:'success' },
+    ],
+  },
   // LIC transactions
   lic1: {
     premiums: [
@@ -2318,6 +2340,11 @@ const INV_NOTES = {
   rd2: [
     { id:'rdn3', type:'research', date:'2025-01-20', title:'HDFC RD Analysis',            text:'HDFC 7.1% for 24 months competitive. Using for short-term savings goal. Emergency fund target ₹1,92,000 at maturity.' },
     { id:'rdn4', type:'private',  date:'2025-04-05', title:'Goal: Travel Fund',           text:'This RD is earmarked for Europe trip in early 2027. Total maturity ₹2,02,000 should cover flights + hotel.' },
+  ],
+  // Term Insurance notes
+  ti1: [
+    { id:'tin1', type:'important', date:'2025-01-05T10:00:00', title:'Nominee Details Updated',  text:'Updated nominee to spouse. Keep nominee details current for smooth claim settlement.' },
+    { id:'tin2', type:'personal',  date:'2025-01-05T09:00:00', title:'Coverage Review',           text:'Bought for family protection. Review sum assured every 5 years as income grows.' },
   ],
   // LIC notes
   lic1: [
@@ -3740,6 +3767,7 @@ function renderInvestmentDashboard() {
       : c.cat === 'epf'                 ? 'App.navigate(\'epf-list\')'
       : c.cat === 'gold'                ? 'App.navigate(\'gold-list\')'
       : c.cat === 'lic'                 ? 'App.navigate(\'lic-list\')'
+      : c.cat === 'term_insurance'      ? 'App.navigate(\'term-insurance-list\')'
       : 'App.navigate(\'investment-category\',{cat:\'' + c.cat + '\'})';
     return '<div onclick="' + onClickAttr + '"'
       + ' style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer">'
@@ -3840,6 +3868,7 @@ function renderInvestmentCategory() {
   if (cat === 'epf')                 { setTimeout(function(){ App.navigate('epf-list');                  }, 0); return '<div></div>'; }
   if (cat === 'gold')                { setTimeout(function(){ App.navigate('gold-list');                  }, 0); return '<div></div>'; }
   if (cat === 'lic')                 { setTimeout(function(){ App.navigate('lic-list');                    }, 0); return '<div></div>'; }
+  if (cat === 'term_insurance')      { setTimeout(function(){ App.navigate('term-insurance-list');         }, 0); return '<div></div>'; }
   var meta   = INV_CAT_META[cat] || { icon: '💰', color: '#6C47FF', label: cat, sub: '' };
   var items  = _invGetItems(cat);
   var filter = State.invCatFilter || 'all';
@@ -3918,7 +3947,7 @@ function renderInvestmentCategory() {
 
 /* ─── INVESTMENT TYPE SELECT ─────────────────────────── */
 function renderInvestmentTypeSelect() {
-  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list', ppf:'ppf-list', epf:'epf-list', gold:'gold-list', lic:'lic-list' };
+  var _specialNav = { mutual_funds:'mf-dashboard', etfs:'etf-list', fds:'fd-list', corporate_deposits:'cd-list', recurring_deposits:'rd-list', bonds:'bonds-list', nps:'nps-list', cash_investment:'cash-investment-list', ppf:'ppf-list', epf:'epf-list', gold:'gold-list', lic:'lic-list', term_insurance:'term-insurance-list' };
   var groups = INV_TYPE_GROUPS.map(function(g) {
     var rows = g.types.map(function(t) {
       var c = (INV_CAT_META[t.id] || { color: '#6C47FF' }).color;
@@ -6195,6 +6224,443 @@ function renderWithdrawCash() {
 }
 
 /* ─── EPF MODULE ─────────────────────────────────────── */
+// ─── TERM INSURANCE MODULE ─────────────────────────────────────────────────
+var TERM_COLOR = '#0891B2';
+var TERM_PLANS = [
+  { id:'hdfc_click2protect',  name:'HDFC Life Click 2 Protect', provider:'HDFC Life',         type:'Pure Term Plan',  csr:'99.5%', features:['Life cover up to age 85','Critical illness rider available','Accidental death benefit','Premium waiver on disability','Tax benefits under Sec 80C & 10(10D)'], min_age:18, max_age:65, min_sum:2500000 },
+  { id:'icici_iprotect',      name:'ICICI Pru iProtect Smart',  provider:'ICICI Prudential',  type:'Term Insurance',  csr:'97.9%', features:['Life coverage throughout term','Terminal illness benefit','Accidental death benefit','Flexible premium payment','Tax benefits under Sec 80C'], min_age:18, max_age:65, min_sum:5000000 },
+  { id:'sbi_eshield',         name:'SBI Life eShield Next',     provider:'SBI Life',           type:'Pure Term Plan',  csr:'97.3%', features:['Increasing cover option','Accidental total & permanent disability','Level or increasing cover','Online policy issuance','Tax benefits under Sec 80C'], min_age:18, max_age:65, min_sum:5000000 },
+  { id:'max_smart_secure',    name:'Max Life Smart Secure Plus',provider:'Max Life',           type:'Term Insurance',  csr:'99.3%', features:['Return of premium option','Critical illness cover rider','Accidental death cover','In-built terminal illness benefit','Tax benefits under Sec 80C'], min_age:18, max_age:65, min_sum:2000000 },
+  { id:'tata_sampoorna',      name:'Tata AIA Sampoorna Raksha', provider:'Tata AIA',           type:'Term Plan',       csr:'98.6%', features:['Whole life coverage option','Increasing sum assured','Critical illness benefit','Comprehensive life protection','Tax benefits under Sec 80C'], min_age:18, max_age:65, min_sum:5000000 },
+  { id:'lic_tech_term',       name:'LIC Tech Term',             provider:'LIC',                type:'Pure Term Plan',  csr:'98.6%', features:['Government-backed insurer','Online purchase available','Accidental death benefit rider','Level or increasing sum assured','Tax benefits under Sec 80C'], min_age:18, max_age:65, min_sum:5000000 },
+];
+function _termAll()        { return INV_PORTFOLIO.term_insurance || []; }
+function _termPolicy(id)   { return _termAll().find(function(p){ return p.id===id; }) || {}; }
+function _termPremiums(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].premiums) || []; }
+function _termRenewals(id) { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].renewals) || []; }
+function _termClaims(id)   { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].claims) || []; }
+function _termOthers(id)   { return (INV_TRANSACTIONS[id] && INV_TRANSACTIONS[id].others) || []; }
+function _termAllTx(id) {
+  var p = _termPremiums(id).map(function(t){ return Object.assign({},t,{tx_group:'premium'}); });
+  var r = _termRenewals(id).map(function(t){ return Object.assign({},t,{tx_group:'renewal'}); });
+  var c = _termClaims(id).map(function(t)  { return Object.assign({},t,{tx_group:'claim'}); });
+  var o = _termOthers(id).map(function(t)  { return Object.assign({},t,{tx_group:'other'}); });
+  return p.concat(r).concat(c).concat(o).sort(function(a,b){ return b.date < a.date ? -1 : 1; });
+}
+function _termPlan(planId) { return TERM_PLANS.find(function(p){ return p.id===planId; }) || TERM_PLANS[0]; }
+
+function renderTermInsList() {
+  var all          = _termAll();
+  var totalCoverage= all.reduce(function(s,p){ return s+(p.sum_assured||0); }, 0);
+  var totalPrem    = all.reduce(function(s,p){ return s+(p.premium||0); }, 0);
+  var activeCount  = all.filter(function(p){ return p.status==='active'; }).length;
+
+  var cards = all.length === 0
+    ? '<div style="padding:40px;text-align:center;color:var(--text-dim)">No term insurance policies found.<br>Tap + Buy New Term Insurance to add one.</div>'
+    : all.map(function(p) {
+        var isAct = p.status === 'active';
+        return '<div onclick="App.navigate(\'term-insurance-detail\',{id:\'' + p.id + '\'})" style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer;border:1px solid rgba(8,145,178,.15)">'
+          + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+          + '<div style="width:46px;height:46px;border-radius:12px;background:' + TERM_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🛡️</div>'
+          + '<div style="flex:1">'
+          + '<div style="font-size:15px;font-weight:700;color:var(--text)">' + escapeHtml(p.name) + '</div>'
+          + '<div style="font-size:12px;color:var(--text-dim);margin-top:1px">' + escapeHtml(p.provider||'') + ' · No. ' + (p.policy_number||'—') + '</div>'
+          + '</div>'
+          + '<div style="background:' + (isAct?'#16A34A22':'#EF444422') + ';color:' + (isAct?'#22C55E':'#EF4444') + ';font-size:12px;font-weight:700;padding:4px 10px;border-radius:10px">' + (isAct?'Active':'Lapsed') + '</div>'
+          + '</div>'
+          + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">'
+          + '<div><div style="font-size:10px;color:var(--text-dim)">Sum Assured</div><div style="font-size:12px;font-weight:800;color:' + TERM_COLOR + '">' + formatINR(p.sum_assured||0) + '</div></div>'
+          + '<div><div style="font-size:10px;color:var(--text-dim)">Premium/Yr</div><div style="font-size:12px;font-weight:800;color:var(--text)">' + formatINR(p.premium||0) + '</div></div>'
+          + '<div style="text-align:right"><div style="font-size:10px;color:var(--text-dim)">Nominee</div><div style="font-size:12px;font-weight:800;color:var(--text)">' + escapeHtml(p.nominee||'—') + '</div></div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'investment-dashboard\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Term Insurance</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="margin:8px 16px 14px;background:linear-gradient(135deg,' + TERM_COLOR + '22,' + TERM_COLOR + '08);border:1px solid ' + TERM_COLOR + '30;border-radius:var(--radius);padding:16px">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Total Coverage</div><div style="font-size:20px;font-weight:800;color:var(--text)">' + formatINR(totalCoverage) + '</div></div>'
+    + '<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Total Premium (Yearly)</div><div style="font-size:18px;font-weight:800;color:' + TERM_COLOR + '">' + formatINR(totalPrem) + '</div></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Active Policies</div><div style="font-size:14px;font-weight:700;color:#22C55E">' + activeCount + '</div></div>'
+    + '<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Maturity Date</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + (all[0]?all[0].maturity_date:'—') + '</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="margin:0 16px 8px;font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px">Your Term Insurance Polic' + (all.length===1?'y':'ies') + '</div>'
+    + cards
+    + '<div style="margin:8px 16px 8px"><button onclick="App.navigate(\'term-insurance-buy\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Buy New Term Insurance</button></div>'
+    + '</div>';
+}
+
+function renderTermInsDetail() {
+  var id  = (State.params && State.params.id) || (_termAll()[0] && _termAll()[0].id) || 'ti1';
+  var p   = _termPolicy(id);
+  if (!p.id) return '<div class="screen-wrap"><div style="padding:40px;text-align:center;color:var(--text-dim)">Policy not found</div></div>';
+  var tab   = State.termInsDetailTab || 'overview';
+  var isAct = p.status === 'active';
+
+  var tabBar = ['overview','transactions','notes'].map(function(t) {
+    var isActive = tab === t;
+    return '<div onclick="State.termInsDetailTab=\'' + t + '\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid ' + (isActive?TERM_COLOR:'transparent') + ';color:' + (isActive?TERM_COLOR:'var(--text-dim)') + '">' + t.charAt(0).toUpperCase() + t.slice(1) + '</div>';
+  }).join('');
+
+  var body = '';
+
+  if (tab === 'overview') {
+    body = '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+      + _termDetailRow('Policy Number', p.policy_number||'—', false)
+      + _termDetailRow('Sum Assured', formatINR(p.sum_assured||0), true)
+      + _termDetailRow('Premium (Yearly)', formatINR(p.premium||0), false)
+      + _termDetailRow('Start Date', p.start_date||'—', false)
+      + _termDetailRow('Maturity Date', p.maturity_date||'—', false)
+      + _termDetailRow('Policy Term', (p.policy_term||'—') + ' Years', false)
+      + _termDetailRow('Nominee', p.nominee||'—', false)
+      + _termDetailRow('Next Premium Due', p.next_premium_due||'—', false, '#F59E0B')
+      + '<div><div style="font-size:11px;color:var(--text-dim)">Status</div><div style="font-size:13px;font-weight:700;color:' + (isAct?'#22C55E':'#EF4444') + '">' + (isAct?'Active':'Lapsed') + '</div></div>'
+      + '</div>'
+      + '</div>'
+      + '<div style="margin:0 16px 10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + '<button onclick="State.termInsDetailTab=\'transactions\';App.render()" style="padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.08));color:#22C55E;border:1px solid rgba(34,197,94,.3);font-size:14px;font-weight:700;cursor:pointer">View Transactions</button>'
+      + '<button onclick="App._termInsAddNote(\'' + id + '\')" style="padding:14px;border-radius:var(--radius-sm);background:rgba(8,145,178,.15);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:14px;font-weight:700;cursor:pointer">Add Note</button>'
+      + '</div>';
+  }
+
+  else if (tab === 'transactions') {
+    var txFilter = State.termInsTxFilter || 'all';
+    var allTx = _termAllTx(id);
+    var counts = { all:allTx.length, premium:_termPremiums(id).length, renewal:_termRenewals(id).length, claim:_termClaims(id).length };
+    var txTabs = ['all','premium','renewal','claim'].map(function(f) {
+      var isA = txFilter===f;
+      return '<div onclick="State.termInsTxFilter=\'' + f + '\';App.render()" style="padding:7px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' + (isA?'background:'+TERM_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.05);') + '">' + f.charAt(0).toUpperCase() + f.slice(1) + '&nbsp;<span style="opacity:.7;font-size:10px">(' + counts[f] + ')</span></div>';
+    }).join('');
+    var filteredTx = txFilter==='all' ? allTx : allTx.filter(function(t){ return t.tx_group===txFilter; });
+    var txRows = filteredTx.length === 0
+      ? '<div style="padding:32px;text-align:center;color:var(--text-dim)">No transactions found</div>'
+      : filteredTx.map(function(t) {
+          var isPrem = t.tx_group==='premium';
+          var txIcons = { premium:'💳', renewal:'🔄', claim:'📋', other:'📝' };
+          return '<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.05)">'
+            + '<div style="width:40px;height:40px;border-radius:11px;background:rgba(8,145,178,.12);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">' + (txIcons[t.tx_group]||'📋') + '</div>'
+            + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(t.type||'') + '</div><div style="font-size:11px;color:var(--text-dim)">' + (t.date||'') + '</div></div>'
+            + '<div style="text-align:right">'
+            + (isPrem && t.amount ? '<div style="font-size:13px;font-weight:800;color:var(--text)">' + formatINR(t.amount) + '</div>' : '<div style="font-size:12px;color:var(--text-dim)">—</div>')
+            + '<div style="display:inline-block;background:rgba(34,197,94,.12);color:#22C55E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:3px">' + (t.status||'success') + '</div>'
+            + '</div></div>';
+        }).join('');
+    body = '<div style="display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none">' + txTabs + '</div>'
+      + '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius)">' + txRows + '</div>'
+      + '<div style="margin:0 16px 10px"><button style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.25);font-size:14px;font-weight:700;cursor:pointer">View All Transactions</button></div>';
+  }
+
+  else {
+    var noteFilter = State.termInsNoteFilter || 'all';
+    var allNotes = INV_NOTES[id] || [];
+    var noteCounts = { all:allNotes.length, personal:allNotes.filter(function(n){ return n.type==='personal'; }).length, important:allNotes.filter(function(n){ return n.type==='important'; }).length };
+    var noteTabs = ['all','personal','important'].map(function(nt) {
+      var isA = noteFilter===nt;
+      return '<div onclick="State.termInsNoteFilter=\'' + nt + '\';App.render()" style="padding:6px 14px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;' + (isA?'background:'+TERM_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.05);') + '">' + nt.charAt(0).toUpperCase() + nt.slice(1) + (nt!=='all'?'&nbsp;<span style="opacity:.7;font-size:10px">('+noteCounts[nt]+')</span>':'') + '</div>';
+    }).join('');
+    var filteredNotes = noteFilter==='all' ? allNotes : allNotes.filter(function(n){ return n.type===noteFilter; });
+    var typeColors = { research:'#6C47FF', important:'#EF4444', personal:'#22C55E', private:'#F59E0B', general:'#64748B', ideas:'#0EA5E9' };
+    var noteRows = filteredNotes.length===0
+      ? '<div style="padding:32px;text-align:center;color:var(--text-dim)">No notes yet</div>'
+      : filteredNotes.map(function(n) {
+          var tc = typeColors[n.type]||'#64748B';
+          return '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);padding:14px">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+            + '<div style="display:flex;align-items:center;gap:8px"><div style="background:' + tc + '22;color:' + tc + ';font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">' + (n.type||'').toUpperCase() + '</div><div style="font-size:11px;color:var(--text-dim)">' + (n.date||'').slice(0,10) + '</div></div>'
+            + '<div style="display:flex;gap:8px"><span onclick="App._termInsEditNote(\'' + id + '\',\'' + n.id + '\')" style="color:var(--text-dim);cursor:pointer;font-size:13px">✏️</span><span onclick="App._termInsDeleteNote(\'' + id + '\',\'' + n.id + '\')" style="color:#EF4444;cursor:pointer;font-size:13px">🗑️</span></div>'
+            + '</div>'
+            + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">' + escapeHtml(n.title||'') + '</div>'
+            + '<div style="font-size:12px;color:var(--text-dim);line-height:1.5">' + escapeHtml(n.text||'') + '</div>'
+            + '</div>';
+        }).join('');
+    body = '<div style="display:flex;justify-content:flex-end;padding:8px 16px 4px"><button onclick="App._termInsAddNote(\'' + id + '\')" style="padding:7px 14px;border-radius:12px;background:' + TERM_COLOR + ';color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer">+ Add Note</button></div>'
+      + '<div style="display:flex;gap:6px;padding:4px 16px 10px;overflow-x:auto;scrollbar-width:none">' + noteTabs + '</div>'
+      + noteRows
+      + '<div style="margin:8px 16px 10px;background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">'
+      + '<div style="font-size:18px">🔐</div>'
+      + '<div><div style="font-size:12px;font-weight:700;color:' + TERM_COLOR + '">Your notes are private and secure</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Only you can view your notes. They are encrypted and stored securely.</div></div>'
+      + '</div>';
+  }
+
+  return '<div class="screen-wrap" style="padding-bottom:32px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Term Insurance</div>'
+    + '<div style="font-size:13px;font-weight:700;color:' + TERM_COLOR + ';cursor:pointer;min-width:36px;text-align:right" onclick="App.showToast(\'Details saved!\')">Save</div>'
+    + '</div>'
+    + '<div style="margin:8px 16px 0;background:linear-gradient(135deg,' + TERM_COLOR + '22,' + TERM_COLOR + '08);border:1px solid ' + TERM_COLOR + '30;border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div style="width:48px;height:48px;border-radius:13px;background:' + TERM_COLOR + '25;display:flex;align-items:center;justify-content:center;font-size:24px">🛡️</div>'
+    + '<div style="flex:1"><div style="font-size:16px;font-weight:800;color:var(--text)">' + escapeHtml(p.name||'') + '</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">' + escapeHtml(p.provider||'') + ' · ' + escapeHtml(p.plan_type||'') + '</div></div>'
+    + '<div style="background:' + (isAct?'#16A34A22':'#EF444422') + ';color:' + (isAct?'#22C55E':'#EF4444') + ';font-size:12px;font-weight:700;padding:5px 12px;border-radius:10px">' + (isAct?'Active':'Lapsed') + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="display:flex;margin:0 16px;background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border)">' + tabBar + '</div>'
+    + body
+    + '</div>';
+}
+function _termDetailRow(label, value, highlight, color) {
+  var c = color || (highlight ? TERM_COLOR : 'var(--text)');
+  return '<div style="padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:11px;color:var(--text-dim)">' + label + '</div><div style="font-size:13px;font-weight:700;color:' + c + '">' + value + '</div></div>';
+}
+
+function renderTermInsBuy() {
+  var bd = State.termInsBuyData || {};
+  var plan = _termPlan(bd.plan||'hdfc_click2protect');
+  var planOptions = TERM_PLANS.map(function(pl) {
+    return '<option value="' + pl.id + '"' + (bd.plan===pl.id?' selected':'') + '>' + pl.provider + ' — ' + pl.name + '</option>';
+  }).join('');
+  var modeOpts = ['upi','net_banking','card','auto_debit'];
+  var modeLbls = { upi:'UPI', net_banking:'Net Banking', card:'Card', auto_debit:'Auto Debit' };
+  var selMode = bd.mode || 'upi';
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-list\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Buy Term Insurance</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div class="form-group"><label class="form-label">Insurance Provider / Plan</label>'
+    + '<select class="form-input" onchange="var bd=State.termInsBuyData||{};bd.plan=this.value;State.termInsBuyData=bd;App.render()">' + planOptions + '</select></div>'
+    + '<div class="form-group"><label class="form-label">Sum Assured (₹)</label>'
+    + '<input type="number" min="2500000" placeholder="e.g. 10000000" value="' + escapeHtml(String(bd.sum_assured||'')) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.sum_assured=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Policy Term (Years)</label>'
+    + '<input type="number" min="5" max="50" placeholder="e.g. 30" value="' + escapeHtml(String(bd.term||'')) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.term=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Premium Payment Term (Years)</label>'
+    + '<input type="number" min="5" max="50" placeholder="e.g. 30" value="' + escapeHtml(String(bd.payment_term||'')) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.payment_term=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Nominee Name</label>'
+    + '<input type="text" placeholder="e.g. Spouse, Father, Mother" value="' + escapeHtml(bd.nominee||'') + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.nominee=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Date of Birth</label>'
+    + '<input type="date" value="' + escapeHtml(bd.dob||'') + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.dob=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Payment Mode</label>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    + modeOpts.map(function(m){
+        var isSel = selMode===m;
+        return '<div onclick="var bd=State.termInsBuyData||{};bd.mode=\'' + m + '\';State.termInsBuyData=bd;App.render()" style="text-align:center;padding:10px 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;border:1px solid;border-color:' + (isSel?TERM_COLOR:'rgba(255,255,255,.12)') + ';background:' + (isSel?TERM_COLOR+'20':'rgba(255,255,255,.04)') + ';color:' + (isSel?TERM_COLOR:'var(--text-dim)') + '">' + modeLbls[m] + '</div>';
+      }).join('')
+    + '</div></div>'
+    + '<button onclick="App._termInsBuyProceed()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">Continue</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderTermInsBuySelectPlan() {
+  var bd = State.termInsBuyData || {};
+  var selPlan = bd.plan || 'hdfc_click2protect';
+  var cards = TERM_PLANS.map(function(pl) {
+    var isSel = selPlan===pl.id;
+    return '<div onclick="var bd=State.termInsBuyData||{};bd.plan=\'' + pl.id + '\';State.termInsBuyData=bd;App.render()" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-radius:var(--radius);margin:0 16px 10px;border:1px solid ' + (isSel?TERM_COLOR+'60':'rgba(255,255,255,.06)') + ';cursor:pointer">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:' + TERM_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🛡️</div>'
+      + '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">' + pl.name + '</div>'
+      + '<div style="font-size:11px;color:var(--text-dim);margin-top:1px">' + pl.provider + ' · CSR: ' + pl.csr + '</div></div>'
+      + '<div style="width:22px;height:22px;border-radius:50%;border:2px solid ' + (isSel?TERM_COLOR:'rgba(255,255,255,.2)') + ';background:' + (isSel?TERM_COLOR:'transparent') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      + (isSel?'<svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>':'')
+      + '</div></div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-buy\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Select Plan</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 0 0">' + cards
+    + '<div style="padding:8px 16px"><button onclick="App.navigate(\'term-insurance-buy-plan-detail\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Continue</button></div>'
+    + '</div></div>';
+}
+
+function renderTermInsBuyPlanDetail() {
+  var bd   = State.termInsBuyData || {};
+  var plan = _termPlan(bd.plan||'hdfc_click2protect');
+  var featureRows = plan.features.map(function(f) {
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+      + '<div style="width:22px;height:22px;border-radius:50%;background:rgba(8,145,178,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="' + TERM_COLOR + '"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>'
+      + '<div style="font-size:13px;color:var(--text)">' + escapeHtml(f) + '</div></div>';
+  }).join('');
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-buy-plan\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Plan Details</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div style="margin-bottom:14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<div style="width:44px;height:44px;border-radius:12px;background:' + TERM_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:20px">🛡️</div>'
+    + '<div><div style="font-size:15px;font-weight:800;color:var(--text)">' + plan.name + '</div>'
+    + '<div style="font-size:12px;color:var(--text-dim)">' + plan.provider + ' · ' + plan.type + '</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(8,145,178,.1);border-radius:8px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between">'
+    + '<div style="font-size:12px;color:var(--text-dim)">Claim Settlement Ratio</div>'
+    + '<div style="font-size:13px;font-weight:800;color:' + TERM_COLOR + '">' + plan.csr + '</div>'
+    + '</div>'
+    + featureRows
+    + '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Eligibility</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Min Entry Age</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + plan.min_age + ' Years</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Max Entry Age</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + plan.max_age + ' Years</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Min Sum Assured</div><div style="font-size:12px;font-weight:700;color:var(--text)">' + formatINR(plan.min_sum) + '</div></div>'
+    + '</div></div>'
+    + '<button onclick="App.navigate(\'term-insurance-buy-premium\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Continue</button>'
+    + '</div></div>';
+}
+
+function renderTermInsBuyPremium() {
+  var bd      = State.termInsBuyData || {};
+  var premium = bd.annual_premium || '';
+  var sumAss  = bd.sum_assured || '';
+  var term    = bd.term || '';
+  var payTerm = bd.payment_term || '';
+  var mode    = bd.pay_freq || 'Yearly';
+  var nextDue = bd.next_due || new Date().toISOString().slice(0,10);
+  var freqs   = ['Yearly','Half-Yearly','Quarterly','Monthly'];
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-buy-plan-detail\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Premium Details</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div class="form-group"><label class="form-label">Policy Term (Years)</label>'
+    + '<input type="number" min="5" max="50" placeholder="e.g. 30" value="' + escapeHtml(String(term)) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.term=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Annual Premium Amount (₹)</label>'
+    + '<input type="number" min="1000" placeholder="e.g. 12000" value="' + escapeHtml(String(premium)) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.annual_premium=this.value;State.termInsBuyData=bd;App.render()"/></div>'
+    + '<div class="form-group"><label class="form-label">Sum Assured (₹)</label>'
+    + '<input type="number" placeholder="e.g. 10000000" value="' + escapeHtml(String(sumAss)) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.sum_assured=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Premium Payment Term (Years)</label>'
+    + '<input type="number" min="5" max="50" placeholder="e.g. 30" value="' + escapeHtml(String(payTerm)) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.payment_term=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div class="form-group"><label class="form-label">Payment Frequency</label>'
+    + '<select class="form-input" onchange="var bd=State.termInsBuyData||{};bd.pay_freq=this.value;State.termInsBuyData=bd;App.render()">'
+    + freqs.map(function(f){ return '<option value="' + f + '"' + (mode===f?' selected':'') + '>' + f + '</option>'; }).join('')
+    + '</select></div>'
+    + '<div class="form-group"><label class="form-label">Next Premium Due</label>'
+    + '<input type="date" value="' + escapeHtml(nextDue) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.next_due=this.value;State.termInsBuyData=bd"/></div>'
+    + '<button onclick="App.navigate(\'term-insurance-buy-payment\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">Continue</button>'
+    + '</div></div>';
+}
+
+function renderTermInsBuyPayment() {
+  var bd      = State.termInsBuyData || {};
+  var premium = parseFloat(bd.annual_premium || 0);
+  var gst     = Math.round(premium * 0.18);
+  var total   = premium + gst;
+  var payMethod = bd.payment_method || 'upi';
+  var account   = bd.account || 'SBI Savings •••• 1234';
+  var upiRef    = bd.upi_ref || '';
+  var autoRenew = bd.auto_renew !== false;
+  var methods   = ['upi','net_banking','card','auto_debit'];
+  var mLabels   = { upi:'UPI', net_banking:'Net Banking', card:'Card', auto_debit:'Auto Debit' };
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-buy-premium\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Payment</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:4px 16px 0">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Premium Summary</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:13px;color:var(--text-dim)">Premium Amount</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(premium) + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)"><div style="font-size:13px;color:var(--text-dim)">GST (18%)</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(gst) + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 0"><div style="font-size:14px;font-weight:700;color:var(--text)">Total Payable</div><div style="font-size:18px;font-weight:800;color:' + TERM_COLOR + '">' + formatINR(total) + '</div></div>'
+    + '</div>'
+    + '<div class="form-group"><label class="form-label">Payment Method</label>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    + methods.map(function(m){
+        var isSel = payMethod===m;
+        return '<div onclick="var bd=State.termInsBuyData||{};bd.payment_method=\'' + m + '\';State.termInsBuyData=bd;App.render()" style="text-align:center;padding:11px 6px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;border:2px solid;border-color:' + (isSel?TERM_COLOR:'rgba(255,255,255,.12)') + ';background:' + (isSel?TERM_COLOR+'20':'transparent') + ';color:' + (isSel?TERM_COLOR:'var(--text-dim)') + '">' + mLabels[m] + '</div>';
+      }).join('')
+    + '</div></div>'
+    + '<div class="form-group"><label class="form-label">Linked Account</label>'
+    + '<select class="form-input" onchange="var bd=State.termInsBuyData||{};bd.account=this.value;State.termInsBuyData=bd">'
+    + '<option value="SBI Savings •••• 1234"' + (account==='SBI Savings •••• 1234'?' selected':'') + '>SBI Savings •••• 1234</option>'
+    + '<option value="HDFC Savings •••• 9876"' + (account==='HDFC Savings •••• 9876'?' selected':'') + '>HDFC Savings •••• 9876</option>'
+    + '</select></div>'
+    + '<div class="form-group"><label class="form-label">UPI / Transaction ID</label>'
+    + '<input type="text" placeholder="Enter UPI ID or TXN ID" value="' + escapeHtml(upiRef) + '" class="form-input" oninput="var bd=State.termInsBuyData||{};bd.upi_ref=this.value;State.termInsBuyData=bd"/></div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:rgba(8,145,178,.08);border-radius:var(--radius-sm)">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text)">Auto-renew policy</div>'
+    + '<div onclick="var bd=State.termInsBuyData||{};bd.auto_renew=!bd.auto_renew;State.termInsBuyData=bd;App.render()" style="width:44px;height:24px;border-radius:12px;background:' + (autoRenew?TERM_COLOR:'rgba(255,255,255,.15)') + ';position:relative;cursor:pointer;transition:background .2s">'
+    + '<div style="width:18px;height:18px;border-radius:9px;background:#fff;position:absolute;top:3px;' + (autoRenew?'left:23px':'left:3px') + ';transition:left .2s"></div></div>'
+    + '</div>'
+    + '<button onclick="App.navigate(\'term-insurance-buy-confirm\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:16px;font-weight:800;cursor:pointer">Pay ' + formatINR(total) + '</button>'
+    + '</div></div>';
+}
+
+function renderTermInsBuyConfirm() {
+  var bd     = State.termInsBuyData || {};
+  var plan   = _termPlan(bd.plan||'hdfc_click2protect');
+  var premium = parseFloat(bd.annual_premium || 0);
+  var gst     = Math.round(premium * 0.18);
+  var total   = premium + gst;
+
+  return '<div class="screen-wrap" style="padding-bottom:40px">'
+    + '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'term-insurance-buy-payment\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 11H7.83l4.88-4.88c.39-.39.39-1.03 0-1.42-.39-.39-1.02-.39-1.41 0l-6.59 6.59c-.39.39-.39 1.02 0 1.41l6.59 6.59c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L7.83 13H19c.55 0 1-.45 1-1s-.45-1-1-1z"/></svg></div>'
+    + '<div class="form-header-title">Confirm Purchase</div>'
+    + '<div style="width:36px"></div>'
+    + '</div>'
+    + '<div style="padding:8px 16px 0">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">Policy Summary</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Provider</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(plan.provider) + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Plan</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(plan.name) + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Sum Assured</div><div style="font-size:13px;font-weight:700;color:' + TERM_COLOR + '">' + formatINR(parseFloat(bd.sum_assured||0)) + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Premium Amount</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + formatINR(premium) + '/yr</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Policy Term</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(String(bd.term||'—')) + ' Years</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Nominee</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(bd.nominee||'—') + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Next Premium Due</div><div style="font-size:13px;font-weight:700;color:#F59E0B">' + (bd.next_due||'—') + '</div></div>'
+    + '<div><div style="font-size:11px;color:var(--text-dim)">Total Payable</div><div style="font-size:15px;font-weight:800;color:' + TERM_COLOR + '">' + formatINR(total) + '</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.2);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">'
+    + '<input type="checkbox" id="term-confirm-check" style="width:18px;height:18px;accent-color:' + TERM_COLOR + ';flex-shrink:0"/>'
+    + '<label for="term-confirm-check" style="font-size:13px;color:var(--text);cursor:pointer">I confirm that the above details are correct.</label>'
+    + '</div>'
+    + '<button onclick="App._termInsConfirmPurchase()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Confirm Purchase</button>'
+    + '</div></div>';
+}
+
+function renderTermInsBuySuccess() {
+  var bd     = State.termInsBuyData || {};
+  var polNum = bd.policy_number || '100200300400';
+  var plan   = _termPlan(bd.plan||'hdfc_click2protect');
+
+  return '<div class="screen-wrap" style="padding-bottom:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center">'
+    + '<div style="width:84px;height:84px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">'
+    + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="#22C55E" stroke-width="2"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    + '</div>'
+    + '<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:6px;padding:0 20px">Term Insurance Policy Purchased!</div>'
+    + '<div style="font-size:14px;color:var(--text-dim);margin-bottom:28px">Your policy is now active and protecting your family.</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:20px;margin:0 16px 28px;width:calc(100% - 32px);text-align:left;box-sizing:border-box">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<div style="width:48px;height:48px;border-radius:12px;background:' + TERM_COLOR + '20;display:flex;align-items:center;justify-content:center;font-size:24px">🛡️</div>'
+    + '<div><div style="font-size:15px;font-weight:700;color:var(--text)">' + plan.name + '</div><div style="font-size:12px;color:var(--text-dim)">' + plan.provider + '</div></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)"><div style="font-size:12px;color:var(--text-dim)">Policy Number</div><div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(polNum) + '</div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)"><div style="font-size:12px;color:var(--text-dim)">Sum Assured</div><div style="font-size:13px;font-weight:700;color:' + TERM_COLOR + '">' + formatINR(parseFloat(bd.sum_assured||0)) + '</div></div>'
+    + '<div style="padding:10px 0 0;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text-dim)">✅ Policy details have been saved in your portfolio.</div>'
+    + '</div>'
+    + '<button onclick="App.navigate(\'term-insurance-detail\',{id:State.termInsBuyData&&State.termInsBuyData.newId||\'ti1\'})" style="margin:0 16px;width:calc(100% - 32px);padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + TERM_COLOR + ',#06B6D4);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">View Policy</button>'
+    + '</div>';
+}
+// ─── END TERM INSURANCE MODULE ──────────────────────────────────────────────
+
 // ─── LIC MODULE ────────────────────────────────────────────────────────────
 var LIC_COLOR = '#6C47FF';
 var LIC_PLANS = [
@@ -12488,6 +12954,15 @@ const App = {
       case 'add-cash-investment':   html = renderAddCashInvestment();     break;
       case 'add-cash-fund':         html = renderAddCashFund();           break;
       case 'withdraw-cash':         html = renderWithdrawCash();          break;
+      case 'term-insurance-list':          html = renderTermInsList();          break;
+      case 'term-insurance-detail':        html = renderTermInsDetail();        break;
+      case 'term-insurance-buy':           html = renderTermInsBuy();           break;
+      case 'term-insurance-buy-plan':      html = renderTermInsBuySelectPlan(); break;
+      case 'term-insurance-buy-plan-detail': html = renderTermInsBuyPlanDetail(); break;
+      case 'term-insurance-buy-premium':   html = renderTermInsBuyPremium();    break;
+      case 'term-insurance-buy-payment':   html = renderTermInsBuyPayment();    break;
+      case 'term-insurance-buy-confirm':   html = renderTermInsBuyConfirm();    break;
+      case 'term-insurance-buy-success':   html = renderTermInsBuySuccess();    break;
       case 'lic-list':              html = renderLICList();              break;
       case 'lic-detail':            html = renderLICDetail();            break;
       case 'lic-buy':               html = renderLICBuy();               break;
@@ -14565,6 +15040,109 @@ const App = {
   _bondDeleteNote(fundId, noteId) {
     var notes=INV_NOTES[fundId]||[];
     var idx=notes.findIndex(function(n){return n.id===noteId;});
+    if (idx<0) return;
+    notes.splice(idx,1);
+    this.showToast('Note deleted'); App.render();
+  },
+
+  /* ── Term Insurance Module ──────────────────── */
+  _termInsBuyProceed() {
+    App.navigate('term-insurance-buy-plan');
+  },
+  _termInsConfirmPurchase() {
+    var check = document.getElementById('term-confirm-check');
+    if (!check || !check.checked) { this.showToast('Please confirm the details to proceed'); return; }
+    var bd = State.termInsBuyData || {};
+    var premium    = parseFloat(bd.annual_premium || 12000);
+    var sumAssured = parseFloat(bd.sum_assured || 10000000);
+    var term       = parseInt(bd.term || 30);
+    var plan       = _termPlan(bd.plan || 'hdfc_click2protect');
+    var startDate  = new Date().toISOString().slice(0,10);
+    var nextDue    = (function(){ var d=new Date(startDate); d.setFullYear(d.getFullYear()+1); return d.toISOString().slice(0,10); })();
+    var gst        = Math.round(premium * 0.18);
+    var total      = premium + gst;
+    var polNum     = '10' + Date.now().toString().slice(-10);
+    var newId      = 'ti' + Date.now();
+    var matDate    = (function(){ var d=new Date(startDate); d.setFullYear(d.getFullYear()+term); return d.toISOString().slice(0,10); })();
+    INV_PORTFOLIO.term_insurance = INV_PORTFOLIO.term_insurance || [];
+    INV_PORTFOLIO.term_insurance.push({
+      id:newId, name:plan.name, provider:plan.provider, plan_type:plan.type, policy_number:polNum,
+      premium:premium, gst:gst, total_payable:total, sum_assured:sumAssured,
+      start_date:startDate, maturity_date:matDate, policy_term:term, payment_term:parseInt(bd.payment_term||term),
+      mode:bd.pay_freq||'Yearly', next_premium_due:nextDue, nominee:bd.nominee||'—',
+      nominee_relation:bd.nominee||'—', linked_account:bd.account||'SBI Savings •••• 1234',
+      invested:total, current:total, status:'active'
+    });
+    INV_TRANSACTIONS[newId] = {
+      premiums:[{id:'tip'+Date.now(),date:startDate,type:'Premium Paid',amount:premium,gst:gst,total:total,mode:bd.payment_method||'upi',ref_id:bd.upi_ref||('TXN'+Date.now()),status:'success'}],
+      renewals:[], claims:[],
+      others:[{id:'tio'+Date.now(),date:startDate,type:'Policy Issued',amount:0,gst:0,total:0,mode:'',ref_id:'',status:'success'}],
+    };
+    INV_NOTES[newId] = [];
+    State.termInsBuyData = Object.assign({}, bd, { policy_number:polNum, newId:newId });
+    this.showToast('Term Insurance policy purchased!');
+    App.navigate('term-insurance-buy-success');
+  },
+  _termInsAddNote(policyId) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = '<div style="background:#1A1A2E;border-radius:16px;padding:24px;width:100%;max-width:380px">'
+      + '<h3 style="color:#fff;margin:0 0 16px;font-size:17px">Add Note</h3>'
+      + '<select id="ti-note-type" style="width:100%;padding:10px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;margin-bottom:12px">'
+      + '<option value="personal">Personal</option><option value="important">Important</option><option value="research">Research</option>'
+      + '</select>'
+      + '<input id="ti-note-title" placeholder="Title" style="width:100%;padding:10px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;margin-bottom:12px;box-sizing:border-box">'
+      + '<textarea id="ti-note-text" placeholder="Note text…" rows="4" style="width:100%;padding:10px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;resize:none;box-sizing:border-box"></textarea>'
+      + '<div style="display:flex;gap:10px;margin-top:16px">'
+      + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="flex:1;padding:11px;border-radius:8px;background:#333;color:#fff;border:none;cursor:pointer">Cancel</button>'
+      + '<button onclick="App._termInsSaveNote(\'' + policyId + '\',this.closest(\'div[style*=fixed]\'))" style="flex:1;padding:11px;border-radius:8px;background:' + TERM_COLOR + ';color:#fff;border:none;font-weight:700;cursor:pointer">Save</button>'
+      + '</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _termInsSaveNote(policyId, overlay) {
+    var type  = document.getElementById('ti-note-type').value;
+    var title = document.getElementById('ti-note-title').value.trim();
+    var text  = document.getElementById('ti-note-text').value.trim();
+    if (!title||!text) { this.showToast('Title and text required'); return; }
+    INV_NOTES[policyId] = INV_NOTES[policyId] || [];
+    INV_NOTES[policyId].push({ id:'tin'+Date.now(), type:type, date:new Date().toISOString(), title:title, text:text });
+    overlay.remove(); this.showToast('Note saved!'); App.render();
+  },
+  _termInsEditNote(policyId, noteId) {
+    var notes = INV_NOTES[policyId] || [];
+    var n = notes.find(function(x){ return x.id===noteId; });
+    if (!n) return;
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = '<div style="background:#1A1A2E;border-radius:16px;padding:24px;width:100%;max-width:380px">'
+      + '<h3 style="color:#fff;margin:0 0 16px;font-size:17px">Edit Note</h3>'
+      + '<select id="ti-edit-note-type" style="width:100%;padding:10px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;margin-bottom:12px">'
+      + '<option value="personal"' + (n.type==='personal'?' selected':'') + '>Personal</option>'
+      + '<option value="important"' + (n.type==='important'?' selected':'') + '>Important</option>'
+      + '<option value="research"' + (n.type==='research'?' selected':'') + '>Research</option>'
+      + '</select>'
+      + '<input id="ti-edit-note-title" value="' + n.title.replace(/"/g,'&quot;') + '" style="width:100%;padding:10px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;margin-bottom:12px;box-sizing:border-box">'
+      + '<textarea id="ti-edit-note-text" rows="4" style="width:100%;padding:10px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;resize:none;box-sizing:border-box">' + n.text + '</textarea>'
+      + '<div style="display:flex;gap:10px;margin-top:16px">'
+      + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="flex:1;padding:11px;border-radius:8px;background:#333;color:#fff;border:none;cursor:pointer">Cancel</button>'
+      + '<button onclick="App._termInsSaveNoteEdit(\'' + policyId + '\',\'' + noteId + '\',this.closest(\'div[style*=fixed]\'))" style="flex:1;padding:11px;border-radius:8px;background:' + TERM_COLOR + ';color:#fff;border:none;font-weight:700;cursor:pointer">Update</button>'
+      + '</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _termInsSaveNoteEdit(policyId, noteId, overlay) {
+    var notes = INV_NOTES[policyId] || [];
+    var n = notes.find(function(x){ return x.id===noteId; });
+    if (!n) return;
+    var type  = document.getElementById('ti-edit-note-type').value;
+    var title = document.getElementById('ti-edit-note-title').value.trim();
+    var text  = document.getElementById('ti-edit-note-text').value.trim();
+    if (!title||!text) { this.showToast('Title and text required'); return; }
+    n.type=type; n.title=title; n.text=text;
+    overlay.remove(); this.showToast('Note updated!'); App.render();
+  },
+  _termInsDeleteNote(policyId, noteId) {
+    var notes = INV_NOTES[policyId] || [];
+    var idx = notes.findIndex(function(n){ return n.id===noteId; });
     if (idx<0) return;
     notes.splice(idx,1);
     this.showToast('Note deleted'); App.render();
