@@ -1525,23 +1525,23 @@
       </div>
       Dashboard
     </div>
-    <div class="tab-item" data-tab="transactions" onclick="App.goTab('transactions')">
-      <div class="tab-icon-wrap">
-        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
-      </div>
-      Transactions
-    </div>
-    <div class="tab-item" data-tab="wealth" onclick="App.goTab('wealth')">
+    <div class="tab-item" data-tab="investments" onclick="App.navigate('investment-dashboard')">
       <div class="tab-icon-wrap">
         <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
       </div>
-      Wealth
+      Investments
     </div>
-    <div class="tab-item" data-tab="insights" onclick="App.goTab('insights')">
+    <div class="tab-item" data-tab="lic" onclick="App.navigate('lic-list')">
       <div class="tab-icon-wrap">
-        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l5 2.18V11c0 3.47-2.34 6.71-5 7.93-2.66-1.22-5-4.46-5-7.93V7.18L12 5z"/></svg>
       </div>
-      Insights
+      LIC
+    </div>
+    <div class="tab-item" data-tab="mediclaim" onclick="App.navigate('mediclaim-list')">
+      <div class="tab-icon-wrap">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      </div>
+      Mediclaim
     </div>
     <div class="tab-item" data-tab="more" onclick="App.goTab('more')">
       <div class="tab-icon-wrap">
@@ -1719,6 +1719,27 @@ const State = {
     { id:'doc4', name:'Aadhaar Card',          category:'kyc',    size:'0.9 MB', type:'PDF' },
     { id:'doc5', name:'Medical Report',        category:'others', size:'1.6 MB', type:'PDF' },
     { id:'doc6', name:'Premium Receipts',      category:'others', size:'2.1 MB', type:'PDF' },
+  ],
+  // Mediclaim module
+  mediclaimClaimsFilter: 'all',
+  mediclaimInsightTab:   'this_year',
+  mediclaimClaimData:    {},
+  mediclaimClaimStep:    'details',
+  mediclaimDocs:         [],
+  mediclaimPolicies: [
+    { id:'mc1', provider:'Star Health', name:'Star Health Family Floater', plan_type:'Family Floater', policy_number:'7654321098', sum_insured:1000000, premium:18500, start_date:'2024-04-01', expiry_date:'2026-03-31', policy_term:'1 Year', members_covered:4, status:'active', linked_account:'SBI Savings •••• 5678', renewal_premium:19000 },
+  ],
+  mediclaimMembers: [
+    { id:'m1', name:'Rohit Sharma',  relation:'Self',     sub:'Primary Insured', age:35, status:'covered', initial:'R' },
+    { id:'m2', name:'Neha Sharma',   relation:'Spouse',   sub:'',                age:32, status:'covered', initial:'N' },
+    { id:'m3', name:'Aarav Sharma',  relation:'Son',      sub:'',                age:8,  status:'covered', initial:'A' },
+    { id:'m4', name:'Anaya Sharma',  relation:'Daughter', sub:'',                age:5,  status:'covered', initial:'A' },
+  ],
+  mediclaimClaims: [
+    { id:'CLM-2024-0012', type:'Hospitalization',    amount:45000, claimed_on:'2024-03-15', approved_on:'2024-03-22', status:'approved' },
+    { id:'CLM-2024-0008', type:'Day Care Treatment', amount:12500, claimed_on:'2024-02-05', approved_on:'2024-02-10', status:'approved' },
+    { id:'CLM-2023-0015', type:'Consultation',       amount:1200,  claimed_on:'2023-12-18', approved_on:null,         status:'rejected', reason:'Policy Exclusion' },
+    { id:'CLM-2023-0007', type:'Hospitalization',    amount:38900, claimed_on:'2023-10-21', approved_on:'2023-10-29', status:'approved' },
   ],
   // LIC module
   licDetailTab:    'overview',
@@ -7066,6 +7087,508 @@ function renderTermInsInsights() {
     + '</div>'
     + '<div style="padding:0 16px 16px"><button onclick="App._termInsViewReport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
     + '</div>';
+}
+
+// ─── MEDICLAIM MODULE ──────────────────────────────────────────────────────
+var MEDICLAIM_COLOR = '#7C5CFC';
+
+function _mcFmtDate(d) {
+  if (!d) return '—';
+  var p = d.split('-');
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return p[2] + ' ' + months[parseInt(p[1])-1] + ' ' + p[0];
+}
+
+function _mcDaysLeft(dateStr) {
+  if (!dateStr) return null;
+  var diff = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+  return diff;
+}
+
+function _mcStatusBadge(status) {
+  var cfg = {
+    approved: {bg:'rgba(34,197,94,.15)',  color:'#22C55E', label:'Approved'},
+    pending:  {bg:'rgba(251,191,36,.15)', color:'#FBBF24', label:'Pending'},
+    rejected: {bg:'rgba(239,68,68,.15)',  color:'#EF4444', label:'Rejected'},
+    active:   {bg:'rgba(34,197,94,.15)',  color:'#22C55E', label:'Active'},
+  };
+  var c = cfg[status] || {bg:'rgba(255,255,255,.1)',color:'#fff',label:status};
+  return '<span style="padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;background:'+c.bg+';color:'+c.color+'">'+c.label+'</span>';
+}
+
+function _mcStepper(active) {
+  var steps = ['Claim Details','Documents','Review'];
+  var order = {details:0, docs:1, review:2};
+  var cur = order[active] || 0;
+  var html = '<div style="display:flex;align-items:center;justify-content:center;padding:16px 20px 8px;gap:0">';
+  for (var i = 0; i < steps.length; i++) {
+    var done    = i < cur;
+    var isActive = i === cur;
+    var circleBg = done ? '#22C55E' : isActive ? MEDICLAIM_COLOR : 'rgba(255,255,255,.12)';
+    var circleContent = done ? '✓' : (i+1);
+    var labelColor = isActive ? '#fff' : done ? '#22C55E' : 'var(--text-dim)';
+    html += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;position:relative">';
+    if (i > 0) {
+      var lineColor = done ? '#22C55E' : 'rgba(255,255,255,.12)';
+      html += '<div style="position:absolute;top:14px;left:0;right:50%;height:2px;background:'+lineColor+'"></div>';
+      html += '<div style="position:absolute;top:14px;left:50%;right:0;height:2px;background:'+(i < cur||isActive ? lineColor : 'rgba(255,255,255,.12)')+'"></div>';
+    }
+    html += '<div style="width:28px;height:28px;border-radius:50%;background:'+circleBg+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;position:relative;z-index:1">'+circleContent+'</div>';
+    html += '<div style="font-size:10px;font-weight:700;color:'+labelColor+';margin-top:4px;text-align:center">'+steps[i]+'</div>';
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+
+function renderMediclaimList() {
+  var policies  = State.mediclaimPolicies || [];
+  var policy    = policies[0] || {};
+  var daysLeft  = _mcDaysLeft(policy.expiry_date);
+  var daysLabel = daysLeft !== null ? (daysLeft <= 0 ? 'Expired' : 'In '+daysLeft+' days') : '';
+  var daysColor = daysLeft !== null && daysLeft <= 30 ? '#FBBF24' : '#22C55E';
+  var backBtn   = '<div class="icon-btn" onclick="App.goTab(\'more\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Health Insurance</span><div style="width:36px"></div></div>';
+
+  // Summary card (purple gradient)
+  html += '<div style="margin:0 16px 16px;background:linear-gradient(135deg,#7C5CFC,#5B21B6);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden">'
+    + '<div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,.06);border-radius:50%"></div>'
+    + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">'
+    + '<div><div style="font-size:11px;color:rgba(255,255,255,.7);margin-bottom:4px">Total Sum Insured</div><div style="font-size:26px;font-weight:800;color:#fff">'+formatINR(policy.sum_insured||0)+'</div><div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">'+policies.length+' active '+(policies.length===1?'policy':'policies')+'</div></div>'
+    + '<div style="width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:28px">🏥</div>'
+    + '</div></div>';
+
+  // Upcoming premium
+  if (daysLeft !== null && daysLeft > 0 && daysLeft <= 60) {
+    html += '<div style="margin:0 16px 12px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px">'
+      + '<div style="font-size:22px">⏰</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#FBBF24">Upcoming Premium</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+formatINR(policy.premium)+' due '+_mcFmtDate(policy.expiry_date)+'</div></div>'
+      + '<div style="font-size:12px;font-weight:700;color:#FBBF24">'+daysLabel+'</div>'
+      + '</div>';
+  }
+
+  // CTAs
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 16px">'
+    + '<button onclick="App._mediclaimFileClaim()" style="padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">📋 File Claim</button>'
+    + '<button onclick="App.navigate(\'mediclaim-detail\')" style="padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer">📄 View Documents</button>'
+    + '</div>';
+
+  // Policy card
+  policies.forEach(function(p) {
+    var dl = _mcDaysLeft(p.expiry_date);
+    html += '<div onclick="App.navigate(\'mediclaim-detail\',{id:p.id})" style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer">'
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:rgba(124,92,252,.15);display:flex;align-items:center;justify-content:center;font-size:22px">🏥</div>'
+      + '<div style="flex:1"><div style="font-size:15px;font-weight:700">'+escapeHtml(p.name)+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:1px">Policy No: '+escapeHtml(p.policy_number)+'</div></div>'
+      + _mcStatusBadge(p.status)
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+      + '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Sum Insured</div><div style="font-size:13px;font-weight:800;color:'+MEDICLAIM_COLOR+'">'+formatINR(p.sum_insured)+'</div></div>'
+      + '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Premium/yr</div><div style="font-size:13px;font-weight:700">'+formatINR(p.premium)+'</div></div>'
+      + '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Expiry</div><div style="font-size:12px;font-weight:700'+(dl!==null&&dl<=30?';color:#FBBF24':'')+'">'+_mcFmtDate(p.expiry_date)+'</div></div>'
+      + '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Members</div><div style="font-size:13px;font-weight:700">'+p.members_covered+' covered</div></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button onclick="event.stopPropagation();App.navigate(\'mediclaim-claims\')" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.25);font-size:13px;font-weight:700;cursor:pointer">Claims History</button>'
+      + '<button onclick="event.stopPropagation();App.navigate(\'mediclaim-insights\')" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.25);font-size:13px;font-weight:700;cursor:pointer">Insights</button>'
+      + '</div>'
+      + '</div>';
+  });
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimDetail() {
+  var p   = (State.mediclaimPolicies||[])[0] || {};
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-list\')">'+_invBackSVG+'</div>';
+  var optBtn  = '<div class="icon-btn" onclick="App.showToast(\'Options coming soon\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Policy Details</span>'+optBtn+'</div>';
+
+  // Provider card
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);overflow:hidden">'
+    + '<div style="background:linear-gradient(135deg,'+MEDICLAIM_COLOR+'22,'+MEDICLAIM_COLOR+'08);border-bottom:1px solid rgba(255,255,255,.06);padding:16px;display:flex;align-items:center;gap:12px">'
+    + '<div style="width:48px;height:48px;border-radius:12px;background:rgba(124,92,252,.15);display:flex;align-items:center;justify-content:center;font-size:24px">🏥</div>'
+    + '<div style="flex:1"><div style="font-size:16px;font-weight:700">'+escapeHtml(p.name||'')+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:1px">'+escapeHtml(p.plan_type||'')+'</div></div>'
+    + _mcStatusBadge(p.status||'active')
+    + '</div>';
+
+  function row(label, value, highlight) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<div style="font-size:13px;color:var(--text-dim)">'+label+'</div>'
+      + '<div style="font-size:13px;font-weight:700'+(highlight?';color:'+MEDICLAIM_COLOR:'')+'">'+escapeHtml(String(value||''))+'</div>'
+      + '</div>';
+  }
+
+  html += row('Policy Number',   p.policy_number || '—');
+  html += row('Sum Insured',      formatINR(p.sum_insured||0), true);
+  html += row('Premium',          formatINR(p.premium||0)+'/year');
+  html += row('Start Date',       _mcFmtDate(p.start_date));
+  html += row('Expiry Date',      _mcFmtDate(p.expiry_date));
+  html += row('Policy Term',      p.policy_term || '—');
+  html += row('Policy Type',      p.plan_type || '—');
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04)">'
+    + '<div style="font-size:13px;color:var(--text-dim)">Members Covered</div>'
+    + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">'+p.members_covered+'</span>'
+    + '<span onclick="App.navigate(\'mediclaim-members\')" style="font-size:12px;color:'+MEDICLAIM_COLOR+';font-weight:700;cursor:pointer">View Members →</span></div>'
+    + '</div>';
+  html += row('Provider', escapeHtml(p.provider||''));
+  html += '</div>';
+
+  // Documents
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);overflow:hidden">'
+    + '<div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;font-weight:700">Documents</div>'
+    + '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px">'
+    + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:18px">📄</div>'
+    + '<div style="flex:1"><div style="font-size:13px;font-weight:700">Policy_Document.pdf</div><div style="font-size:11px;color:var(--text-dim);margin-top:1px">2.4 MB</div></div>'
+    + '<button onclick="App.showToast(\'Document download coming soon\')" style="padding:7px 14px;border-radius:10px;background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.25);font-size:12px;font-weight:700;cursor:pointer">View</button>'
+    + '</div></div>';
+
+  // CTAs
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 16px">'
+    + '<button onclick="App.navigate(\'mediclaim-claims\')" style="padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer">View Claims</button>'
+    + '<button onclick="App.navigate(\'mediclaim-renewal\')" style="padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Renew Policy</button>'
+    + '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimMembers() {
+  var members = State.mediclaimMembers || [];
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-detail\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Members Covered</span><div style="width:36px"></div></div>';
+
+  html += '<div style="margin:0 16px 14px">';
+  members.forEach(function(m, idx) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'
+      + '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff">'+escapeHtml(m.initial)+'</div>'
+      + '<div style="flex:1"><div style="font-size:15px;font-weight:700">'+escapeHtml(m.name)+(m.sub?' <span style="font-size:11px;font-weight:400;color:var(--text-dim)">('+escapeHtml(m.sub)+')</span>':'')+'</div>'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+escapeHtml(m.relation)+' • '+m.age+' years</div>'
+      + '</div>'
+      + '<span style="padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(34,197,94,.15);color:#22C55E">Covered</span>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin:0 16px 16px">'
+    + '<button onclick="App._mediclaimAddMember()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer">+ Add Member</button>'
+    + '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimClaims() {
+  var claims  = State.mediclaimClaims || [];
+  var filter  = State.mediclaimClaimsFilter || 'all';
+  var filters = ['all','approved','pending','rejected'];
+  var counts  = {all:claims.length, approved:0, pending:0, rejected:0};
+  claims.forEach(function(c){ counts[c.status]++; });
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-detail\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Claims History</span><div style="width:36px"></div></div>';
+
+  // Filter tabs
+  html += '<div style="display:flex;gap:6px;padding:8px 16px 12px;overflow-x:auto">';
+  filters.forEach(function(f) {
+    var isAct = filter === f;
+    html += '<div onclick="State.mediclaimClaimsFilter=\''+f+'\';App.render()" style="padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+MEDICLAIM_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.06);')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+' <span style="opacity:.7;font-size:11px">('+counts[f]+')</span></div>';
+  });
+  html += '</div>';
+
+  var filtered = filter === 'all' ? claims : claims.filter(function(c){ return c.status === filter; });
+  html += '<div style="margin:0 16px">';
+  if (filtered.length === 0) {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:40px 0;font-size:14px">No claims found</div>';
+  } else {
+    filtered.forEach(function(c) {
+      html += '<div onclick="State.mediclaimCurrentClaimId=\''+escapeHtml(c.id)+'\';App.navigate(\'mediclaim-claim-status\')" style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;cursor:pointer">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
+        + '<div><div style="font-size:13px;font-weight:700">'+escapeHtml(c.id)+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+escapeHtml(c.type)+'</div></div>'
+        + '<div style="text-align:right"><div style="font-size:15px;font-weight:800;color:'+MEDICLAIM_COLOR+'">'+formatINR(c.amount)+'</div>'+_mcStatusBadge(c.status)+'</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:16px;font-size:11px;color:var(--text-dim)">'
+        + '<span>Claimed: '+_mcFmtDate(c.claimed_on)+'</span>'
+        + (c.approved_on ? '<span>Approved: '+_mcFmtDate(c.approved_on)+'</span>' : '')
+        + (c.reason ? '<span style="color:#EF4444">Reason: '+escapeHtml(c.reason)+'</span>' : '')
+        + '</div>'
+        + '</div>';
+    });
+  }
+  html += '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._mediclaimFileClaim()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ File New Claim</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimFileClaim() {
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-claims\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">File New Claim</span><div style="width:36px"></div></div>';
+  html += _mcStepper('details');
+
+  var cd = State.mediclaimClaimData || {};
+  html += '<div style="margin:12px 16px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:15px;font-weight:700;margin-bottom:14px">Claim Details</div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Claim Type *</label>'
+    + '<select id="mc-claim-type" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + ['Hospitalization','Day Care Treatment','Consultation','Emergency','Other'].map(function(t){ return '<option value="'+t+'"'+(cd.type===t?' selected':'')+'>'+t+'</option>'; }).join('')
+    + '</select></div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Hospital Name *</label>'
+    + '<input id="mc-hospital" type="text" value="'+escapeHtml(cd.hospital||'')+'" placeholder="Enter hospital name" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box"></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Date of Admission *</label><input id="mc-admit-date" type="date" value="'+escapeHtml(cd.admit_date||'')+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box"></div>'
+    + '<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Date of Discharge *</label><input id="mc-discharge-date" type="date" value="'+escapeHtml(cd.discharge_date||'')+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box"></div>'
+    + '</div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Claim Amount (₹) *</label>'
+    + '<input id="mc-claim-amount" type="number" value="'+escapeHtml(String(cd.amount||''))+'" placeholder="0" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box"></div>'
+    + '<div style="margin-bottom:4px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Remarks</label>'
+    + '<textarea id="mc-remarks" rows="3" placeholder="Optional remarks" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;resize:none;box-sizing:border-box">'+escapeHtml(cd.remarks||'')+'</textarea></div>'
+    + '</div></div>';
+
+  html += '<div style="margin:12px 16px 16px"><button onclick="App._mediclaimNextStep(\'details\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Next →</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimFileDocs() {
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-file-claim\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Upload Documents</span><div style="width:36px"></div></div>';
+  html += _mcStepper('docs');
+
+  var docs = State.mediclaimDocs || [];
+  var docTypes = [
+    { id:'bills',        label:'Hospital Bills',          required:true  },
+    { id:'discharge',    label:'Discharge Summary',        required:true  },
+    { id:'prescription', label:'Doctor\'s Prescription',   required:true  },
+    { id:'reports',      label:'Investigation Reports',    required:false, hint:'If any' },
+    { id:'others',       label:'Others',                   required:false, hint:'Optional' },
+  ];
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);overflow:hidden">';
+  docTypes.forEach(function(dt, idx) {
+    var uploaded = docs.find(function(d){ return d.type===dt.id; });
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px'+(idx>0?';border-top:1px solid rgba(255,255,255,.04)':'')+'">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:'+(uploaded?'rgba(34,197,94,.15)':'rgba(124,92,252,.1)')+';display:flex;align-items:center;justify-content:center;font-size:18px">'+(uploaded?'✅':'📎')+'</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtml(dt.label)+(dt.required?'':' <span style="font-size:10px;color:var(--text-dim)">('+escapeHtml(dt.hint||'')+')</span>')+'</div>'
+      + (uploaded ? '<div style="font-size:11px;color:#22C55E;margin-top:1px">'+escapeHtml(uploaded.name)+'</div>' : '<div style="font-size:11px;color:var(--text-dim);margin-top:1px">No file uploaded</div>')
+      + '</div>'
+      + '<button onclick="App._mediclaimUploadDoc(\''+dt.id+'\')" style="padding:7px 14px;border-radius:10px;background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.25);font-size:12px;font-weight:700;cursor:pointer">'+(uploaded?'Replace':'Upload')+'</button>'
+      + '</div>';
+  });
+  html += '</div>'
+    + '<div style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:8px">Supported formats: JPG, PNG, PDF (Max 10 MB)</div>'
+    + '</div>';
+
+  html += '<div style="margin:12px 16px 16px"><button onclick="App._mediclaimNextStep(\'docs\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Next →</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimFileReview() {
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-file-docs\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Review & Submit</span><div style="width:36px"></div></div>';
+  html += _mcStepper('review');
+
+  var cd   = State.mediclaimClaimData || {};
+  var docs = State.mediclaimDocs || [];
+
+  function revRow(label, value) {
+    return '<div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:13px;color:var(--text-dim)">'+label+'</span>'
+      + '<span style="font-size:13px;font-weight:700">'+escapeHtml(String(value||'—'))+'</span>'
+      + '</div>';
+  }
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:10px">Claim Summary</div>'
+    + revRow('Claim Type',    cd.type || 'Hospitalization')
+    + revRow('Hospital Name', cd.hospital || 'Apollo Hospitals')
+    + revRow('Admission',     _mcFmtDate(cd.admit_date || '2024-03-10'))
+    + revRow('Discharge',     _mcFmtDate(cd.discharge_date || '2024-03-15'))
+    + revRow('Claim Amount',  formatINR(cd.amount || 45000))
+    + revRow('Remarks',       cd.remarks || 'NA')
+    + '</div>';
+
+  html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:10px">Uploaded Documents <span style="font-size:12px;color:var(--text-dim);">('+docs.length+' files)</span></div>';
+  if (docs.length === 0) {
+    html += '<div style="font-size:12px;color:var(--text-dim)">No documents uploaded</div>';
+  } else {
+    docs.forEach(function(d) {
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        + '<span style="font-size:18px">📄</span>'
+        + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtml(d.name)+'</div><div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(d.size||'')+'</div></div>'
+        + '</div>';
+    });
+  }
+  html += '</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._mediclaimSubmitClaim()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Submit Claim</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimClaimStatus() {
+  var claimId = State.mediclaimCurrentClaimId || 'CLM-2024-0012';
+  var claims  = State.mediclaimClaims || [];
+  var claim   = claims.find(function(c){ return c.id===claimId; }) || claims[0] || {};
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-claims\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Claim Status</span><div style="width:36px"></div></div>';
+
+  // Claim header
+  html += '<div style="margin:0 16px 14px;background:linear-gradient(135deg,'+MEDICLAIM_COLOR+'22,'+MEDICLAIM_COLOR+'08);border:1px solid '+MEDICLAIM_COLOR+'30;border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    + '<div style="font-size:16px;font-weight:700">'+escapeHtml(claim.id||'CLM-2024-0012')+'</div>'
+    + '<span style="padding:4px 10px;border-radius:10px;font-size:12px;font-weight:700;background:rgba(251,191,36,.15);color:#FBBF24">In Progress</span>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Claim Amount</div><div style="font-size:14px;font-weight:800;color:'+MEDICLAIM_COLOR+'">'+formatINR(claim.amount||45000)+'</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Claim Type</div><div style="font-size:13px;font-weight:700">'+escapeHtml(claim.type||'Hospitalization')+'</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Claimed On</div><div style="font-size:13px;font-weight:700">'+_mcFmtDate(claim.claimed_on)+'</div></div>'
+    + '</div></div>';
+
+  // Timeline
+  var timeline = [
+    { label:'Claim Submitted',  date:claim.claimed_on||'2024-03-15', note:'Claim submitted successfully.',                        done:true  },
+    { label:'Under Review',     date:'2024-03-18',                  note:'Your claim is under review by the insurer.',            done:true  },
+    { label:'Approved',         date:null,                          note:null,                                                    done:false },
+    { label:'Payment Initiated',date:null,                          note:null,                                                    done:false },
+    { label:'Paid',             date:null,                          note:null,                                                    done:false },
+  ];
+
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Progress</div>';
+  timeline.forEach(function(step, i) {
+    var isLast = i === timeline.length - 1;
+    html += '<div style="display:flex;gap:12px">'
+      + '<div style="display:flex;flex-direction:column;align-items:center">'
+      + '<div style="width:28px;height:28px;border-radius:50%;background:'+(step.done?MEDICLAIM_COLOR:'rgba(255,255,255,.1)')+';display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">'+(step.done?'✓':'<span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);display:block"></span>')+'</div>'
+      + (isLast?'':'<div style="width:2px;flex:1;min-height:24px;background:'+(step.done?MEDICLAIM_COLOR+'60':'rgba(255,255,255,.08)')+';margin:4px 0"></div>')
+      + '</div>'
+      + '<div style="padding-bottom:'+(isLast?'0':'16')+'px;flex:1">'
+      + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:'+(step.done?'#fff':'var(--text-dim)')+'">'+escapeHtml(step.label)+'</span>'
+      + (step.date?'<span style="font-size:11px;color:var(--text-dim)">'+_mcFmtDate(step.date)+'</span>':'<span style="font-size:11px;color:var(--text-dim)">Pending</span>')
+      + '</div>'
+      + (step.note?'<div style="font-size:12px;color:var(--text-dim);margin-top:3px">'+escapeHtml(step.note)+'</div>':'')
+      + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App.navigate(\'mediclaim-detail\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer">View Claim Details</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimRenewal() {
+  var p       = (State.mediclaimPolicies||[])[0] || {};
+  var daysLeft = _mcDaysLeft(p.expiry_date);
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-detail\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Policy Renewal</span><div style="width:36px"></div></div>';
+
+  // Expiry alert
+  html += '<div style="margin:0 16px 14px;background:'+(daysLeft!==null&&daysLeft<=30?'rgba(251,191,36,.08)':'rgba(34,197,94,.08)')+';border:1px solid '+(daysLeft!==null&&daysLeft<=30?'rgba(251,191,36,.3)':'rgba(34,197,94,.3)')+';border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px">'
+    + '<div style="font-size:24px">'+(daysLeft!==null&&daysLeft<=30?'⚠️':'✅')+'</div>'
+    + '<div><div style="font-size:13px;font-weight:700;color:'+(daysLeft!==null&&daysLeft<=30?'#FBBF24':'#22C55E')+'">Policy Expiry Date</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+_mcFmtDate(p.expiry_date)+(daysLeft!==null?' • '+(daysLeft>0?daysLeft+' days left':'Expired'):'')+'</div></div>'
+    + '</div>';
+
+  function row(label, value, highlight) {
+    return '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:13px;color:var(--text-dim)">'+label+'</span>'
+      + '<span style="font-size:13px;font-weight:700'+(highlight?';color:'+MEDICLAIM_COLOR:'')+'">'+escapeHtml(String(value||'—'))+'</span>'
+      + '</div>';
+  }
+
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:10px">Renewal Details</div>'
+    + row('Policy Number',   p.policy_number||'—')
+    + row('Policy Name',     p.name||'—')
+    + row('Sum Insured',     formatINR(p.sum_insured||0), true)
+    + row('Current Premium', formatINR(p.premium||0)+'/year')
+    + '<div style="display:flex;justify-content:space-between;padding:12px 0">'
+    + '<span style="font-size:13px;color:var(--text-dim)">Renewal Premium</span>'
+    + '<div style="text-align:right"><div style="font-size:15px;font-weight:800;color:'+MEDICLAIM_COLOR+'">'+formatINR(p.renewal_premium||0)+'</div><div style="font-size:10px;color:var(--text-dim)">including taxes</div></div>'
+    + '</div></div>';
+
+  // Benefits
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 16px 14px">'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:22px">🎁</div><div style="font-size:11px;font-weight:700;margin-top:4px">No Claim Bonus</div><div style="font-size:10px;color:#22C55E;margin-top:2px">Available</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:22px">🛡️</div><div style="font-size:11px;font-weight:700;margin-top:4px">Coverage</div><div style="font-size:10px;color:var(--text-dim);margin-top:2px">Upto 5L per family</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:22px">🏥</div><div style="font-size:11px;font-weight:700;margin-top:4px">Cashless</div><div style="font-size:10px;color:var(--text-dim);margin-top:2px">Network Hospitals</div></div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._mediclaimRenewPolicy()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MEDICLAIM_COLOR+',#5B21B6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Proceed to Renew</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderMediclaimInsights() {
+  var tab     = State.mediclaimInsightTab || 'this_year';
+  var tabs    = [{id:'this_year',label:'This Year'},{id:'last_year',label:'Last Year'},{id:'all_time',label:'All Time'}];
+  var claims  = State.mediclaimClaims || [];
+  var backBtn = '<div class="icon-btn" onclick="App.navigate(\'mediclaim-list\')">'+_invBackSVG+'</div>';
+  var html = '<div class="form-header">'+backBtn+'<span class="form-title">Mediclaim Insights</span><div style="width:36px"></div></div>';
+
+  // Tabs
+  html += '<div style="display:flex;gap:6px;padding:8px 16px 12px">';
+  tabs.forEach(function(t) {
+    var isAct = tab === t.id;
+    html += '<div onclick="State.mediclaimInsightTab=\''+t.id+'\';App.render()" style="padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+MEDICLAIM_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.06);')+'">'+t.label+'</div>';
+  });
+  html += '</div>';
+
+  // Stats grid
+  var approved = claims.filter(function(c){ return c.status==='approved'; });
+  var totalClaimed  = claims.reduce(function(s,c){ return s+c.amount; }, 0);
+  var totalApproved = approved.reduce(function(s,c){ return s+c.amount; }, 0);
+  var totalRejected = claims.filter(function(c){ return c.status==='rejected'; }).reduce(function(s,c){ return s+c.amount; }, 0);
+
+  var stats = [
+    {label:'Claims Filed',    value:claims.length,         sub:'',          color:'#fff'},
+    {label:'Claims Approved', value:approved.length,       sub:'',          color:'#22C55E'},
+    {label:'Amount Claimed',  value:formatINR(totalClaimed),  sub:'Total',    color:MEDICLAIM_COLOR},
+    {label:'Amount Approved', value:formatINR(totalApproved), sub:'Paid',     color:'#22C55E'},
+    {label:'Amount Rejected', value:formatINR(totalRejected), sub:'Rejected', color:'#EF4444'},
+    {label:'No Claim Bonus',  value:'Available',           sub:'This year', color:'#FBBF24'},
+  ];
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">';
+  stats.forEach(function(s) {
+    html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px">'
+      + '<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">'+s.label+'</div>'
+      + '<div style="font-size:18px;font-weight:800;color:'+s.color+'">'+s.value+'</div>'
+      + (s.sub?'<div style="font-size:10px;color:var(--text-dim);margin-top:2px">'+s.sub+'</div>':'')
+      + '</div>';
+  });
+  html += '</div>';
+
+  // Claims trend bar chart
+  var barMonths = ['Jan','Feb','Mar','Apr','May','Jun'];
+  var barVals   = [0, 0, 45000, 12500, 0, 0];
+  var maxBar    = Math.max.apply(null, barVals) || 1;
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Claims Trend</div>'
+    + '<div style="display:flex;align-items:flex-end;gap:6px;height:80px">';
+  barVals.forEach(function(v, i) {
+    var barH = v > 0 ? Math.max(8, Math.round((v/maxBar)*70)) : 4;
+    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'
+      + '<div style="width:100%;height:'+barH+'px;border-radius:4px 4px 0 0;background:'+(v>0?MEDICLAIM_COLOR:'rgba(255,255,255,.08)')+'"></div>'
+      + '<div style="font-size:9px;color:var(--text-dim)">'+barMonths[i]+'</div>'
+      + '</div>';
+  });
+  html += '</div></div>';
+
+  // Top claim type donut
+  var donutSlices = [{value:78.3,color:MEDICLAIM_COLOR},{value:21.7,color:'#38BDF8'}];
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:14px;font-weight:700;margin-bottom:14px">Top Claim Types</div>'
+    + '<div style="display:flex;align-items:center;gap:20px">'
+    + '<div>' + donutSVG(donutSlices, 44, 100) + '</div>'
+    + '<div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:10px;height:10px;border-radius:50%;background:'+MEDICLAIM_COLOR+';display:inline-block"></span><span style="font-size:13px">Hospitalization</span><span style="font-size:13px;font-weight:700;margin-left:auto">78.3%</span></div>'
+    + '<div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#38BDF8;display:inline-block"></span><span style="font-size:13px">Day Care</span><span style="font-size:13px;font-weight:700;margin-left:auto">21.7%</span></div></div>'
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._mediclaimViewReport()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MEDICLAIM_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer">View Detailed Report</button></div>';
+
+  return html + '<div style="height:80px"></div>';
 }
 
 // ─── LIC MODULE ────────────────────────────────────────────────────────────
@@ -13213,11 +13736,20 @@ const App = {
     State.screen = screen;
     State.params = params;
     // Reset investment detail state when entering a new detail view
-    // so stale tab/filter/period from a previous investment don't bleed over
     if (screen === 'investment-detail') {
       State.invDetailTab   = 'overview';
       State.invNoteFilter  = 'all';
       State.invChartPeriod = '1Y';
+    }
+    // Highlight the correct bottom-nav tab based on the screen being navigated to
+    var tabHint = null;
+    if (screen.startsWith('mediclaim'))      tabHint = 'mediclaim';
+    else if (screen.startsWith('lic'))       tabHint = 'lic';
+    else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
+    if (tabHint) {
+      document.querySelectorAll('.tab-item').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.tab === tabHint);
+      });
     }
     this.render();
   },
@@ -13378,6 +13910,16 @@ const App = {
       case 'term-insurance-timeline':          html = renderTermInsTimeline();          break;
       case 'term-insurance-edit':              html = renderTermInsEdit();              break;
       case 'term-insurance-insights':          html = renderTermInsInsights();          break;
+      case 'mediclaim-list':          html = renderMediclaimList();          break;
+      case 'mediclaim-detail':        html = renderMediclaimDetail();        break;
+      case 'mediclaim-members':       html = renderMediclaimMembers();       break;
+      case 'mediclaim-claims':        html = renderMediclaimClaims();        break;
+      case 'mediclaim-file-claim':    html = renderMediclaimFileClaim();     break;
+      case 'mediclaim-file-docs':     html = renderMediclaimFileDocs();      break;
+      case 'mediclaim-file-review':   html = renderMediclaimFileReview();    break;
+      case 'mediclaim-claim-status':  html = renderMediclaimClaimStatus();   break;
+      case 'mediclaim-renewal':       html = renderMediclaimRenewal();       break;
+      case 'mediclaim-insights':      html = renderMediclaimInsights();      break;
       case 'lic-list':              html = renderLICList();              break;
       case 'lic-detail':            html = renderLICDetail();            break;
       case 'lic-buy':               html = renderLICBuy();               break;
@@ -15624,6 +16166,100 @@ const App = {
   },
   _termInsViewReport() {
     this.showToast('Generating detailed report...');
+  },
+
+  /* ── Mediclaim Module ───────────────────────── */
+  _mediclaimFileClaim() {
+    State.mediclaimClaimData = {};
+    State.mediclaimDocs      = [];
+    App.navigate('mediclaim-file-claim');
+  },
+  _mediclaimNextStep(step) {
+    if (step === 'details') {
+      var type      = document.getElementById('mc-claim-type')?.value || 'Hospitalization';
+      var hospital  = (document.getElementById('mc-hospital')?.value || '').trim();
+      var admitDate = document.getElementById('mc-admit-date')?.value || '';
+      var discDate  = document.getElementById('mc-discharge-date')?.value || '';
+      var amount    = parseFloat(document.getElementById('mc-claim-amount')?.value || '0');
+      var remarks   = (document.getElementById('mc-remarks')?.value || '').trim();
+      if (!hospital) { this.showToast('Please enter the hospital name'); return; }
+      if (!admitDate) { this.showToast('Please enter date of admission'); return; }
+      if (!amount) { this.showToast('Please enter the claim amount'); return; }
+      State.mediclaimClaimData = { type:type, hospital:hospital, admit_date:admitDate, discharge_date:discDate, amount:amount, remarks:remarks };
+      App.navigate('mediclaim-file-docs');
+    } else if (step === 'docs') {
+      App.navigate('mediclaim-file-review');
+    }
+  },
+  _mediclaimSubmitClaim() {
+    var cd  = State.mediclaimClaimData || {};
+    var now = new Date();
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    var ds  = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+    var newId = 'CLM-'+now.getFullYear()+'-'+String(Math.floor(1000+Math.random()*9000));
+    var newClaim = {
+      id:          newId,
+      type:        cd.type || 'Hospitalization',
+      amount:      cd.amount || 45000,
+      claimed_on:  ds,
+      approved_on: null,
+      status:      'pending',
+    };
+    State.mediclaimClaims = [newClaim].concat(State.mediclaimClaims || []);
+    State.mediclaimCurrentClaimId = newId;
+    this.showToast('Claim submitted successfully!');
+    App.navigate('mediclaim-claim-status');
+  },
+  _mediclaimAddMember() {
+    var overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = '<div class="modal" style="max-width:340px">'
+      + '<div style="font-size:16px;font-weight:700;margin-bottom:14px">Add Member</div>'
+      + '<input id="mc-mem-name"     type="text"   placeholder="Full Name"     style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box;margin-bottom:10px">'
+      + '<input id="mc-mem-relation" type="text"   placeholder="Relation (e.g. Spouse, Son)" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box;margin-bottom:10px">'
+      + '<input id="mc-mem-age"      type="number" placeholder="Age"           style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box;margin-bottom:14px">'
+      + '<div style="display:flex;gap:10px">'
+      + '<button onclick="this.closest(\'.overlay\').remove()" style="flex:1;padding:12px;border-radius:8px;background:rgba(255,255,255,.08);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+      + '<button onclick="App._mediclaimSaveMember(this.closest(\'.overlay\'))" style="flex:1;padding:12px;border-radius:8px;background:'+MEDICLAIM_COLOR+';color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Add</button>'
+      + '</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _mediclaimSaveMember(overlay) {
+    var name     = (document.getElementById('mc-mem-name')?.value || '').trim();
+    var relation = (document.getElementById('mc-mem-relation')?.value || '').trim();
+    var age      = parseInt(document.getElementById('mc-mem-age')?.value || '0');
+    if (!name || !relation) { this.showToast('Please fill in all fields'); return; }
+    State.mediclaimMembers = (State.mediclaimMembers || []).concat([
+      { id:'m'+Date.now(), name:name, relation:relation, sub:'', age:age, status:'covered', initial:name[0].toUpperCase() },
+    ]);
+    if (State.mediclaimPolicies && State.mediclaimPolicies[0]) {
+      State.mediclaimPolicies[0].members_covered = State.mediclaimMembers.length;
+    }
+    if (overlay) overlay.remove();
+    App.render();
+    this.showToast('Member added successfully!');
+  },
+  _mediclaimRenewPolicy() {
+    this.showToast('Processing renewal...');
+    if (State.mediclaimPolicies && State.mediclaimPolicies[0]) {
+      var exp   = new Date(State.mediclaimPolicies[0].expiry_date);
+      exp.setFullYear(exp.getFullYear() + 1);
+      var pad   = function(n){ return String(n).padStart(2,'0'); };
+      State.mediclaimPolicies[0].expiry_date = exp.getFullYear()+'-'+pad(exp.getMonth()+1)+'-'+pad(exp.getDate());
+      State.mediclaimPolicies[0].premium     = State.mediclaimPolicies[0].renewal_premium;
+    }
+    setTimeout(function(){ App.navigate('mediclaim-list'); }, 800);
+  },
+  _mediclaimViewReport() {
+    this.showToast('Generating report...');
+  },
+  _mediclaimUploadDoc(docType) {
+    var labels = { bills:'Hospital_Bills.pdf', discharge:'Discharge_Summary.pdf', prescription:'Prescription.pdf', reports:'Reports.pdf', others:'Other_Doc.pdf' };
+    var sizes  = { bills:'2.1 MB', discharge:'1.8 MB', prescription:'0.9 MB', reports:'1.5 MB', others:'1.0 MB' };
+    State.mediclaimDocs = (State.mediclaimDocs || []).filter(function(d){ return d.type !== docType; });
+    State.mediclaimDocs.push({ type:docType, name:labels[docType]||docType+'.pdf', size:sizes[docType]||'1.0 MB' });
+    this.showToast('Document uploaded successfully');
+    App.render();
   },
 
   /* ── LIC Module ─────────────────────────────── */
