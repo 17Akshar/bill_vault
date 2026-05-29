@@ -1741,6 +1741,27 @@ const State = {
     { id:'CLM-2023-0015', type:'Consultation',       amount:1200,  claimed_on:'2023-12-18', approved_on:null,         status:'rejected', reason:'Policy Exclusion' },
     { id:'CLM-2023-0007', type:'Hospitalization',    amount:38900, claimed_on:'2023-10-21', approved_on:'2023-10-29', status:'approved' },
   ],
+  // Budget module
+  budgetPeriod:       'this_month',
+  budgetAnalyticsTab: 'category',
+  budgetInsightTab:   'this_month',
+  budgetEditCategory: null,
+  budgetSavingsGoal:  { amount:0, target_date:'', notes:'' },
+  budgetTotalBudget:  100000,
+  budgetTotalPeriod:  'monthly',
+  budgetImportSelected: [],
+  budgetCategories: [
+    { id:'bc1',  name:'Home',          icon:'🏠', color:'#6366F1', budget:20000, spent:16000 },
+    { id:'bc2',  name:'Food & Dining', icon:'🍔', color:'#F59E0B', budget:10000, spent:8045  },
+    { id:'bc3',  name:'Transport',     icon:'🚗', color:'#10B981', budget:10000, spent:6520  },
+    { id:'bc4',  name:'Shopping',      icon:'🛍️', color:'#EC4899', budget:5000,  spent:3780  },
+    { id:'bc5',  name:'Entertainment', icon:'🎬', color:'#8B5CF6', budget:3000,  spent:2100  },
+    { id:'bc6',  name:'Travel',        icon:'✈️', color:'#EF4444', budget:5000,  spent:6300  },
+    { id:'bc7',  name:'Investments',   icon:'📈', color:'#06B6D4', budget:15000, spent:10000 },
+    { id:'bc8',  name:'Health',        icon:'❤️', color:'#EF4444', budget:3000,  spent:2000  },
+    { id:'bc9',  name:'Education',     icon:'📚', color:'#3B82F6', budget:2000,  spent:1000  },
+    { id:'bc10', name:'Others',        icon:'📦', color:'#6B7280', budget:2000,  spent:1395  },
+  ],
   // LIC module
   licDetailTab:    'overview',
   licTxFilter:     'all',
@@ -12872,6 +12893,7 @@ function renderMore() {
 
   html += menuSection('Financial Tools', [
     { icon:'📈', bg:'rgba(34,197,94,0.15)',  label:'Investment',           sub:'Track and manage investments', fn:"App.navigate('investment-dashboard')" },
+    { icon:'💰', bg:'rgba(124,58,237,0.15)', label:'Budget Management',    sub:'Set budgets, track spending and achieve savings goals', fn:"App.navigate('budget-dashboard')" },
   ]);
 
   html += menuSection('Preferences', [
