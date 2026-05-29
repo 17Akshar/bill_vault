@@ -7110,6 +7110,505 @@ function renderTermInsInsights() {
     + '</div>';
 }
 
+// ─── BUDGET MODULE ─────────────────────────────────────────────────────────
+var BUDGET_COLOR = '#7C3AED';
+
+function _bCats()        { return State.budgetCategories || []; }
+function _bIncome()      { return 150000; }
+function _bTotalSpent()  { return _bCats().reduce(function(s,c){ return s+c.spent; },0); }
+function _bSavings()     { return _bIncome() - _bTotalSpent(); }
+function _bTotalBudget() { return State.budgetTotalBudget || 100000; }
+function _bRemaining(cat){ return cat.budget - cat.spent; }
+function _bPct(cat)      { return cat.budget>0 ? Math.min(100, Math.round((cat.spent/cat.budget)*100)) : 0; }
+function _bBarColor(pct) { return pct>=100 ? '#EF4444' : pct>=75 ? '#F59E0B' : '#22C55E'; }
+
+function _bPeriodFilter() {
+  var periods = ['this_month','last_month','this_quarter','this_year','custom'];
+  var labels  = {'this_month':'This Month','last_month':'Last Month','this_quarter':'This Quarter','this_year':'This Year','custom':'Custom'};
+  var cur = State.budgetPeriod || 'this_month';
+  var html = '<div style="display:flex;gap:6px;padding:8px 16px 10px;overflow-x:auto">';
+  periods.forEach(function(p) {
+    var isAct = cur === p;
+    html += '<div onclick="State.budgetPeriod=\''+p+'\';App.render()" style="padding:6px 12px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+BUDGET_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.06);')+'">'+labels[p]+'</div>';
+  });
+  return html + '</div>';
+}
+
+function renderBudgetDashboard() {
+  var cats       = _bCats();
+  var totalBudget= _bTotalBudget();
+  var totalSpent = _bTotalSpent();
+  var remaining  = totalBudget - totalSpent;
+  var usedPct    = Math.min(100, Math.round((totalSpent/totalBudget)*100));
+  var income     = _bIncome();
+  var savings    = _bSavings();
+  var savingsRate= Math.round((savings/income)*100);
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.goTab(\'more\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Budget Management</span>'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-insights\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>'
+    + '</div>';
+
+  // Period filter
+  html += _bPeriodFilter();
+
+  // Summary card
+  html += '<div style="margin:0 16px 12px;background:linear-gradient(135deg,#4C1D95,#7C3AED);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden">'
+    + '<div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.06);border-radius:50%"></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:3px">Total Budget</div><div style="font-size:15px;font-weight:800;color:#fff">'+formatINR(totalBudget)+'</div></div>'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:3px">Total Spent</div><div style="font-size:15px;font-weight:800;color:#F9A8D4">'+formatINR(totalSpent)+'</div></div>'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:3px">Remaining</div><div style="font-size:15px;font-weight:800;color:#86EFAC">'+formatINR(remaining<0?0:remaining)+'</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(0,0,0,.25);border-radius:6px;height:8px;overflow:hidden;margin-bottom:6px">'
+    + '<div style="height:100%;border-radius:6px;background:linear-gradient(90deg,#EC4899,#F9A8D4);width:'+usedPct+'%"></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.65)">'
+    + '<span>'+usedPct+'% Used</span><span>'+(100-usedPct)+'% Remaining</span>'
+    + '</div></div>';
+
+  // Budget vs Expense card
+  html += '<div style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:12px">Budget vs Expense</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Income</div><div style="font-size:14px;font-weight:800;color:#22C55E">'+formatINR(income)+'</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Expense</div><div style="font-size:14px;font-weight:800;color:#EF4444">'+formatINR(totalSpent)+'</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Savings</div><div style="font-size:14px;font-weight:800;color:#22C55E">'+formatINR(savings)+'</div></div>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:12px;color:var(--text-dim)">Savings Rate</span>'
+    + '<span style="font-size:13px;font-weight:700;color:#22C55E">'+savingsRate+'% 🌟</span>'
+    + '</div></div>';
+
+  // Category summary
+  html += '<div style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);overflow:hidden">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06)">'
+    + '<span style="font-size:13px;font-weight:700">Category Summary</span>'
+    + '<span onclick="App.navigate(\'budget-analytics\')" style="font-size:12px;color:'+BUDGET_COLOR+';font-weight:700;cursor:pointer">Analytics →</span>'
+    + '</div>';
+
+  // Table header
+  html += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.2fr;gap:4px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04)">'
+    + '<div style="font-size:10px;color:var(--text-dim);font-weight:700">CATEGORY</div>'
+    + '<div style="font-size:10px;color:var(--text-dim);font-weight:700;text-align:right">BUDGET</div>'
+    + '<div style="font-size:10px;color:var(--text-dim);font-weight:700;text-align:right">SPENT</div>'
+    + '<div style="font-size:10px;color:var(--text-dim);font-weight:700;text-align:right">REM.</div>'
+    + '<div style="font-size:10px;color:var(--text-dim);font-weight:700;text-align:right">PROG.</div>'
+    + '</div>';
+
+  cats.forEach(function(cat, idx) {
+    var pct  = _bPct(cat);
+    var rem  = _bRemaining(cat);
+    var barC = _bBarColor(pct);
+    var isOver = rem < 0;
+    html += '<div onclick="State.budgetEditCategory=\''+cat.id+'\';App.navigate(\'budget-edit-category\')" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.2fr;gap:4px;align-items:center;padding:9px 12px;cursor:pointer;'+(idx>0?'border-top:1px solid rgba(255,255,255,.03)':'')+'">'
+      + '<div style="display:flex;align-items:center;gap:6px;overflow:hidden"><span style="font-size:14px">'+cat.icon+'</span><span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(cat.name)+'</span></div>'
+      + '<div style="font-size:11px;text-align:right;color:var(--text-dim)">'+Math.round(cat.budget/1000)+'k</div>'
+      + '<div style="font-size:11px;text-align:right">'+Math.round(cat.spent/1000)+'k</div>'
+      + '<div style="font-size:11px;text-align:right;color:'+(isOver?'#EF4444':'var(--text-dim)')+';">'+(isOver?'-':'')+Math.round(Math.abs(rem)/1000)+'k'+(isOver?' ⚠':'')+'</div>'
+      + '<div style="text-align:right">'
+        + '<div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">'
+          + '<div style="width:30px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barC+';border-radius:2px"></div></div>'
+          + '<span style="font-size:10px;color:'+barC+';font-weight:700">'+pct+'%</span>'
+        + '</div>'
+      + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  // CTAs
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 16px 16px">'
+    + '<button onclick="App.navigate(\'budget-category-list\')" style="padding:13px;border-radius:var(--radius-sm);background:rgba(124,58,237,.12);color:'+BUDGET_COLOR+';border:1px solid rgba(124,58,237,.3);font-size:13px;font-weight:700;cursor:pointer">View All</button>'
+    + '<button onclick="App.navigate(\'budget-add-options\')" style="padding:13px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">+ Add Budget</button>'
+    + '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetAddOptions() {
+  var opts = [
+    { icon:'📅', bg:'rgba(124,58,237,.15)', color:BUDGET_COLOR,   label:'Add Category Budget',      sub:'Add budget for a category',     route:'budget-add-category'     },
+    { icon:'🎨', bg:'rgba(245,158,11,.15)', color:'#F59E0B',        label:'Add Custom Category',      sub:'Create a new category',         route:'budget-add-custom-category'},
+    { icon:'💰', bg:'rgba(16,185,129,.15)', color:'#10B981',        label:'Set Total Budget',         sub:'Set or update the total budget', route:'budget-set-total'        },
+    { icon:'🎯', bg:'rgba(239,68,68,.15)',  color:'#EF4444',        label:'Set Savings Goal',         sub:'Set your savings target',       route:'budget-savings-goal'     },
+    { icon:'📋', bg:'rgba(59,130,246,.15)', color:'#3B82F6',        label:'Import from Previous Month', sub:'Copy budgets from last month', route:'budget-import'           },
+  ];
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-dashboard\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Add to Budget</span>'
+    + '<div style="width:36px"></div>'
+    + '</div>';
+
+  html += '<div style="margin:12px 16px">';
+  opts.forEach(function(o, idx) {
+    html += '<div onclick="App.navigate(\''+o.route+'\')" style="background:var(--card);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:10px">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:'+o.bg+';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+o.icon+'</div>'
+      + '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+escapeHtml(o.label)+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+escapeHtml(o.sub)+'</div></div>'
+      + '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetAddCategory() {
+  var cats    = _bCats();
+  var periods = [['monthly','Monthly'],['weekly','Weekly'],['custom','Custom']];
+  var cur     = State.budgetCatPeriod || 'monthly';
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-add-options\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Add Category Budget</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Category</label>'
+    + '<select id="bc-cat" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + '<option value="">Select Category</option>'
+    + cats.map(function(c){ return '<option value="'+c.id+'">'+c.icon+' '+escapeHtml(c.name)+'</option>'; }).join('')
+    + '</select></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Budget Amount</label>'
+    + '<div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:14px">₹</span>'
+    + '<input id="bc-amount" type="number" placeholder="0.00" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 12px 12px 26px;color:#fff;font-size:14px;box-sizing:border-box"></div></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Period</label>'
+    + '<div style="display:flex;gap:8px">'
+    + periods.map(function(p){ var isAct=cur===p[0]; return '<div onclick="State.budgetCatPeriod=\''+p[0]+'\';App.render()" style="flex:1;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+BUDGET_COLOR+';color:#fff;':'background:rgba(255,255,255,.06);color:var(--text-dim);')+'">'+p[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="margin-bottom:6px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Alert Limit (Optional)</label>'
+    + '<select id="bc-alert" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + ['','50%','75%','80%','90%'].map(function(v){ return '<option value="'+v+'"'+(v==='80%'?' selected':'')+'>'+( v||'Select limit')+'</option>'; }).join('')
+    + '</select>'
+    + '<div style="font-size:11px;color:var(--text-dim);margin-top:6px">You will be notified when you reach this limit</div></div>'
+    + '<div style="margin-top:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Notes (Optional)</label>'
+    + '<textarea id="bc-notes" rows="3" placeholder="Add a note..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;resize:none;box-sizing:border-box"></textarea></div>'
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._budgetSaveCategory()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Budget</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetAddCustomCategory() {
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-add-options\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Add Custom Category</span>'
+    + '<div style="width:36px"></div></div>';
+
+  var examples = ['🐾 Pet Expenses','💪 Fitness','📱 Subscriptions','🎁 Gifts','🎨 Hobbies'];
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Category Name *</label>'
+    + '<input id="bcc-name" type="text" placeholder="e.g. Pet Expenses" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;box-sizing:border-box"></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Icon (emoji)</label>'
+    + '<input id="bcc-icon" type="text" placeholder="e.g. 🐾" maxlength="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:20px;box-sizing:border-box"></div>'
+    + '<div style="margin-bottom:4px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Quick picks</label>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    + examples.map(function(e){ return '<div onclick="document.getElementById(\'bcc-icon\').value=\''+e[0]+'\';document.getElementById(\'bcc-name\').value=\''+e.slice(2)+'\'" style="padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.06);font-size:12px;cursor:pointer">'+e+'</div>'; }).join('')
+    + '</div></div>'
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._budgetAddCustomCategory()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Create Category</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetSetTotal() {
+  var periods   = [['monthly','Monthly'],['yearly','Yearly'],['custom','Custom']];
+  var curPeriod = State.budgetTotalPeriod || 'monthly';
+  var months    = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var curYear   = new Date().getFullYear();
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-add-options\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Set Total Budget</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Period</label>'
+    + '<div style="display:flex;gap:8px">'
+    + periods.map(function(p){ var isAct=curPeriod===p[0]; return '<div onclick="State.budgetTotalPeriod=\''+p[0]+'\';App.render()" style="flex:1;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+BUDGET_COLOR+';color:#fff;':'background:rgba(255,255,255,.06);color:var(--text-dim);')+'">'+p[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Total Budget Amount</label>'
+    + '<div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:14px">₹</span>'
+    + '<input id="bt-amount" type="number" placeholder="0.00" value="'+(State.budgetTotalBudget||100000)+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 12px 12px 26px;color:#fff;font-size:14px;box-sizing:border-box"></div></div>'
+    + '<div style="margin-bottom:4px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Start Month</label>'
+    + '<select id="bt-month" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + months.map(function(m,i){ return '<option value="'+(i+1)+'"'+(i===4?' selected':'')+'>'+m+' '+curYear+'</option>'; }).join('')
+    + '</select></div>'
+    + '<div style="margin-top:12px;padding:12px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;display:flex;gap:10px;align-items:flex-start">'
+    + '<span style="font-size:16px;flex-shrink:0">ℹ️</span>'
+    + '<span style="font-size:12px;color:var(--text-dim)">This amount will be used to calculate your category budgets and track your spending.</span>'
+    + '</div>'
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._budgetSetTotal()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Budget</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetSavingsGoal() {
+  var goal = State.budgetSavingsGoal || {};
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-add-options\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Set Savings Goal</span>'
+    + '<div style="width:36px"></div></div>';
+
+  // Goal icon
+  html += '<div style="text-align:center;padding:24px 16px 8px">'
+    + '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:38px">🎯</div>'
+    + '</div>';
+
+  html += '<div style="margin:8px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Savings Goal Amount</label>'
+    + '<div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:14px">₹</span>'
+    + '<input id="bsg-amount" type="number" placeholder="0.00" value="'+escapeHtml(String(goal.amount||''))+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 12px 12px 26px;color:#fff;font-size:14px;box-sizing:border-box"></div></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Target Date</label>'
+    + '<select id="bsg-date" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + ['May 2025','Jun 2025','Dec 2025','Mar 2026','Dec 2026'].map(function(d){ return '<option value="'+d+'"'+(d==='May 2025'?' selected':'')+'>'+d+'</option>'; }).join('')
+    + '</select></div>'
+    + '<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Notes (Optional)</label>'
+    + '<textarea id="bsg-notes" rows="3" placeholder="Add a note..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;resize:none;box-sizing:border-box">'+escapeHtml(goal.notes||'')+'</textarea></div>'
+    + '</div></div>';
+
+  html += '<div style="margin:10px 16px 16px"><button onclick="App._budgetSaveGoal()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Goal</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetCategoryList() {
+  var cats = _bCats();
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-dashboard\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Category Budgets</span>'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-add-category\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>'
+    + '</div>';
+
+  html += '<div style="padding:6px 16px 8px;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="padding:6px 14px;border-radius:16px;background:rgba(124,58,237,.15);color:'+BUDGET_COLOR+';font-size:12px;font-weight:700">This Month</div>'
+    + '<div style="display:flex;align-items:center;gap:6px;color:var(--text-dim);font-size:12px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39A.998.998 0 0 0 18.95 4H5.04a1 1 0 0 0-.79 1.61z"/></svg>Filter</div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px;font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Category Summary</div>';
+
+  html += '<div style="margin:0 16px">';
+  cats.forEach(function(cat) {
+    var pct  = _bPct(cat);
+    var rem  = _bRemaining(cat);
+    var barC = _bBarColor(pct);
+    var isOver = rem < 0;
+    html += '<div onclick="State.budgetEditCategory=\''+cat.id+'\';App.navigate(\'budget-edit-category\')" style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+      + '<div style="width:34px;height:34px;border-radius:9px;background:'+cat.color+'22;display:flex;align-items:center;justify-content:center;font-size:16px">'+cat.icon+'</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtml(cat.name)+'</div><div style="font-size:11px;color:var(--text-dim)">Budget: '+formatINR(cat.budget)+'</div></div>'
+      + '<div style="text-align:right">'
+        + '<div style="font-size:13px;font-weight:700">'+formatINR(cat.spent)+'</div>'
+        + '<div style="font-size:11px;color:'+(isOver?'#EF4444':'#22C55E')+'">'+( isOver ? '-'+formatINR(Math.abs(rem))+' ⚠️' : '+'+formatINR(rem))+'</div>'
+      + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barC+';border-radius:2px"></div></div>'
+        + '<span style="font-size:11px;font-weight:700;color:'+barC+';min-width:28px;text-align:right">'+pct+'%</span>'
+      + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin:10px 16px 16px"><button onclick="App.navigate(\'budget-add-category\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,58,237,.12);color:'+BUDGET_COLOR+';border:1px solid rgba(124,58,237,.3);font-size:14px;font-weight:700;cursor:pointer">+ Add Category Budget</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetAnalytics() {
+  var cats       = _bCats();
+  var totalSpent = _bTotalSpent();
+  var income     = _bIncome();
+  var savings    = _bSavings();
+  var savingsRate= Math.round((savings/income)*100);
+  var tabAct     = State.budgetAnalyticsTab || 'category';
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-dashboard\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Budget vs Expense</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="padding:6px 16px 10px;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="padding:6px 14px;border-radius:16px;background:rgba(124,58,237,.15);color:'+BUDGET_COLOR+';font-size:12px;font-weight:700">This Month ▾</div>'
+    + '<div style="display:flex;background:rgba(255,255,255,.06);border-radius:20px;overflow:hidden">'
+    + ['category','transaction'].map(function(t){ var isAct=tabAct===t; return '<div onclick="State.budgetAnalyticsTab=\''+t+'\';App.render()" style="padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+BUDGET_COLOR+';color:#fff;':'color:var(--text-dim);')+'">By '+t.charAt(0).toUpperCase()+t.slice(1)+'</div>'; }).join('')
+    + '</div>'
+    + '</div>';
+
+  // Donut + legend
+  var donutSlices = cats.map(function(c){ return {value:c.spent, color:c.color}; }).filter(function(s){ return s.value>0; });
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px">'
+    + '<div style="position:relative;flex-shrink:0">'
+      + donutSVG(donutSlices, 52, 120)
+      + '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'
+        + '<div style="font-size:9px;color:var(--text-dim)">Total Expense</div>'
+        + '<div style="font-size:13px;font-weight:800">'+formatINR(totalSpent)+'</div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="flex:1;overflow:hidden">';
+  cats.slice(0,7).forEach(function(c) {
+    var pct = totalSpent>0 ? Math.round((c.spent/totalSpent)*100) : 0;
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'
+      + '<span style="width:8px;height:8px;border-radius:50%;background:'+c.color+';flex-shrink:0;display:inline-block"></span>'
+      + '<span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(c.name)+'</span>'
+      + '<span style="font-size:11px;font-weight:700;color:var(--text-dim)">'+pct+'%</span>'
+      + '</div>';
+  });
+  html += '</div></div>';
+
+  // Income/Expense/Savings
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Income</div><div style="font-size:15px;font-weight:800;color:#22C55E">'+formatINR(income)+'</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Expense</div><div style="font-size:15px;font-weight:800;color:#EF4444">'+formatINR(totalSpent)+'</div></div>'
+    + '<div><div style="font-size:10px;color:var(--text-dim)">Savings</div><div style="font-size:15px;font-weight:800;color:#22C55E">'+formatINR(savings)+'</div></div>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:12px;color:var(--text-dim)">Savings Rate</span>'
+    + '<span style="font-size:14px;font-weight:700;color:#22C55E">'+savingsRate+'%</span>'
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App.goTab(\'transactions\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">View Transactions</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetEditCategory() {
+  var catId  = State.budgetEditCategory;
+  var cats   = _bCats();
+  var cat    = cats.find(function(c){ return c.id===catId; }) || cats[0] || {};
+  var periods= [['monthly','Monthly'],['weekly','Weekly'],['custom','Custom']];
+  var curP   = State.budgetEditPeriod || 'monthly';
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-category-list\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Edit Category Budget</span>'
+    + '<button onclick="App._budgetSaveEdit()" style="background:none;border:none;color:'+BUDGET_COLOR+';font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Category</label>'
+    + '<select id="be-cat" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + cats.map(function(c){ return '<option value="'+c.id+'"'+(c.id===cat.id?' selected':'')+'>'+c.icon+' '+escapeHtml(c.name)+'</option>'; }).join('')
+    + '</select></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Budget Amount</label>'
+    + '<div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:14px">₹</span>'
+    + '<input id="be-amount" type="number" value="'+cat.budget+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 12px 12px 26px;color:#fff;font-size:14px;box-sizing:border-box"></div></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Period</label>'
+    + '<div style="display:flex;gap:8px">'
+    + periods.map(function(p){ var isAct=curP===p[0]; return '<div onclick="State.budgetEditPeriod=\''+p[0]+'\';App.render()" style="flex:1;text-align:center;padding:10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+BUDGET_COLOR+';color:#fff;':'background:rgba(255,255,255,.06);color:var(--text-dim);')+'">'+p[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="margin-bottom:14px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Alert Limit (Optional)</label>'
+    + '<select id="be-alert" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px">'
+    + ['50%','75%','80%','90%'].map(function(v){ return '<option value="'+v+'"'+(v==='80%'?' selected':'')+'>'+v+'</option>'; }).join('')
+    + '</select></div>'
+    + '<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Notes (Optional)</label>'
+    + '<textarea id="be-notes" rows="3" placeholder="Add a note..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:14px;resize:none;box-sizing:border-box"></textarea></div>'
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 10px"><button onclick="App._budgetSaveEdit()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Save Changes</button></div>';
+  html += '<div style="margin:0 16px 16px;text-align:center"><span onclick="App._budgetDeleteCategory(\''+cat.id+'\')" style="color:#EF4444;font-size:14px;font-weight:700;cursor:pointer">🗑️ Delete Category</span></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetImport() {
+  var cats     = _bCats();
+  var selected = State.budgetImportSelected || [];
+  var allSelected = selected.length === cats.length;
+  var prevMonth = 'April 2024';
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-add-options\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Import Previous Month</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:12px 16px;text-align:center;padding:16px;background:var(--card);border-radius:var(--radius)">'
+    + '<div style="font-size:13px;color:var(--text-dim)">This will copy all category budgets from</div>'
+    + '<div style="font-size:20px;font-weight:800;color:#F59E0B;margin:4px 0">'+prevMonth+'</div>'
+    + '<div style="font-size:12px;color:var(--text-dim)">You can edit them after importing.</div>'
+    + '</div>';
+
+  html += '<div style="margin:10px 16px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:8px;margin-bottom:8px">'
+    + '<span style="font-size:13px;font-weight:700;color:var(--text-dim)">Categories to Import</span>'
+    + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:'+BUDGET_COLOR+'">'
+    + '<input type="checkbox" '+(allSelected?'checked':'')+' onchange="App._budgetImportAll(this.checked)" style="width:16px;height:16px;accent-color:'+BUDGET_COLOR+'">Select All</label>'
+    + '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);overflow:hidden">';
+
+  cats.forEach(function(cat, idx) {
+    var isSel = selected.indexOf(cat.id) !== -1;
+    html += '<label style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;'+(idx>0?'border-top:1px solid rgba(255,255,255,.04)':'')+'">'
+      + '<input type="checkbox" value="'+cat.id+'" '+(isSel?'checked':'')+' onchange="App._budgetToggleImport(\''+cat.id+'\')" style="width:16px;height:16px;accent-color:'+BUDGET_COLOR+'">'
+      + '<span style="font-size:16px">'+cat.icon+'</span>'
+      + '<span style="flex:1;font-size:13px;font-weight:600">'+escapeHtml(cat.name)+'</span>'
+      + '<span style="font-size:13px;color:var(--text-dim)">'+formatINR(cat.budget)+'</span>'
+      + '</label>';
+  });
+  html += '</div></div>';
+
+  html += '<div style="margin:10px 16px 16px"><button onclick="App._budgetImportPrevMonth()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+BUDGET_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Import Budgets</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderBudgetInsights() {
+  var tab  = State.budgetInsightTab || 'this_month';
+  var tabs = [['this_month','This Month'],['this_year','This Year']];
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'budget-dashboard\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Budget Insights</span>'
+    + '<div class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>'
+    + '</div>';
+
+  html += '<div style="display:flex;background:rgba(124,58,237,.12);border-radius:20px;margin:8px 16px 14px;overflow:hidden">'
+    + tabs.map(function(t){ var isAct=tab===t[0]; return '<div onclick="State.budgetInsightTab=\''+t[0]+'\';App.render()" style="flex:1;text-align:center;padding:10px;font-size:13px;font-weight:700;cursor:pointer;'+(isAct?'background:'+BUDGET_COLOR+';color:#fff;border-radius:20px;':'color:var(--text-dim);')+'">'+t[1]+'</div>'; }).join('')
+    + '</div>';
+
+  var cats       = _bCats();
+  var totalSpent = _bTotalSpent();
+  var income     = _bIncome();
+  var savings    = _bSavings();
+  var savingsRate= Math.round((savings/income)*100);
+
+  // Dynamic insights
+  var insights = [];
+  insights.push({ icon:'🎉', bg:'rgba(34,197,94,.12)',  color:'#22C55E', title:'You are doing great!', sub:'You have saved '+savingsRate+'% of your income.' });
+
+  // Under-budget categories
+  cats.filter(function(c){ return c.spent < c.budget * 0.85; }).slice(0,2).forEach(function(c) {
+    var savings_pct = Math.round(((c.budget-c.spent)/c.budget)*100);
+    insights.push({ icon:c.icon, bg:'rgba(34,197,94,.12)', color:'#22C55E', title:escapeHtml(c.name)+' is '+savings_pct+'% below budget', sub:'Great job! Keep it up.' });
+  });
+
+  // Over-budget categories
+  cats.filter(function(c){ return c.spent > c.budget; }).forEach(function(c) {
+    var over = c.spent - c.budget;
+    var over_pct = Math.round((over/c.budget)*100);
+    insights.push({ icon:c.icon, bg:'rgba(239,68,68,.12)', color:'#EF4444', title:escapeHtml(c.name)+' is '+over_pct+'% over budget', sub:'You have spent '+formatINR(over)+' more than planned.' });
+  });
+
+  insights.push({ icon:'💰', bg:'rgba(124,58,237,.12)', color:BUDGET_COLOR, title:'Set higher savings goal', sub:'You can aim to save '+formatINR(100000)+' this year.' });
+
+  html += '<div style="margin:0 16px">';
+  insights.forEach(function(ins) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px">'
+      + '<div style="width:40px;height:40px;border-radius:10px;background:'+ins.bg+';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+ins.icon+'</div>'
+      + '<div><div style="font-size:14px;font-weight:700;color:'+ins.color+'">'+ins.title+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:3px">'+ins.sub+'</div></div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin:8px 16px 16px"><button onclick="App.showToast(\'Generating full insights report...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,58,237,.12);color:'+BUDGET_COLOR+';border:1px solid rgba(124,58,237,.3);font-size:14px;font-weight:700;cursor:pointer">View All Insights</button></div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
 // ─── MEDICLAIM MODULE ──────────────────────────────────────────────────────
 var MEDICLAIM_COLOR = '#7C5CFC';
 
@@ -13942,6 +14441,17 @@ const App = {
       case 'mediclaim-claim-status':  html = renderMediclaimClaimStatus();   break;
       case 'mediclaim-renewal':       html = renderMediclaimRenewal();       break;
       case 'mediclaim-insights':      html = renderMediclaimInsights();      break;
+      case 'budget-dashboard':          html = renderBudgetDashboard();       break;
+      case 'budget-add-options':        html = renderBudgetAddOptions();      break;
+      case 'budget-add-category':       html = renderBudgetAddCategory();     break;
+      case 'budget-add-custom-category':html = renderBudgetAddCustomCategory();break;
+      case 'budget-set-total':          html = renderBudgetSetTotal();        break;
+      case 'budget-savings-goal':       html = renderBudgetSavingsGoal();     break;
+      case 'budget-category-list':      html = renderBudgetCategoryList();    break;
+      case 'budget-analytics':          html = renderBudgetAnalytics();       break;
+      case 'budget-edit-category':      html = renderBudgetEditCategory();    break;
+      case 'budget-import':             html = renderBudgetImport();          break;
+      case 'budget-insights':           html = renderBudgetInsights();        break;
       case 'lic-list':              html = renderLICList();              break;
       case 'lic-detail':            html = renderLICDetail();            break;
       case 'lic-buy':               html = renderLICBuy();               break;
@@ -16281,6 +16791,84 @@ const App = {
     State.mediclaimDocs = (State.mediclaimDocs || []).filter(function(d){ return d.type !== docType; });
     State.mediclaimDocs.push({ type:docType, name:labels[docType]||docType+'.pdf', size:sizes[docType]||'1.0 MB' });
     this.showToast('Document uploaded successfully');
+    App.render();
+  },
+
+  /* ── Budget Module ──────────────────────────── */
+  _budgetSaveCategory() {
+    var catId  = document.getElementById('bc-cat') ? document.getElementById('bc-cat').value : '';
+    var amount = parseFloat(document.getElementById('bc-amount') ? document.getElementById('bc-amount').value : '0');
+    var notes  = document.getElementById('bc-notes') ? document.getElementById('bc-notes').value : '';
+    if (!catId)   { this.showToast('Please select a category'); return; }
+    if (!amount)  { this.showToast('Please enter a budget amount'); return; }
+    var cats = State.budgetCategories || [];
+    var idx  = cats.findIndex(function(c){ return c.id===catId; });
+    if (idx !== -1) {
+      cats[idx].budget = amount;
+    }
+    this.showToast('Budget saved!');
+    App.navigate('budget-dashboard');
+  },
+  _budgetSetTotal() {
+    var amount = parseFloat(document.getElementById('bt-amount') ? document.getElementById('bt-amount').value : '0');
+    if (!amount) { this.showToast('Please enter an amount'); return; }
+    State.budgetTotalBudget = amount;
+    this.showToast('Total budget set to '+formatINR(amount));
+    App.navigate('budget-dashboard');
+  },
+  _budgetSaveGoal() {
+    var amount = parseFloat(document.getElementById('bsg-amount') ? document.getElementById('bsg-amount').value : '0');
+    var date   = document.getElementById('bsg-date') ? document.getElementById('bsg-date').value : '';
+    var notes  = document.getElementById('bsg-notes') ? document.getElementById('bsg-notes').value : '';
+    if (!amount) { this.showToast('Please enter a savings goal amount'); return; }
+    State.budgetSavingsGoal = { amount:amount, target_date:date, notes:notes };
+    this.showToast('Savings goal saved!');
+    App.navigate('budget-dashboard');
+  },
+  _budgetSaveEdit() {
+    var catId  = (document.getElementById('be-cat') ? document.getElementById('be-cat').value : '') || State.budgetEditCategory;
+    var amount = parseFloat(document.getElementById('be-amount') ? document.getElementById('be-amount').value : '0');
+    if (!amount) { this.showToast('Please enter a budget amount'); return; }
+    var cats = State.budgetCategories || [];
+    var idx  = cats.findIndex(function(c){ return c.id===catId; });
+    if (idx !== -1) cats[idx].budget = amount;
+    this.showToast('Budget updated!');
+    App.navigate('budget-category-list');
+  },
+  _budgetDeleteCategory(id) {
+    if (!confirm('Delete this budget category?')) return;
+    State.budgetCategories = (State.budgetCategories||[]).filter(function(c){ return c.id!==id; });
+    this.showToast('Category deleted');
+    App.navigate('budget-category-list');
+  },
+  _budgetImportAll(checked) {
+    State.budgetImportSelected = checked ? (State.budgetCategories||[]).map(function(c){ return c.id; }) : [];
+    App.render();
+  },
+  _budgetImportPrevMonth() {
+    var selected = State.budgetImportSelected || [];
+    if (selected.length === 0) { this.showToast('Please select at least one category'); return; }
+    this.showToast('Budgets imported successfully!');
+    State.budgetImportSelected = [];
+    App.navigate('budget-dashboard');
+  },
+  _budgetAddCustomCategory() {
+    var name = (document.getElementById('bcc-name') ? document.getElementById('bcc-name').value : '').trim();
+    var icon = (document.getElementById('bcc-icon') ? document.getElementById('bcc-icon').value : '📦').trim();
+    if (!name) { this.showToast('Please enter a category name'); return; }
+    var colors = ['#6366F1','#F59E0B','#10B981','#EC4899','#8B5CF6','#EF4444','#06B6D4'];
+    var color  = colors[Math.floor(Math.random()*colors.length)];
+    var newCat = { id:'bc_'+Date.now(), name:name, icon:icon||'📦', color:color, budget:0, spent:0 };
+    State.budgetCategories = (State.budgetCategories||[]).concat([newCat]);
+    this.showToast('Category "'+name+'" created!');
+    App.navigate('budget-category-list');
+  },
+  _budgetToggleImport(id) {
+    var sel = State.budgetImportSelected || [];
+    var idx = sel.indexOf(id);
+    if (idx === -1) sel = sel.concat([id]);
+    else sel = sel.filter(function(x){ return x!==id; });
+    State.budgetImportSelected = sel;
     App.render();
   },
 
