@@ -1967,6 +1967,32 @@ const State = {
   sipAmount:      null,
   sipRate:        null,
   sipYears:       null,
+  // Notes module
+  noteActiveId:       null,
+  noteAddData:        {},
+  noteSearchQuery:    '',
+  noteFilterCategory: 'all',
+  noteFilterTags:     'all',
+  noteFilterPinned:   false,
+  noteFilterLocked:   false,
+  noteFilterAttachments: false,
+  noteFilterDate:     'all_time',
+  noteSortBy:         'recently_modified',
+  noteSecurityMode:   'view',
+  noteSecurityPin:    '',
+  noteEditorContent:  '',
+  notes: [
+    { id:'nt1', title:'Quarterly Review - Reliance', category:'Investment Notes', description:'Reliance Industries Q4 results are strong. Growth in O2C and Retail segments. Future outlook looks positive.', richContent:'<h2>Reliance Q4 Review</h2><p><strong>Summary</strong></p><p>The results show strong growth across all major segments.</p><p><strong>Highlights</strong></p><ol><li>Revenue Growth</li><li>Profit Growth</li><li>Retail Expansion</li><li>Digital Growth</li></ol><p><strong>Notes</strong></p><ul><li>Future capex in new energy</li><li>Strong balance sheet</li></ul>', tags:['Reliance','Q4','Results'], reminder:{enabled:true,date:'2024-05-10',time:'09:00',repeat:'One Time'}, attachments:[{name:'Reliance_Q4_Results.pdf',size:'1.2 MB',type:'pdf'},{name:'RIL_Retail_Growth.png',size:'2.4 MB',type:'image'}], color:'default', pinned:true, locked:false, linkedModule:'stocks', linkedId:'st1', updatedAt:'2024-05-10T08:45:00', createdAt:'2024-05-10T08:00:00' },
+    { id:'nt2', title:'SBI Bluechip Fund Analysis', category:'Mutual Fund Notes', description:'SBI Bluechip fund showing consistent outperformance. Good for long-term wealth creation.', richContent:'', tags:['SBI','Bluechip','MF'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'blue', pinned:true, locked:false, linkedModule:'mf', linkedId:'mf1', updatedAt:'2024-05-10T09:15:00', createdAt:'2024-05-09T00:00:00' },
+    { id:'nt3', title:'Home Loan Prepayment Plan', category:'Loan Notes', description:'Planning to prepay 2L in April. Will reduce tenure by 8 months. Check prepayment charges.', richContent:'', tags:['HomeLoan','Prepayment'], reminder:{enabled:true,date:'2024-04-01',time:'10:00',repeat:'One Time'}, attachments:[], color:'green', pinned:false, locked:false, linkedModule:'loan', linkedId:'ln7', updatedAt:'2024-05-09T00:00:00', createdAt:'2024-05-08T00:00:00' },
+    { id:'nt4', title:'LIC Premium Due Reminder', category:'Insurance Notes', description:'LIC Jeevan Anand premium of 24,500 due on 15 June 2024. Pay via net banking.', richContent:'', tags:['LIC','Premium','Reminder'], reminder:{enabled:true,date:'2024-06-10',time:'09:00',repeat:'One Time'}, attachments:[], color:'purple', pinned:true, locked:false, linkedModule:'lic', linkedId:'lic1', updatedAt:'2024-05-08T00:00:00', createdAt:'2024-05-07T00:00:00' },
+    { id:'nt5', title:'Nerul Flat Tenant Agreement', category:'Property Notes', description:'New tenant moving in June. Agreement for 11 months. Security deposit received.', richContent:'', tags:['Nerul','Tenant','Rental'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[{name:'Tenant_Agreement.pdf',size:'800 KB',type:'pdf'}], color:'orange', pinned:false, locked:false, linkedModule:'realestate', linkedId:'re1', updatedAt:'2024-05-07T00:00:00', createdAt:'2024-05-06T00:00:00' },
+    { id:'nt6', title:'FY2024 Tax Planning Notes', category:'Tax Notes', description:'80C limit 1.5L — PPF 50K, ELSS 50K, LIC 24.5K. Need 25.5K more. Consider NPS 80CCD(1B).', richContent:'', tags:['Tax','80C','FY2024'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'yellow', pinned:false, locked:true, linkedModule:null, linkedId:null, updatedAt:'2024-04-01T00:00:00', createdAt:'2024-04-01T00:00:00' },
+    { id:'nt7', title:'HDFC Credit Card Offers', category:'Credit Card Notes', description:'HDFC Millennia card: 5% cashback on Amazon, Flipkart, Swiggy. Reward points expire Dec 2024.', richContent:'', tags:['HDFC','CreditCard','Cashback'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'default', pinned:false, locked:false, linkedModule:'cc', linkedId:'cc1', updatedAt:'2024-03-15T00:00:00', createdAt:'2024-03-15T00:00:00' },
+    { id:'nt8', title:'Gold Investment Strategy', category:'Investment Notes', description:'Target: 10% of portfolio in gold. Current: 6.2%. Add 5g Sovereign Gold Bond in next tranche.', richContent:'', tags:['Gold','SGB','Strategy'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'default', pinned:false, locked:false, linkedModule:'gold', linkedId:'g1', updatedAt:'2024-03-01T00:00:00', createdAt:'2024-03-01T00:00:00' },
+    { id:'nt9', title:'Budget Review April 2024', category:'Budget Notes', description:'Overspent on dining by 3,200 this month. Reduce to 5,000 next month. Grocery within budget.', richContent:'', tags:['Budget','April','Review'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'green', pinned:false, locked:false, linkedModule:null, linkedId:null, updatedAt:'2024-04-30T00:00:00', createdAt:'2024-04-30T00:00:00' },
+    { id:'nt10', title:'NPS Fund Selection Notes', category:'Investment Notes', description:'Tier 1 active choice: 50% Equity (SBI Pension), 30% Corporate Bond, 20% Govt Securities. Review annually.', richContent:'', tags:['NPS','FundChoice','Retirement'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'blue', pinned:false, locked:false, linkedModule:'nps', linkedId:'nps1', updatedAt:'2024-02-15T00:00:00', createdAt:'2024-02-15T00:00:00' },
+  ],
 };
 
 /* ══════════════════════════════════════════════════════
@@ -16278,6 +16304,7 @@ function renderMore() {
     { icon:'🏘️', bg:'rgba(124,58,237,0.15)', label:'Rentals', sub:'Track rental properties, rent collections and expenses', fn:"App.navigate('rental-list')" },
     { icon:'📅', bg:'rgba(124,58,237,0.15)', label:'Planned Payments',    sub:'Track and automate future payments and reminders',   fn:"App.navigate('pp-list')" },
     { icon:'📊', bg:'rgba(5,150,105,0.15)',  label:'Data Import & Export', sub:'Import CSV data and manage sync settings',            fn:"App.navigate('excel-sync')" },
+    { icon:'📝', bg:'rgba(99,102,241,0.15)', label:'Notes',               sub:'Smart notes linked to your financial data',            fn:"App.navigate('notes-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -17135,6 +17162,604 @@ function renderLendBorrow() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   8c. NOTES MODULE — Smart Notes & Knowledge Management
+══════════════════════════════════════════════════════ */
+var NOTES_COLOR = '#6366F1';
+var NOTES_CATEGORIES = [
+  { id:'Investment Notes',       icon:'📊', color:'#6366F1' },
+  { id:'Mutual Fund Notes',      icon:'📈', color:'#0EA5E9' },
+  { id:'Property Notes',         icon:'🏠', color:'#F59E0B' },
+  { id:'Loan Notes',             icon:'💰', color:'#EF4444' },
+  { id:'Insurance Notes',        icon:'🛡️', color:'#10B981' },
+  { id:'Personal Notes',         icon:'👤', color:'#8B5CF6' },
+  { id:'Business Notes',         icon:'💼', color:'#06B6D4' },
+  { id:'Research Notes',         icon:'🔬', color:'#EC4899' },
+  { id:'Tax Notes',              icon:'📋', color:'#F97316' },
+  { id:'Budget Notes',           icon:'💹', color:'#22C55E' },
+  { id:'Credit Card Notes',      icon:'💳', color:'#A855F7' },
+  { id:'Rental Notes',           icon:'🏘️', color:'#14B8A6' },
+  { id:'Planned Payment Notes',  icon:'📅', color:'#3B82F6' },
+  { id:'General Notes',          icon:'📝', color:'#6B7280' },
+];
+var NOTES_COLORS = [
+  { id:'default', hex:'#6366F1', label:'Indigo' },
+  { id:'blue',    hex:'#0891B2', label:'Blue'   },
+  { id:'green',   hex:'#059669', label:'Green'  },
+  { id:'orange',  hex:'#EA580C', label:'Orange' },
+  { id:'yellow',  hex:'#D97706', label:'Yellow' },
+  { id:'purple',  hex:'#7C3AED', label:'Purple' },
+];
+
+function _noteCatInfo(cat) {
+  var found = NOTES_CATEGORIES.filter(function(c){ return c.id === cat; })[0];
+  return found || { icon:'📝', color:'#6B7280' };
+}
+function _noteColor(colorId) {
+  var found = NOTES_COLORS.filter(function(c){ return c.id === colorId; })[0];
+  return found ? found.hex : NOTES_COLOR;
+}
+function _noteRelTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  var now = new Date();
+  var diff = Math.floor((now - d) / 60000);
+  if (diff < 1) return 'Just now';
+  if (diff < 60) return diff + 'm ago';
+  if (diff < 1440) return Math.floor(diff/60) + 'h ago';
+  if (diff < 10080) return Math.floor(diff/1440) + 'd ago';
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+function _noteFileIcon(type) {
+  if (type==='pdf')   return '<svg width="20" height="20" viewBox="0 0 24 24" fill="#EF4444"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>';
+  if (type==='image') return '<svg width="20" height="20" viewBox="0 0 24 24" fill="#10B981"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
+  if (type==='excel') return '<svg width="20" height="20" viewBox="0 0 24 24" fill="#22C55E"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>';
+  if (type==='ppt')   return '<svg width="20" height="20" viewBox="0 0 24 24" fill="#F97316"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>';
+  return '<svg width="20" height="20" viewBox="0 0 24 24" fill="#6366F1"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>';
+}
+function _noteGetFiltered() {
+  var notes = State.notes || [];
+  if (State.noteFilterCategory && State.noteFilterCategory !== 'all') {
+    notes = notes.filter(function(n){ return n.category === State.noteFilterCategory; });
+  }
+  if (State.noteFilterPinned) notes = notes.filter(function(n){ return n.pinned; });
+  if (State.noteFilterLocked) notes = notes.filter(function(n){ return n.locked; });
+  if (State.noteFilterAttachments) notes = notes.filter(function(n){ return n.attachments && n.attachments.length > 0; });
+  if (State.noteSearchQuery) {
+    var q = State.noteSearchQuery.toLowerCase();
+    notes = notes.filter(function(n){
+      return n.title.toLowerCase().includes(q) || (n.description||'').toLowerCase().includes(q) || (n.tags||[]).some(function(t){ return t.toLowerCase().includes(q); });
+    });
+  }
+  notes = notes.slice().sort(function(a,b){
+    if (State.noteSortBy === 'recently_modified') return new Date(b.updatedAt) - new Date(a.updatedAt);
+    if (State.noteSortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+    if (State.noteSortBy === 'title_az') return a.title.localeCompare(b.title);
+    if (State.noteSortBy === 'pinned') return (b.pinned?1:0) - (a.pinned?1:0);
+    return new Date(b.updatedAt) - new Date(a.updatedAt);
+  });
+  return notes;
+}
+function _noteCard(n, showLinked) {
+  var ci = _noteCatInfo(n.category);
+  var nc = _noteColor(n.color);
+  var tags = n.tags || [];
+  var atts = n.attachments || [];
+  return '<div onclick="State.noteActiveId=\''+n.id+'\';App.navigate(n.locked?\'notes-security\':\'notes-detail\')" style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);cursor:pointer;border-left:3px solid '+nc+'">'
+    +'<div style="display:flex;align-items:flex-start;gap:10px">'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+    +(n.pinned?'<svg width="12" height="12" viewBox="0 0 24 24" fill="'+NOTES_COLOR+'"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>':'')
+    +(n.locked?'<svg width="12" height="12" viewBox="0 0 24 24" fill="#EF4444"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>':'')
+    +(n.reminder && n.reminder.enabled?'<svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>':'')
+    +'<div style="font-size:12px;font-weight:700;color:'+ci.color+'">'+ci.icon+' '+escapeHtml(n.category)+'</div>'
+    +'</div>'
+    +'<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(n.title)+'</div>'
+    +(n.locked?'<div style="font-size:12px;color:var(--text-dim)">🔒 This note is locked</div>'
+    :'<div style="font-size:12px;color:var(--text-dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+escapeHtml(n.description||'')+'</div>')
+    +(tags.length?'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'+tags.slice(0,3).map(function(t){ return '<span style="background:'+NOTES_COLOR+'22;color:'+NOTES_COLOR+';font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">#'+escapeHtml(t)+'</span>'; }).join('')+'</div>':'')
+    +'</div>'
+    +'<div style="text-align:right;flex-shrink:0">'
+    +'<div style="font-size:10px;color:var(--text-dim);white-space:nowrap">'+_noteRelTime(n.updatedAt)+'</div>'
+    +(atts.length?'<div style="font-size:10px;color:var(--text-dim);margin-top:4px">📎 '+atts.length+'</div>':'')
+    +'</div></div></div>';
+}
+
+function renderNotesList() {
+  var notes = State.notes || [];
+  var pinned = notes.filter(function(n){ return n.pinned; }).length;
+  var withReminder = notes.filter(function(n){ return n.reminder && n.reminder.enabled; }).length;
+  var recent = notes.slice().sort(function(a,b){ return new Date(b.updatedAt)-new Date(a.updatedAt); }).slice(0,5);
+  // Category counts
+  var catCounts = {};
+  notes.forEach(function(n){ catCounts[n.category] = (catCounts[n.category]||0)+1; });
+  var html = '<div class="screen-wrap">';
+  // Header
+  html += '<div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);padding:20px 20px 24px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-size:22px;font-weight:800;color:#fff">Notes</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-search\')" style="background:rgba(255,255,255,.15)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div>'
+    +'<div class="icon-btn" onclick="State.noteAddData={color:\'default\',tags:[],attachments:[],reminder:{enabled:false,date:\'\',time:\'\',repeat:\'One Time\'},pinned:false,locked:false};App.navigate(\'notes-add\')" style="background:rgba(255,255,255,.15)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>'
+    +'</div></div>'
+    // Summary cards
+    +'<div style="display:flex;gap:10px">'
+    +'<div style="flex:1;background:rgba(255,255,255,.15);border-radius:14px;padding:14px;text-align:center">'
+    +'<div style="font-size:26px;font-weight:800;color:#fff">'+notes.length+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">Total Notes</div></div>'
+    +'<div style="flex:1;background:rgba(255,255,255,.15);border-radius:14px;padding:14px;text-align:center">'
+    +'<div style="font-size:26px;font-weight:800;color:#fff">'+pinned+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">Pinned</div></div>'
+    +'<div style="flex:1;background:rgba(255,255,255,.15);border-radius:14px;padding:14px;text-align:center">'
+    +'<div style="font-size:26px;font-weight:800;color:#fff">'+withReminder+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.8);font-weight:600">Reminders</div></div>'
+    +'</div></div>';
+  // Search bar
+  html += '<div style="margin:16px 16px 0">'
+    +'<div style="background:var(--card);border-radius:var(--radius-sm);padding:0 12px;display:flex;align-items:center;gap:10px;border:1px solid var(--border)">'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
+    +'<input id="notes-search-bar" type="text" placeholder="Search notes..." value="'+escapeHtml(State.noteSearchQuery||'')+'" onkeyup="State.noteSearchQuery=this.value;App.render()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;padding:12px 0">'
+    +(State.noteSearchQuery?'<span onclick="State.noteSearchQuery=\'\';App.render()" style="color:var(--text-dim);cursor:pointer;font-size:18px">×</span>':'')
+    +'</div></div>';
+  if (State.noteSearchQuery) {
+    var filtered = _noteGetFiltered();
+    html += '<div style="margin:12px 16px 0"><div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">'+filtered.length+' result'+(filtered.length===1?'':'s')+' for "'+escapeHtml(State.noteSearchQuery)+'"</div>'
+      + (filtered.length ? filtered.map(function(n){ return _noteCard(n); }).join('') : '<div style="text-align:center;padding:32px 0;color:var(--text-dim)">No notes found</div>')
+      +'</div>';
+  } else {
+    // Recent notes
+    html += '<div style="margin:16px 16px 0">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px">RECENT NOTES</div>'
+      +'<div onclick="App.navigate(\'notes-search\')" style="font-size:12px;color:'+NOTES_COLOR+';font-weight:700;cursor:pointer">View All</div>'
+      +'</div>';
+    if (recent.length) {
+      recent.forEach(function(n){ html += _noteCard(n); });
+    } else {
+      html += '<div style="text-align:center;padding:32px 0"><div style="font-size:40px;margin-bottom:10px">📝</div><div style="color:var(--text-dim);font-size:14px">No notes yet. Tap + to create your first note.</div></div>';
+    }
+    html += '</div>';
+    // Categories
+    html += '<div style="margin:16px 16px 0"><div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">CATEGORIES</div>';
+    html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border)">';
+    var activeCats = NOTES_CATEGORIES.filter(function(c){ return catCounts[c.id]>0; });
+    if (!activeCats.length) activeCats = NOTES_CATEGORIES.slice(0,6);
+    activeCats.forEach(function(c,i){
+      var cnt = catCounts[c.id] || 0;
+      html += '<div onclick="State.noteFilterCategory=\''+c.id+'\';State.noteSearchQuery=\'\';App.navigate(\'notes-search\')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;'+(i<activeCats.length-1?'border-bottom:1px solid var(--border);':'')+'">'+
+        '<div style="width:36px;height:36px;border-radius:10px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div>'+
+        '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+c.id+'</div></div>'+
+        '<div style="font-size:13px;font-weight:700;color:'+NOTES_COLOR+'">'+cnt+'</div>'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'+
+        '</div>';
+    });
+    html += '</div></div>';
+  }
+  // FAB
+  html += '<div style="position:fixed;bottom:88px;right:20px;z-index:99">'
+    +'<div onclick="State.noteAddData={color:\'default\',tags:[],attachments:[],reminder:{enabled:false,date:\'\',time:\'\',repeat:\'One Time\'},pinned:false,locked:false};App.navigate(\'notes-add\')" style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#4F46E5,#7C3AED);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(99,102,241,.5)">'
+    +'<svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>'
+    +'</div></div>';
+  html += '<div style="height:80px"></div>';
+  return html + '</div>';
+}
+
+function renderNotesAdd() {
+  var d = State.noteAddData || {};
+  if (!d.tags) d.tags = [];
+  if (!d.attachments) d.attachments = [];
+  if (!d.reminder) d.reminder = {enabled:false,date:'',time:'',repeat:'One Time'};
+  var isEdit = !!(d.id);
+  var nc = _noteColor(d.color||'default');
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header" style="border-bottom:2px solid '+nc+'">'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-list\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title">'+(isEdit?'Edit Note':'Add Note')+'</div>'
+    +'<div onclick="App._noteSave()" style="font-size:14px;font-weight:700;color:'+NOTES_COLOR+';cursor:pointer;padding:6px 4px">✓</div>'
+    +'</div>';
+  html += '<div style="padding:16px">';
+  // Title
+  html += '<div style="margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">TITLE</div>'
+    +'<input id="note-title" type="text" placeholder="Note title..." value="'+escapeHtml(d.title||'')+'" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:16px;font-weight:700;outline:none;box-sizing:border-box">'
+    +'</div>';
+  // Category
+  html += '<div style="margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">CATEGORY</div>'
+    +'<select id="note-category" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:14px;outline:none;box-sizing:border-box;appearance:none">'
+    +NOTES_CATEGORIES.map(function(c){ return '<option value="'+c.id+'"'+(d.category===c.id?' selected':'')+'>'+c.icon+' '+c.id+'</option>'; }).join('')
+    +'</select></div>';
+  // Description
+  html += '<div style="margin-bottom:14px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px">DESCRIPTION</div>'
+    +'<div onclick="App._noteOpenEditor()" style="font-size:11px;font-weight:700;color:'+NOTES_COLOR+';cursor:pointer">✏️ Rich Editor</div>'
+    +'</div>'
+    +'<textarea id="note-desc" rows="5" placeholder="Write your note here..." style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);font-size:14px;outline:none;resize:none;box-sizing:border-box;line-height:1.6">'+escapeHtml(d.description||'')+'</textarea>'
+    +'</div>';
+  // Tags
+  var tagStr = d.tags.join(', ');
+  html += '<div style="margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px">TAGS</div>'
+    +(d.tags.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'+d.tags.map(function(t,i){ return '<span style="background:'+NOTES_COLOR+'22;color:'+NOTES_COLOR+';font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;display:flex;align-items:center;gap:4px">#'+escapeHtml(t)+'<span onclick="App._noteRemoveTag('+i+')" style="cursor:pointer;font-size:14px">×</span></span>'; }).join('')+'</div>':'')
+    +'<div style="display:flex;gap:8px">'
+    +'<input id="note-tag-input" type="text" placeholder="Add tag..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-size:13px;outline:none" onkeydown="if(event.key===\'Enter\'||event.key===\',\'){App._noteAddTag(this.value);this.value=\'\';event.preventDefault();}">'
+    +'<button onclick="var el=document.getElementById(\'note-tag-input\');App._noteAddTag(el.value);el.value=\'\'" style="padding:10px 14px;background:'+NOTES_COLOR+';color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer">Add</button>'
+    +'</div></div>';
+  // Reminder toggle
+  html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;border:1px solid var(--border)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(d.reminder&&d.reminder.enabled?'12':'0')+'px">'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🔔</span><div><div style="font-size:14px;font-weight:700;color:var(--text)">Reminder</div></div></div>'
+    +'<div onclick="State.noteAddData.reminder.enabled=!State.noteAddData.reminder.enabled;App.render()" style="width:46px;height:26px;border-radius:13px;background:'+(d.reminder&&d.reminder.enabled?NOTES_COLOR:'rgba(255,255,255,.15)')+';cursor:pointer;position:relative;transition:background .2s"><div style="position:absolute;top:3px;left:'+(d.reminder&&d.reminder.enabled?'23':'3')+'px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s"></div></div>'
+    +'</div>'
+    +(d.reminder&&d.reminder.enabled?
+      '<div style="display:flex;gap:8px;align-items:center" onclick="App.navigate(\'notes-reminder\')" style="cursor:pointer">'
+      +'<div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;cursor:pointer">'
+      +'<div style="font-size:10px;color:var(--text-dim);font-weight:700">DATE</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+(d.reminder.date||'Select date')+'</div></div>'
+      +'<div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;cursor:pointer">'
+      +'<div style="font-size:10px;color:var(--text-dim);font-weight:700">TIME</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+(d.reminder.time||'09:00')+'</div></div>'
+      +'</div>'
+    :'')
+    +'</div>';
+  // Attachments
+  html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;border:1px solid var(--border)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between" onclick="App._noteSaveToState();App.navigate(\'notes-attachments\')" style="cursor:pointer">'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">📎</span><div><div style="font-size:14px;font-weight:700;color:var(--text)">Attachments</div>'
+    +(d.attachments.length?'<div style="font-size:12px;color:var(--text-dim)">'+d.attachments.length+' file'+(d.attachments.length===1?'':'s')+' attached</div>':'<div style="font-size:12px;color:var(--text-dim)">No files attached</div>')
+    +'</div></div>'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+    +'</div></div>';
+  // Note Color
+  html += '<div style="margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">NOTE COLOR</div>'
+    +'<div style="display:flex;gap:10px">'
+    +NOTES_COLORS.map(function(c){ var sel=(d.color||'default')===c.id; return '<div onclick="App._noteSetColor(\''+c.id+'\')" style="width:32px;height:32px;border-radius:50%;background:'+c.hex+';cursor:pointer;border:3px solid '+(sel?'#fff':'transparent')+';box-shadow:'+(sel?'0 0 0 2px '+c.hex:'none')+'"></div>'; }).join('')
+    +'</div></div>';
+  // Pin and Lock
+  html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">📌</span><div style="font-size:14px;font-weight:700;color:var(--text)">Pin Note</div></div>'
+    +'<div onclick="State.noteAddData.pinned=!State.noteAddData.pinned;App.render()" style="width:46px;height:26px;border-radius:13px;background:'+(d.pinned?NOTES_COLOR:'rgba(255,255,255,.15)')+';cursor:pointer;position:relative"><div style="position:absolute;top:3px;left:'+(d.pinned?'23':'3')+'px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div>'
+    +'</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px">'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🔒</span><div><div style="font-size:14px;font-weight:700;color:var(--text)">Lock Note</div><div style="font-size:12px;color:var(--text-dim)">Protect with MPIN</div></div></div>'
+    +'<div onclick="State.noteAddData.locked=!State.noteAddData.locked;App.render()" style="width:46px;height:26px;border-radius:13px;background:'+(d.locked?'#EF4444':'rgba(255,255,255,.15)')+';cursor:pointer;position:relative"><div style="position:absolute;top:3px;left:'+(d.locked?'23':'3')+'px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div>'
+    +'</div></div>';
+  // Buttons
+  html += '<div style="display:flex;gap:10px;margin-top:8px">'
+    +'<button onclick="App.navigate(\'notes-list\')" style="flex:1;padding:14px;border-radius:var(--radius-sm);background:rgba(255,255,255,.08);color:var(--text-dim);border:1px solid var(--border);font-size:14px;font-weight:700;cursor:pointer">Cancel</button>'
+    +'<button onclick="App._noteSave()" style="flex:2;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Save Note</button>'
+    +'</div>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderNotesDetail() {
+  var id = State.noteActiveId;
+  var notes = State.notes || [];
+  var n = notes.filter(function(x){ return x.id===id; })[0];
+  if (!n) { App.navigate('notes-list'); return '<div></div>'; }
+  var ci = _noteCatInfo(n.category);
+  var nc = _noteColor(n.color);
+  var atts = n.attachments || [];
+  var tags = n.tags || [];
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header" style="border-bottom:2px solid '+nc+'">'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-list\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(n.title)+'</div>'
+    +'<div style="display:flex;gap:4px">'
+    +'<div class="icon-btn" onclick="App._notePin(\''+n.id+'\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="'+(n.pinned?nc:'currentColor')+'"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg></div>'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-export\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg></div>'
+    +'</div></div>';
+  html += '<div style="padding:16px">';
+  // Meta
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+    +'<span style="background:'+ci.color+'22;color:'+ci.color+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">'+ci.icon+' '+escapeHtml(n.category)+'</span>'
+    +(n.pinned?'<span style="background:'+nc+'22;color:'+nc+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">📌 Pinned</span>':'')
+    +(n.locked?'<span style="background:rgba(239,68,68,.15);color:#EF4444;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">🔒 Locked</span>':'')
+    +'</div>';
+  html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:16px">Updated: '+new Date(n.updatedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+', '+new Date(n.updatedAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' • Created: '+new Date(n.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+'</div>';
+  // Content
+  if (n.richContent) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border);line-height:1.7;color:var(--text)">'+n.richContent+'</div>';
+  } else {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border);line-height:1.7;color:var(--text);font-size:14px;white-space:pre-line">'+escapeHtml(n.description||'')+'</div>';
+  }
+  // Tags
+  if (tags.length) {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">'
+      +tags.map(function(t){ return '<span style="background:'+NOTES_COLOR+'22;color:'+NOTES_COLOR+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">#'+escapeHtml(t)+'</span>'; }).join('')
+      +'</div>';
+  }
+  // Reminder
+  if (n.reminder && n.reminder.enabled) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">'
+      +'<span style="font-size:22px">🔔</span>'
+      +'<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+(n.reminder.date||'')+(n.reminder.time?', '+n.reminder.time:'')+'</div>'
+      +'<div style="font-size:12px;color:var(--text-dim)">'+escapeHtml(n.reminder.repeat||'One Time')+'</div></div>'
+      +'</div>';
+  }
+  // Attachments
+  if (atts.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;border:1px solid var(--border)">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:10px;letter-spacing:1px">ATTACHMENTS ('+atts.length+')</div>'
+      +atts.map(function(a){ return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+        +_noteFileIcon(a.type)
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(a.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(a.size||'')+'</div></div>'
+        +'</div>'; }).join('')
+      +'</div>';
+  }
+  // Action bar
+  html += '</div>'
+    +'<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-around;z-index:10">'
+    +'<div onclick="State.noteAddData=Object.assign({},State.notes.find(function(x){return x.id===State.noteActiveId;}));App.navigate(\'notes-add\')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg><span style="font-size:10px;color:var(--text-dim)">Edit</span></div>'
+    +'<div onclick="App._notePin(\''+n.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="'+(n.pinned?nc:'var(--text-dim)')+'"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg><span style="font-size:10px;color:var(--text-dim)">'+(n.pinned?'Unpin':'Pin')+'</span></div>'
+    +'<div onclick="App._noteDelete(\''+n.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg><span style="font-size:10px;color:var(--text-dim)">Delete</span></div>'
+    +'<div onclick="App.navigate(\'notes-export\')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg><span style="font-size:10px;color:var(--text-dim)">Share</span></div>'
+    +'<div onclick="App.navigate(\'notes-export\')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg><span style="font-size:10px;color:var(--text-dim)">More</span></div>'
+    +'</div>';
+  return html + '</div>';
+}
+
+function renderNotesEditor() {
+  var d = State.noteAddData || {};
+  var html = '<div class="screen-wrap">';
+  html += '<div style="background:var(--card);border-bottom:1px solid var(--border);padding:10px 16px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    +'<div onclick="App.navigate(\'notes-add\')" style="font-size:14px;font-weight:700;color:var(--text-dim);cursor:pointer">Cancel</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text)">Rich Editor</div>'
+    +'<div onclick="App._noteSaveEditor()" style="font-size:14px;font-weight:700;color:'+NOTES_COLOR+';cursor:pointer">Done</div>'
+    +'</div>'
+    // Toolbar row 1
+    +'<div style="display:flex;gap:2px;flex-wrap:wrap">'
+    +'<button onclick="document.execCommand(\'bold\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-weight:800;font-size:14px;cursor:pointer">B</button>'
+    +'<button onclick="document.execCommand(\'italic\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-style:italic;font-size:14px;cursor:pointer">I</button>'
+    +'<button onclick="document.execCommand(\'underline\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);text-decoration:underline;font-size:14px;cursor:pointer">U</button>'
+    +'<button onclick="document.execCommand(\'strikethrough\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);text-decoration:line-through;font-size:14px;cursor:pointer">S</button>'
+    +'<div style="width:1px;background:var(--border);margin:0 2px"></div>'
+    +'<button onclick="document.execCommand(\'insertUnorderedList\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:16px;cursor:pointer">•</button>'
+    +'<button onclick="document.execCommand(\'insertOrderedList\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer">1.</button>'
+    +'<button onclick="document.execCommand(\'indent\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer">→</button>'
+    +'<button onclick="document.execCommand(\'outdent\')" style="width:36px;height:32px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer">←</button>'
+    +'<div style="width:1px;background:var(--border);margin:0 2px"></div>'
+    +'<button onclick="document.execCommand(\'formatBlock\',false,\'h2\')" style="height:32px;padding:0 8px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">H2</button>'
+    +'<button onclick="document.execCommand(\'formatBlock\',false,\'h3\')" style="height:32px;padding:0 8px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">H3</button>'
+    +'<button onclick="document.execCommand(\'removeFormat\')" style="height:32px;padding:0 8px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;cursor:pointer">Clear</button>'
+    +'</div></div>';
+  // Editor area
+  html += '<div style="padding:16px;flex:1">'
+    +'<input id="note-editor-title" type="text" value="'+escapeHtml(d.title||'')+'" placeholder="Title" style="width:100%;background:none;border:none;outline:none;font-size:22px;font-weight:800;color:var(--text);margin-bottom:12px;box-sizing:border-box">'
+    +'<div id="note-rich-editor" contenteditable="true" style="min-height:400px;outline:none;color:var(--text);font-size:14px;line-height:1.8" onblur="State.noteEditorContent=this.innerHTML">'+((d.richContent)||escapeHtml(d.description||''))+'</div>'
+    +'</div>';
+  // Auto-focus script
+  html += '<script>setTimeout(function(){var e=document.getElementById("note-rich-editor");if(e){e.focus();var s=window.getSelection(),r=document.createRange();r.selectNodeContents(e);r.collapse(false);s.removeAllRanges();s.addRange(r);}},200);<\/script>';
+  html += '<div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderNotesAttachments() {
+  var d = State.noteAddData || {};
+  var atts = d.attachments || [];
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-add\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title">Attachments</div>'
+    +'<div></div></div>';
+  html += '<div style="padding:16px">';
+  if (atts.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px">';
+    atts.forEach(function(a,i) {
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;'+(i<atts.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+        +_noteFileIcon(a.type)
+        +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+escapeHtml(a.name)+'</div>'
+        +'<div style="font-size:12px;color:var(--text-dim)">'+escapeHtml(a.size||'')+(a.type?' • '+a.type.toUpperCase():'')+'</div></div>'
+        +'<div onclick="App._noteRemoveAttachment('+i+')" style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#EF4444;font-size:16px">×</div>'
+        +'</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px">ADD ATTACHMENT</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border)">';
+  var actions = [
+    { icon:'📄', label:'Attach File',         type:'file' },
+    { icon:'🖼️', label:'Attach Photo',         type:'image' },
+    { icon:'📷', label:'Scan Document',        type:'pdf' },
+    { icon:'🎤', label:'Record Voice Note',    type:'audio' },
+  ];
+  actions.forEach(function(a,i) {
+    html += '<div onclick="App._noteAddAttachment(\''+a.type+'\')" style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;'+(i<actions.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      +'<span style="font-size:22px">'+a.icon+'</span>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+a.label+'</div>'
+      +'</div>';
+  });
+  html += '</div>'
+    +'<div style="margin-top:8px;font-size:11px;color:var(--text-dim);text-align:center">Supported formats: JPG, PNG, PDF (Max 10 MB)</div>'
+    +'<button onclick="App.navigate(\'notes-add\')" style="width:100%;margin-top:20px;padding:14px;border-radius:var(--radius-sm);background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);font-size:14px;font-weight:700;cursor:pointer">Cancel</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderNotesReminder() {
+  var d = State.noteAddData || {};
+  var r = d.reminder || {enabled:true,date:'',time:'09:00',repeat:'One Time'};
+  var today = new Date().toISOString().slice(0,10);
+  var tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  var nextWeek = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-add\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title">Set Reminder</div>'
+    +'<div></div></div>';
+  html += '<div style="padding:16px">';
+  // Toggle
+  html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--text)">Reminder</div>'
+    +'<div style="width:46px;height:26px;border-radius:13px;background:'+NOTES_COLOR+';position:relative"><div style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div>'
+    +'</div>';
+  // Date
+  html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px">'
+    +'<div style="padding:14px 16px;border-bottom:1px solid var(--border)">'
+    +'<div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:6px">DATE</div>'
+    +'<input id="note-rem-date" type="date" value="'+(r.date||today)+'" style="width:100%;background:none;border:none;outline:none;color:var(--text);font-size:16px;font-weight:700;box-sizing:border-box">'
+    +'</div>'
+    +'<div style="padding:14px 16px;border-bottom:1px solid var(--border)">'
+    +'<div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:6px">TIME</div>'
+    +'<input id="note-rem-time" type="time" value="'+(r.time||'09:00')+'" style="width:100%;background:none;border:none;outline:none;color:var(--text);font-size:16px;font-weight:700;box-sizing:border-box">'
+    +'</div>'
+    +'<div style="padding:14px 16px">'
+    +'<div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:6px">REPEAT</div>'
+    +'<select id="note-rem-repeat" style="width:100%;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-weight:700;box-sizing:border-box;appearance:none">'
+    +['One Time','Daily','Weekly','Monthly','Yearly'].map(function(rep){ return '<option value="'+rep+'"'+(r.repeat===rep?' selected':'')+'>'+rep+'</option>'; }).join('')
+    +'</select></div></div>';
+  // Quick
+  html += '<div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:10px">QUICK SELECT</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:20px">'
+    +'<button onclick="document.getElementById(\'note-rem-date\').value=\''+today+'\'" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(99,102,241,.12);color:'+NOTES_COLOR+';border:1px solid rgba(99,102,241,.3);font-size:13px;font-weight:700;cursor:pointer">Today</button>'
+    +'<button onclick="document.getElementById(\'note-rem-date\').value=\''+tomorrow+'\'" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(99,102,241,.12);color:'+NOTES_COLOR+';border:1px solid rgba(99,102,241,.3);font-size:13px;font-weight:700;cursor:pointer">Tomorrow</button>'
+    +'<button onclick="document.getElementById(\'note-rem-date\').value=\''+nextWeek+'\'" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(99,102,241,.12);color:'+NOTES_COLOR+';border:1px solid rgba(99,102,241,.3);font-size:13px;font-weight:700;cursor:pointer">Next Week</button>'
+    +'</div>';
+  html += '<button onclick="App._noteSaveReminder()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px">Save</button>'
+    +'<button onclick="App.navigate(\'notes-add\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(255,255,255,.06);color:var(--text-dim);border:1px solid var(--border);font-size:14px;font-weight:700;cursor:pointer">Cancel</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderNotesSearch() {
+  var filtered = _noteGetFiltered();
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    +'<div class="icon-btn" onclick="State.noteFilterCategory=\'all\';State.noteSearchQuery=\'\';App.navigate(\'notes-list\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title">Search Notes</div>'
+    +'<div onclick="State.noteFilterCategory=\'all\';State.noteFilterPinned=false;State.noteFilterLocked=false;State.noteFilterAttachments=false;State.noteFilterDate=\'all_time\';State.noteSearchQuery=\'\';App.render()" style="font-size:12px;font-weight:700;color:'+NOTES_COLOR+';cursor:pointer">Reset</div>'
+    +'</div>';
+  html += '<div style="padding:16px">';
+  // Search bar
+  html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:0 12px;display:flex;align-items:center;gap:10px;border:1px solid var(--border);margin-bottom:16px">'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
+    +'<input id="notes-filter-search" type="text" placeholder="Search notes..." value="'+escapeHtml(State.noteSearchQuery||'')+'" oninput="State.noteSearchQuery=this.value;App.render()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;padding:12px 0">'
+    +'</div>';
+  // Filters
+  html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px">';
+  // Category
+  html += '<div style="padding:14px 16px;border-bottom:1px solid var(--border)">'
+    +'<div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px">CATEGORY</div>'
+    +'<select id="notes-filter-cat" onchange="State.noteFilterCategory=this.value;App.render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none">'
+    +'<option value="all"'+(State.noteFilterCategory==='all'?' selected':'')+'>All Categories</option>'
+    +NOTES_CATEGORIES.map(function(c){ return '<option value="'+c.id+'"'+(State.noteFilterCategory===c.id?' selected':'')+'>'+c.icon+' '+c.id+'</option>'; }).join('')
+    +'</select></div>';
+  // Toggles
+  var toggles = [
+    { id:'noteFilterPinned',      label:'Pinned Notes',       icon:'📌' },
+    { id:'noteFilterLocked',      label:'Locked Notes',       icon:'🔒' },
+    { id:'noteFilterAttachments', label:'With Attachments',   icon:'📎' },
+  ];
+  toggles.forEach(function(t,i) {
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;'+(i<toggles.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      +'<div style="display:flex;align-items:center;gap:10px"><span>'+t.icon+'</span><div style="font-size:14px;font-weight:600;color:var(--text)">'+t.label+'</div></div>'
+      +'<div onclick="State.'+t.id+'=!State.'+t.id+';App.render()" style="width:46px;height:26px;border-radius:13px;background:'+(State[t.id]?NOTES_COLOR:'rgba(255,255,255,.15)')+';cursor:pointer;position:relative"><div style="position:absolute;top:3px;left:'+(State[t.id]?'23':'3')+'px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div>'
+      +'</div>';
+  });
+  html += '</div>';
+  // Sort
+  html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);margin-bottom:16px">'
+    +'<div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px">SORT BY</div>'
+    +'<select onchange="State.noteSortBy=this.value;App.render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none">'
+    +[['recently_modified','Recently Modified'],['oldest','Oldest First'],['title_az','Title A–Z'],['pinned','Pinned First']].map(function(s){ return '<option value="'+s[0]+'"'+(State.noteSortBy===s[0]?' selected':'')+'>'+s[1]+'</option>'; }).join('')
+    +'</select></div>';
+  // Results
+  html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">'+filtered.length+' note'+(filtered.length===1?'':'s')+' found</div>';
+  if (filtered.length) {
+    filtered.forEach(function(n){ html += _noteCard(n); });
+  } else {
+    html += '<div style="text-align:center;padding:32px 0"><div style="font-size:40px;margin-bottom:10px">🔍</div><div style="color:var(--text-dim);font-size:14px">No notes match your filters</div></div>';
+  }
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderNotesSecurity() {
+  var n = (State.notes||[]).filter(function(x){ return x.id===State.noteActiveId; })[0];
+  var pin = State.noteSecurityPin || '';
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    +'<div class="icon-btn" onclick="State.noteSecurityPin=\'\';App.navigate(\'notes-list\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title">Lock Note</div>'
+    +'<div></div></div>';
+  html += '<div style="padding:40px 24px 20px;text-align:center">'
+    +'<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#4F46E5,#7C3AED);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">'
+    +'<svg width="36" height="36" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>'
+    +'</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">This note is locked</div>'
+    +'<div style="font-size:13px;color:var(--text-dim);margin-bottom:32px">Enter your MPIN to view this note</div>'
+    // PIN dots
+    +'<div style="display:flex;gap:16px;justify-content:center;margin-bottom:32px">'
+    +[0,1,2,3].map(function(i){ return '<div style="width:14px;height:14px;border-radius:50%;background:'+(i<pin.length?'#4F46E5':'rgba(255,255,255,.2)')+';border:2px solid '+(i<pin.length?'#4F46E5':'rgba(255,255,255,.3)')+'"></div>'; }).join('')
+    +'</div>';
+  // Keypad
+  var keys = [['1','2','3'],['4','5','6'],['7','8','9'],['','0','⌫']];
+  html += '<div style="max-width:280px;margin:0 auto">';
+  keys.forEach(function(row) {
+    html += '<div style="display:flex;gap:16px;margin-bottom:16px">';
+    row.forEach(function(k) {
+      if (!k) {
+        html += '<div style="flex:1"></div>';
+      } else {
+        html += '<div onclick="App._noteSecurityDigit(\''+k+'\')" style="flex:1;height:60px;border-radius:14px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:'+(k==='⌫'?'22':'22')+'px;font-weight:700;color:var(--text)">'+k+'</div>';
+      }
+    });
+    html += '</div>';
+  });
+  html += '</div>'
+    +'<div onclick="State.noteSecurityPin=\'\';App.navigate(\'notes-list\')" style="font-size:14px;color:var(--text-dim);cursor:pointer;margin-top:8px">Cancel</div>'
+    +'</div></div>';
+  return html;
+}
+
+function renderNotesExport() {
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'notes-detail\')">' + _invBackSVG + '</div>'
+    +'<div class="form-header-title">Export Note</div>'
+    +'<div></div></div>';
+  html += '<div style="padding:16px">';
+  var options = [
+    { icon:'📄', color:'#EF4444', label:'Export as PDF',       fn:'pdf' },
+    { icon:'📝', color:'#3B82F6', label:'Export as Word',       fn:'word' },
+    { icon:'📊', color:'#22C55E', label:'Export as Excel',      fn:'excel' },
+    { icon:'📧', color:'#6B7280', label:'Share via Email',      fn:'email' },
+    { icon:'💬', color:'#22C55E', label:'Share via WhatsApp',   fn:'whatsapp' },
+  ];
+  html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px">';
+  options.forEach(function(o,i) {
+    html += '<div onclick="App._noteExport(\''+o.fn+'\')" style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;'+(i<options.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      +'<div style="width:40px;height:40px;border-radius:10px;background:'+o.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px">'+o.icon+'</div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+o.label+'</div>'
+      +'</div>';
+  });
+  html += '</div>';
+  html += '<button onclick="App.navigate(\'notes-detail\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(255,255,255,.06);color:var(--text-dim);border:1px solid var(--border);font-size:14px;font-weight:700;cursor:pointer">Cancel</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+// Helper: render linked notes list (used in other module detail screens)
+function renderLinkedNotesList(module, linkedId) {
+  var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
+  var nc = NOTES_COLOR;
+  var html = '<div style="padding:16px">';
+  if (notes.length) {
+    notes.forEach(function(n){ html += _noteCard(n); });
+  } else {
+    html += '<div style="text-align:center;padding:32px 0"><div style="font-size:36px;margin-bottom:10px">📝</div><div style="color:var(--text-dim);font-size:13px">No notes linked to this item yet.</div></div>';
+  }
+  html += '<button onclick="State.noteAddData={color:\'default\',tags:[],attachments:[],reminder:{enabled:false,date:\'\',time:\'\',repeat:\'One Time\'},pinned:false,locked:false,linkedModule:\''+module+'\',linkedId:\''+linkedId+'\'};App.navigate(\'notes-add\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(99,102,241,.12);color:'+nc+';border:1px solid rgba(99,102,241,.3);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Note</button>';
+  html += '</div>';
+  return html;
+}
+
+/* ═══════════════════════════════════════════════════════
    9. APP CONTROLLER
 ══════════════════════════════════════════════════════ */
 const App = {
@@ -17159,6 +17784,7 @@ const App = {
     else if (screen.startsWith('pp'))             tabHint = 'more';
     else if (screen.startsWith('excel'))           tabHint = 'more';
     else if (screen === 'global-search')          tabHint = 'more';
+    else if (screen.startsWith('notes'))          tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -17371,6 +17997,15 @@ const App = {
       case 'excel-settings':      html = renderExcelSettings();       break;
       case 'excel-errors':        html = renderExcelErrors();         break;
       case 'global-search':       html = renderGlobalSearch();        break;
+      case 'notes-list':          html = renderNotesList();           break;
+      case 'notes-add':           html = renderNotesAdd();            break;
+      case 'notes-detail':        html = renderNotesDetail();         break;
+      case 'notes-editor':        html = renderNotesEditor();         break;
+      case 'notes-attachments':   html = renderNotesAttachments();    break;
+      case 'notes-reminder':      html = renderNotesReminder();       break;
+      case 'notes-search':        html = renderNotesSearch();         break;
+      case 'notes-security':      html = renderNotesSecurity();       break;
+      case 'notes-export':        html = renderNotesExport();         break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -19731,6 +20366,132 @@ const App = {
     State.mediclaimDocs.push({ type:docType, name:labels[docType]||docType+'.pdf', size:sizes[docType]||'1.0 MB' });
     this.showToast('Document uploaded successfully');
     App.render();
+  },
+
+  /* ── Notes Module ───────────────────────────── */
+  _noteSaveToState() {
+    var d = State.noteAddData || {};
+    var el;
+    el = document.getElementById('note-title');    if (el) d.title       = el.value;
+    el = document.getElementById('note-category'); if (el) d.category    = el.value;
+    el = document.getElementById('note-desc');     if (el) d.description = el.value;
+    State.noteAddData = d;
+  },
+  _noteSave() {
+    var d = State.noteAddData || {};
+    var el;
+    el = document.getElementById('note-title');    if (el) d.title       = el.value;
+    el = document.getElementById('note-category'); if (el) d.category    = el.value;
+    el = document.getElementById('note-desc');     if (el) d.description = el.value;
+    if (!d.title || !d.title.trim()) { this.showToast('Please enter a title'); return; }
+    if (!d.category) d.category = 'General Notes';
+    var notes = State.notes || [];
+    if (d.id) {
+      State.notes = notes.map(function(n){ return n.id===d.id ? Object.assign({},n,d,{updatedAt:new Date().toISOString()}) : n; });
+    } else {
+      d.id = 'nt' + Date.now();
+      d.createdAt = new Date().toISOString();
+      d.updatedAt = d.createdAt;
+      State.notes = [d].concat(notes);
+    }
+    State.noteActiveId = d.id;
+    State.noteAddData = {};
+    this.showToast(d.id ? 'Note updated' : 'Note saved');
+    App.navigate('notes-detail');
+  },
+  _noteDelete(id) {
+    State.notes = (State.notes||[]).filter(function(n){ return n.id!==id; });
+    this.showToast('Note deleted');
+    App.navigate('notes-list');
+  },
+  _notePin(id) {
+    State.notes = (State.notes||[]).map(function(n){ return n.id===id ? Object.assign({},n,{pinned:!n.pinned,updatedAt:new Date().toISOString()}) : n; });
+    App.render();
+  },
+  _noteSetColor(colorId) {
+    State.noteAddData = State.noteAddData || {};
+    State.noteAddData.color = colorId;
+    App.render();
+  },
+  _noteAddTag(tag) {
+    tag = (tag||'').trim().replace(/^#/,'').replace(/[,\s]+$/,'');
+    if (!tag) return;
+    State.noteAddData = State.noteAddData || {};
+    State.noteAddData.tags = State.noteAddData.tags || [];
+    if (!State.noteAddData.tags.includes(tag)) State.noteAddData.tags.push(tag);
+    App.render();
+  },
+  _noteRemoveTag(idx) {
+    State.noteAddData = State.noteAddData || {};
+    State.noteAddData.tags = (State.noteAddData.tags||[]).filter(function(_,i){ return i!==idx; });
+    App.render();
+  },
+  _noteAddAttachment(type) {
+    var fakeFiles = { file:{name:'Document_'+Date.now()+'.pdf',size:'1.2 MB',type:'pdf'}, image:{name:'Photo_'+Date.now()+'.jpg',size:'2.4 MB',type:'image'}, pdf:{name:'Scanned_'+Date.now()+'.pdf',size:'800 KB',type:'pdf'}, audio:{name:'Voice_'+Date.now()+'.m4a',size:'500 KB',type:'audio'} };
+    var fake = fakeFiles[type] || {name:'File_'+Date.now(),size:'1 MB',type:'file'};
+    State.noteAddData = State.noteAddData || {};
+    State.noteAddData.attachments = State.noteAddData.attachments || [];
+    State.noteAddData.attachments.push(fake);
+    this.showToast('Attachment added');
+    App.render();
+  },
+  _noteRemoveAttachment(idx) {
+    State.noteAddData = State.noteAddData || {};
+    State.noteAddData.attachments = (State.noteAddData.attachments||[]).filter(function(_,i){ return i!==idx; });
+    App.render();
+  },
+  _noteOpenEditor() {
+    this._noteSaveToState();
+    var d = State.noteAddData || {};
+    State.noteEditorContent = d.richContent || d.description || '';
+    App.navigate('notes-editor');
+  },
+  _noteSaveEditor() {
+    var edEl = document.getElementById('note-rich-editor');
+    var titleEl = document.getElementById('note-editor-title');
+    State.noteAddData = State.noteAddData || {};
+    if (edEl) State.noteAddData.richContent = edEl.innerHTML;
+    if (titleEl && titleEl.value) State.noteAddData.title = titleEl.value;
+    App.navigate('notes-add');
+  },
+  _noteSaveReminder() {
+    var dateEl   = document.getElementById('note-rem-date');
+    var timeEl   = document.getElementById('note-rem-time');
+    var repeatEl = document.getElementById('note-rem-repeat');
+    State.noteAddData = State.noteAddData || {};
+    State.noteAddData.reminder = {
+      enabled: true,
+      date:   dateEl   ? dateEl.value   : '',
+      time:   timeEl   ? timeEl.value   : '09:00',
+      repeat: repeatEl ? repeatEl.value : 'One Time'
+    };
+    this.showToast('Reminder set');
+    App.navigate('notes-add');
+  },
+  _noteExport(format) {
+    var labels = { pdf:'PDF', word:'Word document', excel:'Excel spreadsheet', email:'email', whatsapp:'WhatsApp' };
+    this.showToast('Exporting as ' + (labels[format]||format) + '...');
+    App.navigate('notes-detail');
+  },
+  _noteSecurityDigit(d) {
+    if (d === '⌫') {
+      State.noteSecurityPin = (State.noteSecurityPin||'').slice(0,-1);
+      App.render();
+      return;
+    }
+    State.noteSecurityPin = (State.noteSecurityPin||'') + d;
+    if (State.noteSecurityPin.length === 4) {
+      if (State.noteSecurityPin === '1234') {
+        State.noteSecurityPin = '';
+        App.navigate('notes-detail');
+      } else {
+        this.showToast('Incorrect MPIN. Try again.');
+        State.noteSecurityPin = '';
+        App.render();
+      }
+    } else {
+      App.render();
+    }
   },
 
   /* ── Budget Module ──────────────────────────── */
