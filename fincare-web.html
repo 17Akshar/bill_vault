@@ -1816,6 +1816,45 @@ const State = {
   loanAddData:  {},
   loanAddType:  null,
   loanAddStep:  1,
+  rentalActiveId:     null,
+  rentalDetailTab:    'overview',
+  rentalRentFilter:   'all',
+  rentalExpenseFilter:'all',
+  rentalInsightTab:   'this_month',
+  rentalAddData:      {},
+  rentalAddType:      null,
+  rentalProperties: [
+    { id:'rp1', name:'Nerul Sea View Apartment', type:'residential', sub_type:'2BHK', address:'Nerul, Navi Mumbai, Maharashtra', unit:'A-702', owner:'You', rent:25000, deposit:75000, status:'active', tenant_name:'Rohit Sharma', tenant_phone:'+91 98765 43210', tenant_email:'rohit.sharma@email.com', lease_start:'2024-05-01', lease_end:'2025-04-30', due_day:1, payment_mode:'bank', account:'SBI Bank •••• 5678', rent_received_total:150000, next_due:'2024-06-01', color:'#7C3AED', image_emoji:'🏙️' },
+    { id:'rp2', name:'Khargar Shop', type:'commercial', sub_type:'Shop', address:'Kharghar, Navi Mumbai', unit:'G-12', owner:'You', rent:40000, deposit:120000, status:'active', tenant_name:'Priya Enterprises', tenant_phone:'+91 99887 66554', tenant_email:'priya.ent@email.com', lease_start:'2024-01-01', lease_end:'2024-12-31', due_day:5, payment_mode:'bank', account:'HDFC •••• 1234', rent_received_total:120000, next_due:'2024-06-05', color:'#F59E0B', image_emoji:'🏪' },
+    { id:'rp3', name:'Palm Villa', type:'residential', sub_type:'3BHK', address:'Panvel, Navi Mumbai', unit:'Villa-3', owner:'You', rent:55000, deposit:165000, status:'inactive', tenant_name:'', tenant_phone:'', tenant_email:'', lease_start:'', lease_end:'', due_day:1, payment_mode:'bank', account:'SBI Bank •••• 5678', rent_received_total:0, next_due:'', color:'#10B981', image_emoji:'🏡' },
+    { id:'rp4', name:'Belapur Office', type:'commercial', sub_type:'Office', address:'CBD Belapur, Navi Mumbai', unit:'301', owner:'You', rent:35000, deposit:105000, status:'active', tenant_name:'TechSoft Pvt Ltd', tenant_phone:'+91 98001 23456', tenant_email:'admin@techsoft.com', lease_start:'2023-06-01', lease_end:'2025-05-31', due_day:1, payment_mode:'bank', account:'HDFC •••• 1234', rent_received_total:420000, next_due:'2024-06-01', color:'#0EA5E9', image_emoji:'🏢' },
+    { id:'rp5', name:'Airoli PG', type:'pg', sub_type:'PG', address:'Airoli, Navi Mumbai', unit:'Room-5', owner:'You', rent:8000, deposit:16000, status:'active', tenant_name:'Arjun Mehra', tenant_phone:'+91 91234 56789', tenant_email:'', lease_start:'2024-03-01', lease_end:'2025-02-28', due_day:1, payment_mode:'upi', account:'GPay', rent_received_total:24000, next_due:'2024-06-01', color:'#EC4899', image_emoji:'🏨' },
+    { id:'rp6', name:'Panvel Land', type:'land', sub_type:'Plot', address:'Panvel, Raigad', unit:'Survey-45', owner:'You', rent:7000, deposit:21000, status:'vacant', tenant_name:'', tenant_phone:'', tenant_email:'', lease_start:'', lease_end:'', due_day:1, payment_mode:'bank', account:'SBI Bank •••• 5678', rent_received_total:0, next_due:'', color:'#6B7280', image_emoji:'🌿' },
+  ],
+  rentalTransactions: [
+    { id:'rt1', property_id:'rp1', month:'May 2024', date:'2024-05-31', amount:25000, mode:'bank', ref:'UTR123456789012', notes:'May 2024 rent received.', status:'received' },
+    { id:'rt2', property_id:'rp1', month:'Apr 2024', date:'2024-04-01', amount:25000, mode:'upi',  ref:'UPI Ref 9817543210', notes:'', status:'received' },
+    { id:'rt3', property_id:'rp1', month:'Mar 2024', date:'2024-03-01', amount:25000, mode:'cash', ref:'ES08005', notes:'', status:'received' },
+    { id:'rt4', property_id:'rp1', month:'Feb 2024', date:'2024-02-01', amount:25000, mode:'neft', ref:'NEFT Ref 34567890I2', notes:'', status:'received' },
+    { id:'rt5', property_id:'rp1', month:'Jan 2024', date:'2024-01-01', amount:25000, mode:'neft', ref:'NEFT Ref 23456789O1', notes:'', status:'received' },
+    { id:'rt6', property_id:'rp1', month:'Dec 2023', date:'2024-01-01', amount:25000, mode:'neft', ref:'NEFT Ref 1234567890', notes:'', status:'received' },
+    { id:'rt7', property_id:'rp2', month:'May 2024', date:'2024-05-20', amount:40000, mode:'bank', ref:'UTR987654321', notes:'', status:'received' },
+    { id:'rt8', property_id:'rp2', month:'Jun 2024', date:'', amount:40000, mode:'', ref:'', notes:'', status:'pending' },
+  ],
+  rentalExpenses: [
+    { id:'re1', property_id:'rp1', date:'2024-05-15', name:'Plumbing Repair',     category:'repairs',     amount:1800, notes:'Kitchen pipe leak fixed' },
+    { id:'re2', property_id:'rp1', date:'2024-05-02', name:'Society Maintenance', category:'maintenance', amount:2500, notes:'May maintenance charges' },
+    { id:'re3', property_id:'rp1', date:'2024-04-10', name:'Electricity Bill',    category:'others',      amount:2350, notes:'April electricity' },
+    { id:'re4', property_id:'rp1', date:'2024-03-28', name:'AC Service',          category:'repairs',     amount:1500, notes:'Annual AC servicing' },
+    { id:'re5', property_id:'rp1', date:'2024-03-05', name:'Paint Touch-up',      category:'maintenance', amount:3200, notes:'Wall paint touch-up' },
+    { id:'re6', property_id:'rp2', date:'2024-05-10', name:'Shop Renovation',     category:'maintenance', amount:8000, notes:'Partial renovation' },
+    { id:'re7', property_id:'rp2', date:'2024-04-15', name:'Electrical Repair',   category:'repairs',     amount:2500, notes:'' },
+  ],
+  rentalDocs: [
+    { id:'rd1', property_id:'rp1', name:'Lease Agreement May 2024',   type:'PDF', size:'2.1 MB', date:'2024-05-01' },
+    { id:'rd2', property_id:'rp1', name:'Tenant KYC - Rohit Sharma',  type:'PDF', size:'850 KB', date:'2024-05-01' },
+    { id:'rd3', property_id:'rp2', name:'Commercial Lease Agreement', type:'PDF', size:'1.8 MB', date:'2024-01-01' },
+  ],
   budgetCategories: [
     { id:'bc1',  name:'Home',          icon:'🏠', color:'#6366F1', budget:20000, spent:16000 },
     { id:'bc2',  name:'Food & Dining', icon:'🍔', color:'#F59E0B', budget:10000, spent:8045  },
@@ -7174,6 +7213,512 @@ function renderTermInsInsights() {
     + '</div>'
     + '<div style="padding:0 16px 16px"><button onclick="App._termInsViewReport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
     + '</div>';
+}
+
+// ─── RENTALS MODULE ────────────────────────────────────────────────────────
+var RENTAL_COLOR = '#7C3AED';
+
+var RENTAL_TYPES = [
+  { id:'residential', icon:'🏠', label:'Add Residential Property', sub:'Add a rented house, apartment, flat',  color:'#7C3AED' },
+  { id:'commercial',  icon:'🏪', label:'Add Commercial Property',  sub:'Add shop, office, or commercial space',color:'#F59E0B' },
+  { id:'land',        icon:'🌿', label:'Add Land / Plot',           sub:'Add rented land or plot',              color:'#10B981' },
+  { id:'pg',          icon:'🏨', label:'Add PG / Hostel',          sub:'Add paying guest or hostel property',  color:'#EC4899' },
+  { id:'custom',      icon:'🔧', label:'Add Custom Property',      sub:'Add any other rental property',        color:'#6B7280' },
+];
+
+function _rentals()       { return State.rentalProperties || []; }
+function _rental(id)      { var rid=id||State.rentalActiveId; return _rentals().find(function(p){ return p.id===rid; }) || {}; }
+function _rentalTxs(id)   { return (State.rentalTransactions||[]).filter(function(t){ return t.property_id===(id||State.rentalActiveId); }); }
+function _rentalExps(id)  { return (State.rentalExpenses||[]).filter(function(e){ return e.property_id===(id||State.rentalActiveId); }); }
+function _rentalDocs(id)  { return (State.rentalDocs||[]).filter(function(d){ return d.property_id===(id||State.rentalActiveId); }); }
+function _rentalTypeIcon(t) { return t==='residential'?'🏠':t==='commercial'?'🏪':t==='land'?'🌿':t==='pg'?'🏨':'🔧'; }
+function _rentalStatusColor(s){ return s==='active'?'#10B981':s==='vacant'?'#F59E0B':'#6B7280'; }
+function _rentalStatusLabel(s){ return s==='active'?'Active':s==='vacant'?'Vacant':'Inactive'; }
+
+function renderRentalList() {
+  var props = _rentals();
+  var totalMonthly = props.reduce(function(s,p){ return s+(p.status==='active'?p.rent:0); },0);
+  var totalReceived= (State.rentalTransactions||[]).filter(function(t){ return t.status==='received'; }).reduce(function(s,t){ return s+t.amount; },0);
+  var totalPending = (State.rentalTransactions||[]).filter(function(t){ return t.status==='pending'; }).reduce(function(s,t){ return s+t.amount; },0);
+  var allMonthly   = props.reduce(function(s,p){ return s+p.rent; },0);
+  var pctRecv      = allMonthly>0 ? Math.round(totalReceived/(allMonthly)*100) : 76;
+  var pctPend      = 100-pctRecv;
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 28px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
+    + _invBackSVG
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Financial Tools</div><div style="font-size:20px;font-weight:800;color:#fff">Rentals</div></div>'
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-insights\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+    + '<div style="background:rgba(255,255,255,.12);border-radius:14px;padding:14px"><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Total Properties</div><div style="font-size:20px;font-weight:800;color:#fff">'+props.length+'</div></div>'
+    + '<div style="background:rgba(255,255,255,.12);border-radius:14px;padding:14px"><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Monthly Rent</div><div style="font-size:18px;font-weight:800;color:#fff">'+formatINR(totalMonthly)+'</div></div>'
+    + '<div style="background:rgba(255,255,255,.12);border-radius:14px;padding:14px"><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Received</div><div style="font-size:18px;font-weight:800;color:#10B981">'+formatINR(118650)+'</div></div>'
+    + '<div style="background:rgba(255,255,255,.12);border-radius:14px;padding:14px"><div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Pending</div><div style="font-size:18px;font-weight:800;color:#F87171">'+formatINR(36350)+'</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(0,0,0,.2);border-radius:100px;height:7px;margin-bottom:6px">'
+    + '<div style="background:#10B981;border-radius:100px;height:7px;width:76%"></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.65)">'
+    + '<span>76% Rent Collected</span><span>24% Pending</span>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:18px 16px 10px;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--text)">My Rental Properties</div>'
+    + '<span onclick="App.navigate(\'rental-add-type\')" style="font-size:13px;color:'+RENTAL_COLOR+';font-weight:700;cursor:pointer">+ Add</span>'
+    + '</div>';
+  props.forEach(function(p) {
+    var stColor = _rentalStatusColor(p.status);
+    var txs = _rentalTxs(p.id);
+    var lastTx = txs.filter(function(t){ return t.status==='received'; })[0];
+    var lastStatus = lastTx ? 'Received' : 'Pending';
+    var lastStatusColor = lastTx ? '#10B981' : '#F59E0B';
+    html += '<div onclick="State.rentalActiveId=\''+p.id+'\';State.rentalDetailTab=\'overview\';App.navigate(\'rental-detail\')" style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:0;cursor:pointer;border:1px solid rgba(255,255,255,.06);overflow:hidden">'
+      + '<div style="display:flex;align-items:stretch">'
+      + '<div style="width:5px;background:'+p.color+'"></div>'
+      + '<div style="flex:1;padding:14px 14px 14px 12px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">'+escapeHtml(p.name)+'</div>'
+      + '<span style="font-size:11px;font-weight:700;color:'+stColor+';background:'+stColor+'22;padding:3px 9px;border-radius:100px">'+_rentalStatusLabel(p.status)+'</span>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">'+_rentalTypeIcon(p.type)+' '+escapeHtml(p.sub_type||p.type)+'</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center">'
+      + '<div><div style="font-size:11px;color:var(--text-dim)">Monthly Rent</div><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(p.rent)+'</div></div>'
+      + '<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Status</div><div style="font-size:12px;font-weight:700;color:'+lastStatusColor+'">'+lastStatus+'</div></div>'
+      + '<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Next Due</div><div style="font-size:12px;font-weight:600;color:var(--text)">'+(p.next_due||'—')+'</div></div>'
+      + '</div>'
+      + '</div></div></div>';
+  });
+  html += '<div style="padding:8px 16px 16px"><button onclick="App.navigate(\'rental-add-type\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Add Rental Property</button></div>'
+    + '</div>';
+  return html;
+}
+
+function renderRentalAddType() {
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 24px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">New Property</div><div style="font-size:20px;font-weight:800;color:#fff">Add Rental Property</div></div>'
+    + '</div></div>';
+  RENTAL_TYPES.forEach(function(t) {
+    html += '<div onclick="State.rentalAddType=\''+t.id+'\';State.rentalAddData={};App.navigate(\'rental-add-details\')" style="margin:12px 16px 0;background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px;border:1px solid rgba(255,255,255,.06)">'
+      + '<div style="width:46px;height:46px;border-radius:13px;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;font-size:24px">'+t.icon+'</div>'
+      + '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+t.label+'</div><div style="font-size:12px;color:var(--text-dim)">'+t.sub+'</div></div>'
+      + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>'
+      + '</div>';
+  });
+  html += '<div style="margin:12px 16px 0;background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px;border:1px dashed rgba(124,58,237,.4)" onclick="App.showToast(\'Import coming soon\')">'
+    + '<div style="width:46px;height:46px;border-radius:13px;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>'
+    + '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">Import from Previous</div><div style="font-size:12px;color:var(--text-dim)">Copy property details from last month</div></div>'
+    + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>'
+    + '</div>'
+    + '</div>';
+  return html;
+}
+
+function renderRentalAddDetails() {
+  var d = State.rentalAddData || {};
+  var subTypes = {residential:['2BHK','3BHK','Apartment','Villa','Flat','Independent House'],commercial:['Shop','Office','Warehouse','Showroom'],land:['Plot','Agricultural','Commercial Plot'],pg:['PG','Hostel','Paying Guest'],custom:['Custom']};
+  var subs = subTypes[State.rentalAddType||'residential'] || ['Custom'];
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Step 1 of 3</div><div style="font-size:18px;font-weight:800;color:#fff">Property Details</div></div>'
+    + '</div>'
+    + '<button onclick="App._rentalNextStep(\'tenant\')" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div></div>'
+    + '<div style="padding:20px 16px">'
+    + '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin-bottom:14px;letter-spacing:.5px">PROPERTY INFORMATION</div>';
+  function fld(id,lbl,type,ph,val) {
+    return '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">'+lbl+'</div>'
+      +'<input id="rad-'+id+'" type="'+type+'" placeholder="'+ph+'" value="'+(val||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>';
+  }
+  html += fld('name','Property Name','text','e.g. Nerul Sea View Apartment',d.name);
+  html += '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Property Type</div>'
+    + '<select id="rad-sub_type" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px">'
+    + subs.map(function(s){ return '<option value="'+s+'" '+(d.sub_type===s?'selected':'')+'>'+s+'</option>'; }).join('')
+    + '</select></div>';
+  html += fld('address','Address','text','e.g. Nerul, Navi Mumbai, Maharashtra',d.address);
+  html += fld('unit','Unit / Flat No. (Optional)','text','e.g. A-702',d.unit);
+  html += fld('owner','Owner Name','text','Your name or company',d.owner||'You');
+  html += '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin:18px 0 14px;letter-spacing:.5px">PROPERTY IMAGE (OPTIONAL)</div>'
+    + '<div style="display:flex;gap:10px;margin-bottom:18px">'
+    + '<div style="width:90px;height:75px;border-radius:12px;background:var(--card);border:1px dashed rgba(124,58,237,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer" onclick="App.showToast(\'Upload feature coming soon\')">'
+    + '<div style="font-size:22px;margin-bottom:3px">📷</div>'
+    + '<div style="font-size:10px;color:var(--text-dim)">Add Photo</div>'
+    + '</div></div>'
+    + '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin-bottom:14px;letter-spacing:.5px">RENTAL DETAILS</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Rent Amount (Monthly)</div><input id="rad-rent" type="number" placeholder="25000" value="'+(d.rent||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Security Deposit</div><input id="rad-deposit" type="number" placeholder="75000" value="'+(d.deposit||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+    + '</div>'
+    + '<button onclick="App._rentalNextStep(\'tenant\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Next: Tenant Details</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderRentalAddTenant() {
+  var d = State.rentalAddData || {};
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Step 2 of 3</div><div style="font-size:18px;font-weight:800;color:#fff">Tenant Details</div></div>'
+    + '</div>'
+    + '<button onclick="App._rentalNextStep(\'settings\')" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div></div>'
+    + '<div style="padding:20px 16px">'
+    + '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin-bottom:14px;letter-spacing:.5px">TENANT DETAILS</div>';
+  function fld(id,lbl,type,ph,val) {
+    return '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">'+lbl+'</div>'
+      +'<input id="rat-'+id+'" type="'+type+'" placeholder="'+ph+'" value="'+(val||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>';
+  }
+  html += fld('tenant_name','Tenant Name','text','e.g. Rohit Sharma',d.tenant_name);
+  html += fld('tenant_phone','Phone Number','tel','+91 98765 43210',d.tenant_phone);
+  html += fld('tenant_email','Email (Optional)','email','rohit@email.com',d.tenant_email);
+  html += '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin:18px 0 14px;letter-spacing:.5px">LEASE DETAILS</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Rent Start Date</div><input id="rat-lease_start" type="date" value="'+(d.lease_start||'2024-05-01')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Rent Due Date</div>'
+    + '<select id="rat-due_day" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px">'
+    + [1,5,10,15,20,25].map(function(n){ return '<option value="'+n+'">'+n+' Each Month</option>'; }).join('')
+    + '</select></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Agreement Start</div><input id="rat-agreement_start" type="date" value="'+(d.agreement_start||'2024-05-01')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Agreement End</div><input id="rat-agreement_end" type="date" value="'+(d.agreement_end||'2025-04-30')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Notice Period</div>'
+    + '<select id="rat-notice" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"><option>30 Days</option><option>60 Days</option><option>90 Days</option></select></div>'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Rent Increase</div>'
+    + '<select id="rat-increase" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"><option>No Increase</option><option>5% Yearly</option><option>10% Yearly</option></select></div>'
+    + '</div>'
+    + '<button onclick="App._rentalNextStep(\'settings\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Next: Payment Settings</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderRentalAddSettings() {
+  var d = State.rentalAddData || {};
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Step 3 of 3</div><div style="font-size:18px;font-weight:800;color:#fff">Additional Settings</div></div>'
+    + '</div>'
+    + '<button onclick="App._rentalSaveProperty()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div></div>'
+    + '<div style="padding:20px 16px">'
+    + '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin-bottom:14px;letter-spacing:.5px">PAYMENT &amp; REMINDERS</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:0;overflow:hidden;margin-bottom:16px">'
+    + '<div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06)">'
+    + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Preferred Payment Mode</div>'
+    + '<select id="ras-payment_mode" style="width:100%;background:transparent;border:none;color:var(--text);font-size:14px;font-weight:600;padding:0"><option value="bank">Bank Transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="cheque">Cheque</option></select>'
+    + '</div>'
+    + '<div style="padding:14px 16px">'
+    + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Receive Rent In Account</div>'
+    + '<select id="ras-account" style="width:100%;background:transparent;border:none;color:var(--text);font-size:14px;font-weight:600;padding:0"><option>SBI Bank •••• 5678</option><option>HDFC •••• 1234</option><option>Cash</option></select>'
+    + '</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:0;overflow:hidden;margin-bottom:16px">'
+    + [['Send Rent Reminder','2 days before due date',true],['Send Overdue Reminder','3 days after due date',true],['Maintenance Reminder','Every 6 months',false]].map(function(r,i) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;'+(i?'border-top:1px solid rgba(255,255,255,.06)':'')+'">'
+          +'<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+r[0]+'</div><div style="font-size:11px;color:var(--text-dim)">'+r[1]+'</div></div>'
+          +'<div style="width:46px;height:26px;border-radius:13px;background:'+(r[2]?RENTAL_COLOR:'rgba(255,255,255,.1)')+';position:relative;cursor:pointer">'
+          +'<div style="position:absolute;top:3px;'+(r[2]?'right:3px':'left:3px')+';width:20px;height:20px;border-radius:50%;background:#fff"></div>'
+          +'</div></div>';
+      }).join('')
+    + '</div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Notes (Optional)</div>'
+    + '<textarea id="ras-notes" placeholder="e.g. Corner flat, sea facing. Prefer family tenants." rows="3" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;resize:none">'+(d.notes||'')+'</textarea>'
+    + '</div>'
+    + '<div style="margin-bottom:18px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Attachments (Optional)</div>'
+    + '<div onclick="App.showToast(\'Upload coming soon\')" style="display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:10px 16px;cursor:pointer;color:'+RENTAL_COLOR+';font-size:13px;font-weight:600">📎 Upload Agreement</div>'
+    + '</div>'
+    + '<button onclick="App._rentalSaveProperty()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:800;cursor:pointer">Save Property</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderRentalDetail() {
+  var p   = _rental();
+  var tab = State.rentalDetailTab || 'overview';
+  var tabs= [['overview','Overview'],['rent','Rent'],['expenses','Expenses'],['timeline','Timeline']];
+  var exps= _rentalExps(p.id);
+  var totalExp = exps.reduce(function(s,e){ return s+e.amount; },0);
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 0">'
+    + '<div style="display:flex;align-items:center;gap:12px;padding-bottom:16px">'
+    + _invBackSVG
+    + '<div style="flex:1"><div style="font-size:16px;font-weight:800;color:#fff">'+escapeHtml(p.name||'Property')+'</div><div style="font-size:12px;color:rgba(255,255,255,.6)">'+_rentalTypeIcon(p.type)+' '+escapeHtml(p.sub_type||p.type)+'</div></div>'
+    + '<span style="font-size:11px;font-weight:700;color:'+_rentalStatusColor(p.status)+';background:rgba(0,0,0,.3);padding:4px 10px;border-radius:100px;border:1px solid '+_rentalStatusColor(p.status)+'">'+_rentalStatusLabel(p.status)+'</span>'
+    + '</div>'
+    + '<div style="display:flex;background:rgba(0,0,0,.2)">'
+    + tabs.map(function(t){ var a=tab===t[0]; return '<div onclick="State.rentalDetailTab=\''+t[0]+'\';App.render()" style="flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;cursor:pointer;'+(a?'color:#fff;border-bottom:2px solid #fff':'color:rgba(255,255,255,.5)')+'">'+t[1]+'</div>'; }).join('')
+    + '</div></div>';
+  if (tab === 'overview') {
+    var netIncome = (p.rent_received_total||0) - totalExp;
+    html += '<div style="margin:16px;background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);border-radius:16px;padding:20px">'
+      + '<div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:4px">Monthly Rent</div>'
+      + '<div style="font-size:32px;font-weight:800;color:#fff">'+formatINR(p.rent||0)+'</div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 16px">'
+      + '<div style="background:var(--card);border-radius:14px;padding:14px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Rent Received</div><div style="font-size:15px;font-weight:700;color:#10B981">'+formatINR(p.rent_received_total||0)+'</div></div>'
+      + '<div style="background:var(--card);border-radius:14px;padding:14px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Expenses</div><div style="font-size:15px;font-weight:700;color:#EF4444">'+formatINR(totalExp)+'</div></div>'
+      + '<div style="background:var(--card);border-radius:14px;padding:14px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Net Income</div><div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(netIncome)+'</div></div>'
+      + '<div style="background:var(--card);border-radius:14px;padding:14px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Next Due</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+(p.next_due||'—')+'</div></div>'
+      + '</div>';
+    if (p.tenant_name) {
+      html += '<div style="margin:0 16px 16px;background:var(--card);border-radius:var(--radius);padding:16px">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--text)">Tenant Details</div>'
+        + '<span style="font-size:12px;color:'+RENTAL_COLOR+';cursor:pointer;font-weight:600">✏️ Edit</span>'
+        + '</div>'
+        + [['Tenant Name',p.tenant_name],['Phone',p.tenant_phone],['Address',p.address],['Lease',p.lease_start+' – '+p.lease_end],['Security Deposit',formatINR(p.deposit||0)],['Property Status','Rented']].map(function(r) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.05)"><span style="font-size:12px;color:var(--text-dim)">'+r[0]+'</span><span style="font-size:12px;font-weight:600;color:var(--text);text-align:right;max-width:55%">'+escapeHtml(String(r[1]))+'</span></div>';
+          }).join('')
+        + '</div>';
+    }
+    html += '<div style="margin:0 16px 16px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">Reminders</div>'
+      + '<span onclick="App._rentalAddReminder(\''+p.id+'\')" style="font-size:12px;color:'+RENTAL_COLOR+';cursor:pointer;font-weight:600">+ Add Reminder</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+      + '<div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;font-size:16px">🔔</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">Rent Due Reminder</div><div style="font-size:11px;color:var(--text-dim)">'+(p.next_due||'01 Jun 2024')+'</div></div>'
+      + '<span style="font-size:11px;color:#10B981;font-weight:600">In 2 days</span></div>'
+      + '<div style="display:flex;align-items:center;gap:12px;padding:10px 0">'
+      + '<div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;font-size:16px">🔧</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">Maintenance Reminder</div><div style="font-size:11px;color:var(--text-dim)">15 Jul 2024</div></div>'
+      + '<span style="font-size:11px;color:#F59E0B;font-weight:600">In 45 days</span></div>'
+      + '</div>';
+  } else if (tab === 'rent') {
+    var txs = _rentalTxs(p.id);
+    var filter = State.rentalRentFilter || 'all';
+    var filt = [['all','All'],['received','Received'],['pending','Pending'],['overdue','Overdue']];
+    html += '<div style="display:flex;gap:0;background:var(--card);border-bottom:1px solid rgba(255,255,255,.06)">'
+      + filt.map(function(f){ var a=filter===f[0]; return '<div onclick="State.rentalRentFilter=\''+f[0]+'\';App.render()" style="flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;cursor:pointer;'+(a?'color:'+RENTAL_COLOR+';border-bottom:2px solid '+RENTAL_COLOR:'color:var(--text-dim)')+'">'+f[1]+'</div>'; }).join('')
+      + '</div><div style="padding:16px">';
+    var shown = filter==='all'?txs:txs.filter(function(t){ return t.status===filter; });
+    if (!shown.length) html += '<div style="text-align:center;padding:40px;color:var(--text-dim)">No transactions</div>';
+    shown.forEach(function(t) {
+      var stCol = t.status==='received'?'#10B981':t.status==='pending'?'#F59E0B':'#EF4444';
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.06)">'
+        +'<div style="flex:1">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(t.month)+'</div>'
+        +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(t.amount)+'</div>'
+        +'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="font-size:11px;color:var(--text-dim)">'+(t.date||'—')+(t.ref?' · '+escapeHtml(t.ref):'')+'</div>'
+        +'<span style="font-size:11px;font-weight:700;color:'+stCol+';background:'+stCol+'22;padding:2px 8px;border-radius:100px;text-transform:capitalize">'+t.status+'</span>'
+        +'</div></div></div>';
+    });
+    html += '</div>';
+    html += '<div style="padding:0 16px 16px"><button onclick="App.navigate(\'rental-record-rent\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Record Rent</button></div>';
+  } else if (tab === 'expenses') {
+    var exps2 = _rentalExps(p.id);
+    var efilter = State.rentalExpenseFilter || 'all';
+    var efilt = [['all','All'],['maintenance','Maintenance'],['repairs','Repairs'],['others','Others']];
+    html += '<div style="display:flex;gap:0;background:var(--card);border-bottom:1px solid rgba(255,255,255,.06)">'
+      + efilt.map(function(f){ var a=efilter===f[0]; return '<div onclick="State.rentalExpenseFilter=\''+f[0]+'\';App.render()" style="flex:1;text-align:center;padding:12px 4px;font-size:11px;font-weight:700;cursor:pointer;'+(a?'color:'+RENTAL_COLOR+';border-bottom:2px solid '+RENTAL_COLOR:'color:var(--text-dim)')+'">'+f[1]+'</div>'; }).join('')
+      + '</div>'
+      + '<div style="padding:12px 16px 4px;display:flex;align-items:center;justify-content:space-between">'
+      + '<div style="font-size:13px;color:var(--text-dim)">Total Expenses</div>'
+      + '<div style="font-size:16px;font-weight:700;color:#EF4444">'+formatINR(totalExp)+'</div>'
+      + '</div><div style="padding:8px 16px">';
+    var shownE = efilter==='all'?exps2:exps2.filter(function(e){ return e.category===efilter; });
+    if (!shownE.length) html += '<div style="text-align:center;padding:40px;color:var(--text-dim)">No expenses</div>';
+    var catIcons = {maintenance:'🔧',repairs:'🪛',others:'📄'};
+    shownE.forEach(function(e) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.06)">'
+        +'<div style="width:38px;height:38px;border-radius:10px;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;font-size:18px">'+(catIcons[e.category]||'📄')+'</div>'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(e.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim)">'+e.date+(e.notes?' · '+escapeHtml(e.notes):'')+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:#EF4444">'+formatINR(e.amount)+'</div>'
+        +'<div style="font-size:10px;color:var(--text-dim);text-transform:capitalize">'+e.category+'</div></div>'
+        +'</div>';
+    });
+    html += '</div><div style="padding:0 16px 16px"><button onclick="App.navigate(\'rental-expenses\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Add Expense</button></div>';
+  } else if (tab === 'timeline') {
+    var events = [
+      { date:'2024-05-01', icon:'🏠', title:'Tenant Joined', sub:'Rohit Sharma moved in', color:'#10B981' },
+      { date:'2024-05-01', icon:'📄', title:'Lease Signed',  sub:'1-year agreement signed', color:RENTAL_COLOR },
+      { date:'2024-05-31', icon:'💰', title:'Rent Received', sub:'May 2024 rent ₹25,000', color:'#10B981' },
+      { date:'2024-04-01', icon:'💰', title:'Rent Received', sub:'Apr 2024 rent ₹25,000', color:'#10B981' },
+      { date:'2024-03-01', icon:'💰', title:'Rent Received', sub:'Mar 2024 rent ₹25,000', color:'#10B981' },
+    ];
+    html += '<div style="padding:20px 16px">';
+    events.forEach(function(ev,i) {
+      html += '<div style="display:flex;gap:14px;margin-bottom:16px">'
+        +'<div style="display:flex;flex-direction:column;align-items:center;gap:0">'
+        +'<div style="width:36px;height:36px;border-radius:50%;background:'+ev.color+'22;border:2px solid '+ev.color+';display:flex;align-items:center;justify-content:center;font-size:16px">'+ev.icon+'</div>'
+        +(i<events.length-1?'<div style="width:2px;flex:1;background:rgba(255,255,255,.08);margin-top:4px;min-height:24px"></div>':'')
+        +'</div>'
+        +'<div style="padding-top:6px"><div style="font-size:13px;font-weight:700;color:var(--text)">'+ev.title+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim)">'+ev.sub+'</div>'
+        +'<div style="font-size:10px;color:var(--text-dim);margin-top:2px">'+ev.date+'</div></div>'
+        +'</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderRentalRecordRent() {
+  var p = _rental();
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">'+escapeHtml(p.name||'Property')+'</div><div style="font-size:18px;font-weight:800;color:#fff">Record Rent</div></div>'
+    + '</div>'
+    + '<button onclick="App._rentalRecordRent()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div></div>'
+    + '<div style="padding:20px 16px">'
+    + '<div style="font-size:13px;font-weight:700;color:'+RENTAL_COLOR+';margin-bottom:14px;letter-spacing:.5px">PAYMENT DETAILS</div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Amount Received</div><input id="rrr-amount" type="number" placeholder="25000" value="'+(p.rent||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Payment Date</div><input id="rrr-date" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Payment Mode</div><select id="rrr-mode" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"><option value="bank">Bank Transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="neft">NEFT</option><option value="cheque">Cheque</option></select></div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Transaction ID (Optional)</div><input id="rrr-ref" type="text" placeholder="UTR123456789012" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Received In Account</div><select id="rrr-account" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"><option>SBI Bank •••• 5678</option><option>HDFC •••• 1234</option><option>Cash</option></select></div>'
+    + '<div style="margin-bottom:18px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Notes (Optional)</div><input id="rrr-notes" type="text" placeholder="May 2024 rent received." style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+    + '<div style="margin-bottom:18px">'
+    + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Attach Receipt (Optional)</div>'
+    + '<div onclick="App.showToast(\'Upload coming soon\')" style="display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:10px 16px;cursor:pointer;color:'+RENTAL_COLOR+';font-size:13px;font-weight:600">📎 Upload Receipt</div>'
+    + '</div>'
+    + '<button onclick="App._rentalRecordRent()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Rent</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderRentalRentHistory() {
+  var filter = State.rentalRentFilter || 'all';
+  var allTxs = State.rentalTransactions || [];
+  var filt = [['all','All'],['received','Received'],['pending','Pending'],['overdue','Overdue']];
+  var shown = filter==='all'?allTxs:allTxs.filter(function(t){ return t.status===filter; });
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 0">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:20px;font-weight:800;color:#fff">Rent History</div>'
+    + '</div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:flex">'
+    + filt.map(function(f){ var a=filter===f[0]; return '<div onclick="State.rentalRentFilter=\''+f[0]+'\';App.render()" style="flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;cursor:pointer;'+(a?'color:#fff;border-bottom:2px solid #fff':'color:rgba(255,255,255,.5)')+'">'+f[1]+'</div>'; }).join('')
+    + '</div></div><div style="padding:16px">';
+  if (!shown.length) html += '<div style="text-align:center;padding:40px;color:var(--text-dim)">No transactions found</div>';
+  shown.forEach(function(t) {
+    var stCol = t.status==='received'?'#10B981':t.status==='pending'?'#F59E0B':'#EF4444';
+    var prop = (State.rentalProperties||[]).find(function(p){ return p.id===t.property_id; }) || {};
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(t.month)+'</div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+formatINR(t.amount)+'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center">'
+      +'<div style="font-size:11px;color:var(--text-dim)">'+(t.date||'Pending')+(t.ref?' · '+escapeHtml(t.ref):'')+'</div>'
+      +'<span style="font-size:11px;font-weight:700;color:'+stCol+';background:'+stCol+'22;padding:2px 8px;border-radius:100px;text-transform:capitalize">'+t.status+'</span>'
+      +'</div>'
+      +(prop.name?'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+escapeHtml(prop.name)+'</div>':'')
+      +'</div>';
+  });
+  html += '</div>'
+    + '<div style="padding:0 16px 16px"><button onclick="App.navigate(\'rental-record-rent\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Record Rent</button></div>'
+    + '</div>';
+  return html;
+}
+
+function renderRentalExpenses() {
+  var filter = State.rentalExpenseFilter || 'all';
+  var allExp  = State.rentalExpenses || [];
+  var filt    = [['all','All'],['maintenance','Maintenance'],['repairs','Repairs'],['others','Others']];
+  var shown   = filter==='all'?allExp:allExp.filter(function(e){ return e.category===filter; });
+  var totalShown = shown.reduce(function(s,e){ return s+e.amount; },0);
+  var catIcons = {maintenance:'🔧',repairs:'🪛',others:'📄'};
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 0">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:20px;font-weight:800;color:#fff">Expenses</div>'
+    + '</div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:flex">'
+    + filt.map(function(f){ var a=filter===f[0]; return '<div onclick="State.rentalExpenseFilter=\''+f[0]+'\';App.render()" style="flex:1;text-align:center;padding:12px 4px;font-size:11px;font-weight:700;cursor:pointer;'+(a?'color:#fff;border-bottom:2px solid #fff':'color:rgba(255,255,255,.5)')+'">'+f[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-size:13px;color:var(--text-dim)">Total Expenses</div>'
+    + '<div style="font-size:18px;font-weight:700;color:#EF4444">'+formatINR(totalShown)+'</div>'
+    + '</div>'
+    + '<div style="padding:8px 16px">';
+  if (!shown.length) html += '<div style="text-align:center;padding:40px;color:var(--text-dim)">No expenses found</div>';
+  shown.forEach(function(e) {
+    var prop = (State.rentalProperties||[]).find(function(p){ return p.id===e.property_id; }) || {};
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.06)">'
+      +'<div style="width:40px;height:40px;border-radius:11px;background:rgba(124,58,237,.1);display:flex;align-items:center;justify-content:center;font-size:20px">'+(catIcons[e.category]||'📄')+'</div>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(e.name)+'</div>'
+      +'<div style="font-size:11px;color:var(--text-dim)">'+e.date+(prop.name?' · '+escapeHtml(prop.name):'')+'</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-size:14px;font-weight:700;color:#EF4444">'+formatINR(e.amount)+'</div>'
+      +'<div style="font-size:10px;color:var(--text-dim);text-transform:capitalize">'+e.category+'</div>'
+      +'</div></div>';
+  });
+  html += '</div>'
+    + '<div style="padding:0 16px 16px"><button onclick="App._rentalAddExpense()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Add Expense</button></div>'
+    + '</div>';
+  return html;
+}
+
+function renderRentalInsights() {
+  var props    = _rentals();
+  var allTxs   = State.rentalTransactions || [];
+  var received = allTxs.filter(function(t){ return t.status==='received'; }).reduce(function(s,t){ return s+t.amount; },0);
+  var pending  = allTxs.filter(function(t){ return t.status==='pending'; }).reduce(function(s,t){ return s+t.amount; },0);
+  var totalRent= props.reduce(function(s,p){ return s+p.rent; },0);
+  var active   = props.filter(function(p){ return p.status==='active'; }).length;
+  var occ      = props.length>0?Math.round(active/props.length*100):0;
+  var slices   = [{value:76,color:'#10B981'},{value:24,color:'#EF4444'}];
+  var tabs     = [['this_month','This Month'],['this_year','This Year'],['custom','Custom']];
+  var tab      = State.rentalInsightTab || 'this_month';
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    + _invBackSVG
+    + '<div style="font-size:20px;font-weight:800;color:#fff">Rental Insights</div>'
+    + '</div>'
+    + '<div style="display:flex;background:rgba(0,0,0,.2);border-radius:12px;padding:3px">'
+    + tabs.map(function(t){ var a=tab===t[0]; return '<div onclick="State.rentalInsightTab=\''+t[0]+'\';App.render()" style="flex:1;text-align:center;padding:8px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;'+(a?'background:'+RENTAL_COLOR+';color:#fff':'color:rgba(255,255,255,.6)')+'">'+t[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 16px 0">'
+    + [['Total Rent',formatINR(155000)],['Total Received',formatINR(118650)],['Pending Rent',formatINR(36350)],['Occupancy Rate',occ+'%'],['Overdue Amount',formatINR(11000)],['Properties',String(props.length)]].map(function(s) {
+        return '<div style="background:var(--card);border-radius:14px;padding:14px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">'+s[0]+'</div><div style="font-size:16px;font-weight:700;color:var(--text)">'+s[1]+'</div></div>';
+      }).join('')
+    + '</div>'
+    + '<div style="margin:16px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">Rent Received vs Pending</div>'
+    + '<div style="display:flex;align-items:center;gap:20px">'
+    + '<div>'+donutSVG(slices,52,120)+'</div>'
+    + '<div style="flex:1">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:12px;height:12px;border-radius:50%;background:#10B981"></div><div style="flex:1;font-size:12px;color:var(--text-dim)">Received</div><div style="font-size:13px;font-weight:700;color:var(--text)">76%</div></div>'
+    + '<div style="display:flex;align-items:center;gap:8px"><div style="width:12px;height:12px;border-radius:50%;background:#EF4444"></div><div style="flex:1;font-size:12px;color:var(--text-dim)">Pending</div><div style="font-size:13px;font-weight:700;color:var(--text)">24%</div></div>'
+    + '</div></div></div>'
+    + '<div style="padding:0 16px 16px"><button onclick="App._rentalViewReport()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+RENTAL_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
+    + '</div>';
+  return html;
 }
 
 // ─── LOANS MODULE ──────────────────────────────────────────────────────────
@@ -14550,6 +15095,7 @@ function renderMore() {
     { icon:'💰', bg:'rgba(124,58,237,0.15)', label:'Budget Management',    sub:'Set budgets, track spending and achieve savings goals', fn:"App.navigate('budget-dashboard')" },
     { icon:'💳', bg:'rgba(108,71,255,0.15)', label:'Credit Cards', sub:'Manage credit cards, bills, rewards and spending', fn:"App.navigate('cc-list')" },
     { icon:'🏦', bg:'rgba(108,71,255,0.15)', label:'Loans', sub:'Track all personal, business and custom loans', fn:"App.navigate('loan-list')" },
+    { icon:'🏘️', bg:'rgba(124,58,237,0.15)', label:'Rentals', sub:'Track rental properties, rent collections and expenses', fn:"App.navigate('rental-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -15425,6 +15971,7 @@ const App = {
     else if (screen.startsWith('lic'))       tabHint = 'lic';
     else if (screen.startsWith('cc'))           tabHint = 'more';
     else if (screen.startsWith('loan'))         tabHint = 'more';
+    else if (screen.startsWith('rental')) tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
       document.querySelectorAll('.tab-item').forEach(function(el) {
@@ -15628,6 +16175,16 @@ const App = {
       case 'loan-add-tx':       html = renderLoanAddTx();       break;
       case 'loan-insights':     html = renderLoanInsights();    break;
       case 'loan-emi-type':     html = renderLoanEmiType();     break;
+      case 'rental-list':         html = renderRentalList();          break;
+      case 'rental-add-type':     html = renderRentalAddType();       break;
+      case 'rental-add-details':  html = renderRentalAddDetails();    break;
+      case 'rental-add-tenant':   html = renderRentalAddTenant();     break;
+      case 'rental-add-settings': html = renderRentalAddSettings();   break;
+      case 'rental-detail':       html = renderRentalDetail();        break;
+      case 'rental-record-rent':  html = renderRentalRecordRent();    break;
+      case 'rental-rent-history': html = renderRentalRentHistory();   break;
+      case 'rental-expenses':     html = renderRentalExpenses();      break;
+      case 'rental-insights':     html = renderRentalInsights();      break;
       case 'lic-list':              html = renderLICList();              break;
       case 'lic-detail':            html = renderLICDetail();            break;
       case 'lic-buy':               html = renderLICBuy();               break;
@@ -18187,6 +18744,93 @@ const App = {
     State.loanDocuments = (State.loanDocuments||[]).concat([newDoc]);
     App.render();
     this.showToast('Document uploaded!');
+  },
+
+  /* ── Rentals Module ─────────────────────────────── */
+  _rentalNextStep(step) {
+    var d = State.rentalAddData || {};
+    if (step === 'tenant') {
+      var el;
+      el = document.getElementById('rad-name');      if (el) d.name     = el.value;
+      el = document.getElementById('rad-sub_type');  if (el) d.sub_type = el.value;
+      el = document.getElementById('rad-address');   if (el) d.address  = el.value;
+      el = document.getElementById('rad-unit');      if (el) d.unit     = el.value;
+      el = document.getElementById('rad-owner');     if (el) d.owner    = el.value;
+      el = document.getElementById('rad-rent');      if (el) d.rent     = parseFloat(el.value)||0;
+      el = document.getElementById('rad-deposit');   if (el) d.deposit  = parseFloat(el.value)||0;
+      State.rentalAddData = d;
+      App.navigate('rental-add-tenant');
+    } else if (step === 'settings') {
+      var el2;
+      el2 = document.getElementById('rat-tenant_name');   if (el2) d.tenant_name   = el2.value;
+      el2 = document.getElementById('rat-tenant_phone');  if (el2) d.tenant_phone  = el2.value;
+      el2 = document.getElementById('rat-tenant_email');  if (el2) d.tenant_email  = el2.value;
+      el2 = document.getElementById('rat-lease_start');   if (el2) d.lease_start   = el2.value;
+      el2 = document.getElementById('rat-agreement_end'); if (el2) d.lease_end     = el2.value;
+      State.rentalAddData = d;
+      App.navigate('rental-add-settings');
+    }
+  },
+  _rentalSaveProperty() {
+    var d  = State.rentalAddData || {};
+    var nm = d.name || ('Property ' + Date.now()%1000);
+    if (!nm.trim()) { this.showToast('Please enter a property name'); return; }
+    var typeColors = {residential:'#7C3AED',commercial:'#F59E0B',land:'#10B981',pg:'#EC4899',custom:'#6B7280'};
+    var typeEmojis = {residential:'🏠',commercial:'🏪',land:'🌿',pg:'🏨',custom:'🔧'};
+    var t = State.rentalAddType || 'custom';
+    var newProp = {
+      id:'rp_'+Date.now(), name:nm, type:t, sub_type:d.sub_type||'Custom',
+      address:d.address||'', unit:d.unit||'', owner:d.owner||'You',
+      rent:d.rent||0, deposit:d.deposit||0, status:'active',
+      tenant_name:d.tenant_name||'', tenant_phone:d.tenant_phone||'',
+      tenant_email:d.tenant_email||'', lease_start:d.lease_start||'', lease_end:d.lease_end||'',
+      due_day:1, payment_mode:'bank', account:'SBI Bank •••• 5678',
+      rent_received_total:0, next_due:'', color:typeColors[t]||'#7C3AED',
+      image_emoji:typeEmojis[t]||'🏠', notes:d.notes||''
+    };
+    State.rentalProperties = [newProp].concat(State.rentalProperties||[]);
+    State.rentalAddData = {};
+    State.rentalAddType = null;
+    this.showToast('Property saved!');
+    App.navigate('rental-list');
+  },
+  _rentalRecordRent() {
+    var el, amount=0, date='', mode='bank', ref='', notes='';
+    el=document.getElementById('rrr-amount'); if(el) amount=parseFloat(el.value)||0;
+    el=document.getElementById('rrr-date');   if(el) date=el.value;
+    el=document.getElementById('rrr-mode');   if(el) mode=el.value;
+    el=document.getElementById('rrr-ref');    if(el) ref=el.value;
+    el=document.getElementById('rrr-notes');  if(el) notes=el.value;
+    if (!amount) { this.showToast('Please enter an amount'); return; }
+    if (!date) date = new Date().toISOString().slice(0,10);
+    var propId = State.rentalActiveId;
+    var d = new Date(date);
+    var month = d.toLocaleString('default',{month:'short'})+' '+d.getFullYear();
+    var newTx = { id:'rt_'+Date.now(), property_id:propId, month:month, date:date, amount:amount, mode:mode, ref:ref, notes:notes, status:'received' };
+    State.rentalTransactions = [newTx].concat(State.rentalTransactions||[]);
+    var idx = (State.rentalProperties||[]).findIndex(function(p){ return p.id===propId; });
+    if (idx !== -1) State.rentalProperties[idx].rent_received_total = (State.rentalProperties[idx].rent_received_total||0)+amount;
+    this.showToast('Rent recorded!');
+    App.navigate('rental-detail');
+  },
+  _rentalAddExpense() {
+    var propId = State.rentalActiveId || ((State.rentalProperties||[])[0]||{}).id || 'rp1';
+    var newExp = { id:'re_'+Date.now(), property_id:propId, date:new Date().toISOString().slice(0,10), name:'New Expense', category:'others', amount:0, notes:'' };
+    State.rentalExpenses = [newExp].concat(State.rentalExpenses||[]);
+    this.showToast('Expense added!');
+    App.render();
+  },
+  _rentalUploadDoc(propId) {
+    var newDoc = { id:'rd_'+Date.now(), property_id:propId||State.rentalActiveId, name:'Document_'+Date.now()+'.pdf', type:'PDF', size:'1.0 MB', date:new Date().toISOString().slice(0,10) };
+    State.rentalDocs = (State.rentalDocs||[]).concat([newDoc]);
+    this.showToast('Document uploaded!');
+    App.render();
+  },
+  _rentalViewReport() {
+    this.showToast('Generating report...');
+  },
+  _rentalAddReminder(propId) {
+    this.showToast('Reminder added!');
   },
 
   /* ── LIC Module ─────────────────────────────── */
