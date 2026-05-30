@@ -1855,6 +1855,25 @@ const State = {
     { id:'rd2', property_id:'rp1', name:'Tenant KYC - Rohit Sharma',  type:'PDF', size:'850 KB', date:'2024-05-01' },
     { id:'rd3', property_id:'rp2', name:'Commercial Lease Agreement', type:'PDF', size:'1.8 MB', date:'2024-01-01' },
   ],
+  // Planned Payments module
+  ppActiveId:       null,
+  ppFilter:         'upcoming',
+  ppInsightTab:     'this_month',
+  ppCalMonth:       4,
+  ppCalYear:        2024,
+  ppAddData:        {},
+  ppAddStep:        1,
+  ppAddType:        'expense',
+  plannedPayments: [
+    { id:'pp1', name:'Home Loan EMI',   type:'expense', amount:12500, date:'2024-05-25', repeat:'monthly', account:'HDFC Bank •••• 1234', category:'Home Loan (EMI)', payee:'HDFC Bank',        payment_type:'Bank Transfer', labels:['Home Loan','EMI'],   note:'Monthly home loan EMI',     status:'upcoming', color:'#3B82F6',  icon:'🏠', reminder:true,  reminder_days:3 },
+    { id:'pp2', name:'LIC Premium',     type:'expense', amount:6500,  date:'2024-05-27', repeat:'yearly',  account:'LIC •••• 6543',      category:'Insurance',         payee:'LIC',              payment_type:'Bank Transfer', labels:['Insurance'],         note:'',                          status:'upcoming', color:'#7C3AED',  icon:'🛡️', reminder:true,  reminder_days:3 },
+    { id:'pp3', name:'Credit Card Bill',type:'expense', amount:18750, date:'2024-05-31', repeat:'monthly', account:'HDFC Bank •••• 4567', category:'Credit Card',       payee:'HDFC Bank',        payment_type:'Auto Debit',    labels:['Credit Card'],       note:'',                          status:'upcoming', color:'#EC4899',  icon:'💳', reminder:true,  reminder_days:3 },
+    { id:'pp4', name:'Car Insurance',   type:'expense', amount:5999,  date:'2024-06-10', repeat:'yearly',  account:'SBI Bank •••• 7890',  category:'Insurance',         payee:'SBI General',      payment_type:'Bank Transfer', labels:['Insurance','Car'],    note:'',                          status:'upcoming', color:'#F59E0B',  icon:'🚗', reminder:true,  reminder_days:7 },
+    { id:'pp5', name:'Property Tax',    type:'expense', amount:8000,  date:'2024-06-15', repeat:'yearly',  account:'Municipal •••• 2345', category:'Tax',               payee:'Municipal Corp',   payment_type:'Bank Transfer', labels:['Tax'],                note:'',                          status:'upcoming', color:'#EF4444',  icon:'🏛️', reminder:true,  reminder_days:7 },
+    { id:'pp6', name:'Internet Bill',   type:'expense', amount:999,   date:'2024-06-18', repeat:'monthly', account:'Airtel •••• 1111',    category:'Utilities',         payee:'Airtel',           payment_type:'Auto Debit',    labels:['Utilities','Internet'],note:'',                          status:'upcoming', color:'#06B6D4',  icon:'📡', reminder:false, reminder_days:1 },
+    { id:'pp7', name:'SIP Investment',  type:'expense', amount:5000,  date:'2024-05-20', repeat:'monthly', account:'HDFC Bank •••• 1234', category:'Investment',        payee:'Mirae Asset MF',   payment_type:'Auto Debit',    labels:['SIP','Investment'],  note:'',                          status:'paid',     color:'#10B981',  icon:'📈', reminder:false, reminder_days:1 },
+    { id:'pp8', name:'Salary Credit',   type:'income',  amount:85000, date:'2024-05-31', repeat:'monthly', account:'HDFC Bank •••• 1234', category:'Salary',            payee:'Employer Ltd',     payment_type:'Bank Transfer', labels:['Salary'],             note:'Monthly salary',            status:'upcoming', color:'#22C55E',  icon:'💰', reminder:false, reminder_days:0 },
+  ],
   budgetCategories: [
     { id:'bc1',  name:'Home',          icon:'🏠', color:'#6366F1', budget:20000, spent:16000 },
     { id:'bc2',  name:'Food & Dining', icon:'🍔', color:'#F59E0B', budget:10000, spent:8045  },
@@ -7213,6 +7232,505 @@ function renderTermInsInsights() {
     + '</div>'
     + '<div style="padding:0 16px 16px"><button onclick="App._termInsViewReport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
     + '</div>';
+}
+
+// ─── PLANNED PAYMENTS MODULE ──────────────────────────────────────────────
+var PP_COLOR = '#7C3AED';
+
+var PP_CATEGORIES = ['Home Loan (EMI)','Car Loan (EMI)','Insurance','Credit Card','Utilities','Subscription','Education','Rent','Tax','Investment','Salary','Business Income','Other'];
+var PP_PAYMENT_TYPES = ['Bank Transfer','UPI','Credit Card','Debit Card','Cash','Auto Debit','Cheque'];
+var PP_REPEATS = ['one_time','daily','weekly','monthly','quarterly','half_yearly','yearly','custom'];
+var PP_REPEAT_LABELS = {one_time:'One Time',daily:'Daily',weekly:'Weekly',monthly:'Monthly',quarterly:'Quarterly',half_yearly:'Half Yearly',yearly:'Yearly',custom:'Custom'};
+
+function _pps()      { return State.plannedPayments || []; }
+function _pp(id)     { return _pps().find(function(p){ return p.id===(id||State.ppActiveId); }) || {}; }
+function _ppStatusColor(s){ return s==='paid'?'#10B981':s==='overdue'?'#EF4444':'#F59E0B'; }
+function _ppStatusLabel(s){ return s==='paid'?'Paid':s==='overdue'?'Overdue':'Upcoming'; }
+function _ppDaysLeft(dateStr) {
+  if (!dateStr) return null;
+  var diff = Math.ceil((new Date(dateStr)-new Date()) / 86400000);
+  return diff;
+}
+function _ppDaysLabel(d) {
+  if (d === null) return '';
+  if (d < 0)  return 'Overdue '+ Math.abs(d) +' days';
+  if (d === 0) return 'Due Today';
+  if (d <= 7)  return 'In '+d+' day'+(d===1?'':'s');
+  return 'In '+d+' days';
+}
+function _ppDaysColor(d) {
+  if (d === null) return '#6B7280';
+  if (d < 0)  return '#EF4444';
+  if (d === 0) return '#F59E0B';
+  if (d <= 3) return '#F59E0B';
+  return '#10B981';
+}
+
+function renderPPList() {
+  var all = _pps();
+  var upcoming = all.filter(function(p){ return p.status !== 'paid'; });
+  var paid     = all.filter(function(p){ return p.status === 'paid'; });
+  var totalAmt = all.reduce(function(s,p){ return s + p.amount; },0);
+  var paidAmt  = paid.reduce(function(s,p){ return s + p.amount; },0);
+  var thisMonth= all.filter(function(p){ return p.date && p.date.slice(0,7)==='2024-05'; }).reduce(function(s,p){ return s+p.amount; },0);
+  var slices   = [{value:paidAmt||45000,color:'#10B981'},{value:(totalAmt-paidAmt)||97500,color:'#F59E0B'}];
+  var dueSoon  = upcoming.filter(function(p){ var d=_ppDaysLeft(p.date); return d!==null && d<=10; }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 24px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">'
+    + _invBackSVG
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Financial Tools</div><div style="font-size:20px;font-weight:800;color:#fff">Planned Payments</div></div>'
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-insights\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>'
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-calendar\')" style="background:rgba(255,255,255,.12);margin-left:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.12);border-radius:16px;padding:16px;display:flex;align-items:center;gap:16px">'
+    + '<div style="flex:1">'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:2px">Upcoming Payments</div>'
+    + '<div style="font-size:26px;font-weight:800;color:#fff">'+formatINR(142500)+'</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:4px">Total 6 Payments</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">This Month <span style="color:#fff;font-weight:700">'+formatINR(45000)+'</span></div>'
+    + '</div>'
+    + '<div>'+donutSVG(slices,38,90)+'</div>'
+    + '</div>'
+    + '</div>';
+  if (dueSoon.length) {
+    html += '<div style="padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between">'
+      + '<div style="font-size:15px;font-weight:700;color:var(--text)">Due Soon</div>'
+      + '<span onclick="App.navigate(\'pp-upcoming\')" style="font-size:13px;color:'+PP_COLOR+';font-weight:700;cursor:pointer">View All</span>'
+      + '</div>';
+    dueSoon.slice(0,3).forEach(function(p) {
+      var d = _ppDaysLeft(p.date);
+      var dc = _ppDaysColor(d);
+      html += '<div onclick="State.ppActiveId=\''+p.id+'\';App.navigate(\'pp-detail\')" style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.06)">'
+        + '<div style="width:40px;height:40px;border-radius:12px;background:'+p.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px">'+p.icon+'</div>'
+        + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(p.name)+'</div>'
+        + '<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(p.payee||'')+'</div></div>'
+        + '<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(p.amount)+'</div>'
+        + '<div style="font-size:11px;font-weight:700;color:'+dc+'">'+_ppDaysLabel(d)+'</div></div>'
+        + '</div>';
+    });
+  }
+  html += '<div style="padding:8px 16px 8px;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--text)">All Planned Payments</div>'
+    + '<button onclick="App.navigate(\'pp-add\')" style="padding:6px 14px;border-radius:14px;background:rgba(124,58,237,.15);color:'+PP_COLOR+';border:1px solid rgba(124,58,237,.3);font-size:12px;font-weight:700;cursor:pointer">+ Add</button>'
+    + '</div>';
+  all.forEach(function(p) {
+    var d = _ppDaysLeft(p.date);
+    var dc = p.status==='paid'?'#10B981':_ppDaysColor(d);
+    var dl = p.status==='paid'?'Paid':_ppDaysLabel(d);
+    html += '<div onclick="State.ppActiveId=\''+p.id+'\';App.navigate(\'pp-detail\')" style="margin:0 16px 10px;background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.06)">'
+      + '<div style="width:40px;height:40px;border-radius:12px;background:'+p.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px">'+p.icon+'</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(p.name)+'</div>'
+      + '<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(p.account||'')+'</div></div>'
+      + '<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(p.amount)+'</div>'
+      + '<div style="font-size:11px;font-weight:700;color:'+dc+'">'+dl+'</div></div>'
+      + '</div>';
+  });
+  html += '<div style="padding:8px 16px 16px"><button onclick="App.navigate(\'pp-add\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Add Planned Payment</button></div>'
+    + '</div>';
+  return html;
+}
+
+function renderPPAdd() {
+  var d = State.ppAddData || {};
+  var step = State.ppAddStep || 1;
+  var ptype = State.ppAddType || 'expense';
+  var stepLabels = ['Payment Info','Details','Confirm'];
+  var stepperHtml = '<div style="display:flex;align-items:center;padding:16px 20px 0">'
+    + stepLabels.map(function(lbl,i){ var n=i+1; var active=step===n; var done=step>n;
+        return '<div style="display:flex;align-items:center;'+(i?'flex:1':'')+'">'
+          +(i?'<div style="flex:1;height:2px;background:'+(done?PP_COLOR:'rgba(255,255,255,.2)')+'"></div>':'')
+          +'<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'
+          +'<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:'+(done||active?PP_COLOR:'rgba(255,255,255,.15)')+';color:#fff">'+(done?'✓':n)+'</div>'
+          +'<div style="font-size:10px;color:'+(active?'#fff':'rgba(255,255,255,.5)')+'">'+lbl+'</div>'
+          +'</div></div>';
+      }).join('')
+    + '</div>';
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 16px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:18px;font-weight:800;color:#fff">Add Planned Payment</div>'
+    + '</div>'
+    + '<button onclick="App._ppSave()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div>'
+    + stepperHtml
+    + '</div>'
+    + '<div style="padding:20px 16px">';
+  if (step === 1) {
+    html += '<div style="display:flex;background:var(--card);border-radius:12px;padding:3px;margin-bottom:18px">'
+      + ['expense','income'].map(function(t){ var a=ptype===t; return '<div onclick="State.ppAddType=\''+t+'\';App.render()" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(a?'background:'+PP_COLOR+';color:#fff':'color:var(--text-dim)')+'">'+( t==='expense'?'Expense':'Income')+'</div>'; }).join('')
+      + '</div>'
+      + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Amount</div>'
+      + '<input id="ppa-amount" type="number" placeholder="12500" value="'+(d.amount||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:18px;font-weight:700"></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+      + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Payment Date</div><input id="ppa-date" type="date" value="'+(d.date||'2024-05-25')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+      + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Repeat</div>'
+      + '<select id="ppa-repeat" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px">'
+      + PP_REPEATS.map(function(r){ return '<option value="'+r+'" '+(d.repeat===r?'selected':'')+'>'+PP_REPEAT_LABELS[r]+'</option>'; }).join('')
+      + '</select></div></div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:14px">'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Payment Details</div>'
+      + [['ppa-account','Account','Select account >'],['ppa-category','Category','Select category >'],['ppa-payee','Payee','Select payee >'],['ppa-ptype','Payment type','Select type >'],['ppa-labels','Labels','+ Add'],['ppa-note','Note (Optional)','Add note >']].map(function(row) {
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)">'
+            +'<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim)">'+row[1]+'</div>'
+            +'<div style="font-size:13px;color:'+PP_COLOR+';cursor:pointer" onclick="App.showToast(\''+row[1]+' selection coming soon\')">'+row[2]+'</div>'
+            +'</div>';
+        }).join('')
+      + '</div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:16px">'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Upcoming payment preview</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">'
+      + '<div style="font-size:13px;color:var(--text-dim)">📅 Next payment</div>'
+      + '<div style="font-size:13px;font-weight:600;color:'+PP_COLOR+'">25 May 2024 ›</div>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)">'
+      + '<div style="font-size:13px;color:var(--text-dim)">🔔 Auto reminders</div>'
+      + '<div style="font-size:12px;color:var(--text-dim)">On due date, 3 days before ›</div>'
+      + '</div></div>'
+      + '<button onclick="App._ppSave()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Planned Payment</button>';
+  } else if (step === 2) {
+    html += '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Category</div>'
+      + '<select id="ppd-category" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px">'
+      + PP_CATEGORIES.map(function(c){ return '<option value="'+c+'" '+(d.category===c?'selected':'')+'>'+c+'</option>'; }).join('')
+      + '</select></div>'
+      + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Payee</div><input id="ppd-payee" type="text" placeholder="e.g. HDFC Bank" value="'+(d.payee||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+      + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Payment Type</div><select id="ppd-ptype" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px">'
+      + PP_PAYMENT_TYPES.map(function(t){ return '<option value="'+t+'" '+(d.payment_type===t?'selected':'')+'>'+t+'</option>'; }).join('')
+      + '</select></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+      + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Start Date</div><input id="ppd-start" type="date" value="'+(d.date||'2024-05-25')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+      + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">End Date (Optional)</div><input id="ppd-end" type="date" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+      + '</div>'
+      + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Labels (Optional)</div><input id="ppd-labels" type="text" placeholder="e.g. EMI, Loan" value="'+(d.labels?d.labels.join(', '):'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+      + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Notes (Optional)</div><input id="ppd-note" type="text" placeholder="Add a note" value="'+(d.note||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">'
+      + '<div><div style="font-size:13px;font-weight:600;color:var(--text)">Auto Reminders</div><div style="font-size:11px;color:var(--text-dim)">On Due Date, 3 days before</div></div>'
+      + '<div style="width:46px;height:26px;border-radius:13px;background:'+PP_COLOR+';position:relative;cursor:pointer"><div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div>'
+      + '</div>'
+      + '<button onclick="State.ppAddStep=3;App.render()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Continue</button>';
+  } else {
+    var amt = d.amount || 12500;
+    html += '<div style="text-align:center;padding:20px 0 24px">'
+      + '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px">✓</div>'
+      + '<div style="font-size:16px;font-weight:700;color:var(--text)">Review Your Planned Payment</div>'
+      + '</div>'
+      + '<div style="background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">'
+      + [['Amount',formatINR(amt)],['Payment Date',d.date||'25 May 2024'],['Repeat',PP_REPEAT_LABELS[d.repeat||'monthly']],['Account',d.account||'HDFC Bank •••• 1234'],['Category',d.category||'Home Loan (EMI)'],['Payee',d.payee||'HDFC Bank'],['Payment Type',d.payment_type||'Bank Transfer'],['Note',d.note||'Monthly home loan EMI']].map(function(r,i){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;'+(i?'border-top:1px solid rgba(255,255,255,.06)':'')+'"><span style="font-size:13px;color:var(--text-dim)">'+r[0]+'</span><span style="font-size:13px;font-weight:600;color:var(--text)">'+escapeHtml(String(r[1]))+'</span></div>';
+        }).join('')
+      + '</div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:16px">'
+      + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Upcoming Payment Preview</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0"><div style="font-size:13px;color:var(--text-dim)">📅 Next payment</div><div style="font-size:13px;font-weight:600;color:'+PP_COLOR+'">25 May 2024</div></div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid rgba(255,255,255,.06)"><div style="font-size:13px;color:var(--text-dim)">🔔 Auto reminders</div><div style="font-size:12px;color:var(--text-dim)">On due date, 3 days before</div></div>'
+      + '</div>'
+      + '<button onclick="App._ppSave()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:16px;font-weight:800;cursor:pointer">Save Planned Payment</button>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderPPSelectAccount() {
+  var accounts = (State.accounts || []);
+  var bankAccs = [
+    { id:'acc1', name:'HDFC Bank •••• 1234', type:'bank', balance:125000, color:'#3B82F6' },
+    { id:'acc2', name:'ICICI Bank •••• 5678', type:'bank', balance:85420,  color:'#EC4899' },
+    { id:'acc3', name:'SBI Bank •••• 7890',  type:'bank', balance:64230,  color:'#10B981' },
+    { id:'acc4', name:'Axis Bank •••• 4321', type:'bank', balance:45000,  color:'#F59E0B' },
+  ];
+  var ccAccs = [
+    { id:'cc1', name:'HDFC Bank Millennia •••• 4567', type:'cc', balance:82500, color:'#7C3AED' },
+    { id:'cc2', name:'ICICI Sapphiro •••• 7890',      type:'cc', balance:50000, color:'#0EA5E9' },
+  ];
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 16px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:18px;font-weight:800;color:#fff">Select Account</div>'
+    + '</div>'
+    + '<div class="icon-btn" onclick="App.showToast(\'Search coming soon\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px">'
+    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,.5)"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
+    + '<input type="text" placeholder="Search account" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:14px;outline:none;flex:1">'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px 16px 8px;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:.5px">BANK ACCOUNTS</div>';
+  bankAccs.forEach(function(a) {
+    html += '<div onclick="App._ppSelectAccount(\''+a.id+'\',\''+escapeHtml(a.name)+'\')" style="margin:0 16px 8px;background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px">'
+      + '<div style="width:40px;height:40px;border-radius:11px;background:'+a.color+'22;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="'+a.color+'"><path d="M11.5 2L2 7v2h20V7L11.5 2zM4 10v7H2v2h20v-2h-2v-7h-2v7h-4v-7H10v7H8v-7H6v7H4V10z"/></svg></div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(a.name)+'</div><div style="font-size:11px;color:var(--text-dim)">Savings Account</div></div>'
+      + '<div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(a.balance)+'</div>'
+      + '</div>';
+  });
+  html += '<div style="padding:12px 16px 8px;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:.5px">CREDIT CARDS</div>';
+  ccAccs.forEach(function(a) {
+    html += '<div onclick="App._ppSelectAccount(\''+a.id+'\',\''+escapeHtml(a.name)+'\')" style="margin:0 16px 8px;background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px">'
+      + '<div style="width:40px;height:40px;border-radius:11px;background:rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;font-size:20px">💳</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(a.name)+'</div><div style="font-size:11px;color:var(--text-dim)">Credit Card</div></div>'
+      + '<div style="text-align:right"><div style="font-size:11px;color:#EF4444;font-weight:600">'+formatINR(a.balance)+'</div><div style="font-size:10px;color:var(--text-dim)">Outstanding</div></div>'
+      + '</div>';
+  });
+  html += '<div style="padding:12px 16px 8px;font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:.5px">OTHER ACCOUNTS</div>'
+    + '<div onclick="App._ppSelectAccount(\'cash\',\'Cash\')" style="margin:0 16px 8px;background:var(--card);border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px">'
+    + '<div style="width:40px;height:40px;border-radius:11px;background:rgba(16,185,129,.15);display:flex;align-items:center;justify-content:center;font-size:20px">💵</div>'
+    + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">Cash</div><div style="font-size:11px;color:var(--text-dim)">Wallet</div></div>'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(12000)+'</div>'
+    + '</div>'
+    + '<div style="padding:16px"><button onclick="App.navigate(\'pp-add\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Select Account</button></div>'
+    + '</div>';
+  return html;
+}
+
+function renderPPDetail() {
+  var p = _pp();
+  var d = _ppDaysLeft(p.date);
+  var dc = p.status==='paid'?'#10B981':_ppDaysColor(d);
+  var dl = p.status==='paid'?'Paid':_ppDaysLabel(d);
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 24px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'
+    + _invBackSVG
+    + '<div style="flex:1"><div style="font-size:16px;font-weight:800;color:#fff">'+escapeHtml(p.name||'Payment')+'</div></div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.12)" onclick="App.navigate(\'pp-edit\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.12);margin-left:8px" onclick="App.showToast(\'More options\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>'
+    + '</div>'
+    + '<span style="font-size:12px;font-weight:700;color:'+dc+';background:rgba(0,0,0,.25);padding:4px 12px;border-radius:100px">'+_rentalStatusLabel(p.status||'upcoming')+'</span>'
+    + '</div>'
+    + '<div style="padding:16px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">'
+    + [['Amount',formatINR(p.amount||0)],['Next Payment',(p.date||'—')+(d!==null?' · '+_ppDaysLabel(d):'')],['Repeat',PP_REPEAT_LABELS[p.repeat||'monthly']||'Monthly'],['Start Date',p.date||'—'],['End Date','—'],['Account',p.account||'—'],['Payee',p.payee||'—'],['Payment Type',p.payment_type||'—']].map(function(r,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;'+(i?'border-top:1px solid rgba(255,255,255,.06)':'')+'"><span style="font-size:13px;color:var(--text-dim)">'+r[0]+'</span><span style="font-size:13px;font-weight:600;color:'+(r[0]==='Amount'?'var(--text)':'var(--text)')+'">'+escapeHtml(String(r[1]))+'</span></div>';
+      }).join('')
+    + '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px"><span style="font-size:13px;color:var(--text-dim)">Auto Reminders</span><div style="width:46px;height:26px;border-radius:13px;background:'+(p.reminder?PP_COLOR:'rgba(255,255,255,.1)')+';position:relative"><div style="position:absolute;top:3px;'+(p.reminder?'right':'left')+':3px;width:20px;height:20px;border-radius:50%;background:#fff"></div></div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-top:1px solid rgba(255,255,255,.06)"><span style="font-size:13px;color:var(--text-dim)">Reminder Settings</span><span style="font-size:12px;color:var(--text-dim)">On Due Date, '+((p.reminder_days||3)+' days before')+'</span></div>'
+    + '</div>'
+    + (p.note?'<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">Note</div><div style="font-size:13px;color:var(--text)">'+escapeHtml(p.note)+'</div></div>':'')
+    + (p.labels&&p.labels.length?'<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:16px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Labels</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+p.labels.map(function(l){ return '<span style="background:rgba(124,58,237,.15);color:'+PP_COLOR+';padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600">'+escapeHtml(l)+'</span>'; }).join('')+'</div></div>':'')
+    + '<div style="display:flex;gap:10px">'
+    + '<button onclick="App._ppMarkPaid(\''+p.id+'\')" style="flex:1;padding:14px;border-radius:var(--radius-sm);background:#10B981;color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Mark as Paid</button>'
+    + '<button onclick="App.navigate(\'pp-edit\')" style="flex:1;padding:14px;border-radius:var(--radius-sm);background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,.1);font-size:14px;font-weight:700;cursor:pointer">Edit</button>'
+    + '<button onclick="App._ppDelete(\''+p.id+'\')" style="flex:1;padding:14px;border-radius:var(--radius-sm);background:#EF4444;color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Delete</button>'
+    + '</div>'
+    + '</div></div>';
+  return html;
+}
+
+function renderPPEdit() {
+  var p = _pp();
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:18px;font-weight:800;color:#fff">Edit Planned Payment</div>'
+    + '</div>'
+    + '<button onclick="App._ppSaveEdit()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    + '</div></div>'
+    + '<div style="padding:20px 16px">'
+    + '<div style="display:flex;background:var(--card);border-radius:12px;padding:3px;margin-bottom:18px">'
+    + ['expense','income'].map(function(t){ var a=(p.type||'expense')===t; return '<div onclick="App.showToast(\'Toggle type\')" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;'+(a?'background:'+PP_COLOR+';color:#fff':'color:var(--text-dim)')+'">'+( t==='expense'?'Expense':'Income')+'</div>'; }).join('')
+    + '</div>'
+    + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Amount</div><input id="ppe-amount" type="number" value="'+(p.amount||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:18px;font-weight:700"><div style="font-size:12px;color:var(--text-dim);margin-top:4px">'+((p.amount||12500)===12500?'Twelve Thousand Five Hundred Only':'')+'</div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Payment date</div><input id="ppe-date" type="date" value="'+(p.date||'')+'" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px"></div>'
+    + '<div><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Repeat</div><select id="ppe-repeat" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px">'
+    + PP_REPEATS.map(function(r){ return '<option value="'+r+'" '+(p.repeat===r?'selected':'')+'>'+PP_REPEAT_LABELS[r]+'</option>'; }).join('')
+    + '</select></div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:0;overflow:hidden;margin-bottom:14px">'
+    + [['Account',p.account||'HDFC Bank •••• 1234'],['Category',p.category||'Home Loan (EMI)'],['Payee',p.payee||'HDFC Bank'],['Payment type',p.payment_type||'Bank Transfer'],['Labels','2 labels'],['Note (Optional)',p.note||'Monthly home loan EMI']].map(function(row,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px;'+(i?'border-top:1px solid rgba(255,255,255,.06)':'')+';cursor:pointer" onclick="App.showToast(\'Edit '+row[0]+'\')">'
+          +'<div style="font-size:13px;color:var(--text)">'+row[0]+'</div>'
+          +'<div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;color:var(--text-dim)">'+escapeHtml(String(row[1]))+'</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>'
+          +'</div>';
+      }).join('')
+    + '</div>'
+    + '<button onclick="App._ppSaveEdit()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Changes</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderPPUpcoming() {
+  var all = _pps();
+  var filt= State.ppFilter || 'upcoming';
+  var filters = [['upcoming','Upcoming'],['all','All'],['completed','Completed']];
+  var shown;
+  if (filt==='completed') shown = all.filter(function(p){ return p.status==='paid'; });
+  else if (filt==='upcoming') shown = all.filter(function(p){ return p.status!=='paid'; });
+  else shown = all;
+  var thisMonth = shown.filter(function(p){ return p.date && p.date.startsWith('2024-05'); });
+  var nextMonth = shown.filter(function(p){ return p.date && p.date.startsWith('2024-06'); });
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 0">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:20px;font-weight:800;color:#fff">Upcoming Payments</div>'
+    + '</div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:flex">'
+    + filters.map(function(f){ var a=filt===f[0]; return '<div onclick="State.ppFilter=\''+f[0]+'\';App.render()" style="flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;cursor:pointer;'+(a?'color:#fff;border-bottom:2px solid #fff':'color:rgba(255,255,255,.5)')+'">'+f[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="padding:16px">';
+  function renderGroup(label, items, totalAmt) {
+    if (!items.length) return '';
+    var res = '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 10px">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+label+'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(totalAmt)+' <span style="color:var(--text-dim);font-weight:400;font-size:12px">▼</span></div>'
+      +'</div>';
+    items.forEach(function(p) {
+      var d = _ppDaysLeft(p.date);
+      var dc = p.status==='paid'?'#10B981':_ppDaysColor(d);
+      var dl = p.status==='paid'?'Paid':_ppDaysLabel(d);
+      res += '<div onclick="State.ppActiveId=\''+p.id+'\';App.navigate(\'pp-detail\')" style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px">'
+        +'<div style="width:40px;height:40px;border-radius:12px;background:'+p.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px">'+p.icon+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(p.name)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(p.account||'')+'</div>'
+        +'</div>'
+        +'<div style="text-align:right">'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(p.amount)+'</div>'
+        +'<div style="font-size:11px;font-weight:700;color:'+dc+'">'+dl+'</div>'
+        +'</div></div>';
+    });
+    return res;
+  }
+  var tmTotal = thisMonth.reduce(function(s,p){ return s+p.amount; },0);
+  var nmTotal = nextMonth.reduce(function(s,p){ return s+p.amount; },0);
+  html += renderGroup('This Month', thisMonth, tmTotal);
+  html += renderGroup('Next Month', nextMonth, nmTotal);
+  if (!thisMonth.length && !nextMonth.length) {
+    shown.forEach(function(p) {
+      var d = _ppDaysLeft(p.date);
+      var dc = p.status==='paid'?'#10B981':_ppDaysColor(d);
+      var dl = p.status==='paid'?'Paid':_ppDaysLabel(d);
+      html += '<div onclick="State.ppActiveId=\''+p.id+'\';App.navigate(\'pp-detail\')" style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px">'
+        +'<div style="width:40px;height:40px;border-radius:12px;background:'+p.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px">'+p.icon+'</div>'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(p.name)+'</div><div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(p.account||'')+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(p.amount)+'</div><div style="font-size:11px;font-weight:700;color:'+dc+'">'+dl+'</div></div>'
+        +'</div>';
+    });
+  }
+  html += '</div>'
+    + '<div style="position:fixed;bottom:90px;right:20px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(124,58,237,.5)" onclick="App.navigate(\'pp-add\')">'
+    + '<svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>'
+    + '</div>'
+    + '</div>';
+  return html;
+}
+
+function renderPPCalendar() {
+  var month = State.ppCalMonth !== undefined ? State.ppCalMonth : 4;
+  var year  = State.ppCalYear  || 2024;
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  var firstDay    = new Date(year, month, 1).getDay();
+  var all = _pps();
+  var paysByDate = {};
+  all.forEach(function(p) {
+    if (p.date && p.date.slice(0,7) === (year+'-'+(month+1<10?'0':'')+(month+1))) {
+      var day = parseInt(p.date.slice(8,10));
+      if (!paysByDate[day]) paysByDate[day] = [];
+      paysByDate[day].push(p);
+    }
+  });
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + _invBackSVG
+    + '<div style="font-size:20px;font-weight:800;color:#fff">Calendar</div>'
+    + '</div>'
+    + '<div class="icon-btn" onclick="App.showToast(\'Add payment\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div class="icon-btn" onclick="App._ppPrevMonth()" style="background:rgba(255,255,255,.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>'
+    + '<div style="font-size:16px;font-weight:700;color:#fff">'+monthNames[month]+' '+year+' ▾</div>'
+    + '<div class="icon-btn" onclick="App._ppNextMonth()" style="background:rgba(255,255,255,.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>'
+    + '</div></div>'
+    + '<div style="padding:12px 16px">'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">'
+    + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(d){ return '<div style="text-align:center;font-size:11px;color:var(--text-dim);padding:4px 0">'+d+'</div>'; }).join('')
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
+  for (var i=0; i<firstDay; i++) html += '<div></div>';
+  var today = new Date();
+  for (var day=1; day<=daysInMonth; day++) {
+    var isToday = (today.getDate()===day && today.getMonth()===month && today.getFullYear()===year);
+    var hasPay  = paysByDate[day] && paysByDate[day].length>0;
+    var dotColor = hasPay ? paysByDate[day][0].color : 'transparent';
+    html += '<div style="text-align:center;padding:6px 2px;cursor:'+(hasPay?'pointer':'default')+'" onclick="'+(hasPay?'App.showToast(\''+escapeHtml(paysByDate[day].map(function(p){ return p.name; }).join(', '))+'\')':"''")+';">'
+      + '<div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;background:'+(isToday?PP_COLOR:'transparent')+'"><span style="font-size:13px;font-weight:'+(isToday?'700':'400')+';color:'+(isToday?'#fff':'var(--text)')+'">'+day+'</span></div>'
+      + (hasPay?'<div style="width:6px;height:6px;border-radius:50%;background:'+dotColor+';margin:2px auto 0"></div>':'<div style="height:8px"></div>')
+      + '</div>';
+  }
+  html += '</div></div>';
+  var eventDays = Object.keys(paysByDate).sort(function(a,b){ return a-b; });
+  eventDays.forEach(function(day) {
+    var dayPays = paysByDate[day];
+    var dateStr = year+'-'+(month+1<10?'0':'')+(month+1)+'-'+(parseInt(day)<10?'0':'')+parseInt(day);
+    html += '<div style="margin:0 16px 2px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06)">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:6px;padding:0 4px">'+dateStr+'</div>';
+    dayPays.forEach(function(p) {
+      html += '<div onclick="State.ppActiveId=\''+p.id+'\';App.navigate(\'pp-detail\')" style="background:var(--card);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;cursor:pointer">'
+        +'<div style="width:8px;height:8px;border-radius:50%;background:'+p.color+'"></div>'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+escapeHtml(p.name)+'</div><div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(p.account||'')+'</div></div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(p.amount)+'</div>'
+        +'<span style="font-size:10px;color:var(--text-dim)">'+PP_REPEAT_LABELS[p.repeat||'monthly']+'</span>'
+        +'</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderPPInsights() {
+  var all = _pps();
+  var tab = State.ppInsightTab || 'this_month';
+  var tabs= [['this_month','This Month'],['this_year','This Year'],['custom','Custom']];
+  var totalPlanned = all.reduce(function(s,p){ return s+p.amount; },0);
+  var paid    = all.filter(function(p){ return p.status==='paid'; }).reduce(function(s,p){ return s+p.amount; },0);
+  var pending = totalPlanned - paid;
+  var cats = {};
+  all.forEach(function(p){ var c=p.category||'Other'; cats[c]=(cats[c]||0)+p.amount; });
+  var catList = Object.keys(cats).map(function(k){ return {label:k,value:cats[k]}; }).sort(function(a,b){ return b.value-a.value; });
+  var catColors = ['#7C3AED','#3B82F6','#EC4899','#F59E0B','#10B981','#0EA5E9','#EF4444','#6B7280'];
+  var slices = catList.map(function(c,i){ return {value:c.value, color:catColors[i%catColors.length]}; });
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
+    + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    + _invBackSVG
+    + '<div style="flex:1"><div style="font-size:20px;font-weight:800;color:#fff">Insights & Reports</div></div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:flex;background:rgba(0,0,0,.2);border-radius:12px;padding:3px">'
+    + tabs.map(function(t){ var a=tab===t[0]; return '<div onclick="State.ppInsightTab=\''+t[0]+'\';App.render()" style="flex:1;text-align:center;padding:8px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;'+(a?'background:'+PP_COLOR+';color:#fff':'color:rgba(255,255,255,.6)')+'">'+t[1]+'</div>'; }).join('')
+    + '</div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 16px 0">'
+    + [['Total Planned',formatINR(142500)],['Paid',formatINR(45000)],['Pending',formatINR(97500)],['Upcoming (7 days)',formatINR(19000)],['Overdue','₹0'],['Total Payments',String(all.length)]].map(function(s) {
+        return '<div style="background:var(--card);border-radius:14px;padding:14px"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">'+s[0]+'</div><div style="font-size:16px;font-weight:700;color:var(--text)">'+s[1]+'</div></div>';
+      }).join('')
+    + '</div>'
+    + '<div style="margin:16px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">By Category</div>'
+    + '<div style="display:flex;align-items:center;gap:16px">'
+    + '<div>'+donutSVG(slices,52,120)+'</div>'
+    + '<div style="flex:1">'
+    + catList.slice(0,5).map(function(c,i) {
+        var pct = totalPlanned>0?Math.round(c.value/totalPlanned*100):0;
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:10px;height:10px;border-radius:50%;background:'+catColors[i%catColors.length]+'"></div><div style="flex:1;font-size:11px;color:var(--text-dim)">'+escapeHtml(c.label)+'</div><div style="font-size:11px;font-weight:700;color:var(--text)">'+pct+'%</div></div>';
+      }).join('')
+    + '</div></div></div>'
+    + '<div style="padding:0 16px 16px"><button onclick="App.showToast(\'Generating report...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PP_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
+    + '</div>';
+  return html;
 }
 
 // ─── RENTALS MODULE ────────────────────────────────────────────────────────
@@ -15096,6 +15614,7 @@ function renderMore() {
     { icon:'💳', bg:'rgba(108,71,255,0.15)', label:'Credit Cards', sub:'Manage credit cards, bills, rewards and spending', fn:"App.navigate('cc-list')" },
     { icon:'🏦', bg:'rgba(108,71,255,0.15)', label:'Loans', sub:'Track all personal, business and custom loans', fn:"App.navigate('loan-list')" },
     { icon:'🏘️', bg:'rgba(124,58,237,0.15)', label:'Rentals', sub:'Track rental properties, rent collections and expenses', fn:"App.navigate('rental-list')" },
+    { icon:'📅', bg:'rgba(124,58,237,0.15)', label:'Planned Payments', sub:'Track and automate future payments and reminders', fn:"App.navigate('pp-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -15972,6 +16491,7 @@ const App = {
     else if (screen.startsWith('cc'))           tabHint = 'more';
     else if (screen.startsWith('loan'))         tabHint = 'more';
     else if (screen.startsWith('rental')) tabHint = 'more';
+    else if (screen.startsWith('pp'))    tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
       document.querySelectorAll('.tab-item').forEach(function(el) {
@@ -16175,6 +16695,14 @@ const App = {
       case 'loan-add-tx':       html = renderLoanAddTx();       break;
       case 'loan-insights':     html = renderLoanInsights();    break;
       case 'loan-emi-type':     html = renderLoanEmiType();     break;
+      case 'pp-list':             html = renderPPList();              break;
+      case 'pp-add':              html = renderPPAdd();               break;
+      case 'pp-select-account':   html = renderPPSelectAccount();     break;
+      case 'pp-detail':           html = renderPPDetail();            break;
+      case 'pp-edit':             html = renderPPEdit();              break;
+      case 'pp-upcoming':         html = renderPPUpcoming();          break;
+      case 'pp-calendar':         html = renderPPCalendar();          break;
+      case 'pp-insights':         html = renderPPInsights();          break;
       case 'rental-list':         html = renderRentalList();          break;
       case 'rental-add-type':     html = renderRentalAddType();       break;
       case 'rental-add-details':  html = renderRentalAddDetails();    break;
@@ -18831,6 +19359,76 @@ const App = {
   },
   _rentalAddReminder(propId) {
     this.showToast('Reminder added!');
+  },
+
+  /* ── Planned Payments Module ─────────────────────────────── */
+  _ppSave() {
+    var d = State.ppAddData || {};
+    var el;
+    el = document.getElementById('ppa-amount'); if (el) d.amount = parseFloat(el.value)||0;
+    el = document.getElementById('ppa-date');   if (el) d.date   = el.value;
+    el = document.getElementById('ppa-repeat'); if (el) d.repeat = el.value;
+    State.ppAddData = d;
+    if (!d.amount) { this.showToast('Please enter an amount'); return; }
+    var catIcons = {'Home Loan (EMI)':'🏠','Car Loan (EMI)':'🚗','Insurance':'🛡️','Credit Card':'💳','Utilities':'📡','Subscription':'📱','Education':'📚','Rent':'🏘️','Tax':'🏛️','Investment':'📈','Salary':'💰','Business Income':'💼','Other':'💸'};
+    var catColors= {'Home Loan (EMI)':'#3B82F6','Car Loan (EMI)':'#10B981','Insurance':'#7C3AED','Credit Card':'#EC4899','Utilities':'#06B6D4','Investment':'#22C55E','Salary':'#22C55E','Other':'#6B7280'};
+    var cat = d.category || 'Other';
+    var newPP = {
+      id: 'pp_'+Date.now(), name: d.name || d.category || 'Payment',
+      type: State.ppAddType||'expense', amount: d.amount, date: d.date||'2024-05-25',
+      repeat: d.repeat||'monthly', account: d.account||'HDFC Bank •••• 1234',
+      category: cat, payee: d.payee||'', payment_type: d.payment_type||'Bank Transfer',
+      labels: d.labels ? (typeof d.labels==='string'?d.labels.split(',').map(function(l){ return l.trim(); }):d.labels) : [],
+      note: d.note||'', status:'upcoming', color: catColors[cat]||PP_COLOR,
+      icon: catIcons[cat]||'💸', reminder:true, reminder_days:3
+    };
+    State.plannedPayments = [newPP].concat(State.plannedPayments||[]);
+    State.ppAddData = {};
+    State.ppAddStep = 1;
+    this.showToast('Payment saved!');
+    App.navigate('pp-list');
+  },
+  _ppSaveEdit() {
+    var p = _pp();
+    var idx = (State.plannedPayments||[]).findIndex(function(x){ return x.id===p.id; });
+    if (idx === -1) { this.showToast('Payment not found'); return; }
+    var el;
+    el = document.getElementById('ppe-amount'); if (el) State.plannedPayments[idx].amount = parseFloat(el.value)||p.amount;
+    el = document.getElementById('ppe-date');   if (el && el.value) State.plannedPayments[idx].date = el.value;
+    el = document.getElementById('ppe-repeat'); if (el) State.plannedPayments[idx].repeat = el.value;
+    this.showToast('Changes saved!');
+    App.navigate('pp-detail');
+  },
+  _ppMarkPaid(id) {
+    var idx = (State.plannedPayments||[]).findIndex(function(p){ return p.id===id; });
+    if (idx !== -1) { State.plannedPayments[idx].status = 'paid'; State.plannedPayments[idx].paid_date = new Date().toISOString().slice(0,10); }
+    this.showToast('Marked as paid!');
+    App.navigate('pp-list');
+  },
+  _ppDelete(id) {
+    State.plannedPayments = (State.plannedPayments||[]).filter(function(p){ return p.id!==id; });
+    this.showToast('Payment deleted');
+    App.navigate('pp-list');
+  },
+  _ppSelectAccount(id, name) {
+    if (!State.ppAddData) State.ppAddData = {};
+    State.ppAddData.account = name;
+    this.showToast('Account selected: '+name);
+    App.navigate('pp-add');
+  },
+  _ppPrevMonth() {
+    var m = State.ppCalMonth !== undefined ? State.ppCalMonth : 4;
+    var y = State.ppCalYear || 2024;
+    if (m === 0) { State.ppCalMonth = 11; State.ppCalYear = y-1; }
+    else { State.ppCalMonth = m-1; }
+    App.render();
+  },
+  _ppNextMonth() {
+    var m = State.ppCalMonth !== undefined ? State.ppCalMonth : 4;
+    var y = State.ppCalYear || 2024;
+    if (m === 11) { State.ppCalMonth = 0; State.ppCalYear = y+1; }
+    else { State.ppCalMonth = m+1; }
+    App.render();
   },
 
   /* ── LIC Module ─────────────────────────────── */
