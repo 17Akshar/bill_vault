@@ -1750,6 +1750,35 @@ const State = {
   budgetTotalBudget:  100000,
   budgetTotalPeriod:  'monthly',
   budgetImportSelected: [],
+  // Credit Card module
+  ccActiveCard:   'cc1',
+  ccTxFilter:     'this_cycle',
+  ccInsightTab:   'this_month',
+  ccOfferTab:     'offers',
+  ccReminderType: 'payment',
+  ccRepeat:       'one_time',
+  ccCalMonth:     4,
+  ccCalYear:      2024,
+  ccCards: [
+    { id:'cc1', bank:'HDFC Bank',  name:'HDFC Bank Millennia',  short:'Millennia Credit Card',  last4:'4567', network:'visa',       limit:200000, outstanding:82500, min_due:4125, due_date:'2024-05-05', billing_start:'2024-04-01', billing_end:'2024-04-30', color1:'#1A1A2E', color2:'#16213E', reward_program:'SmartBuy Points', status:'active', last_payment_amount:40000, last_payment_date:'2024-04-15', last_payment_status:'success' },
+    { id:'cc2', bank:'ICICI Bank', name:'ICICI Bank Sapphiro', short:'Sapphiro Credit Card',   last4:'7890', network:'mastercard', limit:100000, outstanding:50000, min_due:2500, due_date:'2024-05-12', billing_start:'2024-04-01', billing_end:'2024-04-30', color1:'#1A0533', color2:'#2D0A5E', reward_program:'PAYBACK Points',   status:'active', last_payment_amount:20000, last_payment_date:'2024-04-10', last_payment_status:'success' },
+  ],
+  ccTransactions: [
+    { id:'ct1', card_id:'cc1', merchant:'Amazon India',      date:'2024-04-25', amount:5499,  category:'shopping',     notes:'' },
+    { id:'ct2', card_id:'cc1', merchant:'Zomato',            date:'2024-04-24', amount:875,   category:'food',         notes:'' },
+    { id:'ct3', card_id:'cc1', merchant:'BigBasket',         date:'2024-04-23', amount:1230,  category:'shopping',     notes:'' },
+    { id:'ct4', card_id:'cc1', merchant:'Uber',              date:'2024-04-22', amount:320,   category:'transport',    notes:'' },
+    { id:'ct5', card_id:'cc1', merchant:'Reliance Digital',  date:'2024-04-21', amount:18999, category:'shopping',     notes:'' },
+    { id:'ct6', card_id:'cc1', merchant:'Swiggy',            date:'2024-04-20', amount:450,   category:'food',         notes:'' },
+    { id:'ct7', card_id:'cc1', merchant:'PVR Cinemas',       date:'2024-04-19', amount:1200,  category:'entertainment',notes:'' },
+    { id:'ct8', card_id:'cc1', merchant:'Pantaloons',        date:'2024-04-18', amount:2650,  category:'shopping',     notes:'' },
+  ],
+  ccOffers: [
+    { id:'of1', icon:'🛒', title:'10% Instant Discount',        sub:'on Amazon',              validity:'Valid till 30 May 2024', color:'rgba(245,158,11,.15)'  },
+    { id:'of2', icon:'✈️', title:'Flat ₹500 Off',               sub:'on Flights booking',      validity:'Valid till 15 May 2024', color:'rgba(59,130,246,.15)'  },
+    { id:'of3', icon:'🛒', title:'5% Cashback',                  sub:'on Grocery & Supermart',  validity:'Valid till 31 May 2024', color:'rgba(16,185,129,.15)'  },
+    { id:'of4', icon:'🛋️', title:'Complimentary Lounge Access', sub:'2 per quarter',           validity:'Valid till 30 Jun 2024',  color:'rgba(124,58,237,.15)'  },
+  ],
   budgetCategories: [
     { id:'bc1',  name:'Home',          icon:'🏠', color:'#6366F1', budget:20000, spent:16000 },
     { id:'bc2',  name:'Food & Dining', icon:'🍔', color:'#F59E0B', budget:10000, spent:8045  },
@@ -7108,6 +7137,574 @@ function renderTermInsInsights() {
     + '</div>'
     + '<div style="padding:0 16px 16px"><button onclick="App._termInsViewReport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
     + '</div>';
+}
+
+// ─── CREDIT CARD MODULE ────────────────────────────────────────────────────
+var CC_COLOR = '#6C47FF';
+
+function _ccCards()       { return State.ccCards || []; }
+function _ccCard(id)      { var cid=id||State.ccActiveCard; return _ccCards().find(function(c){ return c.id===cid; }) || _ccCards()[0] || {}; }
+function _ccTxForCard(id) { return (State.ccTransactions||[]).filter(function(t){ return t.card_id===(id||State.ccActiveCard); }); }
+function _ccAvailable(c)  { return (c.limit||0)-(c.outstanding||0); }
+function _ccUtilPct(c)    { return c.limit>0?Math.round((c.outstanding/c.limit)*100):0; }
+function _ccDaysLeft(d)   { if(!d)return null; return Math.ceil((new Date(d)-new Date())/86400000); }
+function _ccFmtDate(d)    { if(!d)return '—'; var p=d.split('-'); var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return p[2]+' '+m[parseInt(p[1])-1]+' '+p[0]; }
+function _ccCatIcon(cat)  { var icons={shopping:'🛍️',food:'🍔',transport:'🚗',entertainment:'🎬',travel:'✈️',utilities:'⚡',fuel:'⛽',healthcare:'❤️',education:'📚',others:'📦'}; return icons[cat]||'📦'; }
+function _ccCatColor(cat) { var c={shopping:'#6366F1',food:'#F59E0B',transport:'#10B981',entertainment:'#8B5CF6',travel:'#EC4899',utilities:'#06B6D4',fuel:'#F97316',healthcare:'#EF4444',education:'#3B82F6',others:'#6B7280'}; return c[cat]||'#6B7280'; }
+function _ccUtilColor(pct){ return pct>=75?'#EF4444':pct>=30?'#F59E0B':'#22C55E'; }
+
+function _ccCardVisual(c, small) {
+  var h = small ? 70 : 90;
+  var network = c.network==='visa' ? '<span style="font-style:italic;font-weight:900;color:#fff;font-size:'+(small?'12':'15')+'px;letter-spacing:1px">VISA</span>'
+              : c.network==='mastercard' ? '<span style="font-size:'+(small?'10':'13')+'px;font-weight:800;color:#FF5F00">MC</span>'
+              : '<span style="font-size:'+(small?'10':'12')+'px;font-weight:700;color:#fff">AMEX</span>';
+  return '<div style="background:linear-gradient(135deg,'+escapeHtml(c.color1||'#1A1A2E')+','+escapeHtml(c.color2||'#16213E')+');border-radius:'+(small?'10':'14')+'px;padding:'+(small?'12':'16')+'px;position:relative;overflow:hidden;">'
+    + '<div style="position:absolute;top:-10px;right:-10px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.04)"></div>'
+    + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:'+(small?'6':'10')+'px">'
+      + '<div style="font-size:'+(small?'10':'12')+'px;font-weight:700;color:rgba(255,255,255,.8)">'+escapeHtml(c.bank)+'</div>'
+      + network
+    + '</div>'
+    + '<div style="font-size:'+(small?'11':'14')+'px;font-weight:700;color:#fff;margin-bottom:'+(small?'4':'8')+'px">'+escapeHtml(c.short||c.name)+'</div>'
+    + '<div style="font-size:'+(small?'11':'13')+'px;color:rgba(255,255,255,.7);letter-spacing:2px">•••• •••• •••• '+escapeHtml(c.last4)+'</div>'
+    + '</div>';
+}
+
+function renderCCList() {
+  var cards = _ccCards();
+  var totalOutstanding = cards.reduce(function(s,c){ return s+c.outstanding; }, 0);
+  var totalLimit       = cards.reduce(function(s,c){ return s+c.limit; }, 0);
+  var totalAvailable   = totalLimit - totalOutstanding;
+  var utilPct          = totalLimit>0 ? Math.round((totalOutstanding/totalLimit)*100) : 0;
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.goTab(\'more\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Credit Cards</span>'
+    + '<div class="icon-btn" onclick="App.showToast(\'Add card coming soon\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>'
+    + '</div>';
+
+  // Summary card
+  html += '<div style="margin:0 16px 14px;background:linear-gradient(135deg,#2D1B69,#6C47FF);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden">'
+    + '<div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,.05);border-radius:50%"></div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.65);margin-bottom:4px">Total Outstanding</div>'
+    + '<div style="font-size:28px;font-weight:900;color:#fff;margin-bottom:2px">'+formatINR(totalOutstanding)+'</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.55);margin-bottom:14px">Across '+cards.length+' Cards</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,.6)">Available Credit</div><div style="font-size:15px;font-weight:800;color:#86EFAC">'+formatINR(totalAvailable)+'</div></div>'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,.6)">Credit Utilization</div><div style="font-size:15px;font-weight:800;color:'+_ccUtilColor(utilPct)+'">'+utilPct+'%</div></div>'
+    + '</div></div>';
+
+  // Cards section
+  html += '<div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:14px;font-weight:700">Your Cards</span>'
+    + '<button onclick="App.showToast(\'Add card coming soon\')" style="padding:6px 14px;border-radius:16px;background:rgba(108,71,255,.15);color:'+CC_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:12px;font-weight:700;cursor:pointer">+ Add Card</button>'
+    + '</div>';
+
+  cards.forEach(function(c) {
+    var util  = _ccUtilPct(c);
+    var avail = _ccAvailable(c);
+    var days  = _ccDaysLeft(c.due_date);
+    html += '<div onclick="State.ccActiveCard=\''+c.id+'\';App.navigate(\'cc-detail\')" style="margin:0 16px 10px;background:var(--card);border-radius:var(--radius);overflow:hidden;cursor:pointer">'
+      + '<div style="padding:12px 14px 0">' + _ccCardVisual(c, true) + '</div>'
+      + '<div style="padding:12px 14px">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+          + '<div><div style="font-size:10px;color:var(--text-dim)">Outstanding</div><div style="font-size:14px;font-weight:800;color:#EF4444">'+formatINR(c.outstanding)+'</div></div>'
+          + '<div><div style="font-size:10px;color:var(--text-dim)">Limit</div><div style="font-size:14px;font-weight:700">'+formatINR(c.limit)+'</div></div>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          + '<span style="font-size:11px;color:var(--text-dim)">Due '+_ccFmtDate(c.due_date)+'</span>'
+          + '<span style="font-size:11px;font-weight:700;color:'+(days!==null&&days<=5?'#F59E0B':'#22C55E')+'">'+(days!==null?(days<=0?'Overdue':'In '+days+' days'):'')+'</span>'
+        + '</div>'
+        + '<div style="background:rgba(255,255,255,.06);border-radius:4px;height:4px;overflow:hidden"><div style="height:100%;width:'+util+'%;background:'+_ccUtilColor(util)+';border-radius:4px"></div></div>'
+      + '</div>'
+      + '</div>';
+  });
+
+  // Upcoming payments
+  html += '<div style="margin:0 16px 12px;display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:14px;font-weight:700">Upcoming Payments</span>'
+    + '<span style="font-size:12px;color:'+CC_COLOR+';cursor:pointer;font-weight:700">View All</span>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px">';
+  cards.forEach(function(c) {
+    var days = _ccDaysLeft(c.due_date);
+    var dayColor = days!==null&&days<=5?'#F59E0B':'#22C55E';
+    html += '<div onclick="State.ccActiveCard=\''+c.id+'\';App.navigate(\'cc-payment\')" style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer">'
+      + '<div style="width:38px;height:38px;border-radius:10px;background:rgba(108,71,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>'
+      + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtml(c.name)+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:1px">Due on '+_ccFmtDate(c.due_date)+'</div></div>'
+      + '<div style="text-align:right"><div style="font-size:14px;font-weight:800">'+formatINR(c.outstanding)+'</div><div style="font-size:11px;font-weight:700;color:'+dayColor+'">'+(days!==null&&days>=0?'In '+days+' days':'Overdue')+'</div></div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCDetail() {
+  var c    = _ccCard();
+  var util = _ccUtilPct(c);
+  var avail= _ccAvailable(c);
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-list\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">'+escapeHtml(c.name||'Card Details')+'</span>'
+    + '<div class="icon-btn" onclick="App.showToast(\'Options coming soon\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>'
+    + '</div>';
+
+  // Card visual (large)
+  html += '<div style="margin:0 16px 14px;">' + _ccCardVisual(c, false) + '</div>';
+
+  // Stats grid
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px"><div style="font-size:10px;color:var(--text-dim)">Card Limit</div><div style="font-size:15px;font-weight:800">'+formatINR(c.limit||0)+'</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px"><div style="font-size:10px;color:var(--text-dim)">Available Credit</div><div style="font-size:15px;font-weight:800;color:#22C55E">'+formatINR(avail)+'</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px"><div style="font-size:10px;color:var(--text-dim)">Outstanding</div><div style="font-size:15px;font-weight:800;color:#EF4444">'+formatINR(c.outstanding||0)+'</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px"><div style="font-size:10px;color:var(--text-dim)">Credit Utilization</div>'
+      + '<div style="font-size:15px;font-weight:800;color:'+_ccUtilColor(util)+'">'+util+'%</div>'
+      + '<div style="background:rgba(255,255,255,.06);height:3px;border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+util+'%;background:'+_ccUtilColor(util)+';border-radius:2px"></div></div>'
+    + '</div>'
+    + '</div>';
+
+  // Billing info
+  function dRow(label, value, color) {
+    return '<div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:13px;color:var(--text-dim)">'+label+'</span>'
+      + '<span style="font-size:13px;font-weight:700'+(color?';color:'+color:'')+'">' +escapeHtml(String(value||'—'))+'</span>'
+      + '</div>';
+  }
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Billing Information</div>'
+    + dRow('Billing Cycle', _ccFmtDate(c.billing_start)+' – '+_ccFmtDate(c.billing_end))
+    + dRow('Payment Due Date', _ccFmtDate(c.due_date))
+    + dRow('Minimum Due', formatINR(c.min_due||0), '#F59E0B')
+    + dRow('Total Due', formatINR(c.outstanding||0), '#EF4444')
+    + '</div>';
+
+  // CTA
+  html += '<div style="margin:0 16px 12px"><button onclick="App.navigate(\'cc-transactions\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">View Transactions</button></div>';
+
+  // Last payment
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px">'
+    + '<div style="width:38px;height:38px;border-radius:10px;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:18px">✅</div>'
+    + '<div style="flex:1"><div style="font-size:12px;color:var(--text-dim)">Last Payment</div><div style="font-size:14px;font-weight:700">'+formatINR(c.last_payment_amount||0)+'</div><div style="font-size:11px;color:var(--text-dim)">Paid on '+_ccFmtDate(c.last_payment_date)+'</div></div>'
+    + '<span style="padding:4px 10px;border-radius:10px;font-size:11px;font-weight:700;background:rgba(34,197,94,.15);color:#22C55E">Successful</span>'
+    + '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCTransactions() {
+  var c      = _ccCard();
+  var filter = State.ccTxFilter || 'this_cycle';
+  var txs    = _ccTxForCard(c.id);
+  var filters= [['this_cycle','This Cycle'],['prev_cycle','Previous Cycle'],['all','All']];
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-detail\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Transactions</span>'
+    + '<div class="icon-btn" onclick="App.showToast(\'Filter coming soon\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39A.998.998 0 0 0 18.95 4H5.04a1 1 0 0 0-.79 1.61z"/></svg></div>'
+    + '</div>';
+
+  // Card selector
+  html += '<div style="margin:0 16px 10px"><select onchange="State.ccActiveCard=this.value;App.render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px">'
+    + _ccCards().map(function(card){ return '<option value="'+card.id+'"'+(card.id===c.id?' selected':'')+'>'+escapeHtml(card.name)+' ••••'+card.last4+'</option>'; }).join('')
+    + '</select></div>';
+
+  // Cycle filter tabs
+  html += '<div style="display:flex;background:rgba(255,255,255,.06);border-radius:20px;margin:0 16px 12px;overflow:hidden">'
+    + filters.map(function(f){ var isAct=filter===f[0]; return '<div onclick="State.ccTxFilter=\''+f[0]+'\';App.render()" style="flex:1;text-align:center;padding:9px 4px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+CC_COLOR+';color:#fff;':'color:var(--text-dim);')+'">'+f[1]+'</div>'; }).join('')
+    + '</div>';
+
+  // Summary bar
+  var totalSpent = txs.reduce(function(s,t){ return s+t.amount; }, 0);
+  var util       = _ccUtilPct(c);
+  html += '<div style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius-sm);padding:12px 14px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      + '<div><div style="font-size:11px;color:var(--text-dim)">Total Spent</div><div style="font-size:16px;font-weight:800;color:#EF4444">'+formatINR(totalSpent)+'</div></div>'
+      + '<div style="text-align:right"><div style="font-size:11px;color:var(--text-dim)">Card Limit</div><div style="font-size:16px;font-weight:800">'+formatINR(c.limit||0)+'</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.06);border-radius:4px;height:5px;overflow:hidden;margin-bottom:4px"><div style="height:100%;width:'+util+'%;background:'+_ccUtilColor(util)+';border-radius:4px"></div></div>'
+    + '<div style="text-align:right;font-size:11px;color:'+_ccUtilColor(util)+';font-weight:700">'+util+'%</div>'
+    + '</div>';
+
+  // TX count + add button
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:8px">'
+    + '<span style="font-size:12px;color:var(--text-dim)">'+txs.length+' Items</span>'
+    + '<button onclick="App.navigate(\'cc-add-transaction\')" style="padding:6px 14px;border-radius:14px;background:rgba(108,71,255,.15);color:'+CC_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:12px;font-weight:700;cursor:pointer">+ Add</button>'
+    + '</div>';
+
+  // Transaction list
+  html += '<div style="margin:0 16px">';
+  if (txs.length === 0) {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:40px 0;font-size:14px">No transactions</div>';
+  } else {
+    txs.forEach(function(t, idx) {
+      html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+        + '<div style="width:38px;height:38px;border-radius:10px;background:'+_ccCatColor(t.category)+'22;display:flex;align-items:center;justify-content:center;font-size:18px">'+_ccCatIcon(t.category)+'</div>'
+        + '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtml(t.merchant)+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:1px">'+_ccFmtDate(t.date)+'</div></div>'
+        + '<div style="font-size:14px;font-weight:800;color:#EF4444">'+formatINR(t.amount)+'</div>'
+        + '</div>';
+    });
+  }
+  html += '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCAddTransaction() {
+  var cards = _ccCards();
+  var activeId = State.ccActiveCard || (cards[0]||{}).id;
+  var cats = ['shopping','food','transport','entertainment','travel','utilities','fuel','healthcare','education','others'];
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-transactions\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Add Transaction</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:12px">Transaction Details</div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Date of Purchase</label>'
+      + '<input id="cc-tx-date" type="date" value="2024-04-27" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Select Card</label>'
+      + '<select id="cc-tx-card" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px">'
+      + cards.map(function(c){ return '<option value="'+c.id+'"'+(c.id===activeId?' selected':'')+'>'+escapeHtml(c.name)+'</option>'; }).join('')
+      + '</select></div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Merchant Name</label>'
+      + '<input id="cc-tx-merchant" type="text" placeholder="e.g. Amazon India" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Amount</label>'
+      + '<div style="position:relative"><span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:13px">₹</span>'
+      + '<input id="cc-tx-amount" type="number" placeholder="0" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px 11px 11px 24px;color:#fff;font-size:13px;box-sizing:border-box"></div></div>'
+    + '<div style="margin-bottom:4px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Category</label>'
+      + '<select id="cc-tx-cat" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px">'
+      + cats.map(function(cat){ return '<option value="'+cat+'">'+_ccCatIcon(cat)+' '+cat.charAt(0).toUpperCase()+cat.slice(1)+'</option>'; }).join('')
+      + '</select></div>'
+    + '<div style="margin-top:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Notes (Optional)</label>'
+      + '<input id="cc-tx-notes" type="text" placeholder="Enter notes" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    + '</div></div>';
+
+  // Reminder section
+  html += '<div style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:12px">Reminder &amp; Payment</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      + '<span style="font-size:13px">Set Reminder</span>'
+      + '<label style="position:relative;display:inline-block;width:46px;height:24px;cursor:pointer"><input type="checkbox" checked id="cc-tx-reminder" style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:#22C55E;border-radius:24px;transition:.2s"><span style="position:absolute;height:18px;width:18px;left:4px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;transform:translateX(20px)"></span></span></label>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+      + '<div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px">Reminder Date</label><input id="cc-tx-rem-date" type="date" value="2024-05-02" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:12px;box-sizing:border-box"></div>'
+      + '<div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px">Reminder Time</label><select id="cc-tx-rem-time" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:12px"><option>09:00 AM</option><option>10:00 AM</option><option>12:00 PM</option><option>06:00 PM</option></select></div>'
+    + '</div>'
+    + '<div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:6px">Repeat</label>'
+      + '<select id="cc-tx-repeat" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:12px"><option>One Time</option><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._ccSaveTransaction()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Transaction</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCBillingCycle() {
+  var c = _ccCard();
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-detail\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Billing Cycle</span>'
+    + '<div style="width:36px"></div></div>';
+
+  // Card selector
+  html += '<div style="margin:8px 16px 12px"><select onchange="State.ccActiveCard=this.value;App.render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px">'
+    + _ccCards().map(function(card){ return '<option value="'+card.id+'"'+(card.id===c.id?' selected':'')+'>'+escapeHtml(card.name)+' ••••'+card.last4+'</option>'; }).join('')
+    + '</select></div>';
+
+  // Current / next cycle
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;border-left:3px solid '+CC_COLOR+'"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Current Cycle</div><div style="font-size:13px;font-weight:700">'+_ccFmtDate(c.billing_start)+'</div><div style="font-size:12px;color:var(--text-dim)">to '+_ccFmtDate(c.billing_end)+'</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Next Cycle</div><div style="font-size:13px;font-weight:700">01 May 2024</div><div style="font-size:12px;color:var(--text-dim)">to 31 May 2024</div></div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px 12px;padding:10px 14px;background:rgba(108,71,255,.08);border:1px solid rgba(108,71,255,.2);border-radius:8px;font-size:12px;color:var(--text-dim)">'
+    + 'ℹ️ Transactions in this cycle will reflect in your next bill.'
+    + '</div>';
+
+  // Cycle summary
+  function cRow(label, value, color) {
+    return '<div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:13px;color:var(--text-dim)">'+label+'</span>'
+      + '<span style="font-size:13px;font-weight:700'+(color?';color:'+color:'')+'">' +escapeHtml(String(value||'—'))+'</span>'
+      + '</div>';
+  }
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Cycle Summary</div>'
+    + cRow('Total Spent',   formatINR(c.outstanding||0), '#EF4444')
+    + cRow('Payments',      formatINR(c.last_payment_amount||0), '#22C55E')
+    + cRow('Outstanding',   formatINR(c.outstanding||0))
+    + cRow('Minimum Due',   formatINR(c.min_due||0), '#F59E0B')
+    + '<div style="margin-top:10px;font-size:11px;color:var(--text-dim)">Bill will be generated on '+_ccFmtDate(c.billing_end)+'</div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App.navigate(\'cc-transactions\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">View Transactions</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCPayment() {
+  var c    = _ccCard();
+  var days = _ccDaysLeft(c.due_date);
+  var dayColor = days!==null&&days<=5?'#F59E0B':'#22C55E';
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-detail\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Payment Details</span>'
+    + '<div style="width:36px"></div></div>';
+
+  // Card selector
+  html += '<div style="margin:8px 16px 12px"><select onchange="State.ccActiveCard=this.value;App.render()" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px">'
+    + _ccCards().map(function(card){ return '<option value="'+card.id+'"'+(card.id===c.id?' selected':'')+'>'+escapeHtml(card.name)+' ••••'+card.last4+'</option>'; }).join('')
+    + '</select></div>';
+
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:13px;color:var(--text-dim)">Payment Due Date</span>'
+      + '<div style="text-align:right"><div style="font-size:13px;font-weight:700">'+_ccFmtDate(c.due_date)+'</div><div style="font-size:11px;font-weight:700;color:'+dayColor+'">'+(days!==null&&days>=0?'In '+days+' days':'Overdue')+'</div></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:13px;color:var(--text-dim)">Minimum Due</span>'
+      + '<span style="font-size:15px;font-weight:800;color:#F59E0B">'+formatINR(c.min_due||0)+'</span>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">'
+      + '<span style="font-size:13px;color:var(--text-dim)">Total Due</span>'
+      + '<span style="font-size:18px;font-weight:900;color:#EF4444">'+formatINR(c.outstanding||0)+'</span>'
+    + '</div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px 14px"><button onclick="App._ccPayNow()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:16px;font-weight:800;cursor:pointer">Pay Now</button></div>';
+
+  // Reminder section
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      + '<span style="font-size:13px;font-weight:700">Set Reminder</span>'
+      + '<label style="position:relative;display:inline-block;width:44px;height:22px;cursor:pointer"><input type="checkbox" checked style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:#22C55E;border-radius:22px"><span style="position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transform:translateX(22px)"></span></span></label>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + '<div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px">Reminder Date</label><input type="date" value="2024-05-02" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:12px;box-sizing:border-box"></div>'
+      + '<div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px">Reminder Time</label><select style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:12px"><option>09:00 AM</option><option>10:00 AM</option><option>06:00 PM</option></select></div>'
+    + '</div>'
+    + '</div>';
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCReminder() {
+  var remType = State.ccReminderType || 'payment';
+  var repeat  = State.ccRepeat || 'one_time';
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-payment\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Set Reminder</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:12px">Reminder Type</div>'
+    + [['payment','Payment Reminder'],['custom','Custom Reminder']].map(function(t){
+        var isAct = remType===t[0];
+        return '<label style="display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer;'+(t[0]==='custom'?'':'border-bottom:1px solid rgba(255,255,255,.06);')+'">'
+          + '<input type="radio" name="cc-rem-type" value="'+t[0]+'" '+(isAct?'checked':'')+' onchange="State.ccReminderType=this.value;App.render()" style="accent-color:'+CC_COLOR+';width:16px;height:16px">'
+          + '<span style="font-size:13px;font-weight:'+(isAct?'700':'400')+'">'+t[1]+'</span>'
+          + '</label>';
+      }).join('')
+    + '</div></div>';
+
+  html += '<div style="margin:0 16px 12px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Reminder Date</label>'
+      + '<input type="date" value="2024-05-02" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    + '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Reminder Time</label>'
+      + '<select style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px"><option>09:00 AM</option><option>10:00 AM</option><option>12:00 PM</option><option>06:00 PM</option></select></div>'
+    + '<div style="font-size:13px;font-weight:700;margin-bottom:10px">Repeat</div>'
+    + [['one_time','One Time'],['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']].map(function(r){
+        var isAct = repeat===r[0];
+        return '<label style="display:flex;align-items:center;gap:12px;padding:8px 0;cursor:pointer">'
+          + '<input type="radio" name="cc-repeat" value="'+r[0]+'" '+(isAct?'checked':'')+' onchange="State.ccRepeat=this.value;App.render()" style="accent-color:'+CC_COLOR+';width:16px;height:16px">'
+          + '<span style="font-size:13px;font-weight:'+(isAct?'700':'400')+'">'+r[1]+'</span>'
+          + '</label>';
+      }).join('')
+    + '<div style="margin-top:10px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">Recurring End (Optional)</label>'
+      + '<input type="date" placeholder="Select Date" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    + '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._ccSaveReminder()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Reminder</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCCalendar() {
+  var month = State.ccCalMonth !== undefined ? State.ccCalMonth : 4;
+  var year  = State.ccCalYear  || 2024;
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  var firstDay = new Date(year, month, 1).getDay();
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  var today = new Date();
+  var todayDate = (today.getFullYear()===year && today.getMonth()===month) ? today.getDate() : -1;
+
+  // Events for this month
+  var events = [];
+  _ccCards().forEach(function(c) {
+    var dueDate = new Date(c.due_date);
+    if (dueDate.getFullYear()===year && dueDate.getMonth()===month) {
+      events.push({ day:dueDate.getDate(), label:escapeHtml(c.name)+' Payment Due', amount:c.outstanding, color:'#EF4444', dot:'#EF4444' });
+    }
+  });
+  events.push({ day:15, label:'EMI Payment Reminder', amount:12500, color:'#3B82F6', dot:'#3B82F6' });
+  events.push({ day:23, label:'Insurance Payment Reminder', amount:8000, color:'#22C55E', dot:'#22C55E' });
+
+  var eventDays = {};
+  events.forEach(function(e){ eventDays[e.day] = e; });
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-list\')">'+_invBackSVG+'</div>'
+    + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<div class="icon-btn" onclick="App._ccPrevMonth()"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>'
+      + '<span class="form-title">'+monthNames[month]+' '+year+'</span>'
+      + '<div class="icon-btn" onclick="App._ccNextMonth()"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>'
+    + '</div>'
+    + '<div style="width:36px"></div></div>';
+
+  // Calendar grid
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:14px">';
+  // Header
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">';
+  days.forEach(function(d){ html += '<div style="text-align:center;font-size:11px;color:var(--text-dim);font-weight:700">'+d+'</div>'; });
+  html += '</div>';
+  // Grid
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  for (var i=0; i<firstDay; i++) html += '<div></div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var ev = eventDays[d];
+    var isToday = d===todayDate;
+    var bg = isToday ? CC_COLOR : ev ? ev.color+'33' : 'transparent';
+    var textColor = (isToday||ev) ? '#fff' : 'var(--text-dim)';
+    var border = ev ? '1px solid '+ev.color+'60' : 'none';
+    html += '<div style="text-align:center;padding:6px 2px;border-radius:6px;background:'+bg+';color:'+textColor+';font-size:12px;font-weight:'+(isToday||ev?'700':'400')+';border:'+border+'">'+d+'</div>';
+  }
+  html += '</div>';
+  // Legend
+  html += '<div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">'
+    + '<span style="font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#EF4444;display:inline-block"></span>Payment Due</span>'
+    + '<span style="font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#3B82F6;display:inline-block"></span>Reminder</span>'
+    + '<span style="font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block"></span>Recurring</span>'
+    + '</div>'
+    + '</div>';
+
+  // Events list
+  html += '<div style="margin:0 16px">';
+  events.sort(function(a,b){ return a.day-b.day; }).forEach(function(e) {
+    var dateStr = String(e.day).padStart(2,'0')+' '+monthNames[month]+' '+year;
+    html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+      + '<div style="width:8px;height:8px;border-radius:50%;background:'+e.dot+';flex-shrink:0"></div>'
+      + '<div style="flex:1"><div style="font-size:12px;color:var(--text-dim)">'+dateStr+'</div><div style="font-size:13px;font-weight:700">'+e.label+'</div></div>'
+      + '<div style="font-size:14px;font-weight:800;color:'+e.dot+'">'+formatINR(e.amount)+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin:8px 16px 16px"><button onclick="App.navigate(\'cc-reminder\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(108,71,255,.12);color:'+CC_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:14px;font-weight:700;cursor:pointer">+ Add Reminder</button></div>';
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCOffers() {
+  var tab    = State.ccOfferTab || 'offers';
+  var offers = State.ccOffers || [];
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-list\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Card Offers &amp; Rewards</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="display:flex;background:rgba(108,71,255,.1);border-radius:20px;margin:8px 16px 14px;overflow:hidden">'
+    + [['offers','Offers'],['rewards','Rewards']].map(function(t){ var isAct=tab===t[0]; return '<div onclick="State.ccOfferTab=\''+t[0]+'\';App.render()" style="flex:1;text-align:center;padding:11px;font-size:13px;font-weight:700;cursor:pointer;'+(isAct?'background:'+CC_COLOR+';color:#fff;border-radius:20px;':'color:var(--text-dim);')+'">'+t[1]+'</div>'; }).join('')
+    + '</div>';
+
+  if (tab === 'offers') {
+    html += '<div style="margin:0 16px">';
+    offers.forEach(function(o) {
+      html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:'+o.color+';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+o.icon+'</div>'
+        + '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+escapeHtml(o.title)+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+escapeHtml(o.sub)+'</div><div style="font-size:11px;color:'+CC_COLOR+';margin-top:4px;font-weight:600">'+escapeHtml(o.validity)+'</div></div>'
+        + '</div>';
+    });
+    html += '</div>';
+    html += '<div style="margin:8px 16px 16px"><button onclick="App.showToast(\'Loading all offers...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(108,71,255,.12);color:'+CC_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:14px;font-weight:700;cursor:pointer">View All Offers</button></div>';
+  } else {
+    // Rewards tab
+    var rewardStats = [
+      { label:'Total Points',    value:'12,450', color:CC_COLOR  },
+      { label:'Cashback Earned', value:'₹2,340', color:'#22C55E' },
+      { label:'Redeemed',        value:'3,200',  color:'#F59E0B' },
+      { label:'Expiring Soon',   value:'800',    color:'#EF4444' },
+    ];
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">';
+    rewardStats.forEach(function(r) {
+      html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">'+r.label+'</div><div style="font-size:18px;font-weight:800;color:'+r.color+'">'+r.value+'</div></div>';
+    });
+    html += '</div>';
+    html += '<div style="margin:0 16px 16px"><button onclick="App.showToast(\'Redeem points coming soon\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Redeem Points</button></div>';
+  }
+
+  return html + '<div style="height:80px"></div>';
+}
+
+function renderCCInsights() {
+  var tab  = State.ccInsightTab || 'this_month';
+  var txs  = State.ccTransactions || [];
+  var cards= _ccCards();
+  var totalOutstanding = cards.reduce(function(s,c){ return s+c.outstanding; }, 0);
+  var totalLimit       = cards.reduce(function(s,c){ return s+c.limit; }, 0);
+  var totalSpent       = txs.reduce(function(s,t){ return s+t.amount; }, 0);
+  var totalPaid        = cards.reduce(function(s,c){ return s+(c.last_payment_amount||0); }, 0);
+  var utilPct          = totalLimit>0?Math.round((totalOutstanding/totalLimit)*100):0;
+
+  var html = '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'cc-list\')">'+_invBackSVG+'</div>'
+    + '<span class="form-title">Insights &amp; Reports</span>'
+    + '<div style="width:36px"></div></div>';
+
+  html += '<div style="display:flex;background:rgba(108,71,255,.1);border-radius:20px;margin:8px 16px 14px;overflow:hidden">'
+    + [['this_month','This Month'],['this_year','This Year'],['custom','Custom']].map(function(t){ var isAct=tab===t[0]; return '<div onclick="State.ccInsightTab=\''+t[0]+'\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+CC_COLOR+';color:#fff;border-radius:20px;':'color:var(--text-dim);')+'">'+t[1]+'</div>'; }).join('')
+    + '</div>';
+
+  // Stats grid
+  var stats = [
+    {label:'Total Spent',       value:formatINR(totalSpent),       color:'#EF4444'},
+    {label:'Total Payments',    value:formatINR(totalPaid),        color:'#22C55E'},
+    {label:'Total Outstanding', value:formatINR(totalOutstanding), color:'#F59E0B'},
+    {label:'Credit Utilization',value:utilPct+'%',                 color:_ccUtilColor(utilPct)},
+  ];
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">';
+  stats.forEach(function(s) {
+    html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">'+s.label+'</div><div style="font-size:17px;font-weight:800;color:'+s.color+'">'+s.value+'</div></div>';
+  });
+  html += '</div>';
+
+  // Spending donut
+  var catMap = {};
+  txs.forEach(function(t){ catMap[t.category]=(catMap[t.category]||0)+t.amount; });
+  var donutSlices = Object.keys(catMap).map(function(cat){ return {value:catMap[cat], color:_ccCatColor(cat), label:cat}; });
+  if (donutSlices.length > 0) {
+    html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+      + '<div style="font-size:13px;font-weight:700;margin-bottom:12px">Spending by Category</div>'
+      + '<div style="display:flex;align-items:center;gap:16px">'
+        + '<div style="position:relative;flex-shrink:0">' + donutSVG(donutSlices, 48, 110) + '</div>'
+        + '<div style="flex:1">';
+    donutSlices.slice(0,5).forEach(function(s) {
+      var pct = totalSpent>0?Math.round((s.value/totalSpent)*100):0;
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">'
+        + '<span style="width:8px;height:8px;border-radius:50%;background:'+s.color+';flex-shrink:0;display:inline-block"></span>'
+        + '<span style="font-size:12px;flex:1;text-transform:capitalize">'+escapeHtml(s.label)+'</span>'
+        + '<span style="font-size:12px;font-weight:700">'+pct+'%</span>'
+        + '</div>';
+    });
+    html += '</div></div></div>';
+  }
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App.showToast(\'Generating detailed report...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+CC_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">View Detailed Report</button></div>';
+  return html + '<div style="height:80px"></div>';
 }
 
 // ─── BUDGET MODULE ─────────────────────────────────────────────────────────
@@ -13393,6 +13990,7 @@ function renderMore() {
   html += menuSection('Financial Tools', [
     { icon:'📈', bg:'rgba(34,197,94,0.15)',  label:'Investment',           sub:'Track and manage investments', fn:"App.navigate('investment-dashboard')" },
     { icon:'💰', bg:'rgba(124,58,237,0.15)', label:'Budget Management',    sub:'Set budgets, track spending and achieve savings goals', fn:"App.navigate('budget-dashboard')" },
+    { icon:'💳', bg:'rgba(108,71,255,0.15)', label:'Credit Cards', sub:'Manage credit cards, bills, rewards and spending', fn:"App.navigate('cc-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -14266,6 +14864,7 @@ const App = {
     var tabHint = null;
     if (screen.startsWith('mediclaim'))      tabHint = 'mediclaim';
     else if (screen.startsWith('lic'))       tabHint = 'lic';
+    else if (screen.startsWith('cc'))           tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
       document.querySelectorAll('.tab-item').forEach(function(el) {
@@ -14452,6 +15051,16 @@ const App = {
       case 'budget-edit-category':      html = renderBudgetEditCategory();    break;
       case 'budget-import':             html = renderBudgetImport();          break;
       case 'budget-insights':           html = renderBudgetInsights();        break;
+      case 'cc-list':           html = renderCCList();          break;
+      case 'cc-detail':         html = renderCCDetail();        break;
+      case 'cc-transactions':   html = renderCCTransactions();  break;
+      case 'cc-add-transaction':html = renderCCAddTransaction();break;
+      case 'cc-billing-cycle':  html = renderCCBillingCycle();  break;
+      case 'cc-payment':        html = renderCCPayment();       break;
+      case 'cc-reminder':       html = renderCCReminder();      break;
+      case 'cc-calendar':       html = renderCCCalendar();      break;
+      case 'cc-offers':         html = renderCCOffers();        break;
+      case 'cc-insights':       html = renderCCInsights();      break;
       case 'lic-list':              html = renderLICList();              break;
       case 'lic-detail':            html = renderLICDetail();            break;
       case 'lic-buy':               html = renderLICBuy();               break;
@@ -16869,6 +17478,47 @@ const App = {
     if (idx === -1) sel = sel.concat([id]);
     else sel = sel.filter(function(x){ return x!==id; });
     State.budgetImportSelected = sel;
+    App.render();
+  },
+
+  /* ── Credit Card Module ─────────────────────────────── */
+  _ccSaveTransaction() {
+    var cardId   = document.getElementById('cc-tx-card')?.value || State.ccActiveCard;
+    var merchant = (document.getElementById('cc-tx-merchant')?.value||'').trim();
+    var amount   = parseFloat(document.getElementById('cc-tx-amount')?.value||'0');
+    var cat      = document.getElementById('cc-tx-cat')?.value || 'others';
+    var date     = document.getElementById('cc-tx-date')?.value || new Date().toISOString().slice(0,10);
+    var notes    = document.getElementById('cc-tx-notes')?.value || '';
+    if (!merchant) { this.showToast('Please enter merchant name'); return; }
+    if (!amount)   { this.showToast('Please enter an amount'); return; }
+    var newTx = { id:'ct_'+Date.now(), card_id:cardId, merchant:merchant, date:date, amount:amount, category:cat, notes:notes };
+    State.ccTransactions = [newTx].concat(State.ccTransactions||[]);
+    var cards = State.ccCards || [];
+    var idx   = cards.findIndex(function(c){ return c.id===cardId; });
+    if (idx !== -1) cards[idx].outstanding = (cards[idx].outstanding||0) + amount;
+    State.ccActiveCard = cardId;
+    this.showToast('Transaction saved!');
+    App.navigate('cc-transactions');
+  },
+  _ccSaveReminder() {
+    this.showToast('Reminder saved!');
+    App.navigate('cc-list');
+  },
+  _ccPayNow() {
+    this.showToast('Redirecting to payment gateway...');
+  },
+  _ccPrevMonth() {
+    var m = State.ccCalMonth !== undefined ? State.ccCalMonth : 4;
+    var y = State.ccCalYear || 2024;
+    if (m === 0) { State.ccCalMonth = 11; State.ccCalYear = y-1; }
+    else { State.ccCalMonth = m-1; }
+    App.render();
+  },
+  _ccNextMonth() {
+    var m = State.ccCalMonth !== undefined ? State.ccCalMonth : 4;
+    var y = State.ccCalYear || 2024;
+    if (m === 11) { State.ccCalMonth = 0; State.ccCalYear = y+1; }
+    else { State.ccCalMonth = m+1; }
     App.render();
   },
 
