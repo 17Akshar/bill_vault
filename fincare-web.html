@@ -1779,6 +1779,43 @@ const State = {
     { id:'of3', icon:'🛒', title:'5% Cashback',                  sub:'on Grocery & Supermart',  validity:'Valid till 31 May 2024', color:'rgba(16,185,129,.15)'  },
     { id:'of4', icon:'🛋️', title:'Complimentary Lounge Access', sub:'2 per quarter',           validity:'Valid till 30 Jun 2024',  color:'rgba(124,58,237,.15)'  },
   ],
+  // Loans module
+  loanActiveId:     null,
+  loanDetailTab:    'overview',
+  loanTxFilter:     'all',
+  loanNoteFilter:   'all',
+  loanDocFilter:    'all',
+  loanInsightTab:   'overview',
+  loans: [
+    { id:'ln1', name:'Home Loan – HDFC',       type:'home',     lender:'HDFC Bank',        amount:3000000, outstanding:825000, paid:2175000, emi:32750, emi_type:'monthly', rate:8.50, start_date:'2018-05-01', due_date:'2028-05-01', tenure:120, next_due:'2024-05-18', status:'active',  color:'#3B82F6' },
+    { id:'ln2', name:'Car Loan – SBI',          type:'car',      lender:'SBI Bank',         amount:600000,  outstanding:315000, paid:285000,  emi:12750, emi_type:'monthly', rate:9.20, start_date:'2021-03-01', due_date:'2026-03-01', tenure:60,  next_due:'2024-05-25', status:'active',  color:'#10B981' },
+    { id:'ln3', name:'Personal Loan – ICICI',   type:'personal', lender:'ICICI Bank',       amount:200000,  outstanding:105000, paid:95000,   emi:7850,  emi_type:'monthly', rate:14.00,start_date:'2023-01-01', due_date:'2025-06-01', tenure:30,  next_due:'2024-06-10', status:'active',  color:'#F59E0B' },
+    { id:'ln4', name:'Education Loan – BoB',    type:'education',lender:'Bank of Baroda',   amount:150000,  outstanding:85000,  paid:65000,   emi:6500,  emi_type:'monthly', rate:10.50,start_date:'2022-06-01', due_date:'2026-06-01', tenure:48,  next_due:'2024-06-05', status:'active',  color:'#8B5CF6' },
+    { id:'ln5', name:'Business Loan – Axis',    type:'business', lender:'Axis Bank',        amount:100000,  outstanding:60000,  paid:40000,   emi:5000,  emi_type:'monthly', rate:12.00,start_date:'2023-06-01', due_date:'2025-06-01', tenure:24,  next_due:'2024-05-20', status:'active',  color:'#EC4899' },
+    { id:'ln6', name:'Gold Loan – Muthoot',     type:'gold',     lender:'Muthoot Finance',  amount:80000,   outstanding:45000,  paid:35000,   emi:3500,  emi_type:'monthly', rate:11.00,start_date:'2023-11-01', due_date:'2025-05-01', tenure:18,  next_due:'2024-05-15', status:'active',  color:'#F59E0B' },
+    { id:'ln7', name:'Loan from Rahul',         type:'others',   lender:'Rahul Sharma',     amount:60000,   outstanding:45000,  paid:15000,   emi:2500,  emi_type:'monthly', rate:0,    start_date:'2024-05-01', due_date:'2026-06-15', tenure:25,  next_due:'2024-05-25', status:'active',  color:'#6C47FF' },
+    { id:'ln8', name:'Others (Custom)',         type:'others',   lender:'Various',          amount:50000,   outstanding:30000,  paid:20000,   emi:2000,  emi_type:'monthly', rate:0,    start_date:'2024-01-01', due_date:'2025-05-25', tenure:12,  next_due:'2024-05-25', status:'active',  color:'#6B7280' },
+  ],
+  loanTransactions: [
+    { id:'lnt1', loan_id:'ln7', type:'emi',      date:'2024-05-15', amount:2500, mode:'upi',  account:'SBI Savings •••• 5678', notes:'May 2024 EMI paid',    status:'paid' },
+    { id:'lnt2', loan_id:'ln7', type:'emi',      date:'2024-04-15', amount:2500, mode:'upi',  account:'SBI Savings •••• 5678', notes:'',                     status:'paid' },
+    { id:'lnt3', loan_id:'ln7', type:'emi',      date:'2024-03-15', amount:2500, mode:'upi',  account:'SBI Savings •••• 5678', notes:'',                     status:'paid' },
+    { id:'lnt4', loan_id:'ln7', type:'emi',      date:'2024-02-15', amount:2500, mode:'upi',  account:'SBI Savings •••• 5678', notes:'',                     status:'paid' },
+    { id:'lnt5', loan_id:'ln7', type:'interest', date:'2024-02-01', amount:500,  mode:'cash', account:'Cash',                  notes:'Interest for Feb 2024', status:'paid' },
+    { id:'lnt6', loan_id:'ln7', type:'received', date:'2024-01-01', amount:60000,mode:'cash', account:'Cash',                  notes:'Received from Rahul Sharma', status:'paid' },
+  ],
+  loanNotes: [
+    { id:'lnn1', loan_id:'ln7', category:'important', date:'2024-05-10', time:'11:30 AM', text:'Need to clear the loan by June 2026.' },
+    { id:'lnn2', loan_id:'ln7', category:'payment',   date:'2024-04-15', time:'09:20 AM', text:'Discussed about prepayment option.' },
+    { id:'lnn3', loan_id:'ln7', category:'follow_up', date:'2024-04-01', time:'04:45 PM', text:'Remind Rahul about EMI on time.' },
+  ],
+  loanDocuments: [
+    { id:'lnd1', loan_id:'ln7', name:'Loan Agreement',    type:'PDF', size:'1.2 MB', date:'2024-05-01' },
+    { id:'lnd2', loan_id:'ln7', name:'Payment Screenshot',type:'JPG', size:'450 KB', date:'2024-05-15' },
+  ],
+  loanAddData:  {},
+  loanAddType:  null,
+  loanAddStep:  1,
   budgetCategories: [
     { id:'bc1',  name:'Home',          icon:'🏠', color:'#6366F1', budget:20000, spent:16000 },
     { id:'bc2',  name:'Food & Dining', icon:'🍔', color:'#F59E0B', budget:10000, spent:8045  },
@@ -7137,6 +7174,527 @@ function renderTermInsInsights() {
     + '</div>'
     + '<div style="padding:0 16px 16px"><button onclick="App._termInsViewReport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
     + '</div>';
+}
+
+// ─── LOANS MODULE ──────────────────────────────────────────────────────────
+var LOAN_COLOR = '#6C47FF';
+
+var LOAN_TYPES = [
+  { id:'home',      icon:'🏠', label:'Home Loan',        sub:'Property purchase or construction', color:'#3B82F6' },
+  { id:'car',       icon:'🚗', label:'Car Loan',          sub:'Car or other vehicle purchase',      color:'#10B981' },
+  { id:'two_wheeler',icon:'🏍️',label:'Two Wheeler Loan',  sub:'Bike or scooter purchase',           color:'#F59E0B' },
+  { id:'personal',  icon:'👤', label:'Personal Loan',     sub:'Personal needs and expenses',        color:'#EC4899' },
+  { id:'education', icon:'📚', label:'Education Loan',    sub:'Higher education expenses',          color:'#8B5CF6' },
+  { id:'business',  icon:'💼', label:'Business Loan',     sub:'Business and professional needs',    color:'#06B6D4' },
+  { id:'gold',      icon:'🥇', label:'Gold Loan',         sub:'Loan against gold',                  color:'#F59E0B' },
+  { id:'others',    icon:'✏️', label:'Others',            sub:'Add any custom loan manually',        color:'#6C47FF', custom:true },
+];
+
+function _loans()          { return State.loans || []; }
+function _loan(id)         { var lid=id||State.loanActiveId; return _loans().find(function(l){ return l.id===lid; }) || _loans()[0] || {}; }
+function _loanTxs(id)      { return (State.loanTransactions||[]).filter(function(t){ return t.loan_id===(id||State.loanActiveId); }); }
+function _loanNotes(id)    { return (State.loanNotes||[]).filter(function(n){ return n.loan_id===(id||State.loanActiveId); }); }
+function _loanDocs(id)     { return (State.loanDocuments||[]).filter(function(d){ return d.loan_id===(id||State.loanActiveId); }); }
+function _loanPct(l)       { return l.amount>0?Math.round((l.paid/l.amount)*100):0; }
+function _loanFmtDate(d)   { if(!d)return '—'; var p=d.split('-'); var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return p[2]+' '+m[parseInt(p[1])-1]+' '+p[0]; }
+function _loanDaysLeft(d)  { if(!d)return null; return Math.ceil((new Date(d)-new Date())/86400000); }
+function _loanTypeInfo(t)  { return LOAN_TYPES.find(function(x){ return x.id===t; }) || LOAN_TYPES[LOAN_TYPES.length-1]; }
+function _loanTxTypeLabel(t){ var m={emi:'EMI Payment',partial:'Partial Payment',interest:'Interest Paid',settlement:'Full Settlement',received:'Loan Disbursement',other:'Other'}; return m[t]||t; }
+function _loanTxColor(t)   { return t==='received'?'#22C55E':t==='interest'?'#EF4444':'#F59E0B'; }
+function _loanNoteCatColor(c){ var m={important:'#EF4444',payment:'#3B82F6',settlement:'#22C55E',follow_up:'#F59E0B',general:'#6B7280'}; return m[c]||'#6B7280'; }
+function _loanNoteCatLabel(c){ var m={important:'Important',payment:'Payment',settlement:'Settlement',follow_up:'Follow-up',general:'General'}; return m[c]||c; }
+
+function renderLoanList() {
+  var loans = _loans();
+  var totalOutstanding = loans.reduce(function(s,l){ return s+l.outstanding; },0);
+  var totalPaid        = loans.reduce(function(s,l){ return s+l.paid; },0);
+  var monthlyEMI       = loans.filter(function(l){ return l.status==='active'&&l.emi_type==='monthly'; }).reduce(function(s,l){ return s+l.emi; },0);
+  var active           = loans.filter(function(l){ return l.status==='active'; }).length;
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.goTab(\'more\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">Loans</span>'
+    +'<button onclick="App.navigate(\'loan-select-type\')" style="padding:6px 14px;border-radius:16px;background:rgba(108,71,255,.15);color:'+LOAN_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:13px;font-weight:700;cursor:pointer">+ Add Loan</button>'
+    +'</div>';
+
+  // Summary cards
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">'
+    +'<div style="background:linear-gradient(135deg,#2D1B69,'+LOAN_COLOR+');border-radius:var(--radius);padding:14px">'
+      +'<div style="font-size:10px;color:rgba(255,255,255,.65);margin-bottom:3px">Total Outstanding</div>'
+      +'<div style="font-size:18px;font-weight:800;color:#fff">'+formatINR(totalOutstanding)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px">'
+      +'<div style="font-size:10px;color:var(--text-dim);margin-bottom:3px">Total Paid</div>'
+      +'<div style="font-size:18px;font-weight:800;color:#22C55E">'+formatINR(totalPaid)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px">'
+      +'<div style="font-size:10px;color:var(--text-dim);margin-bottom:3px">Monthly EMI</div>'
+      +'<div style="font-size:18px;font-weight:800;color:#F59E0B">'+formatINR(monthlyEMI)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--card);border-radius:var(--radius);padding:14px">'
+      +'<div style="font-size:10px;color:var(--text-dim);margin-bottom:3px">Total Loans</div>'
+      +'<div style="font-size:18px;font-weight:800">'+loans.length+'</div>'
+    +'</div>'
+    +'</div>';
+
+  // Your Loans header
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:10px">'
+    +'<span style="font-size:14px;font-weight:700">Your Loans</span>'
+    +'<span style="font-size:12px;color:var(--text-dim)">Sort: Next EMI Date ↑</span>'
+    +'</div>';
+
+  // Loan cards
+  html += '<div style="margin:0 16px">';
+  loans.forEach(function(l) {
+    var ti   = _loanTypeInfo(l.type);
+    var days = _loanDaysLeft(l.next_due);
+    var pct  = _loanPct(l);
+    html += '<div onclick="State.loanActiveId=\''+l.id+'\';State.loanDetailTab=\'overview\';App.navigate(\'loan-detail\')" style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer">'
+      +'<div style="width:40px;height:40px;border-radius:10px;background:'+l.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+ti.icon+'</div>'
+      +'<div style="flex:1;overflow:hidden">'
+        +'<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700">'+escapeHtml(l.name)+'</span><span style="padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;background:rgba(34,197,94,.15);color:#22C55E">Active</span></div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:2px">Outstanding '+formatINR(l.outstanding)+' • EMI '+_loanFmtDate(l.next_due)+'</div>'
+        +'<div style="background:rgba(255,255,255,.06);height:3px;border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+l.color+';border-radius:2px"></div></div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0">'
+        +'<div style="font-size:13px;font-weight:700">EMI '+formatINR(l.emi)+'</div>'
+        +'<div style="font-size:10px;color:var(--text-dim);margin-top:1px">Next '+_loanFmtDate(l.next_due)+'</div>'
+      +'</div>'
+      +'</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin:12px 16px 16px"><button onclick="App.navigate(\'loan-insights\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(108,71,255,.12);color:'+LOAN_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:13px;font-weight:700;cursor:pointer">📊 View Loan Insights</button></div>';
+  return html+'<div style="height:80px"></div>';
+}
+
+function renderLoanSelectType() {
+  var standard = LOAN_TYPES.filter(function(t){ return !t.custom; });
+  var custom   = LOAN_TYPES.filter(function(t){ return t.custom; });
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'loan-list\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">Select Loan Type</span>'
+    +'<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:12px 16px 6px;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Standard Loans</div>';
+  html += '<div style="margin:0 16px">';
+  standard.forEach(function(t) {
+    html += '<div onclick="State.loanAddType=\''+t.id+'\';App.navigate(\'loan-add\')" style="background:var(--card);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;cursor:pointer">'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:'+t.color+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+t.icon+'</div>'
+      +'<div style="flex:1"><div style="font-size:14px;font-weight:700">'+t.label+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:1px">'+t.sub+'</div></div>'
+      +'<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>'
+      +'</div>';
+  });
+  html += '</div>';
+
+  // Custom (Others) with dashed border
+  html += '<div style="margin:8px 16px 16px">';
+  custom.forEach(function(t) {
+    html += '<div onclick="State.loanAddType=\'others\';App.navigate(\'loan-add\')" style="background:rgba(108,71,255,.06);border:2px dashed rgba(108,71,255,.4);border-radius:var(--radius-sm);padding:16px;cursor:pointer">'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'
+        +'<div style="width:40px;height:40px;border-radius:10px;background:rgba(108,71,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px">'+t.icon+'</div>'
+        +'<div><div style="font-size:14px;font-weight:700;color:'+LOAN_COLOR+'">'+t.label+'</div><div style="font-size:12px;color:var(--text-dim)">'+t.sub+'</div></div>'
+      +'</div>'
+      +'<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Examples:</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+        +['Loan from Friend','Society Loan','Office Advance','Family Loan','Private Finance','Credit Line','Informal Borrowing','Others'].map(function(ex){ return '<span style="padding:4px 10px;border-radius:12px;background:rgba(108,71,255,.12);color:'+LOAN_COLOR+';font-size:11px;font-weight:600">'+ex+'</span>'; }).join('')
+      +'</div>'
+      +'</div>';
+  });
+  html += '</div>';
+
+  return html+'<div style="height:80px"></div>';
+}
+
+function renderLoanAdd() {
+  var ltype = State.loanAddType || 'others';
+  var ti    = _loanTypeInfo(ltype);
+  var d     = State.loanAddData || {};
+  var isCustom = ltype === 'others';
+  var cats  = ['Personal','Family','Business','Emergency','Informal','Other'];
+  var emiTypes = [['monthly','Monthly'],['weekly','Weekly'],['one_time','One Time'],['flexible','Flexible'],['no_emi','No EMI']];
+  var curEmi = d.emi_type || 'monthly';
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'loan-select-type\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">'+(isCustom?'Add Custom Loan':'Add '+ti.label)+'</span>'
+    +'<button onclick="App._loanSave()" style="background:none;border:none;color:'+LOAN_COLOR+';font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    +'</div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:12px;color:'+LOAN_COLOR+'">Basic Details</div>';
+
+  if (isCustom) {
+    html += '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Custom Loan Name *</label>'
+      +'<input id="la-name" type="text" placeholder="e.g. Loan from Rahul" value="'+escapeHtml(d.name||'')+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+      +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Loan Category</label>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+      +cats.map(function(c){ var isAct=(d.category===c); return '<div onclick="(State.loanAddData=State.loanAddData||{}),(State.loanAddData.category=\''+c+'\'),App.render()" style="padding:6px 12px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;'+(isAct?'background:'+LOAN_COLOR+';color:#fff;':'background:rgba(255,255,255,.06);color:var(--text-dim);')+'">'+c+'</div>'; }).join('')
+      +'</div></div>';
+  }
+
+  html += '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Lender Name *</label>'
+    +'<input id="la-lender" type="text" placeholder="Bank or person name" value="'+escapeHtml(d.lender||'')+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Loan Amount *</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:12px">₹</span><input id="la-amount" type="number" placeholder="0" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 10px 10px 22px;color:#fff;font-size:13px;box-sizing:border-box"></div></div>'
+      +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Outstanding Amount</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:12px">₹</span><input id="la-outstanding" type="number" placeholder="0" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 10px 10px 22px;color:#fff;font-size:13px;box-sizing:border-box"></div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Interest Rate (Optional)</label><div style="position:relative"><input id="la-rate" type="number" step="0.01" placeholder="0.00" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:13px;box-sizing:border-box"><span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:12px">%</span></div></div>'
+      +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Start Date</label><input id="la-start" type="date" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Due Date / Tenure</label><input id="la-due" type="date" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+      +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Tenure (Months)</label><input id="la-tenure" type="number" placeholder="e.g. 25" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    +'</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px">EMI Type</label>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+      +emiTypes.map(function(e){ var isAct=curEmi===e[0]; return '<div onclick="(State.loanAddData=State.loanAddData||{}),(State.loanAddData.emi_type=\''+e[0]+'\'),App.render()" style="padding:7px 12px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;'+(isAct?'background:'+LOAN_COLOR+';color:#fff;':'background:rgba(255,255,255,.06);color:var(--text-dim);')+'">'+e[1]+'</div>'; }).join('')
+      +'</div></div>'
+    +(curEmi!=='no_emi'?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"><div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">EMI Amount (Optional)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:12px">₹</span><input id="la-emi" type="number" placeholder="0" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 10px 10px 22px;color:#fff;font-size:13px;box-sizing:border-box"></div></div><div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Payment Frequency</label><select id="la-freq" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px;color:#fff;font-size:13px"><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="quarterly">Quarterly</option></select></div></div>':'')
+    +'<div><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Linked Account</label>'
+      +'<select id="la-account" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px"><option>SBI Savings •••• 5678</option><option>HDFC Bank ••1234</option><option>Cash</option></select></div>'
+    +'</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._loanSave()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+LOAN_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Loan</button></div>';
+  return html+'<div style="height:80px"></div>';
+}
+
+function renderLoanDetail() {
+  var l    = _loan();
+  var tab  = State.loanDetailTab || 'overview';
+  var ti   = _loanTypeInfo(l.type||'others');
+  var pct  = _loanPct(l);
+  var days = _loanDaysLeft(l.next_due);
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'loan-list\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">'+escapeHtml(l.name||'Loan Details')+'</span>'
+    +'<div class="icon-btn" onclick="App.showToast(\'Options\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>'
+    +'</div>';
+
+  // Sub-header type
+  html += '<div style="padding:4px 16px 10px;display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:13px;color:var(--text-dim)">'+ti.label+'</span>'
+    +'<span style="padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:rgba(34,197,94,.15);color:#22C55E">Active</span>'
+    +'</div>';
+
+  // Outstanding card
+  html += '<div style="margin:0 16px 14px;background:linear-gradient(135deg,#2D1B69,'+LOAN_COLOR+');border-radius:var(--radius);padding:16px">'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">Outstanding Amount</div>'
+    +'<div style="font-size:30px;font-weight:900;color:#fff;margin-bottom:12px">'+formatINR(l.outstanding||0)+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div><div style="font-size:10px;color:rgba(255,255,255,.6)">Total Loan Amount</div><div style="font-size:13px;font-weight:700;color:#fff">'+formatINR(l.amount||0)+'</div></div>'
+      +'<div><div style="font-size:10px;color:rgba(255,255,255,.6)">Total Paid</div><div style="font-size:13px;font-weight:700;color:#86EFAC">'+formatINR(l.paid||0)+'</div></div>'
+      +'<div><div style="font-size:10px;color:rgba(255,255,255,.6)">Next Due</div><div style="font-size:13px;font-weight:700;color:'+(days!==null&&days<=7?'#F59E0B':'#fff')+'">'+_loanFmtDate(l.next_due)+'</div></div>'
+      +'<div><div style="font-size:10px;color:rgba(255,255,255,.6)">EMI Amount</div><div style="font-size:13px;font-weight:700;color:#fff">'+formatINR(l.emi||0)+'</div></div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px">'+pct+'% Completed</div>'
+    +'<div style="background:rgba(0,0,0,.3);border-radius:6px;height:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#86EFAC,#22C55E);border-radius:6px"></div></div>'
+    +'</div>';
+
+  // Tab nav
+  var tabs = ['overview','transactions','notes','documents'];
+  html += '<div style="display:flex;border-bottom:1px solid rgba(255,255,255,.06);margin:0 16px;margin-bottom:12px">';
+  tabs.forEach(function(t) {
+    var isAct = tab===t;
+    html += '<div onclick="State.loanDetailTab=\''+t+'\';App.render()" style="flex:1;text-align:center;padding:10px 4px;font-size:12px;font-weight:700;cursor:pointer;border-bottom:2px solid '+(isAct?LOAN_COLOR:'transparent')+';color:'+(isAct?LOAN_COLOR:'var(--text-dim)')+'">'+t.charAt(0).toUpperCase()+t.slice(1)+'</div>';
+  });
+  html += '</div>';
+
+  if (tab === 'overview') {
+    html += _loanDetailOverview(l);
+  } else if (tab === 'transactions') {
+    html += _loanDetailTransactions(l);
+  } else if (tab === 'notes') {
+    html += _loanDetailNotes(l);
+  } else if (tab === 'documents') {
+    html += _loanDetailDocuments(l);
+  }
+
+  return html+'<div style="height:80px"></div>';
+}
+
+function _loanDetailOverview(l) {
+  var pct = _loanPct(l);
+  // Quick actions
+  var html = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 16px 14px">';
+  var actions = [
+    {icon:'💳', label:'Pay',          fn:"App.navigate('loan-add-tx')"},
+    {icon:'✏️', label:'Edit',         fn:"App.showToast('Edit coming soon')"},
+    {icon:'📝', label:'Notes',        fn:"State.loanDetailTab='notes';App.render()"},
+    {icon:'🔄', label:'Transactions', fn:"State.loanDetailTab='transactions';App.render()"},
+    {icon:'📄', label:'Documents',    fn:"State.loanDetailTab='documents';App.render()"},
+  ];
+  actions.forEach(function(a) {
+    html += '<div onclick="'+a.fn+'" style="background:var(--card);border-radius:var(--radius-sm);padding:10px 6px;text-align:center;cursor:pointer">'
+      +'<div style="font-size:20px;margin-bottom:4px">'+a.icon+'</div>'
+      +'<div style="font-size:10px;color:var(--text-dim);font-weight:600">'+a.label+'</div>'
+      +'</div>';
+  });
+  html += '</div>';
+
+  // Loan Summary
+  function dr(label, value, color) {
+    return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      +'<span style="font-size:12px;color:var(--text-dim)">'+label+'</span>'
+      +'<span style="font-size:13px;font-weight:700'+(color?';color:'+color:'')+'">' +escapeHtml(String(value||'—'))+'</span>'
+      +'</div>';
+  }
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:10px">Loan Summary</div>'
+    +dr('Interest Rate (p.a.)', l.rate ? l.rate+'%' : '0%')
+    +dr('Tenure', (l.tenure||'—')+' Months')
+    +dr('Start Date', _loanFmtDate(l.start_date))
+    +dr('Due Date', _loanFmtDate(l.due_date))
+    +dr('EMI Type', (l.emi_type||'monthly').charAt(0).toUpperCase()+(l.emi_type||'monthly').slice(1))
+    +dr('Payment Frequency', 'Monthly')
+    +'</div>';
+
+  // Auto calculations
+  var totalInterest = l.rate>0 ? Math.round((l.amount||0) * (l.rate/100) * ((l.tenure||12)/12)) : 0;
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:10px">Auto Calculations</div>'
+    +dr('EMI Amount', formatINR(l.emi||0), LOAN_COLOR)
+    +dr('Total Payable', formatINR((l.amount||0)+totalInterest))
+    +dr('Total Interest', formatINR(totalInterest), '#EF4444')
+    +'</div>';
+
+  return html;
+}
+
+function _loanDetailTransactions(l) {
+  var txs    = _loanTxs(l.id);
+  var filter = State.loanTxFilter || 'all';
+  var filters = ['all','emi','partial','interest','settlement','received'];
+
+  var html = '<div style="padding:0 16px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700">All Transactions</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:'+LOAN_COLOR+';cursor:pointer">Filter</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px">';
+  filters.forEach(function(f) {
+    var isAct = filter===f;
+    html += '<div onclick="State.loanTxFilter=\''+f+'\';App.render()" style="padding:5px 12px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+LOAN_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.06);')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</div>';
+  });
+  html += '</div>';
+
+  // Summary
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+    +'<div style="background:rgba(108,71,255,.1);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Total Loan Amount</div><div style="font-size:13px;font-weight:700">'+formatINR(l.amount||0)+'</div></div>'
+    +'<div style="background:rgba(34,197,94,.1);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Total Paid</div><div style="font-size:13px;font-weight:700;color:#22C55E">'+formatINR(l.paid||0)+'</div></div>'
+    +'<div style="background:rgba(239,68,68,.1);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Outstanding</div><div style="font-size:13px;font-weight:700;color:#EF4444">'+formatINR(l.outstanding||0)+'</div></div>'
+    +'<div style="background:rgba(124,58,237,.1);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--text-dim)">Completion</div><div style="font-size:13px;font-weight:700;color:'+LOAN_COLOR+'">'+_loanPct(l)+'%</div></div>'
+    +'</div>';
+
+  var filtered = filter==='all' ? txs : txs.filter(function(t){ return t.type===filter; });
+  if (filtered.length===0) {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:30px 0;font-size:13px">No transactions yet</div>';
+  } else {
+    filtered.forEach(function(t) {
+      var isCredit = t.type==='received';
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<div style="width:36px;height:36px;border-radius:9px;background:'+(isCredit?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)')+';display:flex;align-items:center;justify-content:center;font-size:16px">'+(isCredit?'💰':'💸')+'</div>'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700">'+_loanTxTypeLabel(t.type)+'</div><div style="font-size:11px;color:var(--text-dim)">'+_loanFmtDate(t.date)+(t.notes?' • '+escapeHtml(t.notes):'')+'</div><div style="font-size:11px;color:var(--text-dim)">Paid via '+escapeHtml(t.account||'')+'</div></div>'
+        +'<div style="font-size:14px;font-weight:800;color:'+(isCredit?'#22C55E':'#EF4444')+'">'+(isCredit?'+ ':' – ')+formatINR(t.amount)+'</div>'
+        +'</div>';
+    });
+  }
+
+  html += '<button onclick="App.navigate(\'loan-add-tx\')" style="width:100%;margin-top:12px;padding:13px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+LOAN_COLOR+',#4C1D95);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">+ Add Transaction</button>'
+    +'</div>';
+  return html;
+}
+
+function _loanDetailNotes(l) {
+  var notes  = _loanNotes(l.id);
+  var filter = State.loanNoteFilter || 'all';
+  var cats   = ['all','important','payment','settlement','follow_up','general'];
+
+  var html = '<div style="padding:0 16px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700">Notes ('+notes.length+')</div>'
+      +'<button onclick="App._loanAddNote(\''+l.id+'\')" style="padding:5px 12px;border-radius:14px;background:'+LOAN_COLOR+';color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer">+ Add Note</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px">';
+  cats.forEach(function(c) {
+    var isAct = filter===c;
+    html += '<div onclick="State.loanNoteFilter=\''+c+'\';App.render()" style="padding:5px 12px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;'+(isAct?'background:'+LOAN_COLOR+';color:#fff;':'color:var(--text-dim);background:rgba(255,255,255,.06);')+'">'+c.charAt(0).toUpperCase()+c.slice(1).replace('_',' ')+'</div>';
+  });
+  html += '</div>';
+
+  var filtered = filter==='all' ? notes : notes.filter(function(n){ return n.category===filter; });
+  if (filtered.length===0) {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:30px 0;font-size:13px">No notes yet</div>';
+  } else {
+    filtered.forEach(function(n) {
+      var catColor = _loanNoteCatColor(n.category);
+      var catLabel = _loanNoteCatLabel(n.category);
+      html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+          +'<span style="padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:'+catColor+'22;color:'+catColor+'">'+catLabel+'</span>'
+          +'<div style="display:flex;gap:10px">'
+            +'<span style="font-size:11px;color:var(--text-dim)">'+_loanFmtDate(n.date)+', '+n.time+'</span>'
+            +'<span onclick="App._loanDeleteNote(\''+n.id+'\')" style="font-size:14px;cursor:pointer">🗑️</span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="font-size:13px;color:#fff">'+escapeHtml(n.text)+'</div>'
+        +'</div>';
+    });
+  }
+
+  html += '<div style="margin-top:12px;padding:12px;background:rgba(108,71,255,.08);border:1px solid rgba(108,71,255,.2);border-radius:8px;display:flex;gap:10px;align-items:center">'
+    +'<div style="font-size:22px">🔐</div>'
+    +'<div><div style="font-size:12px;font-weight:700;color:'+LOAN_COLOR+'">Your notes are private and secure</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">Only you can view your notes. They are encrypted and stored securely.</div></div>'
+    +'</div></div>';
+  return html;
+}
+
+function _loanDetailDocuments(l) {
+  var docs = _loanDocs(l.id);
+
+  var html = '<div style="padding:0 16px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-size:13px;font-weight:700">Documents ('+docs.length+')</div>'
+      +'<button onclick="App._loanUploadDoc(\''+l.id+'\')" style="padding:5px 12px;border-radius:14px;background:rgba(108,71,255,.15);color:'+LOAN_COLOR+';border:1px solid rgba(108,71,255,.3);font-size:12px;font-weight:700;cursor:pointer">⬆️ Upload Document</button>'
+    +'</div>';
+
+  if (docs.length===0) {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:30px 0;font-size:13px">No documents uploaded</div>';
+  } else {
+    docs.forEach(function(d) {
+      var isImg = d.type==='JPG'||d.type==='PNG';
+      html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+        +'<div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:20px">'+(isImg?'🖼️':'📄')+'</div>'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:700">'+escapeHtml(d.name)+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:1px">'+d.type+' • '+d.size+' • '+_loanFmtDate(d.date)+'</div></div>'
+        +'<button onclick="App.showToast(\'Downloading...\')" style="padding:6px 12px;border-radius:10px;background:rgba(108,71,255,.12);color:'+LOAN_COLOR+';border:1px solid rgba(108,71,255,.25);font-size:11px;font-weight:700;cursor:pointer">⬇️</button>'
+        +'</div>';
+    });
+  }
+
+  html += '<div style="margin-top:10px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--text-dim)">Supported: PDF, JPG, PNG, DOCX (Max 10 MB)</div>'
+    +'</div>';
+  return html;
+}
+
+function renderLoanAddTx() {
+  var l       = _loan();
+  var txTypes = [['emi','EMI Payment'],['partial','Partial Payment'],['interest','Interest Paid'],['other','Other']];
+  var selType = State.loanTxType || 'emi';
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="State.loanDetailTab=\'transactions\';App.navigate(\'loan-detail\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">Add Transaction</span>'
+    +'<button onclick="App._loanSaveTx()" style="background:none;border:none;color:'+LOAN_COLOR+';font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
+    +'</div>';
+
+  html += '<div style="margin:12px 16px"><div style="background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:10px">Transaction Type</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">'
+    +txTypes.map(function(t){ var isAct=selType===t[0]; return '<div onclick="State.loanTxType=\''+t[0]+'\';App.render()" style="padding:8px 14px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;'+(isAct?'background:'+LOAN_COLOR+';color:#fff;':'background:rgba(255,255,255,.06);color:var(--text-dim);')+'">'+t[1]+'</div>'; }).join('')
+    +'</div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Date</label>'
+      +'<input id="ltx-date" type="date" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Amount</label>'
+      +'<div style="position:relative"><span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:13px">₹</span>'
+      +'<input id="ltx-amount" type="number" placeholder="0" value="'+l.emi+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px 11px 11px 24px;color:#fff;font-size:13px;box-sizing:border-box"></div></div>'
+    +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Payment Mode</label>'
+      +'<select id="ltx-account" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px"><option>SBI Savings •••• 5678</option><option>HDFC Bank ••1234</option><option>Cash</option></select></div>'
+    +'<div style="margin-bottom:4px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:5px">Note (Optional)</label>'
+      +'<input id="ltx-notes" type="text" placeholder="e.g. May EMI paid" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+    +'</div></div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App._loanSaveTx()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+LOAN_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Transaction</button></div>';
+  return html+'<div style="height:80px"></div>';
+}
+
+function renderLoanInsights() {
+  var loans  = _loans();
+  var active = loans.filter(function(l){ return l.status==='active'; });
+  var totalOutstanding = loans.reduce(function(s,l){ return s+l.outstanding; },0);
+  var totalPaid        = loans.reduce(function(s,l){ return s+l.paid; },0);
+  var monthlyEMI       = active.filter(function(l){ return l.emi_type==='monthly'; }).reduce(function(s,l){ return s+l.emi; },0);
+  var upcomingDues     = active.filter(function(l){ var d=_loanDaysLeft(l.next_due); return d!==null&&d>=0&&d<=30; }).reduce(function(s,l){ return s+l.emi; },0);
+  var overdue          = active.filter(function(l){ var d=_loanDaysLeft(l.next_due); return d!==null&&d<0; }).length;
+  var totalInterest    = loans.reduce(function(s,l){ return s+(l.rate>0?Math.round((l.amount||0)*(l.rate/100)*((l.tenure||12)/12)):0); },0);
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'loan-list\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">Loans Insights</span>'
+    +'<div style="width:36px"></div></div>';
+
+  var stats = [
+    {label:'Total Loans',           value:loans.length,              color:'#fff'     },
+    {label:'Total Outstanding',     value:formatINR(totalOutstanding),color:'#EF4444' },
+    {label:'Total Paid',            value:formatINR(totalPaid),       color:'#22C55E' },
+    {label:'Monthly EMI',           value:formatINR(monthlyEMI),      color:'#F59E0B' },
+    {label:'Upcoming Dues (30 Days)',value:formatINR(upcomingDues),    color:'#F59E0B' },
+    {label:'Overdue Loans',         value:overdue,                    color:overdue>0?'#EF4444':'#22C55E'},
+    {label:'Total Interest Paid',   value:formatINR(totalInterest),   color:'#EF4444' },
+    {label:'Loans Completed',       value:loans.filter(function(l){ return l.status==='closed'; }).length, color:'#22C55E'},
+  ];
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px">';
+  stats.forEach(function(s) {
+    html += '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">'+s.label+'</div><div style="font-size:17px;font-weight:800;color:'+s.color+'">'+s.value+'</div></div>';
+  });
+  html += '</div>';
+
+  // Loan breakdown
+  html += '<div style="margin:0 16px 14px;background:var(--card);border-radius:var(--radius);padding:16px">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:12px">Loan Breakdown</div>';
+  var donutSlices = loans.map(function(l){ return {value:l.outstanding, color:l.color||LOAN_COLOR}; }).filter(function(s){ return s.value>0; });
+  if (donutSlices.length > 0) {
+    html += '<div style="display:flex;align-items:center;gap:16px">'
+      +'<div style="position:relative;flex-shrink:0">'+donutSVG(donutSlices, 48, 110)+'</div>'
+      +'<div style="flex:1">';
+    loans.slice(0,5).forEach(function(l) {
+      var pct = totalOutstanding>0?Math.round((l.outstanding/totalOutstanding)*100):0;
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">'
+        +'<span style="width:8px;height:8px;border-radius:50%;background:'+(l.color||LOAN_COLOR)+';flex-shrink:0;display:inline-block"></span>'
+        +'<span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(l.name)+'</span>'
+        +'<span style="font-size:11px;font-weight:700;color:var(--text-dim)">'+pct+'%</span>'
+        +'</div>';
+    });
+    html += '</div></div>';
+  }
+  html += '</div>';
+
+  html += '<div style="margin:0 16px 16px"><button onclick="App.showToast(\'Generating detailed report...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+LOAN_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">View Detailed Report</button></div>';
+  return html+'<div style="height:80px"></div>';
+}
+
+function renderLoanEmiType() {
+  var types = [
+    { id:'monthly',  icon:'📅', label:'Monthly EMI',      sub:'Pay every month',                   desc:'Based on your selection, relevant fields\nwill be shown to keep the process simple.' },
+    { id:'weekly',   icon:'📆', label:'Weekly EMI',       sub:'Pay every week',                    desc:'' },
+    { id:'one_time', icon:'💰', label:'One Time Payment', sub:'Pay once at the end',               desc:'' },
+    { id:'flexible', icon:'🔄', label:'Flexible EMI',     sub:'As per your preference',             desc:'' },
+    { id:'no_emi',   icon:'🚫', label:'No EMI',           sub:'No periodic payments',               desc:'' },
+  ];
+  var cur = (State.loanAddData && State.loanAddData.emi_type) || State.loanAddType || 'monthly';
+
+  var html = '<div class="form-header">'
+    +'<div class="icon-btn" onclick="App.navigate(\'loan-add\')">'+_invBackSVG+'</div>'
+    +'<span class="form-title">EMI Type</span>'
+    +'<div style="width:36px"></div></div>';
+
+  html += '<div style="margin:8px 16px 10px;font-size:13px;color:var(--text-dim)">Select EMI type to customize loan structure</div>';
+  html += '<div style="margin:0 16px">';
+  types.forEach(function(t) {
+    var isAct = cur===t.id;
+    html += '<div onclick="(State.loanAddData=State.loanAddData||{}),(State.loanAddData.emi_type=\''+t.id+'\'),App.render()" style="background:var(--card);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;cursor:pointer;border:1px solid '+(isAct?LOAN_COLOR:'transparent')+';">'
+      +'<div style="width:42px;height:42px;border-radius:12px;background:rgba(108,71,255,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+t.icon+'</div>'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:700">'+t.label+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+t.sub+'</div></div>'
+      +(isAct?'<div style="width:20px;height:20px;border-radius:50%;background:'+LOAN_COLOR+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff">✓</div>':'<div style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.2)"></div>')
+      +'</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin:10px 16px;padding:12px;background:rgba(108,71,255,.08);border:1px solid rgba(108,71,255,.2);border-radius:8px;font-size:12px;color:var(--text-dim)">ℹ️ Based on your selection, relevant fields will be shown to keep the process simple.</div>';
+  html += '<div style="margin:8px 16px 16px"><button onclick="App.navigate(\'loan-add\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+LOAN_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Continue</button></div>';
+  return html+'<div style="height:80px"></div>';
 }
 
 // ─── CREDIT CARD MODULE ────────────────────────────────────────────────────
@@ -13991,6 +14549,7 @@ function renderMore() {
     { icon:'📈', bg:'rgba(34,197,94,0.15)',  label:'Investment',           sub:'Track and manage investments', fn:"App.navigate('investment-dashboard')" },
     { icon:'💰', bg:'rgba(124,58,237,0.15)', label:'Budget Management',    sub:'Set budgets, track spending and achieve savings goals', fn:"App.navigate('budget-dashboard')" },
     { icon:'💳', bg:'rgba(108,71,255,0.15)', label:'Credit Cards', sub:'Manage credit cards, bills, rewards and spending', fn:"App.navigate('cc-list')" },
+    { icon:'🏦', bg:'rgba(108,71,255,0.15)', label:'Loans', sub:'Track all personal, business and custom loans', fn:"App.navigate('loan-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -14865,6 +15424,7 @@ const App = {
     if (screen.startsWith('mediclaim'))      tabHint = 'mediclaim';
     else if (screen.startsWith('lic'))       tabHint = 'lic';
     else if (screen.startsWith('cc'))           tabHint = 'more';
+    else if (screen.startsWith('loan'))         tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
       document.querySelectorAll('.tab-item').forEach(function(el) {
@@ -15061,6 +15621,13 @@ const App = {
       case 'cc-calendar':       html = renderCCCalendar();      break;
       case 'cc-offers':         html = renderCCOffers();        break;
       case 'cc-insights':       html = renderCCInsights();      break;
+      case 'loan-list':         html = renderLoanList();        break;
+      case 'loan-select-type':  html = renderLoanSelectType();  break;
+      case 'loan-add':          html = renderLoanAdd();         break;
+      case 'loan-detail':       html = renderLoanDetail();      break;
+      case 'loan-add-tx':       html = renderLoanAddTx();       break;
+      case 'loan-insights':     html = renderLoanInsights();    break;
+      case 'loan-emi-type':     html = renderLoanEmiType();     break;
       case 'lic-list':              html = renderLICList();              break;
       case 'lic-detail':            html = renderLICDetail();            break;
       case 'lic-buy':               html = renderLICBuy();               break;
@@ -17520,6 +18087,106 @@ const App = {
     if (m === 11) { State.ccCalMonth = 0; State.ccCalYear = y+1; }
     else { State.ccCalMonth = m+1; }
     App.render();
+  },
+
+  /* ── Loans Module ────────────────────────────── */
+  _loanSave() {
+    var name      = (document.getElementById('la-name') ? document.getElementById('la-name').value : '').trim();
+    var lender    = (document.getElementById('la-lender') ? document.getElementById('la-lender').value : '').trim();
+    var amount    = parseFloat(document.getElementById('la-amount') ? document.getElementById('la-amount').value : '0');
+    var outstanding = parseFloat(document.getElementById('la-outstanding') ? document.getElementById('la-outstanding').value : amount||'0');
+    var rate      = parseFloat(document.getElementById('la-rate') ? document.getElementById('la-rate').value : '0');
+    var startDate = document.getElementById('la-start') ? document.getElementById('la-start').value : '';
+    var dueDate   = document.getElementById('la-due') ? document.getElementById('la-due').value : '';
+    var tenure    = parseInt(document.getElementById('la-tenure') ? document.getElementById('la-tenure').value : '12');
+    var emi       = parseFloat(document.getElementById('la-emi') ? document.getElementById('la-emi').value : '0');
+    var ltype     = State.loanAddType || 'others';
+    if (!lender)  { this.showToast('Please enter lender name'); return; }
+    if (!amount)  { this.showToast('Please enter loan amount'); return; }
+    var ti        = LOAN_TYPES.find(function(t){ return t.id===ltype; }) || LOAN_TYPES[LOAN_TYPES.length-1];
+    var colors    = ['#3B82F6','#10B981','#F59E0B','#EC4899','#8B5CF6','#06B6D4','#EF4444','#6C47FF'];
+    var newLoan = {
+      id:          'ln_'+Date.now(),
+      name:        name || (ltype==='others' ? 'Custom Loan' : ti.label+' – '+lender),
+      type:        ltype,
+      lender:      lender,
+      amount:      amount,
+      outstanding: outstanding || amount,
+      paid:        amount - (outstanding||amount),
+      emi:         emi || 0,
+      emi_type:    (State.loanAddData||{}).emi_type || 'monthly',
+      rate:        rate,
+      start_date:  startDate,
+      due_date:    dueDate,
+      tenure:      tenure,
+      next_due:    dueDate,
+      status:      'active',
+      color:       colors[Math.floor(Math.random()*colors.length)],
+    };
+    State.loans = (State.loans||[]).concat([newLoan]);
+    State.loanAddData = {};
+    State.loanActiveId = newLoan.id;
+    this.showToast('Loan added successfully!');
+    App.navigate('loan-detail');
+  },
+  _loanSaveTx() {
+    var loanId  = State.loanActiveId;
+    var amount  = parseFloat(document.getElementById('ltx-amount') ? document.getElementById('ltx-amount').value : '0');
+    var date    = (document.getElementById('ltx-date') ? document.getElementById('ltx-date').value : '') || new Date().toISOString().slice(0,10);
+    var account = document.getElementById('ltx-account') ? document.getElementById('ltx-account').value : '';
+    var notes   = document.getElementById('ltx-notes') ? document.getElementById('ltx-notes').value : '';
+    var txType  = State.loanTxType || 'emi';
+    if (!amount) { this.showToast('Please enter an amount'); return; }
+    var newTx = { id:'lnt_'+Date.now(), loan_id:loanId, type:txType, date:date, amount:amount, mode:'upi', account:account, notes:notes, status:'paid' };
+    State.loanTransactions = [newTx].concat(State.loanTransactions||[]);
+    var loans = State.loans||[];
+    var idx   = loans.findIndex(function(l){ return l.id===loanId; });
+    if (idx!==-1 && txType!=='received') {
+      loans[idx].outstanding = Math.max(0, (loans[idx].outstanding||0)-amount);
+      loans[idx].paid        = (loans[idx].paid||0)+amount;
+    }
+    State.loanDetailTab = 'transactions';
+    this.showToast('Transaction saved!');
+    App.navigate('loan-detail');
+  },
+  _loanAddNote(loanId) {
+    var overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = '<div class="modal" style="max-width:340px">'
+      +'<div style="font-size:16px;font-weight:700;margin-bottom:14px">Add Note</div>'
+      +'<select id="ln-cat" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;margin-bottom:10px"><option value="general">General</option><option value="important">Important</option><option value="payment">Payment</option><option value="settlement">Settlement</option><option value="follow_up">Follow-up</option></select>'
+      +'<textarea id="ln-text" rows="4" placeholder="Write your note..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;resize:none;box-sizing:border-box;margin-bottom:12px"></textarea>'
+      +'<div style="display:flex;gap:10px">'
+        +'<button onclick="this.closest(\'.overlay\').remove()" style="flex:1;padding:12px;border-radius:8px;background:rgba(255,255,255,.08);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>'
+        +'<button onclick="App._loanSaveNote(\''+loanId+'\',this.closest(\'.overlay\'))" style="flex:1;padding:12px;border-radius:8px;background:'+LOAN_COLOR+';color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Save</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+  _loanSaveNote(loanId, overlay) {
+    var cat  = document.getElementById('ln-cat') ? document.getElementById('ln-cat').value : 'general';
+    var text = (document.getElementById('ln-text') ? document.getElementById('ln-text').value : '').trim();
+    if (!text) { this.showToast('Please enter a note'); return; }
+    var now  = new Date();
+    var pad  = function(n){ return String(n).padStart(2,'0'); };
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dateStr = pad(now.getDate())+' '+months[now.getMonth()]+' '+now.getFullYear();
+    var timeStr = (now.getHours()%12||12)+':'+pad(now.getMinutes())+' '+(now.getHours()<12?'AM':'PM');
+    State.loanNotes = (State.loanNotes||[]).concat([{ id:'lnn_'+Date.now(), loan_id:loanId, category:cat, date:dateStr, time:timeStr, text:text }]);
+    if (overlay) overlay.remove();
+    App.render();
+    this.showToast('Note saved!');
+  },
+  _loanDeleteNote(noteId) {
+    State.loanNotes = (State.loanNotes||[]).filter(function(n){ return n.id!==noteId; });
+    App.render();
+  },
+  _loanUploadDoc(loanId) {
+    var docTypes = ['Loan Agreement','Payment Receipt','Sanction Letter','NOC','Settlement Letter'];
+    var name = docTypes[Math.floor(Math.random()*docTypes.length)];
+    var newDoc = { id:'lnd_'+Date.now(), loan_id:loanId, name:name, type:'PDF', size:'1.'+Math.floor(1+Math.random()*8)+' MB', date:new Date().toISOString().slice(0,10) };
+    State.loanDocuments = (State.loanDocuments||[]).concat([newDoc]);
+    App.render();
+    this.showToast('Document uploaded!');
   },
 
   /* ── LIC Module ─────────────────────────────── */
