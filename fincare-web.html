@@ -19716,7 +19716,7 @@ const App = {
       State.mediclaimPolicies[0].expiry_date = exp.getFullYear()+'-'+pad(exp.getMonth()+1)+'-'+pad(exp.getDate());
       State.mediclaimPolicies[0].premium     = State.mediclaimPolicies[0].renewal_premium;
     }
-    setTimeout(function(){ App.navigate('mediclaim-list'); }, 800);
+    App.navigate('mediclaim-list');
   },
   _mediclaimViewReport() {
     this.showToast('Generating report...');
