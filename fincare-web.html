@@ -1876,6 +1876,7 @@ const State = {
     { id:'prf3', name:'Business Account', type:'business',  color:'#10B981', icon:'💼', email:'biz@example.com',          note:'Business & professional' },
     { id:'prf4', name:'Parents Account',  type:'family',    color:'#F59E0B', icon:'👨‍👩‍👧', email:'parents@example.com',       note:'Family management' },
   ],
+  profileAddData: {},
   // Excel Import & Auto Sync
   excelImportHistory: [
     { id:'ei1', filename:'transactions_march_2024.csv', date:'2024-03-31', records:45, imported:43, skipped:2,  errors:0,  status:'success' },
@@ -7796,7 +7797,7 @@ function renderProfileList() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,#7C3AED);padding:52px 20px 24px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'more\')">' + _invBackSVG + '</div>'
     + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Account</div><div style="font-size:20px;font-weight:800;color:#fff">My Profiles</div></div>'
     + '</div>'
     + '</div>'
@@ -7832,14 +7833,14 @@ function renderProfileList() {
 }
 
 function renderProfileCreate() {
-  var d = State.ppAddData || {};
+  var d = State.profileAddData || {};
   var selType  = d._profType  || 'personal';
   var selColor = d._profColor || '#7C3AED';
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,#7C3AED);padding:52px 20px 24px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'profile-list\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:#fff">Create Profile</div>'
     + '</div>'
     + '<button onclick="App._profileCreate()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Create</button>'
@@ -7853,11 +7854,11 @@ function renderProfileCreate() {
     + '<input id="prc-name" type="text" placeholder="e.g. My Business Account" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
     + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Profile Type</div>'
     + '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">'
-    + PROFILE_TYPES.map(function(t){ var a=selType===t.id; return '<div onclick="if(!State.ppAddData)State.ppAddData={};State.ppAddData._profType=\''+t.id+'\';State.ppAddData._profColor=\''+t.color+'\';App.render()" style="text-align:center;padding:10px 4px;border-radius:12px;cursor:pointer;border:2px solid '+(a?t.color:'transparent')+';background:'+(a?t.color+'22':'var(--card)')+'"><div style="font-size:20px;margin-bottom:4px">'+t.icon+'</div><div style="font-size:10px;color:var(--text-dim)">'+t.label+'</div></div>'; }).join('')
+    + PROFILE_TYPES.map(function(t){ var a=selType===t.id; return '<div onclick="if(!State.profileAddData)State.profileAddData={};State.profileAddData._profType=\''+t.id+'\';State.profileAddData._profColor=\''+t.color+'\';App.render()" style="text-align:center;padding:10px 4px;border-radius:12px;cursor:pointer;border:2px solid '+(a?t.color:'transparent')+';background:'+(a?t.color+'22':'var(--card)')+'"><div style="font-size:20px;margin-bottom:4px">'+t.icon+'</div><div style="font-size:10px;color:var(--text-dim)">'+t.label+'</div></div>'; }).join('')
     + '</div></div>'
     + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Profile Color</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    + PROFILE_COLORS.map(function(c){ var a=selColor===c; return '<div onclick="if(!State.ppAddData)State.ppAddData={};State.ppAddData._profColor=\''+c+'\';App.render()" style="width:32px;height:32px;border-radius:50%;background:'+c+';cursor:pointer;border:3px solid '+(a?'#fff':'transparent')+'"></div>'; }).join('')
+    + PROFILE_COLORS.map(function(c){ var a=selColor===c; return '<div onclick="if(!State.profileAddData)State.profileAddData={};State.profileAddData._profColor=\''+c+'\';App.render()" style="width:32px;height:32px;border-radius:50%;background:'+c+';cursor:pointer;border:3px solid '+(a?'#fff':'transparent')+'"></div>'; }).join('')
     + '</div></div>'
     + '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">Notes (Optional)</div>'
     + '<input id="prc-note" type="text" placeholder="e.g. Business & professional finances" style="width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px"></div>'
@@ -7910,7 +7911,7 @@ function renderPPList() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 24px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'more\')">' + _invBackSVG + '</div>'
     + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Financial Tools</div><div style="font-size:20px;font-weight:800;color:#fff">Planned Payments</div></div>'
     + '<div class="icon-btn" onclick="App.navigate(\'pp-insights\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>'
     + '<div class="icon-btn" onclick="App.navigate(\'pp-calendar\')" style="background:rgba(255,255,255,.12);margin-left:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></div>'
@@ -7982,7 +7983,7 @@ function renderPPAdd() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 16px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-list\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:18px;font-weight:800;color:#fff">Add Planned Payment</div>'
     + '</div>'
     + '<button onclick="App._ppSave()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
@@ -8080,7 +8081,7 @@ function renderPPSelectAccount() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 16px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-add\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:18px;font-weight:800;color:#fff">Select Account</div>'
     + '</div>'
     + '<div class="icon-btn" onclick="App.showToast(\'Search coming soon\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div>'
@@ -8125,12 +8126,12 @@ function renderPPDetail() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 24px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-list\')">' + _invBackSVG + '</div>'
     + '<div style="flex:1"><div style="font-size:16px;font-weight:800;color:#fff">'+escapeHtml(p.name||'Payment')+'</div></div>'
     + '<div class="icon-btn" style="background:rgba(255,255,255,.12)" onclick="App.navigate(\'pp-edit\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
     + '<div class="icon-btn" style="background:rgba(255,255,255,.12);margin-left:8px" onclick="App.showToast(\'More options\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>'
     + '</div>'
-    + '<span style="font-size:12px;font-weight:700;color:'+dc+';background:rgba(0,0,0,.25);padding:4px 12px;border-radius:100px">'+_rentalStatusLabel(p.status||'upcoming')+'</span>'
+    + '<span style="font-size:12px;font-weight:700;color:'+dc+';background:rgba(0,0,0,.25);padding:4px 12px;border-radius:100px">'+_ppStatusLabel(p.status||'upcoming')+'</span>'
     + '</div>'
     + '<div style="padding:16px">'
     + '<div style="background:var(--card);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">'
@@ -8159,7 +8160,7 @@ function renderPPEdit() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-detail\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:18px;font-weight:800;color:#fff">Edit Planned Payment</div>'
     + '</div>'
     + '<button onclick="App._ppSaveEdit()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
@@ -8201,7 +8202,7 @@ function renderPPUpcoming() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 0">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-list\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:#fff">Upcoming Payments</div>'
     + '</div>'
     + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
@@ -8276,7 +8277,7 @@ function renderPPCalendar() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-list\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:#fff">Calendar</div>'
     + '</div>'
     + '<div class="icon-btn" onclick="App.showToast(\'Add payment\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></div>'
@@ -8338,7 +8339,7 @@ function renderPPInsights() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+PP_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'pp-list\')">' + _invBackSVG + '</div>'
     + '<div style="flex:1"><div style="font-size:20px;font-weight:800;color:#fff">Insights & Reports</div></div>'
     + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
     + '</div>'
@@ -8396,7 +8397,7 @@ function renderRentalList() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 28px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'more\')">' + _invBackSVG + '</div>'
     + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Financial Tools</div><div style="font-size:20px;font-weight:800;color:#fff">Rentals</div></div>'
     + '<div class="icon-btn" onclick="App.navigate(\'rental-insights\')" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>'
     + '</div>'
@@ -8448,7 +8449,7 @@ function renderRentalAddType() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 24px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-list\')">' + _invBackSVG + '</div>'
     + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">New Property</div><div style="font-size:20px;font-weight:800;color:#fff">Add Rental Property</div></div>'
     + '</div></div>';
   RENTAL_TYPES.forEach(function(t) {
@@ -8475,7 +8476,7 @@ function renderRentalAddDetails() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-add-type\')">' + _invBackSVG + '</div>'
     + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Step 1 of 3</div><div style="font-size:18px;font-weight:800;color:#fff">Property Details</div></div>'
     + '</div>'
     + '<button onclick="App._rentalNextStep(\'tenant\')" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
@@ -8516,7 +8517,7 @@ function renderRentalAddTenant() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-add-details\')">' + _invBackSVG + '</div>'
     + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Step 2 of 3</div><div style="font-size:18px;font-weight:800;color:#fff">Tenant Details</div></div>'
     + '</div>'
     + '<button onclick="App._rentalNextStep(\'settings\')" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
@@ -8559,7 +8560,7 @@ function renderRentalAddSettings() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-add-tenant\')">' + _invBackSVG + '</div>'
     + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">Step 3 of 3</div><div style="font-size:18px;font-weight:800;color:#fff">Additional Settings</div></div>'
     + '</div>'
     + '<button onclick="App._rentalSaveProperty()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
@@ -8604,7 +8605,7 @@ function renderRentalDetail() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 0">'
     + '<div style="display:flex;align-items:center;gap:12px;padding-bottom:16px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-list\')">' + _invBackSVG + '</div>'
     + '<div style="flex:1"><div style="font-size:16px;font-weight:800;color:#fff">'+escapeHtml(p.name||'Property')+'</div><div style="font-size:12px;color:rgba(255,255,255,.6)">'+_rentalTypeIcon(p.type)+' '+escapeHtml(p.sub_type||p.type)+'</div></div>'
     + '<span style="font-size:11px;font-weight:700;color:'+_rentalStatusColor(p.status)+';background:rgba(0,0,0,.3);padding:4px 10px;border-radius:100px;border:1px solid '+_rentalStatusColor(p.status)+'">'+_rentalStatusLabel(p.status)+'</span>'
     + '</div>'
@@ -8728,7 +8729,7 @@ function renderRentalRecordRent() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-detail\')">' + _invBackSVG + '</div>'
     + '<div><div style="font-size:13px;color:rgba(255,255,255,.65)">'+escapeHtml(p.name||'Property')+'</div><div style="font-size:18px;font-weight:800;color:#fff">Record Rent</div></div>'
     + '</div>'
     + '<button onclick="App._rentalRecordRent()" style="background:none;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:8px">Save</button>'
@@ -8759,7 +8760,7 @@ function renderRentalRentHistory() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 0">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-detail\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:#fff">Rent History</div>'
     + '</div>'
     + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
@@ -8800,7 +8801,7 @@ function renderRentalExpenses() {
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 0">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
     + '<div style="display:flex;align-items:center;gap:12px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-detail\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:#fff">Expenses</div>'
     + '</div>'
     + '<div class="icon-btn" style="background:rgba(255,255,255,.12)"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h6v-2H3v2zm0-5h12v-2H3v2zm0-7v2h18V6H3z"/></svg></div>'
@@ -8847,7 +8848,7 @@ function renderRentalInsights() {
   var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:80px">'
     + '<div style="background:linear-gradient(135deg,#1E1B4B,'+RENTAL_COLOR+');padding:52px 20px 20px">'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
-    + _invBackSVG
+    + '<div class="icon-btn" onclick="App.navigate(\'rental-list\')">' + _invBackSVG + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:#fff">Rental Insights</div>'
     + '</div>'
     + '<div style="display:flex;background:rgba(0,0,0,.2);border-radius:12px;padding:3px">'
@@ -20069,7 +20070,7 @@ const App = {
     App.navigate('profile-list');
   },
   _profileCreate() {
-    var d = State.ppAddData || {};
+    var d = State.profileAddData || {};
     var name = (document.getElementById('prc-name') && document.getElementById('prc-name').value || '').trim();
     var note = document.getElementById('prc-note') && document.getElementById('prc-note').value || '';
     if (!name) { this.showToast('Please enter a profile name'); return; }
@@ -20084,7 +20085,7 @@ const App = {
       note:  note
     };
     State.profiles = (State.profiles||[]).concat([newProf]);
-    State.ppAddData = {};
+    State.profileAddData = {};
     this.showToast('Profile "'+name+'" created!');
     App.navigate('profile-list');
   },
