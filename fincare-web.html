@@ -1876,6 +1876,20 @@ const State = {
     { id:'prf3', name:'Business Account', type:'business',  color:'#10B981', icon:'💼', email:'biz@example.com',          note:'Business & professional' },
     { id:'prf4', name:'Parents Account',  type:'family',    color:'#F59E0B', icon:'👨‍👩‍👧', email:'parents@example.com',       note:'Family management' },
   ],
+  // Excel Import & Auto Sync
+  excelImportHistory: [
+    { id:'ei1', filename:'transactions_march_2024.csv', date:'2024-03-31', records:45, imported:43, skipped:2,  errors:0,  status:'success' },
+    { id:'ei2', filename:'accounts_export.csv',         date:'2024-03-15', records:12, imported:12, skipped:0,  errors:0,  status:'success' },
+    { id:'ei3', filename:'full_backup_feb.csv',         date:'2024-02-28', records:78, imported:70, skipped:5,  errors:3,  status:'partial' },
+    { id:'ei4', filename:'january_txns.csv',            date:'2024-01-31', records:30, imported:0,  skipped:0,  errors:30, status:'failed'  },
+  ],
+  excelSyncEnabled:   false,
+  excelSyncFreq:      'manual',
+  excelDupeHandling:  'skip',
+  excelPreviewData:   null,
+  excelErrors:        [],
+  excelImportType:    'transactions',
+  excelLastSync:      '2024-03-31',
   plannedPayments: [
     { id:'pp1', name:'Home Loan EMI',   type:'expense', amount:12500, date:'2024-05-25', repeat:'monthly', account:'HDFC Bank •••• 1234', category:'Home Loan (EMI)', payee:'HDFC Bank',        payment_type:'Bank Transfer', labels:['Home Loan','EMI'],   note:'Monthly home loan EMI',     status:'upcoming', color:'#3B82F6',  icon:'🏠', reminder:true,  reminder_days:3 },
     { id:'pp2', name:'LIC Premium',     type:'expense', amount:6500,  date:'2024-05-27', repeat:'yearly',  account:'LIC •••• 6543',      category:'Insurance',         payee:'LIC',              payment_type:'Bank Transfer', labels:['Insurance'],         note:'',                          status:'upcoming', color:'#7C3AED',  icon:'🛡️', reminder:true,  reminder_days:3 },
@@ -7247,6 +7261,399 @@ function renderTermInsInsights() {
     + '</div>'
     + '<div style="padding:0 16px 16px"><button onclick="App._termInsViewReport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:rgba(8,145,178,.12);color:' + TERM_COLOR + ';border:1px solid rgba(8,145,178,.3);font-size:15px;font-weight:700;cursor:pointer">View Detailed Report</button></div>'
     + '</div>';
+}
+
+// ─── EXCEL IMPORT & AUTO SYNC MODULE ──────────────────────────────────────
+var EXCEL_COLOR = '#059669';
+var EXCEL_TEMPLATES = [
+  { id:'transactions', label:'Transactions', icon:'💳', desc:'Date,Description,Amount,Type,Category,Account,Notes' },
+  { id:'accounts',     label:'Accounts',     icon:'🏦', desc:'Account Name,Type,Bank,Balance,Account Number,Currency,Notes' },
+  { id:'loans',        label:'Loans',        icon:'💰', desc:'Lender,Loan Type,Principal,Rate,EMI,Start Date,Status,Notes' },
+];
+
+function _excelActionCard(icon, title, sub, fn, color) {
+  return '<div onclick="' + fn + '" style="background:var(--card);border-radius:var(--radius);padding:16px;cursor:pointer;border:1px solid rgba(255,255,255,.06)">'
+    + '<div style="width:40px;height:40px;border-radius:12px;background:' + color + '22;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px">' + icon + '</div>'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">' + title + '</div>'
+    + '<div style="font-size:11px;color:var(--text-dim)">' + sub + '</div>'
+    + '</div>';
+}
+
+function renderExcelSync() {
+  var history = State.excelImportHistory || [];
+  var totalImported = 0;
+  history.forEach(function(h) { totalImported += (h.imported || 0); });
+  var lastSync = State.excelLastSync || null;
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#064E3B,' + EXCEL_COLOR + ');padding:52px 20px 24px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    + '<div onclick="App.navigate(\'more\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Data Management</div><div style="font-size:20px;font-weight:800;color:#fff">Import & Export</div></div>'
+    + '<div style="font-size:28px">📂</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:12px">'
+    + '<div style="flex:1;background:rgba(255,255,255,.12);border-radius:14px;padding:14px;text-align:center">'
+    + '<div style="font-size:22px;font-weight:800;color:#fff">' + history.length + '</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Total Imports</div>'
+    + '</div>'
+    + '<div style="flex:1;background:rgba(255,255,255,.12);border-radius:14px;padding:14px;text-align:center">'
+    + '<div style="font-size:22px;font-weight:800;color:#fff">' + totalImported + '</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Records Added</div>'
+    + '</div>'
+    + '<div style="flex:1;background:rgba(255,255,255,.12);border-radius:14px;padding:14px;text-align:center">'
+    + '<div style="font-size:20px;font-weight:800;color:#fff">' + (lastSync ? lastSync.slice(5) : '—') + '</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Last Import</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Quick Actions</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">'
+    + _excelActionCard('📥', 'Import from CSV', 'Upload and preview your data', "App.navigate('excel-upload')", '#059669')
+    + _excelActionCard('📤', 'Download Template', 'Get sample CSV templates', "App.navigate('excel-download')", '#0891B2')
+    + _excelActionCard('📋', 'Import History', 'View past import records', "App.navigate('excel-history')", '#7C3AED')
+    + _excelActionCard('⚙️', 'Sync Settings', 'Configure auto-sync options', "App.navigate('excel-settings')", '#F59E0B')
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Recent Imports</div>'
+    + '<span onclick="App.navigate(\'excel-history\')" style="font-size:13px;color:' + EXCEL_COLOR + ';font-weight:700;cursor:pointer">View All</span>'
+    + '</div>';
+  var recent = history.slice(0, 3);
+  if (!recent.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">📂</div><div style="color:var(--text-dim);font-size:14px">No imports yet. Upload a CSV to get started.</div></div>';
+  } else {
+    recent.forEach(function(h) {
+      var sc = h.status === 'success' ? '#22C55E' : h.status === 'partial' ? '#F59E0B' : '#EF4444';
+      var sb = h.status === 'success' ? 'Success' : h.status === 'partial' ? 'Partial' : 'Failed';
+      html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'
+        + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(5,150,105,.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📄</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(h.filename) + '</div>'
+        + '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + h.date + ' · ' + h.records + ' rows</div>'
+        + '</div>'
+        + '<div style="text-align:right;flex-shrink:0">'
+        + '<div style="font-size:11px;font-weight:700;color:' + sc + ';background:' + sc + '22;padding:3px 8px;border-radius:100px">' + sb + '</div>'
+        + '<div style="font-size:11px;color:var(--text-dim);margin-top:4px">' + h.imported + ' imported</div>'
+        + '</div>'
+        + '</div>';
+    });
+  }
+  html += '<div style="padding-top:16px"><button onclick="App.navigate(\'excel-upload\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + EXCEL_COLOR + ',#047857);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Import New File</button></div>'
+    + '</div></div>';
+  return html;
+}
+
+function renderExcelDownload() {
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#0C4A6E,#0891B2);padding:52px 20px 24px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div onclick="App.navigate(\'excel-sync\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Import & Export</div><div style="font-size:20px;font-weight:800;color:#fff">Download Template</div></div>'
+    + '<div style="font-size:28px">📥</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">'
+    + '<div style="background:rgba(8,145,178,.1);border:1px solid rgba(8,145,178,.3);border-radius:var(--radius);padding:14px 16px;margin-bottom:20px;display:flex;gap:12px">'
+    + '<div style="font-size:20px">💡</div>'
+    + '<div style="font-size:13px;color:var(--text-dim);line-height:1.5">Download a CSV template, fill it with your data, then import it back into FinCare. Keep the header row exactly as-is.</div>'
+    + '</div>';
+  EXCEL_TEMPLATES.forEach(function(t) {
+    var csvContent = _excelGetTemplateCsv(t.id);
+    var dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)">'
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:rgba(5,150,105,.15);display:flex;align-items:center;justify-content:center;font-size:22px">' + t.icon + '</div>'
+      + '<div style="flex:1">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">' + t.label + ' Template</div>'
+      + '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + t.desc + '</div>'
+      + '</div>'
+      + '</div>'
+      + '<div style="background:rgba(0,0,0,.25);border-radius:8px;padding:10px;margin-bottom:12px;font-family:monospace;font-size:10px;color:var(--text-dim);overflow-x:auto;white-space:pre">' + escapeHtml(_excelGetTemplateCsvPreview(t.id)) + '</div>'
+      + '<a href="' + dataUri + '" download="fincare_' + t.id + '_template.csv" style="display:block;width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;box-sizing:border-box">⬇ Download ' + t.label + ' Template</a>'
+      + '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function _excelGetTemplateCsv(type) {
+  if (type === 'transactions') {
+    return 'Date,Description,Amount,Type,Category,Account,Notes\n'
+      + '2024-03-15,Grocery Shopping,850,debit,Food & Dining,HDFC XXXX1234,Weekend groceries\n'
+      + '2024-03-16,Salary Credit,85000,credit,Salary,HDFC XXXX1234,March salary\n'
+      + '2024-03-18,Netflix Subscription,649,debit,Entertainment,HDFC XXXX1234,Monthly subscription\n';
+  }
+  if (type === 'accounts') {
+    return 'Account Name,Type,Bank,Balance,Account Number,Currency,Notes\n'
+      + 'Primary Savings,savings,HDFC Bank,125000,XXXX1234,INR,Main account\n'
+      + 'Salary Account,salary,SBI Bank,45000,XXXX5678,INR,Office salary account\n';
+  }
+  if (type === 'loans') {
+    return 'Lender,Loan Type,Principal,Rate,EMI,Start Date,Status,Notes\n'
+      + 'HDFC Bank,Home Loan,3000000,8.5,28500,2022-06-01,active,Home loan for Flat A-702\n'
+      + 'Friend,Personal,50000,0,5000,2024-01-01,active,Personal loan to Rahul\n';
+  }
+  return '';
+}
+
+function _excelGetTemplateCsvPreview(type) {
+  if (type === 'transactions') {
+    return 'Date,Description,Amount,Type,Category,Account,Notes\n2024-03-15,Grocery Shopping,850,debit,Food & Dining,...';
+  }
+  if (type === 'accounts') {
+    return 'Account Name,Type,Bank,Balance,Account Number,Currency,Notes\nPrimary Savings,savings,HDFC Bank,...';
+  }
+  if (type === 'loans') {
+    return 'Lender,Loan Type,Principal,Rate,EMI,Start Date,Status,Notes\nHDFC Bank,Home Loan,3000000,...';
+  }
+  return '';
+}
+
+function renderExcelUpload() {
+  var importType = State.excelImportType || 'transactions';
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#064E3B,' + EXCEL_COLOR + ');padding:52px 20px 24px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'
+    + '<div onclick="App.navigate(\'excel-sync\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Import & Export</div><div style="font-size:20px;font-weight:800;color:#fff">Import from File</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">'
+    + '<div style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.3);border-radius:var(--radius);padding:14px;margin-bottom:20px;display:flex;gap:10px">'
+    + '<div style="font-size:18px">ℹ️</div>'
+    + '<div style="font-size:12px;color:var(--text-dim);line-height:1.5">Only CSV files are supported. Download a template first if needed. Maximum 10,000 rows per file.</div>'
+    + '</div>'
+    + '<div style="background:var(--card);border:2px dashed rgba(5,150,105,.4);border-radius:var(--radius);padding:40px 20px;text-align:center;margin-bottom:20px">'
+    + '<div style="font-size:48px;margin-bottom:12px">📂</div>'
+    + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Choose a CSV file</div>'
+    + '<div style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Supported: .csv · Max 10 MB</div>'
+    + '<label style="display:inline-block;padding:12px 28px;border-radius:100px;background:linear-gradient(135deg,' + EXCEL_COLOR + ',#047857);color:#fff;font-size:14px;font-weight:700;cursor:pointer">'
+    + 'Browse File<input type="file" accept=".csv" style="display:none" onchange="App._excelHandleUpload(this)">'
+    + '</label>'
+    + '</div>'
+    + '<div style="margin-bottom:16px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Import Type</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  EXCEL_TEMPLATES.forEach(function(t) {
+    var act = importType === t.id;
+    html += '<div onclick="State.excelImportType=\'' + t.id + '\';App.render()" style="padding:8px 14px;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid ' + (act ? EXCEL_COLOR : 'rgba(255,255,255,.15)') + ';color:' + (act ? '#fff' : 'var(--text-dim)') + ';background:' + (act ? EXCEL_COLOR : 'transparent') + '">' + t.icon + ' ' + t.label + '</div>';
+  });
+  html += '</div></div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Required Columns</div>';
+  EXCEL_TEMPLATES.forEach(function(t) {
+    if (t.id === importType) {
+      html += '<div style="font-size:12px;color:var(--text-dim);line-height:1.8">' + t.desc.split(',').map(function(c) { return '<span style="display:inline-block;background:rgba(5,150,105,.15);color:' + EXCEL_COLOR + ';padding:2px 8px;border-radius:6px;margin:2px;font-weight:600">' + c.trim() + '</span>'; }).join('') + '</div>';
+    }
+  });
+  html += '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="App.navigate(\'excel-download\')">'
+    + '<div><div style="font-size:13px;font-weight:700;color:var(--text)">Need a template?</div><div style="font-size:12px;color:var(--text-dim)">Download a sample CSV to get started</div></div>'
+    + '<div style="font-size:20px">📥</div>'
+    + '</div>'
+    + '</div></div>';
+  return html;
+}
+
+function renderExcelPreview() {
+  var preview = State.excelPreviewData;
+  if (!preview) {
+    return '<div style="min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:20px">'
+      + '<div style="font-size:48px">📭</div>'
+      + '<div style="color:var(--text-dim);text-align:center">No file loaded yet.</div>'
+      + '<button onclick="App.navigate(\'excel-upload\')" style="padding:12px 24px;border-radius:100px;background:' + EXCEL_COLOR + ';color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">Upload a File</button>'
+      + '</div>';
+  }
+  var rows = preview.rows || [];
+  var validCount = 0; var dupCount = 0; var errCount = 0;
+  rows.forEach(function(r) {
+    if (r.status === 'valid')     validCount++;
+    else if (r.status === 'duplicate') dupCount++;
+    else errCount++;
+  });
+  var filter = State.excelPreviewFilter || 'all';
+  var shown = rows.filter(function(r) {
+    if (filter === 'valid')     return r.status === 'valid';
+    if (filter === 'duplicate') return r.status === 'duplicate';
+    if (filter === 'error')     return r.status === 'error';
+    return true;
+  });
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#064E3B,' + EXCEL_COLOR + ');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    + '<div onclick="App.navigate(\'excel-upload\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Import</div><div style="font-size:20px;font-weight:800;color:#fff">Preview & Import</div></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:10px">'
+    + '<div style="flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#22C55E">' + validCount + '</div><div style="font-size:11px;color:rgba(255,255,255,.7)">Valid</div></div>'
+    + '<div style="flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#F59E0B">' + dupCount + '</div><div style="font-size:11px;color:rgba(255,255,255,.7)">Duplicates</div></div>'
+    + '<div style="flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#EF4444">' + errCount + '</div><div style="font-size:11px;color:rgba(255,255,255,.7)">Errors</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">'
+    + '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">';
+  [['all','All (' + rows.length + ')'], ['valid','Valid'], ['duplicate','Dupes'], ['error','Errors']].forEach(function(f) {
+    var act = filter === f[0];
+    html += '<div onclick="State.excelPreviewFilter=\'' + f[0] + '\';App.render()" style="padding:7px 14px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;background:' + (act ? EXCEL_COLOR : 'var(--card)') + ';color:' + (act ? '#fff' : 'var(--text-dim)') + '">' + f[1] + '</div>';
+  });
+  html += '</div>';
+  if (!shown.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:24px;text-align:center;color:var(--text-dim)">No rows in this filter.</div>';
+  } else {
+    shown.slice(0, 50).forEach(function(r, i) {
+      var sc = r.status === 'valid' ? '#22C55E' : r.status === 'duplicate' ? '#F59E0B' : '#EF4444';
+      var si = r.status === 'valid' ? '✓' : r.status === 'duplicate' ? '⚠' : '✗';
+      html += '<div style="background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;border-left:3px solid ' + sc + '">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        + '<div style="font-size:12px;font-weight:700;color:var(--text-dim)">Row ' + (r.rowNum || (i + 2)) + '</div>'
+        + '<div style="font-size:11px;font-weight:700;color:' + sc + ';background:' + sc + '22;padding:2px 8px;border-radius:100px">' + si + ' ' + r.status + '</div>'
+        + '</div>'
+        + '<div style="font-size:13px;color:var(--text);font-weight:600">' + escapeHtml(r.description || (r.cols && r.cols[1]) || '') + '</div>'
+        + '<div style="font-size:12px;color:var(--text-dim);margin-top:2px">' + escapeHtml((r.cols || []).slice(0, 4).join(' · ')) + '</div>'
+        + (r.error ? '<div style="font-size:11px;color:#EF4444;margin-top:4px">⚠ ' + escapeHtml(r.error) + '</div>' : '')
+        + '</div>';
+    });
+    if (shown.length > 50) {
+      html += '<div style="text-align:center;color:var(--text-dim);font-size:13px;padding:12px">...and ' + (shown.length - 50) + ' more rows</div>';
+    }
+  }
+  if (validCount > 0) {
+    html += '<div style="padding:8px 0 8px"><button onclick="App._excelImport()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + EXCEL_COLOR + ',#047857);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Import ' + validCount + ' Valid Row' + (validCount === 1 ? '' : 's') + '</button></div>';
+  }
+  if (errCount > 0) {
+    html += '<div style="padding:0 0 16px"><button onclick="App.navigate(\'excel-errors\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(239,68,68,.12);color:#EF4444;border:1px solid rgba(239,68,68,.3);font-size:14px;font-weight:700;cursor:pointer">View ' + errCount + ' Error' + (errCount === 1 ? '' : 's') + '</button></div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderExcelHistory() {
+  var history = State.excelImportHistory || [];
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#064E3B,' + EXCEL_COLOR + ');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div onclick="App.navigate(\'excel-sync\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Import & Export</div><div style="font-size:20px;font-weight:800;color:#fff">Import History</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">';
+  if (!history.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:40px 20px;text-align:center">'
+      + '<div style="font-size:48px;margin-bottom:12px">📭</div>'
+      + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">No Imports Yet</div>'
+      + '<div style="font-size:13px;color:var(--text-dim)">Your import history will appear here.</div>'
+      + '</div>';
+  } else {
+    history.forEach(function(h) {
+      var sc = h.status === 'success' ? '#22C55E' : h.status === 'partial' ? '#F59E0B' : '#EF4444';
+      var sb = h.status === 'success' ? '✓ Success' : h.status === 'partial' ? '⚠ Partial' : '✗ Failed';
+      html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)">'
+        + '<div style="display:flex;align-items:flex-start;gap:12px">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:rgba(5,150,105,.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📄</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--text);word-break:break-all">' + escapeHtml(h.filename) + '</div>'
+        + '<div style="font-size:11px;color:var(--text-dim);margin-top:4px">' + h.date + '</div>'
+        + '</div>'
+        + '<div style="font-size:11px;font-weight:700;color:' + sc + ';background:' + sc + '22;padding:3px 8px;border-radius:100px;flex-shrink:0">' + sb + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">'
+        + '<div style="flex:1;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--text)">' + h.records + '</div><div style="font-size:11px;color:var(--text-dim)">Total</div></div>'
+        + '<div style="flex:1;text-align:center"><div style="font-size:16px;font-weight:700;color:#22C55E">' + h.imported + '</div><div style="font-size:11px;color:var(--text-dim)">Imported</div></div>'
+        + '<div style="flex:1;text-align:center"><div style="font-size:16px;font-weight:700;color:#F59E0B">' + h.skipped + '</div><div style="font-size:11px;color:var(--text-dim)">Skipped</div></div>'
+        + '<div style="flex:1;text-align:center"><div style="font-size:16px;font-weight:700;color:#EF4444">' + h.errors + '</div><div style="font-size:11px;color:var(--text-dim)">Errors</div></div>'
+        + '</div>'
+        + '</div>';
+    });
+  }
+  html += '<button onclick="App.navigate(\'excel-upload\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + EXCEL_COLOR + ',#047857);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">+ Import New File</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderExcelSettings() {
+  var enabled = State.excelSyncEnabled || false;
+  var freq    = State.excelSyncFreq    || 'manual';
+  var dupe    = State.excelDupeHandling|| 'skip';
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#064E3B,' + EXCEL_COLOR + ');padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div onclick="App.navigate(\'excel-sync\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Import & Export</div><div style="font-size:20px;font-weight:800;color:#fff">Sync Settings</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between">'
+    + '<div><div style="font-size:14px;font-weight:700;color:var(--text)">Auto Sync</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px">Automatically sync data at scheduled intervals</div></div>'
+    + '<div onclick="State.excelSyncEnabled=!State.excelSyncEnabled;App.render()" style="width:50px;height:28px;border-radius:14px;background:' + (enabled ? EXCEL_COLOR : 'rgba(255,255,255,.15)') + ';position:relative;cursor:pointer">'
+    + '<div style="position:absolute;top:4px;' + (enabled ? 'right:4px' : 'left:4px') + ';width:20px;height:20px;border-radius:50%;background:#fff"></div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Sync Frequency</div>'
+    + [['manual','Manual Only'],['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']].map(function(f) {
+        var act = freq === f[0];
+        return '<div onclick="State.excelSyncFreq=\'' + f[0] + '\';App.render()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">'
+          + '<span style="font-size:13px;color:' + (act ? '#fff' : 'var(--text-dim)') + ';font-weight:' + (act ? '700' : '400') + '">' + f[1] + '</span>'
+          + '<div style="width:20px;height:20px;border-radius:50%;border:2px solid ' + (act ? EXCEL_COLOR : 'rgba(255,255,255,.3)') + ';background:' + (act ? EXCEL_COLOR : 'transparent') + ';display:flex;align-items:center;justify-content:center">'
+          + (act ? '<div style="width:8px;height:8px;border-radius:50%;background:#fff"></div>' : '')
+          + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:20px">'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Duplicate Handling</div>'
+    + [['skip','Skip duplicates'],['overwrite','Overwrite existing'],['ask','Ask each time']].map(function(d) {
+        var act = dupe === d[0];
+        return '<div onclick="State.excelDupeHandling=\'' + d[0] + '\';App.render()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer">'
+          + '<span style="font-size:13px;color:' + (act ? '#fff' : 'var(--text-dim)') + ';font-weight:' + (act ? '700' : '400') + '">' + d[1] + '</span>'
+          + '<div style="width:20px;height:20px;border-radius:50%;border:2px solid ' + (act ? EXCEL_COLOR : 'rgba(255,255,255,.3)') + ';background:' + (act ? EXCEL_COLOR : 'transparent') + ';display:flex;align-items:center;justify-content:center">'
+          + (act ? '<div style="width:8px;height:8px;border-radius:50%;background:#fff"></div>' : '')
+          + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div>'
+    + '<button onclick="App._excelSaveSettings()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + EXCEL_COLOR + ',#047857);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Settings</button>'
+    + '</div></div>';
+  return html;
+}
+
+function renderExcelErrors() {
+  var errors = State.excelErrors || [];
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:100px">'
+    + '<div style="background:linear-gradient(135deg,#7F1D1D,#EF4444);padding:52px 20px 20px">'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div onclick="App.navigate(\'excel-preview\')" style="cursor:pointer;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center">' + _invBackSVG + '</div>'
+    + '<div style="flex:1"><div style="font-size:13px;color:rgba(255,255,255,.65)">Import</div><div style="font-size:20px;font-weight:800;color:#fff">Error Report</div></div>'
+    + '<div style="font-size:28px">⚠️</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">';
+  if (!errors.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:40px 20px;text-align:center">'
+      + '<div style="font-size:48px;margin-bottom:12px">✅</div>'
+      + '<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">No Errors Found</div>'
+      + '<div style="font-size:13px;color:var(--text-dim)">All rows are valid and ready to import.</div>'
+      + '</div>';
+  } else {
+    html += '<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px">'
+      + '<div style="font-size:13px;color:var(--text-dim)">' + errors.length + ' error' + (errors.length === 1 ? '' : 's') + ' found. Fix these in your CSV and re-upload.</div>'
+      + '</div>';
+    errors.forEach(function(e) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px;border-left:3px solid #EF4444">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        + '<div style="font-size:12px;font-weight:700;color:var(--text-dim)">Row ' + e.row + '</div>'
+        + '<div style="font-size:11px;color:#EF4444;font-weight:700">Error</div>'
+        + '</div>'
+        + '<div style="font-size:13px;color:var(--text)">' + escapeHtml(e.message) + '</div>'
+        + (e.col ? '<div style="font-size:11px;color:var(--text-dim);margin-top:4px">Column: <strong>' + escapeHtml(e.col) + '</strong></div>' : '')
+        + '</div>';
+    });
+  }
+  html += '<button onclick="App.navigate(\'excel-upload\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(5,150,105,.15);color:' + EXCEL_COLOR + ';border:1px solid rgba(5,150,105,.3);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">Re-upload Fixed File</button>'
+    + '</div></div>';
+  return html;
 }
 
 // ─── GLOBAL SEARCH MODULE ──────────────────────────────────────────────────
@@ -15867,7 +16274,8 @@ function renderMore() {
     { icon:'💳', bg:'rgba(108,71,255,0.15)', label:'Credit Cards', sub:'Manage credit cards, bills, rewards and spending', fn:"App.navigate('cc-list')" },
     { icon:'🏦', bg:'rgba(108,71,255,0.15)', label:'Loans', sub:'Track all personal, business and custom loans', fn:"App.navigate('loan-list')" },
     { icon:'🏘️', bg:'rgba(124,58,237,0.15)', label:'Rentals', sub:'Track rental properties, rent collections and expenses', fn:"App.navigate('rental-list')" },
-    { icon:'📅', bg:'rgba(124,58,237,0.15)', label:'Planned Payments', sub:'Track and automate future payments and reminders', fn:"App.navigate('pp-list')" },
+    { icon:'📅', bg:'rgba(124,58,237,0.15)', label:'Planned Payments',    sub:'Track and automate future payments and reminders',   fn:"App.navigate('pp-list')" },
+    { icon:'📊', bg:'rgba(5,150,105,0.15)',  label:'Data Import & Export', sub:'Import CSV data and manage sync settings',            fn:"App.navigate('excel-sync')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -16745,6 +17153,7 @@ const App = {
     else if (screen.startsWith('loan'))         tabHint = 'more';
     else if (screen.startsWith('rental')) tabHint = 'more';
     else if (screen.startsWith('pp'))             tabHint = 'more';
+    else if (screen.startsWith('excel'))           tabHint = 'more';
     else if (screen === 'global-search')          tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
@@ -16950,6 +17359,13 @@ const App = {
       case 'loan-add-tx':       html = renderLoanAddTx();       break;
       case 'loan-insights':     html = renderLoanInsights();    break;
       case 'loan-emi-type':     html = renderLoanEmiType();     break;
+      case 'excel-sync':          html = renderExcelSync();           break;
+      case 'excel-download':      html = renderExcelDownload();       break;
+      case 'excel-upload':        html = renderExcelUpload();         break;
+      case 'excel-preview':       html = renderExcelPreview();        break;
+      case 'excel-history':       html = renderExcelHistory();        break;
+      case 'excel-settings':      html = renderExcelSettings();       break;
+      case 'excel-errors':        html = renderExcelErrors();         break;
       case 'global-search':       html = renderGlobalSearch();        break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
@@ -19741,6 +20157,93 @@ const App = {
     if (m === 11) { State.ppCalMonth = 0; State.ppCalYear = y+1; }
     else { State.ppCalMonth = m+1; }
     App.render();
+  },
+
+  /* ── Excel Import & Sync ───────────────────── */
+  _excelHandleUpload(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    var self = this;
+    var importType = State.excelImportType || 'transactions';
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var text = e.target.result;
+      var result = App._excelParseCsv(text, importType, file.name);
+      State.excelPreviewData = result;
+      State.excelErrors = result.rows.filter(function(r) { return r.status === 'error'; })
+        .map(function(r) { return { row: r.rowNum, message: r.error || 'Unknown error', col: r.errorCol || '' }; });
+      State.excelPreviewFilter = 'all';
+      App.navigate('excel-preview');
+    };
+    reader.readAsText(file);
+  },
+  _excelParseCsv(text, type, filename) {
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    var rows = [];
+    for (var i = 1; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      var cols = line.split(',').map(function(c) { return c.trim().replace(/^"|"$/g, ''); });
+      var row = { rowNum: i + 1, cols: cols, status: 'valid', error: null, errorCol: null, description: '' };
+      if (type === 'transactions') {
+        if (!cols[0] || !cols[1] || !cols[2]) {
+          row.status = 'error';
+          row.error = 'Missing required fields: Date, Description, Amount';
+          row.errorCol = !cols[0] ? 'Date' : !cols[1] ? 'Description' : 'Amount';
+        } else if (isNaN(parseFloat(cols[2]))) {
+          row.status = 'error'; row.error = 'Amount must be a number'; row.errorCol = 'Amount';
+        } else if (!/^\d{4}-\d{2}-\d{2}/.test(cols[0])) {
+          row.status = 'error'; row.error = 'Date must be in YYYY-MM-DD format'; row.errorCol = 'Date';
+        } else {
+          row.description = cols[1];
+          var existingTxns = State.data && State.data.transactions ? State.data.transactions : [];
+          var dupe = existingTxns.some(function(t) {
+            return t.date && t.date.substring(0, 10) === cols[0] && Math.abs(t.amount || 0) === Math.abs(parseFloat(cols[2]));
+          });
+          if (dupe) row.status = 'duplicate';
+        }
+      } else if (type === 'accounts') {
+        if (!cols[0] || !cols[1]) {
+          row.status = 'error'; row.error = 'Missing required fields: Account Name, Type'; row.errorCol = 'Account Name';
+        } else { row.description = cols[0]; }
+      } else if (type === 'loans') {
+        if (!cols[0] || !cols[2]) {
+          row.status = 'error'; row.error = 'Missing required fields: Lender, Principal'; row.errorCol = 'Lender';
+        } else if (isNaN(parseFloat(cols[2]))) {
+          row.status = 'error'; row.error = 'Principal must be a number'; row.errorCol = 'Principal';
+        } else { row.description = cols[0]; }
+      }
+      rows.push(row);
+    }
+    return { filename: filename || 'import.csv', rows: rows, type: type };
+  },
+  _excelImport() {
+    var preview = State.excelPreviewData;
+    if (!preview) return;
+    var valid = preview.rows.filter(function(r) { return r.status === 'valid'; });
+    var skipped = preview.rows.filter(function(r) { return r.status === 'duplicate'; }).length;
+    var errors = preview.rows.filter(function(r) { return r.status === 'error'; }).length;
+    var now = new Date();
+    var dateStr = now.toISOString().substring(0, 10);
+    if (!State.excelImportHistory) State.excelImportHistory = [];
+    State.excelImportHistory.unshift({
+      id: 'ei' + Date.now(),
+      filename: preview.filename || 'import.csv',
+      date: dateStr,
+      records: preview.rows.length,
+      imported: valid.length,
+      skipped: skipped,
+      errors: errors,
+      status: errors === 0 ? 'success' : valid.length > 0 ? 'partial' : 'failed'
+    });
+    State.excelLastSync = dateStr;
+    State.excelPreviewData = null;
+    this.showToast(valid.length + ' record' + (valid.length === 1 ? '' : 's') + ' imported successfully!');
+    App.navigate('excel-history');
+  },
+  _excelSaveSettings() {
+    this.showToast('Sync settings saved!');
+    App.navigate('excel-sync');
   },
 
   /* ── LIC Module ─────────────────────────────── */
