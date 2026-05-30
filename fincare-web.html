@@ -4334,7 +4334,8 @@ function renderInvestmentDetail() {
     var totalSellQty = sells.reduce(function(s, t) { return s + (t.qty || t.units || 0); }, 0);
     var totalSellAmt = sells.reduce(function(s, t) { return s + (t.amount|| 0); }, 0);
     var totalRealPL  = sells.reduce(function(s, t) { return s + (t.realized_pl || 0); }, 0);
-    var realPLPct    = totalSellAmt > 0 ? (totalRealPL / (totalSellAmt - totalRealPL) * 100) : 0;
+    var _costBasis   = totalSellAmt - totalRealPL;
+    var realPLPct    = _costBasis > 0 ? (totalRealPL / _costBasis * 100) : (totalSellAmt > 0 ? 100 : 0);
 
     content = '<div style="padding:0 16px">'
       // Buy Transactions
@@ -16400,9 +16401,11 @@ function renderSipCalculator() {
   var months   = sipYears * 12;
   var r        = sipRate / 100 / 12;
   var invested = sipAmt * months;
-  var maturity = Math.round(sipAmt * (Math.pow(1+r, months) - 1) / r * (1+r));
+  var maturity = r > 0
+    ? Math.round(sipAmt * (Math.pow(1+r, months) - 1) / r * (1+r))
+    : invested;
   var gain     = maturity - invested;
-  var gainPct  = Math.round(gain / invested * 100);
+  var gainPct  = invested > 0 ? Math.round(gain / invested * 100) : 0;
   function fmtCr(v){return v>=10000000?'₹'+(v/10000000).toFixed(2)+' Cr':v>=100000?'₹'+(v/100000).toFixed(2)+' L':formatINR(v);}
   return '<div class="screen-wrap">'
     +'<div class="form-header">'+_stubBackBtn('wealth')
@@ -19965,17 +19968,26 @@ const App = {
       App.navigate('rental-add-tenant');
     } else if (step === 'settings') {
       var el2;
-      el2 = document.getElementById('rat-tenant_name');   if (el2) d.tenant_name   = el2.value;
-      el2 = document.getElementById('rat-tenant_phone');  if (el2) d.tenant_phone  = el2.value;
-      el2 = document.getElementById('rat-tenant_email');  if (el2) d.tenant_email  = el2.value;
-      el2 = document.getElementById('rat-lease_start');   if (el2) d.lease_start   = el2.value;
-      el2 = document.getElementById('rat-agreement_end'); if (el2) d.lease_end     = el2.value;
+      el2 = document.getElementById('rat-tenant_name');    if (el2) d.tenant_name    = el2.value;
+      el2 = document.getElementById('rat-tenant_phone');   if (el2) d.tenant_phone   = el2.value;
+      el2 = document.getElementById('rat-tenant_email');   if (el2) d.tenant_email   = el2.value;
+      el2 = document.getElementById('rat-lease_start');    if (el2) d.lease_start    = el2.value;
+      el2 = document.getElementById('rat-agreement_start');if (el2) d.agreement_start= el2.value;
+      el2 = document.getElementById('rat-agreement_end');  if (el2) d.lease_end      = el2.value;
+      el2 = document.getElementById('rat-due_day');        if (el2) d.due_day        = parseInt(el2.value)||1;
+      el2 = document.getElementById('rat-notice');         if (el2) d.notice_period  = el2.value;
+      el2 = document.getElementById('rat-increase');       if (el2) d.rent_increase  = el2.value;
       State.rentalAddData = d;
       App.navigate('rental-add-settings');
     }
   },
   _rentalSaveProperty() {
     var d  = State.rentalAddData || {};
+    // Read Step 3 (Settings) fields before saving
+    var el3;
+    el3 = document.getElementById('ras-payment_mode'); if (el3) d.payment_mode = el3.value;
+    el3 = document.getElementById('ras-account');      if (el3) d.account      = el3.value;
+    el3 = document.getElementById('ras-notes');        if (el3) d.notes        = el3.value;
     var nm = d.name || ('Property ' + Date.now()%1000);
     if (!nm.trim()) { this.showToast('Please enter a property name'); return; }
     var typeColors = {residential:'#7C3AED',commercial:'#F59E0B',land:'#10B981',pg:'#EC4899',custom:'#6B7280'};
@@ -19987,7 +19999,8 @@ const App = {
       rent:d.rent||0, deposit:d.deposit||0, status:'active',
       tenant_name:d.tenant_name||'', tenant_phone:d.tenant_phone||'',
       tenant_email:d.tenant_email||'', lease_start:d.lease_start||'', lease_end:d.lease_end||'',
-      due_day:1, payment_mode:'bank', account:'SBI Bank •••• 5678',
+      due_day:d.due_day||1, payment_mode:d.payment_mode||'bank', account:d.account||'SBI Bank •••• 5678',
+      agreement_start:d.agreement_start||d.lease_start||'', notice_period:d.notice_period||'30 Days', rent_increase:d.rent_increase||'No Increase',
       rent_received_total:0, next_due:'', color:typeColors[t]||'#7C3AED',
       image_emoji:typeEmojis[t]||'🏠', notes:d.notes||''
     };
@@ -20201,12 +20214,29 @@ const App = {
     reader.readAsText(file);
   },
   _excelParseCsv(text, type, filename) {
+    // Strip UTF-8 BOM (present in Excel-exported CSVs)
+    text = text.replace(/^﻿/, '');
     var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
     var rows = [];
+    // RFC 4180-compliant CSV field splitter (handles commas inside quoted fields)
+    function splitCsvLine(line) {
+      var cols = [], cur = '', inQ = false;
+      for (var ci = 0; ci < line.length; ci++) {
+        var ch = line[ci];
+        if (ch === '"') {
+          if (inQ && line[ci+1] === '"') { cur += '"'; ci++; } // escaped quote
+          else { inQ = !inQ; }
+        } else if (ch === ',' && !inQ) {
+          cols.push(cur.trim()); cur = '';
+        } else { cur += ch; }
+      }
+      cols.push(cur.trim());
+      return cols;
+    }
     for (var i = 1; i < lines.length; i++) {
       var line = lines[i].trim();
       if (!line) continue;
-      var cols = line.split(',').map(function(c) { return c.trim().replace(/^"|"$/g, ''); });
+      var cols = splitCsvLine(line);
       var row = { rowNum: i + 1, cols: cols, status: 'valid', error: null, errorCol: null, description: '' };
       if (type === 'transactions') {
         if (!cols[0] || !cols[1] || !cols[2]) {
@@ -20435,12 +20465,12 @@ const App = {
     var intEst = document.getElementById('cd-est-int');
     var matEst = document.getElementById('cd-est-mat');
     var yieldEst = document.getElementById('cd-est-yield');
-    if (!isNaN(principal) && !isNaN(rate) && !isNaN(tenureVal) && tenureVal > 0) {
+    if (!isNaN(principal) && principal > 0 && !isNaN(rate) && !isNaN(tenureVal) && tenureVal > 0) {
       var months = tenureUnit === 'Years' ? tenureVal * 12 : tenureVal;
       var itype = State.cdInterestType || 'Cumulative';
       var mat = _cdCalcMaturity(principal, rate, months, itype);
       var interest = mat - principal;
-      var effectiveYield = (interest / principal / (months/12) * 100);
+      var effectiveYield = months > 0 ? (interest / principal / (months/12) * 100) : 0;
       if (intEst) intEst.textContent = formatINR(Math.round(interest));
       if (matEst) matEst.textContent = formatINR(Math.round(mat));
       if (yieldEst) yieldEst.textContent = effectiveYield.toFixed(2)+'%';
