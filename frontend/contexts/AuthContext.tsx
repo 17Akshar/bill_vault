@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { authEvents, BACKEND_URL as API_BACKEND_URL } from '../utils/api';
 
 // Force axios to use the `fetch` adapter on web (browser + expo-router SSR).
 // Without this, axios falls back to its Node-only `http` adapter which pulls in
@@ -13,7 +14,11 @@ if (Platform.OS === 'web') {
   axios.defaults.adapter = 'fetch';
 }
 
-const BACKEND_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_BACKEND_URL;
+const BACKEND_URL =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL ||
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  API_BACKEND_URL ||
+  'http://localhost:8000';
 
 interface User {
   user_id: string;
@@ -45,17 +50,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     checkAuth();
+    // Listen for 401 responses from the api interceptor — clear state and go to login
+    const handleUnauthenticated = () => {
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+    };
+    authEvents.on('unauthenticated', handleUnauthenticated);
+    return () => { authEvents.off('unauthenticated', handleUnauthenticated); };
   }, []);
 
   const checkAuth = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('auth_token');
       const storedUser = await AsyncStorage.getItem('user');
-      
+
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
+        // Validate the stored token with the backend before trusting it
+        try {
+          await axios.get(`${BACKEND_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+            ...(Platform.OS === 'web' ? { adapter: 'fetch' as any } : {}),
+          });
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+          setIsAuthenticated(true);
+        } catch (validationError: any) {
+          // Stored token is invalid or expired — clear it and try single-user mode
+          await AsyncStorage.removeItem('auth_token');
+          await AsyncStorage.removeItem('user');
+          try {
+            await useSingleUserMode();
+          } catch {
+            // Backend unreachable — stay unauthenticated, show login screen
+          }
+        }
       } else {
         // Auto-bootstrap single-user mode when no stored credentials exist
         // so that deep-links to protected screens (eg /investments) work
