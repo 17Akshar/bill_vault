@@ -1595,6 +1595,11 @@ const State = {
     loans: null,
     income: null,
     expenses: null,
+    insights: null,
+    lendBorrow: null,
+    rentals: null,
+    otherAssets: null,
+    goals: null,
   },
   // UI
   insightsTab: 'overview',
@@ -2582,74 +2587,9 @@ const State = {
 };
 
 /* ══════════════════════════════════════════════════════
-   3. MOCK / DEMO DATA  (realistic Indian financial data)
+   3. TRANSACTION CATEGORIES
 ══════════════════════════════════════════════════════ */
-const DEMO = {
-  user: { name: 'Akshar Mehta', email: 'akshar@example.com' },
-
-  dashboard: {
-    total_balance: 362620,
-    monthly_income: 163000,
-    monthly_expenses: 42163,
-    net_worth_delta_pct: 3.8,
-    net_worth_delta_abs: 8820,
-    income_delta_pct: 42.9,
-    expense_delta_pct: -38.4,
-    savings_delta_pct: 135.0,
-  },
-
-  accounts: [
-    { account_id:'a1', name:'HDFC Savings',    account_type:'bank',        balance:185420, institution:'HDFC Bank',  account_number:'XXXX XXXX XXXX 1234', ifsc:'HDFC0001234', holder:'Akshar Mehta',  branch:'Mumbai Main Branch', sub_type:'Savings',  color:'#6C47FF', avg_inflow:120000, avg_outflow:45000, tx_count:42, include_in_net_worth:true,  visible:true, notes:'' },
-    { account_id:'a2', name:'SBI Current',     account_type:'bank',        balance:45200,  institution:'SBI',        account_number:'XXXX XXXX XXXX 5678', ifsc:'SBIN0001234', holder:'Akshar Mehta',  branch:'Andheri Branch',     sub_type:'Current',  color:'#22C55E', avg_inflow:25000,  avg_outflow:18000, tx_count:18, include_in_net_worth:true,  visible:true, notes:'' },
-    { account_id:'a3', name:'Google Pay',      account_type:'upi',         balance:0,      institution:'HDFC Bank',  account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Savings',  color:'#60A5FA', avg_inflow:8000,   avg_outflow:6500,  tx_count:28, include_in_net_worth:false, visible:true, upi_id:'akshar@okhdfc', linked_app:'Google Pay', notes:'' },
-    { account_id:'a4', name:'Cash in Hand',    account_type:'cash',        balance:8300,   institution:'',           account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Cash',     color:'#F59E0B', avg_inflow:10000,  avg_outflow:9200,  tx_count:14, include_in_net_worth:true,  visible:true, notes:'Daily expenses cash' },
-    { account_id:'a5', name:'Paytm Wallet',    account_type:'wallet',      balance:3200,   institution:'Paytm',      account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Wallet',   color:'#10B981', avg_inflow:5000,   avg_outflow:4800,  tx_count:22, include_in_net_worth:false, visible:true, notes:'' },
-    { account_id:'a6', name:'HDFC Infinia CC', account_type:'credit_card', balance:-24800, institution:'HDFC Bank',  account_number:'XXXX XXXX XXXX 4821', ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Credit',   color:'#EF4444', avg_inflow:0,      avg_outflow:24800, tx_count:16, include_in_net_worth:true,  visible:true, credit_limit:300000, notes:'' },
-    { account_id:'a7', name:'Nifty 50 Fund',   account_type:'investment',  balance:148500, institution:'Zerodha',    account_number:'',                    ifsc:'',            holder:'Akshar Mehta',  branch:'',                   sub_type:'Mutual Fund', color:'#7C4DFF', avg_inflow:10000, avg_outflow:0, tx_count:6, include_in_net_worth:true, visible:true, notes:'Monthly SIP ₹10,000' },
-  ],
-
-  reminders: [
-    { reminder_id:'r1',  title:'Credit Card Payment',   reminder_type:'credit_card',  reminder_date:daysFromNow(0),  amount:15000, description:'HDFC Bank Credit Card',   provider:'HDFC Bank',     account_id:'a6', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:false, alert_days:[1,3],    tags:['cc','finance'],  auto_pay:false, category:'Credit Cards' },
-    { reminder_id:'r2',  title:'Internet Bill',          reminder_type:'bill',         reminder_date:daysFromNow(0),  amount:1200,  description:'Airtel Broadband',        provider:'Airtel',        account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'medium',is_completed:false, alert_days:[3],      tags:['utility'],       auto_pay:true,  category:'Bills & Utilities' },
-    { reminder_id:'r3',  title:'Electricity Bill',       reminder_type:'bill',         reminder_date:daysFromNow(1),  amount:2450,  description:'BSES Rajdhani Power Ltd', provider:'BSES',          account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:false, alert_days:[1,3],    tags:['utility'],       auto_pay:false, category:'Bills & Utilities' },
-    { reminder_id:'r4',  title:'SIP Investment',         reminder_type:'investment',   reminder_date:daysFromNow(5),  amount:10000, description:'Nifty 50 Index Fund',     provider:'Zerodha',       account_id:'a7', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:false, alert_days:[1],      tags:['sip','invest'],  auto_pay:true,  category:'Investments' },
-    { reminder_id:'r5',  title:'Home Loan EMI',          reminder_type:'loan_emi',     reminder_date:daysFromNow(8),  amount:38500, description:'SBI Home Loan',           provider:'SBI',           account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:false, alert_days:[3,7],    tags:['emi','loan'],    auto_pay:false, category:'EMI & Loans' },
-    { reminder_id:'r6',  title:'LIC Premium',            reminder_type:'insurance',    reminder_date:daysFromNow(12), amount:25000, description:'LIC of India',            provider:'LIC',           account_id:'a1', is_recurring:true,  recurrence:'quarterly',priority:'medium',is_completed:false, alert_days:[7],      tags:['insurance'],     auto_pay:false, category:'Insurance' },
-    { reminder_id:'r7',  title:'Netflix Subscription',   reminder_type:'subscription', reminder_date:daysFromNow(9),  amount:649,   description:'Netflix Premium',         provider:'Netflix',       account_id:'a6', is_recurring:true,  recurrence:'monthly',  priority:'low',   is_completed:false, alert_days:[1],      tags:['sub','ott'],     auto_pay:true,  category:'Subscriptions' },
-    { reminder_id:'r8',  title:'Car Loan EMI',           reminder_type:'loan_emi',     reminder_date:daysFromNow(18), amount:14200, description:'HDFC Car Loan',           provider:'HDFC Bank',     account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:false, alert_days:[3],      tags:['emi','loan'],    auto_pay:false, category:'EMI & Loans' },
-    { reminder_id:'r9',  title:'Health Insurance',       reminder_type:'insurance',    reminder_date:daysFromNow(25), amount:8500,  description:'Star Health Insurance',   provider:'Star Health',   account_id:'a1', is_recurring:true,  recurrence:'yearly',   priority:'medium',is_completed:false, alert_days:[7,14],   tags:['insurance'],     auto_pay:false, category:'Insurance' },
-    { reminder_id:'r10', title:'House Rent',             reminder_type:'rent',         reminder_date:daysFromNow(3),  amount:25000, description:'Monthly House Rent',      provider:'Landlord',      account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:false, alert_days:[2,5],    tags:['rent'],          auto_pay:false, category:'Rent' },
-    { reminder_id:'r11', title:'Mutual Fund SIP',        reminder_type:'investment',   reminder_date:daysFromNow(6),  amount:5000,  description:'HDFC Equity Fund',        provider:'HDFC MF',       account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'medium',is_completed:false, alert_days:[1],      tags:['sip','invest'],  auto_pay:true,  category:'Investments' },
-    { reminder_id:'r12', title:'Movie OTT Subscription', reminder_type:'subscription', reminder_date:daysFromNow(0),  amount:649,   description:'Netflix',                 provider:'Netflix',       account_id:'a6', is_recurring:true,  recurrence:'monthly',  priority:'low',   is_completed:false, alert_days:[1],      tags:['sub','ott'],     auto_pay:true,  category:'Subscriptions' },
-    { reminder_id:'rc1', title:'Personal Loan EMI',      reminder_type:'loan_emi',     reminder_date:daysFromNow(-5), amount:9800,  description:'ICICI Personal Loan',     provider:'ICICI Bank',    account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:true,  alert_days:[3],      tags:['emi','loan'],    auto_pay:false, category:'EMI & Loans',  completed_on:daysFromNow(-5),  paid_amount:9800 },
-    { reminder_id:'rc2', title:'Electricity Bill',       reminder_type:'bill',         reminder_date:daysFromNow(-32),amount:2100,  description:'BSES Rajdhani Power',     provider:'BSES',          account_id:'a1', is_recurring:true,  recurrence:'monthly',  priority:'high',  is_completed:true,  alert_days:[3],      tags:['utility'],       auto_pay:false, category:'Bills & Utilities', completed_on:daysFromNow(-32), paid_amount:2100 },
-    { reminder_id:'rc3', title:'Netflix',                reminder_type:'subscription', reminder_date:daysFromNow(-30),amount:649,   description:'Netflix Premium',         provider:'Netflix',       account_id:'a6', is_recurring:true,  recurrence:'monthly',  priority:'low',   is_completed:true,  alert_days:[1],      tags:['sub'],           auto_pay:true,  category:'Subscriptions',    completed_on:daysFromNow(-30), paid_amount:649  },
-  ],
-
-  transactions: [
-    { id: 't1',  _type: 'income',   source: 'Salary',         category: 'Salary',           account_id: 'a1', date: daysFromNow(-1),  amount: 120000, payee:'', notes:'Monthly salary' },
-    { id: 't2',  _type: 'expense',  description: 'Swiggy',    category: 'Food & Dining',    account_id: 'a1', date: daysFromNow(-2),  amount: 645,   payee:'Swiggy', notes:'Dinner order' },
-    { id: 't3',  _type: 'expense',  description: 'Uber',      category: 'Transport',        account_id: 'a3', date: daysFromNow(-2),  amount: 280,   payee:'Uber', notes:'' },
-    { id: 't4',  _type: 'expense',  description: 'Amazon',    category: 'Shopping',         account_id: 'a1', date: daysFromNow(-3),  amount: 3499,  payee:'Amazon', notes:'Online order' },
-    { id: 't5',  _type: 'transfer', source: 'Transfer',       category: 'Transfer',         account_id: 'a1', to_account_id: 'a3', date: daysFromNow(-4), amount: 5000, notes:'Google Pay top-up' },
-    { id: 't6',  _type: 'expense',  description: 'Netflix',   category: 'Entertainment',    account_id: 'a1', date: daysFromNow(-5),  amount: 649,   payee:'Netflix', notes:'Monthly sub' },
-    { id: 't7',  _type: 'expense',  description: 'Zomato',    category: 'Food & Dining',    account_id: 'a1', date: daysFromNow(-5),  amount: 420,   payee:'Zomato', notes:'' },
-    { id: 't8',  _type: 'income',   source: 'Freelance',      category: 'Freelance',        account_id: 'a2', date: daysFromNow(-7),  amount: 25000, payee:'', notes:'Design project' },
-    { id: 't9',  _type: 'expense',  description: 'Big Bazaar',category: 'Grocery',          account_id: 'a1', date: daysFromNow(-8),  amount: 2840,  payee:'Big Bazaar', notes:'' },
-    { id: 't10', _type: 'expense',  description: 'Petrol',    category: 'Transport',        account_id: 'a1', date: daysFromNow(-9),  amount: 1800,  payee:'BPCL', notes:'' },
-    { id: 't11', _type: 'expense',  description: 'Electricity Bill', category: 'Bills & Utilities', account_id: 'a1', date: daysFromNow(-10), amount: 1200, payee:'BSES', notes:'' },
-    { id: 't12', _type: 'expense',  description: 'Rent',      category: 'Housing',          account_id: 'a1', date: daysFromNow(-12), amount: 25000, payee:'Landlord', notes:'Monthly rent' },
-    { id: 't13', _type: 'income',   source: 'Freelance Work', category: 'Freelance',        account_id: 'a2', date: daysFromNow(-14), amount: 18000, payee:'', notes:'Dev project' },
-    { id: 't14', _type: 'expense',  description: 'Flipkart',  category: 'Shopping',         account_id: 'a6', date: daysFromNow(-15), amount: 2500,  payee:'Flipkart', notes:'Headphones' },
-    { id: 't15', _type: 'expense',  description: 'Doctor Visit', category: 'Health',        account_id: 'a1', date: daysFromNow(-17), amount: 800,   payee:'City Clinic', notes:'' },
-    { id: 't16', _type: 'transfer', source: 'Transfer to Wife', category: 'Transfer',       account_id: 'a1', to_account_id: 'a2', date: daysFromNow(-18), amount: 10000, notes:'Home expenses' },
-    { id: 't17', _type: 'expense',  description: 'Inox Movies', category: 'Entertainment', account_id: 'a3', date: daysFromNow(-19), amount: 680,   payee:'Inox', notes:'' },
-    { id: 't18', _type: 'expense',  description: 'Myntra',    category: 'Shopping',         account_id: 'a6', date: daysFromNow(-20), amount: 1850,  payee:'Myntra', notes:'Clothing' },
-    { id: 't19', _type: 'income',   source: 'Salary',         category: 'Salary',           account_id: 'a1', date: daysFromNow(-32), amount: 120000, payee:'', notes:'Previous month salary' },
-    { id: 't20', _type: 'expense',  description: 'Dominos',   category: 'Food & Dining',    account_id: 'a1', date: daysFromNow(-33), amount: 875,   payee:'Dominos', notes:'' },
-  ],
-
-  categories: [
+const TX_CATEGORIES = [
     { id:'ci1', type:'income',   name:'Salary',             icon:'💼', color:'#22C55E', sub:['Basic Pay','Bonus','Overtime','Commission'] },
     { id:'ci2', type:'income',   name:'Freelance',          icon:'💻', color:'#22C55E', sub:['Design','Development','Writing','Consulting'] },
     { id:'ci3', type:'income',   name:'Business Income',    icon:'🏢', color:'#22C55E', sub:['Revenue','Profit','Sales'] },
@@ -2668,25 +2608,8 @@ const DEMO = {
     { id:'ce10',type:'expense',  name:'Grocery',            icon:'🛒', color:'#84CC16', sub:['Vegetables','Fruits','Dairy','Household'] },
     { id:'ct1', type:'transfer', name:'Bank Transfer',      icon:'🔄', color:'#60A5FA', sub:['NEFT','RTGS','IMPS','UPI'] },
     { id:'ct2', type:'transfer', name:'Family Transfer',    icon:'👨‍👩‍👧‍👦', color:'#60A5FA', sub:['Spouse','Parent','Child','Sibling'] },
-  ],
+  ];
 
-  budgets: [
-    { category: 'Food & Dining',   budget: 15000, spent: 12400, icon: '🍔', color: '#FF6B6B' },
-    { category: 'Transport',       budget: 6000,  spent: 4200,  icon: '🚗', color: '#4ECDC4' },
-    { category: 'Shopping',        budget: 10000, spent: 11200, icon: '🛍️', color: '#45B7D1' },
-    { category: 'Entertainment',   budget: 3000,  spent: 2100,  icon: '🎬', color: '#96CEB4' },
-    { category: 'Grocery',         budget: 8000,  spent: 6800,  icon: '🛒', color: '#FFEAA7' },
-    { category: 'Bills & Utilities', budget: 5000, spent: 4800, icon: '⚡', color: '#DDA0DD' },
-  ],
-
-  investments: [
-    { id: 'i1', name: 'Nifty 50 Index Fund', type: 'Mutual Fund', invested: 120000, current: 148500, returns_pct: 23.75 },
-    { id: 'i2', name: 'HDFC Equity Fund',    type: 'Mutual Fund', invested:  60000, current:  71200, returns_pct: 18.67 },
-    { id: 'i3', name: 'PPF Account',         type: 'PPF',         invested: 150000, current: 168000, returns_pct: 12.00 },
-    { id: 'i4', name: 'Fixed Deposit - SBI', type: 'FD',          invested:  50000, current:  53750, returns_pct:  7.50 },
-    { id: 'i5', name: 'Reliance Industries', type: 'Stocks',      invested:  25000, current:  31200, returns_pct: 24.80 },
-  ],
-};
 
 /* ═══════════════════════════════════════════════════════
    INVESTMENT MODULE — CONSTANTS
@@ -3178,62 +3101,6 @@ const INV_NOTES = {
   ],
 };
 
-Object.assign(DEMO, {
-
-  loans: [
-    { id: 'l1', name: 'SBI Home Loan',      type: 'Home',     lender: 'SBI',  principal: 4500000, outstanding: 3820000, emi: 38500, interest_rate: 8.5,  tenure_months: 240, paid_months: 36  },
-    { id: 'l2', name: 'HDFC Car Loan',      type: 'Car',      lender: 'HDFC', principal:  800000, outstanding:  318000, emi: 14200, interest_rate: 9.2,  tenure_months:  60, paid_months: 36  },
-    { id: 'l3', name: 'Personal Loan',      type: 'Personal', lender: 'ICICI',principal:  200000, outstanding:   84000, emi:  9800, interest_rate: 12.5, tenure_months:  24, paid_months: 12  },
-  ],
-
-  creditCards: [
-    { id: 'c1', name: 'HDFC Infinia',    bank: 'HDFC Bank', last4: '4821', limit: 300000, outstanding: 48200, due_date: daysFromNow(8),  color1: '#1a1a4a', color2: '#6C47FF' },
-    { id: 'c2', name: 'SBI Prime',       bank: 'SBI',       last4: '7634', limit: 150000, outstanding: 16800, due_date: daysFromNow(14), color1: '#1a3a1a', color2: '#22C55E' },
-    { id: 'c3', name: 'Axis Flipkart',   bank: 'Axis Bank', last4: '2290', limit: 100000, outstanding: 8400,  due_date: daysFromNow(22), color1: '#3a1a1a', color2: '#EF4444' },
-  ],
-
-  lendBorrow: [
-    { id: 'lb1', person: 'Rahul Sharma',   type: 'lent',     amount: 25000, remaining: 15000, status: 'partial',  date: daysFromNow(-45), reason: 'Medical emergency' },
-    { id: 'lb2', person: 'Priya Patel',    type: 'borrowed', amount: 10000, remaining: 10000, status: 'pending',  date: daysFromNow(-20), reason: 'Travel expenses' },
-    { id: 'lb3', person: 'Vikram Singh',   type: 'lent',     amount: 5000,  remaining: 0,     status: 'settled',  date: daysFromNow(-90), reason: 'Business' },
-    { id: 'lb4', person: 'Anita Desai',    type: 'lent',     amount: 8000,  remaining: 8000,  status: 'pending',  date: daysFromNow(-10), reason: 'Personal' },
-  ],
-
-  rentals: [
-    { id: 'rp1', name: '2 BHK Flat', location: 'Andheri West, Mumbai', market_value: 6500000, purchase_value: 4200000, monthly_rent: 35000, rent_status: 'active', tenant: 'Sanjay Kumar', since: '2022-04-01' },
-    { id: 'rp2', name: 'Commercial Office Space', location: 'BKC, Mumbai', market_value: 2800000, purchase_value: 2000000, monthly_rent: 22000, rent_status: 'active', tenant: 'TechStartup Pvt Ltd', since: '2023-01-15' },
-  ],
-
-  otherAssets: [
-    { id: 'oa1', name: 'Gold Jewellery', value: 285000, notes: '~150g at market rate' },
-    { id: 'oa2', name: 'Vehicle (Car)',  value: 620000, notes: 'Honda City 2022' },
-  ],
-
-  insights: {
-    overview: {
-      monthly_income: 163000, monthly_expenses: 42163, savings: 120837,
-      savings_rate: 74.1, vs_last_income: 42.9, vs_last_expense: -38.4,
-    },
-    spending: [
-      { category: 'Housing',        amount: 25000, pct: 59.3, icon: '🏠' },
-      { category: 'Shopping',       amount: 7849,  pct: 18.6, icon: '🛍️' },
-      { category: 'Grocery',        amount: 2840,  pct: 6.7,  icon: '🛒' },
-      { category: 'Transport',      amount: 2080,  pct: 4.9,  icon: '🚗' },
-      { category: 'Entertainment',  amount: 1329,  pct: 3.2,  icon: '🎬' },
-      { category: 'Bills & Utilities', amount: 1200, pct: 2.8, icon: '⚡' },
-      { category: 'Food & Dining',  amount: 1065,  pct: 2.5,  icon: '🍔' },
-      { category: 'Health',         amount: 800,   pct: 1.9,  icon: '💊' },
-    ],
-    cashflow6m: [
-      { month: 'Dec', income: 105000, expense: 62000 },
-      { month: 'Jan', income: 110000, expense: 58000 },
-      { month: 'Feb', income: 108000, expense: 71000 },
-      { month: 'Mar', income: 115000, expense: 64000 },
-      { month: 'Apr', income: 114000, expense: 70000 },
-      { month: 'May', income: 163000, expense: 42163 },
-    ],
-  },
-});
 
 /* ══════════════════════════════════════════════════════
    4. UTILITY FUNCTIONS
@@ -3285,7 +3152,7 @@ function dueBadge(days) {
 }
 
 function userInitial() {
-  const name = (State.user || DEMO.user).name || 'U';
+  const name = (State.user || (State.user||{})).name || 'U';
   return name.charAt(0).toUpperCase();
 }
 
@@ -3417,13 +3284,18 @@ async function apiPost(path, body) {
 }
 
 async function loadDashboardData() {
-  // Try real API first, fall back to demo data
   const now = new Date();
-  const [dash, accts, rems, invs] = await Promise.all([
+  const [dash, accts, rems, invs, loans, cards, rentals, otherAssets, lendBorrow, goals] = await Promise.all([
     apiGet('/dashboard'),
     apiGet('/accounts'),
     apiGet('/reminders'),
     apiGet('/investments'),
+    apiGet('/loans'),
+    apiGet('/credit-cards'),
+    apiGet('/rentals'),
+    apiGet('/other-assets'),
+    apiGet('/lend-borrow'),
+    apiGet('/goals'),
   ]);
   const txArr = await Promise.all([
     apiGet(`/income?month=${now.getMonth()+1}&year=${now.getFullYear()}`),
@@ -3436,9 +3308,15 @@ async function loadDashboardData() {
     ...exp.map(e    => ({ ...e, _type: 'expense', id: e.expense_id  || e.id })),
   ].sort((a,b) => new Date(b.date) - new Date(a.date));
 
-  State.data.dashboard    = dash  || DEMO.dashboard;
-  State.data.accounts     = accts || DEMO.accounts;
-  State.data.reminders    = rems  || DEMO.reminders;
+  State.data.dashboard   = dash || null;
+  State.data.accounts    = Array.isArray(accts)       ? accts       : null;
+  State.data.reminders   = Array.isArray(rems)        ? rems        : null;
+  State.data.loans       = Array.isArray(loans)       ? loans       : null;
+  State.data.creditCards = Array.isArray(cards)       ? cards       : null;
+  State.data.rentals     = Array.isArray(rentals)     ? rentals     : null;
+  State.data.otherAssets = Array.isArray(otherAssets) ? otherAssets : null;
+  State.data.lendBorrow  = Array.isArray(lendBorrow)  ? lendBorrow  : null;
+  State.data.goals       = Array.isArray(goals)       ? goals       : null;
   // Map API investment fields to the expected shape used in renderWealth()
   if (Array.isArray(invs) && invs.length) {
     State.data.investments = invs.map(i => ({
@@ -3449,15 +3327,13 @@ async function loadDashboardData() {
   } else {
     State.data.investments = null;
   }
-  State.data.recentTx    = all.length ? all.slice(0, 5) : (DEMO.transactions || []).slice(0, 5);
-  // Store full month transactions so the Transactions tab shows live data
+  State.data.recentTx    = all.slice(0, 5);
   State.data.transactions = all.length ? all : null;
   State.data.txMonth     = now.getMonth();
   State.data.txYear      = now.getFullYear();
 }
 
 async function loadTransactionsForMonth(month, year) {
-  if (State.token === 'demo-token') return; // stay on demo data
   const txArr = await Promise.all([
     apiGet(`/income?month=${month+1}&year=${year}`),
     apiGet(`/expenses?month=${month+1}&year=${year}`),
@@ -3647,23 +3523,23 @@ function renderRegister() {
 
 /* ─── DASHBOARD ──────────────────────────────────────── */
 function renderDashboard() {
-  const d   = State.data.dashboard || DEMO.dashboard;
-  const acc = State.data.accounts  || DEMO.accounts;
-  const rem = State.data.reminders || DEMO.reminders;
-  const tx  = State.data.recentTx  || (DEMO.transactions||[]).slice(0,5);
-  const u   = State.user || DEMO.user;
+  const d   = State.data.dashboard;
+  const acc = State.data.accounts  || (State.data.accounts||[]);
+  const rem = (State.data.reminders||[]);
+  const tx  = State.data.recentTx  || (State.data.transactions||[]).slice(0,5);
+  const u   = State.user || (State.user||{});
 
-  const allTxsD  = State.data.transactions || DEMO.transactions;
+  const allTxsD  = (State.data.transactions||[]);
   const nowD     = new Date();
   const curMTxsD = allTxsD.filter(t => { const d2 = new Date(t.date); return d2.getMonth() === nowD.getMonth() && d2.getFullYear() === nowD.getFullYear(); });
   // Compute true net worth matching the Wealth tab formula
-  const _invD        = (State.data.investments || DEMO.investments || []).reduce((s,i)=>s+(i.current||0),0);
-  const _rentalD     = (DEMO.rentals||[]).reduce((s,r)=>s+(r.market_value||0),0);
-  const _otherD      = (DEMO.otherAssets||[]).reduce((s,x)=>s+(x.value||0),0);
-  const _lentD       = (DEMO.lendBorrow||[]).filter(x=>x.type==='lent'&&x.status!=='settled').reduce((s,x)=>s+(x.remaining||x.amount||0),0);
-  const _loansD      = (DEMO.loans||[]).reduce((s,l)=>s+(l.outstanding||0),0);
-  const _ccD         = (DEMO.creditCards||[]).reduce((s,c)=>s+c.outstanding,0);
-  const _borrowedD   = (DEMO.lendBorrow||[]).filter(x=>x.type==='borrowed').reduce((s,x)=>s+(x.remaining||x.amount||0),0);
+  const _invD        = ((State.data.investments||[])).reduce((s,i)=>s+(i.current||0),0);
+  const _rentalD     = (State.data.rentals||[]).reduce((s,r)=>s+(r.market_value||0),0);
+  const _otherD      = (State.data.otherAssets||[]).reduce((s,x)=>s+(x.value||0),0);
+  const _lentD       = (State.data.lendBorrow||[]).filter(x=>x.type==='lent'&&x.status!=='settled').reduce((s,x)=>s+(x.remaining||x.amount||0),0);
+  const _loansD      = (State.data.loans||[]).reduce((s,l)=>s+(l.outstanding||0),0);
+  const _ccD         = (State.data.creditCards||[]).reduce((s,c)=>s+c.outstanding,0);
+  const _borrowedD   = (State.data.lendBorrow||[]).filter(x=>x.type==='borrowed').reduce((s,x)=>s+(x.remaining||x.amount||0),0);
   const _bankD       = acc.filter(a=>a.account_type==='bank').reduce((s,a)=>s+a.balance,0);
   const _cashD       = acc.filter(a=>a.account_type==='cash'||a.account_type==='wallet').reduce((s,a)=>s+a.balance,0);
   const totalBalance  = (_bankD + _cashD + _invD + _rentalD + _otherD + _lentD) - (_loansD + _ccD + _borrowedD);
@@ -3914,8 +3790,8 @@ const TX_CAT_ICONS = {
 function txCatMeta(cat) { return TX_CAT_ICONS[cat] || {icon:'💰',color:'#A0A3BD'}; }
 
 function renderTransactions() {
-  var allTx  = State.data.transactions || DEMO.transactions;
-  var accts  = State.data.accounts || DEMO.accounts;
+  var allTx  = (State.data.transactions||[]);
+  var accts  = (State.data.accounts||[]);
   var filter = State.txFilter || 'all';
   var month  = State.txMonth != null ? State.txMonth : new Date().getMonth();
   var year   = State.txYear  != null ? State.txYear  : new Date().getFullYear();
@@ -4174,8 +4050,8 @@ function renderTransactions() {
 function renderAddIncome() {
   var p = State.txEditData || {};
   var isEdit = State.txIsEdit && p.id;
-  var accts = State.data.accounts || DEMO.accounts;
-  var incomeCats = (DEMO.categories||[]).filter(function(c){return c.type==='income';}).map(function(c){return c.name;});
+  var accts = (State.data.accounts||[]);
+  var incomeCats = (TX_CATEGORIES||[]).filter(function(c){return c.type==='income';}).map(function(c){return c.name;});
   if (!incomeCats.length) incomeCats = ['Salary','Freelance','Business','Investment Returns','Rental','Gift','Others'];
   var acctOptions = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var catOptions  = incomeCats.map(function(c){return '<option value="'+c+'"'+(c===(p.category||'')?' selected':'')+'>'+c+'</option>';}).join('');
@@ -4229,8 +4105,8 @@ function renderAddIncome() {
 function renderAddExpense() {
   var p = State.txEditData || {};
   var isEdit = State.txIsEdit && p.id;
-  var accts = State.data.accounts || DEMO.accounts;
-  var expCats = (DEMO.categories||[]).filter(function(c){return c.type==='expense';}).map(function(c){return c.name;});
+  var accts = (State.data.accounts||[]);
+  var expCats = (TX_CATEGORIES||[]).filter(function(c){return c.type==='expense';}).map(function(c){return c.name;});
   if (!expCats.length) expCats = ['Food & Dining','Transport','Shopping','Entertainment','Grocery','Bills & Utilities','Health','Education','Travel','Others'];
   var acctOptions = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===p.account_id?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var catOptions  = expCats.map(function(c){return '<option value="'+c+'"'+(c===(p.category||'')?' selected':'')+'>'+c+'</option>';}).join('');
@@ -4284,7 +4160,7 @@ function renderAddExpense() {
 function renderAddTransfer() {
   var p = State.txEditData || {};
   var isEdit = State.txIsEdit && p.id;
-  var accts = State.data.accounts || DEMO.accounts;
+  var accts = (State.data.accounts||[]);
   var fromOpts = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.account_id||accts[0]?.account_id)?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var toOpts   = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.to_account_id||accts[1]?.account_id)?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var now = new Date();
@@ -4326,7 +4202,7 @@ function renderAddTransfer() {
 /* ─── TRANSACTION DETAIL ──────────────────────────────── */
 function renderTxDetail() {
   var id = State.txDetailId;
-  var allTxs = State.data.transactions || DEMO.transactions || [];
+  var allTxs = (State.data.transactions||[]);
   var tx = allTxs.find(function(t){return t.id===id;});
   if (!tx) {
     return '<div class="screen-wrap"><div class="form-header">'
@@ -4334,7 +4210,7 @@ function renderTxDetail() {
       +'<div class="form-header-title">Transaction</div><div></div></div>'
       +'<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Not Found</div></div></div>';
   }
-  var accts   = State.data.accounts || DEMO.accounts;
+  var accts   = (State.data.accounts||[]);
   var acct    = accts.find(function(a){return a.account_id===tx.account_id;}) || {};
   var meta    = txCatMeta(tx.category);
   var isInc   = tx._type === 'income';
@@ -4406,7 +4282,7 @@ function renderTxDetail() {
 
 /* ─── EXPERT VIEW ─────────────────────────────────────── */
 function renderExpertView() {
-  var allTx  = State.data.transactions || DEMO.transactions || [];
+  var allTx  = (State.data.transactions||[]);
   var period = State.txExpertPeriod || 'month';
   var now    = new Date();
   var month  = State.txMonth != null ? State.txMonth : now.getMonth();
@@ -8393,8 +8269,8 @@ function _searchIndex() {
   (State.mediclaimPolicies||[]).forEach(function(p){ idx.push({ category:'investments', cat_label:'Health Insurance', icon:'🏥', name:p.name, sub:p.provider+' · '+formatINR(p.sum_insured), route:'mediclaim-detail', routeParam:null, color:'#0891B2' }); });
   // Mediclaim Claims
   (State.mediclaimClaims||[]).forEach(function(c){ idx.push({ category:'payments', cat_label:'Claims', icon:'🏥', name:c.id+' – '+c.type, sub:formatINR(c.amount)+' · '+c.status, route:'mediclaim-claim-status', routeParam:null, color:'#0891B2' }); });
-  // Demo accounts
-  var demoAccounts = (DEMO&&DEMO.accounts)||[];
+  // Accounts
+  var demoAccounts = (State.data.accounts||[]);
   demoAccounts.forEach(function(a){ idx.push({ category:'accounts', cat_label:'Accounts', icon:'🏦', name:a.bank_name||a.name, sub:a.account_number_masked||a.account_type, route:'dashboard', routeParam:null, color:'#3B82F6' }); });
   // LIC policies
   (State.licPolicies||[]).forEach(function(p){ idx.push({ category:'investments', cat_label:'LIC', icon:'🛡️', name:p.name||p.plan_name, sub:(p.sum_assured?formatINR(p.sum_assured):'')+' · LIC', route:'lic-detail', routeParam:null, color:'#7C3AED' }); });
@@ -14965,7 +14841,7 @@ function renderFDAddTransaction() {
 /* ─── CATEGORY MANAGEMENT ────────────────────────────── */
 function renderCategoryMgmt() {
   var tab  = State.txCatTab || 'expense';
-  var cats = (DEMO.categories||[]).filter(function(c){return c.type===tab;});
+  var cats = (TX_CATEGORIES||[]).filter(function(c){return c.type===tab;});
   if (!cats.length) {
     if (tab==='income')   cats=[{id:'ci1',name:'Salary',icon:'💼',color:'#22C55E',sub:['Basic Pay','Bonus','Overtime']},{id:'ci2',name:'Freelance',icon:'💻',color:'#06B6D4',sub:['Design','Development','Consulting']},{id:'ci3',name:'Business',icon:'🏢',color:'#8B5CF6',sub:['Sales','Commission']},{id:'ci4',name:'Investments',icon:'📈',color:'#F59E0B',sub:['Dividends','Returns']},{id:'ci5',name:'Gift',icon:'🎁',color:'#EC4899',sub:['Cash','Voucher']}];
     else if (tab==='transfer') cats=[{id:'ct1',name:'Self Transfer',icon:'🔄',color:'#60A5FA',sub:['Savings','Emergency']},{id:'ct2',name:'Family',icon:'👨‍👩‍👧',color:'#22C55E',sub:['Spouse','Children']},{id:'ct3',name:'Business',icon:'🏢',color:'#8B5CF6',sub:['Vendor','Advance']}];
@@ -15027,7 +14903,7 @@ function getAccountGroups(accounts) {
 }
 
 function renderWealth() {
-  var accts   = State.data.accounts || DEMO.accounts;
+  var accts   = (State.data.accounts||[]);
   var visible = accts.filter(function(a){ return a.visible !== false; });
 
   // — Accounts —
@@ -15039,26 +14915,26 @@ function renderWealth() {
   var upiTotal  = upiAccts.reduce(function(s,a){ return s+a.balance; },0);
 
   // — Investments —
-  var invs       = State.data.investments || DEMO.investments || [];
+  var invs       = (State.data.investments||[]);
   var invTotal   = invs.reduce(function(s,i){ return s+(i.current||0); },0);
   var invInvested= invs.reduce(function(s,i){ return s+(i.invested||0); },0);
   var invGain    = invTotal - invInvested;
 
   // — Property / Rentals —
-  var rentals    = DEMO.rentals || [];
+  var rentals    = (State.data.rentals||[]);
   var rentalVal  = rentals.reduce(function(s,r){ return s+(r.market_value||0); },0);
   var rentalInc  = rentals.reduce(function(s,r){ return s+(r.monthly_rent||0); },0);
 
   // — Other Assets —
-  var otherAssets = DEMO.otherAssets || [];
+  var otherAssets = (State.data.otherAssets||[]);
   var otherTotal  = otherAssets.reduce(function(s,x){ return s+(x.value||0); },0);
 
   // — Liabilities —
-  var loans       = DEMO.loans || [];
+  var loans       = (State.data.loans||[]);
   var loanTotal   = loans.reduce(function(s,l){ return s+(l.outstanding||0); },0);
-  var cards       = DEMO.creditCards || [];
+  var cards       = (State.data.creditCards||[]);
   var ccTotal     = cards.reduce(function(s,c){ return s+c.outstanding; },0);
-  var lendBorrow  = DEMO.lendBorrow || [];
+  var lendBorrow  = (State.data.lendBorrow||[]);
   var borrowedAmt = lendBorrow.filter(function(x){ return x.type==='borrowed'; }).reduce(function(s,x){ return s+(x.remaining||x.amount||0); },0);
   var lentAmt     = lendBorrow.filter(function(x){ return x.type==='lent'&&x.status!=='settled'; }).reduce(function(s,x){ return s+(x.remaining||x.amount||0); },0);
 
@@ -15066,7 +14942,7 @@ function renderWealth() {
   var totalAssets = bankTotal + cashTotal + invTotal + rentalVal + otherTotal + lentAmt;
   var totalLiab   = loanTotal + ccTotal + borrowedAmt;
   var netWorth    = totalAssets - totalLiab;
-  var _dash       = State.data.dashboard || DEMO.dashboard;
+  var _dash       = State.data.dashboard;
   var growthPct   = _dash.net_worth_delta_pct ?? 3.8;
   var growing     = growthPct >= 0;
 
@@ -15321,7 +15197,7 @@ function renderWealth() {
 /* ─── ACCOUNT GROUP LIST ─────────────────────────────── */
 function renderGroupList() {
   const key   = State.params.group || 'bank';
-  const accts = (State.data.accounts || DEMO.accounts).filter(a => {
+  const accts = ((State.data.accounts||[])).filter(a => {
     let t = a.account_type;
     if (t === 'wallet') t = 'cash';
     return t === key && a.visible !== false;
@@ -15365,7 +15241,7 @@ function renderGroupList() {
 /* ─── ACCOUNT DETAIL ─────────────────────────────────── */
 function renderAccountDetail() {
   const id   = State.viewAcctId || State.params.id;
-  const accts = State.data.accounts || DEMO.accounts;
+  const accts = (State.data.accounts||[]);
   const a    = accts.find(x => x.account_id === id);
   if (!a) return `<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">Account not found</div></div>`;
 
@@ -15375,7 +15251,7 @@ function renderAccountDetail() {
   const balColor  = isLiab ? '#FFB4BE' : '#9DFFD9';
 
   // Transactions for this account
-  const allTx    = State.data.transactions || DEMO.transactions || [];
+  const allTx    = (State.data.transactions||[]);
   const typeF    = State.acctTxTypeFilter || 'all';
   const dateF    = State.acctTxDateFilter || 'month';
   const now      = new Date();
@@ -15618,7 +15494,7 @@ const COLOR_SWATCHES = ['#6C47FF','#22C55E','#EF4444','#60A5FA','#F59E0B','#10B9
 function renderAddAccount() {
   const isEdit   = State.screen === 'edit-account';
   const editId   = State.params?.id;
-  const existing = isEdit ? ((State.data.accounts||DEMO.accounts).find(a=>a.account_id===editId)||{}) : {};
+  const existing = isEdit ? (((State.data.accounts||[])).find(a=>a.account_id===editId)||{}) : {};
   const type     = State.addAcctType || existing.account_type || 'bank';
   const selColor = State.acctColor || existing.color || '#6C47FF';
   const typeMeta = ACCT_TYPES.find(t=>t.key===type)||ACCT_TYPES[0];
@@ -16109,7 +15985,7 @@ function renderCompletedTab(rems) {
 }
 
 function renderReminders() {
-  const rems = State.data.reminders || DEMO.reminders;
+  const rems = (State.data.reminders||[]);
   const tab  = State.remTab;
   const tabs = [
     { key:'upcoming',  label:'Upcoming' },
@@ -16148,7 +16024,7 @@ function renderReminders() {
 function renderAddReminder() {
   const isEdit = State.screen === 'edit-reminder';
   const editId = State.params && State.params.id;
-  const rems   = State.data.reminders || DEMO.reminders;
+  const rems   = (State.data.reminders||[]);
   const existing = isEdit ? rems.find(r => r.reminder_id === editId) : null;
 
   if (isEdit && !existing) {
@@ -16191,7 +16067,7 @@ function renderAddReminder() {
     { days:7, label:'1 week before' },
     { days:14, label:'2 weeks before' },
   ];
-  const accounts = State.data.accounts || DEMO.accounts;
+  const accounts = (State.data.accounts||[]);
 
   const typeSelHtml = Object.entries(REM_TYPE_META).map(function(entry) {
     const k = entry[0]; const v = entry[1];
@@ -16312,7 +16188,7 @@ function renderAddReminder() {
 
 function renderReminderDetail() {
   const id   = State.remDetailId || (State.params && State.params.id);
-  const rems = State.data.reminders || DEMO.reminders;
+  const rems = (State.data.reminders||[]);
   const r    = rems.find(x => x.reminder_id === id);
   if (!r) {
     return '<div class="screen-wrap"><div class="page-header"><div class="icon-btn" onclick="App.navigate(\'reminders\')">'
@@ -16323,7 +16199,7 @@ function renderReminderDetail() {
   const meta  = REM_TYPE_META[r.reminder_type] || REM_TYPE_META.custom;
   const days  = daysUntil(r.reminder_date);
   const badge = dueBadge(days);
-  const accts = State.data.accounts || DEMO.accounts;
+  const accts = (State.data.accounts||[]);
   const acct  = accts.find(a => a.account_id === r.account_id);
   const history = rems.filter(x => x.title === r.title && x.is_completed && x.reminder_id !== r.reminder_id).slice(0,5);
   const totalPaid = history.reduce((s,x) => s + (x.paid_amount || x.amount), 0);
@@ -16456,10 +16332,10 @@ function renderInsights() {
 }
 
 function renderInsightsOverview() {
-  var ins  = DEMO.insights.overview;
-  var cf6m = DEMO.insights.cashflow6m || [];
-  var acc  = State.data.accounts || DEMO.accounts;
-  var allTxsI = State.data.transactions || DEMO.transactions;
+  var ins  = ((State.data.insights||{}).overview||{});
+  var cf6m = ((State.data.insights||{}).cashflow6m||[]) || [];
+  var acc  = (State.data.accounts||[]);
+  var allTxsI = (State.data.transactions||[]);
   var nowI    = new Date();
   var curMTxsI = allTxsI.filter(function(t) { var d = new Date(t.date); return d.getMonth() === nowI.getMonth() && d.getFullYear() === nowI.getFullYear(); });
   var income  = curMTxsI.filter(function(t){return t._type==='income';}).reduce(function(s,t){return s+(t.amount||0);},0) || ins.monthly_income || 125000;
@@ -16545,7 +16421,7 @@ function renderInsightsOverview() {
 
 function renderInsightsCashFlow() {
   var period = State.insightsPeriod || 'month';
-  var cf6m   = DEMO.insights.cashflow6m || [];
+  var cf6m   = ((State.data.insights||{}).cashflow6m||[]) || [];
   var acctFlow = [
     {name:'HDFC Bank',    icon:'🏦', color:'#60A5FA', inflow:100000, outflow:42000},
     {name:'ICICI Bank',   icon:'🏛️', color:'#22C55E', inflow:20000,  outflow:18000},
@@ -16620,7 +16496,7 @@ function renderInsightsCashFlow() {
 
 function renderInsightsSpending() {
   var period   = State.insightsPeriod || 'month';
-  var allTxsSp = State.data.transactions || DEMO.transactions;
+  var allTxsSp = (State.data.transactions||[]);
   var nowSp    = new Date();
   var curMExp  = allTxsSp.filter(function(t) { var d = new Date(t.date); return t._type === 'expense' && d.getMonth() === nowSp.getMonth() && d.getFullYear() === nowSp.getFullYear(); });
   var catTotals = {};
@@ -16628,7 +16504,7 @@ function renderInsightsSpending() {
   var totalExp = curMExp.reduce(function(s,t){return s+(t.amount||0);},0);
   var spending = period === 'month' ? Object.keys(catTotals).sort(function(a,b){return catTotals[b]-catTotals[a];}).map(function(cat) {
     return { category: cat, amount: catTotals[cat], pct: totalExp > 0 ? Math.round(catTotals[cat]/totalExp*1000)/10 : 0 };
-  }) : DEMO.insights.spending;
+  }) : ((State.data.insights||{}).spending||[]);
   var topExpAll = period === 'month' ? curMExp.sort(function(a,b){return b.amount-a.amount;}).slice(0,5).map(function(t) {
     var meta = txCatMeta(t.category || 'Others');
     return { merchant: t.description || t.source || t.payee || t.category || '—', category: t.category || 'Others', icon: meta.icon, amount: t.amount };
@@ -16657,7 +16533,7 @@ function renderInsightsSpending() {
     + '<div style="color:var(--text-dim);font-size:12px;font-weight:600">Total Spending</div>'
     + '<div style="color:var(--text-dim);font-size:11px">' + (period === 'year' ? 'This Year' : period === 'quarter' ? 'This Quarter' : 'This Month (' + MONTHS[new Date().getMonth()] + ')') + '</div>'
     + '<div style="color:var(--text);font-size:26px;font-weight:800;margin:6px 0 4px">' + formatINRFull(totalSpend) + '</div>'
-    + (function(){ var cf6 = DEMO.insights.cashflow6m||[]; var prevE = cf6.length>=2?cf6[cf6.length-2].expense:0; var pct = prevE>0?Math.round((totalSpend-prevE)/prevE*100):0; var sign=pct>=0?'▲':'▼'; var col=pct>=0?'var(--danger)':'var(--success)'; return '<div style="color:'+col+';font-size:12px;font-weight:700">'+sign+' '+Math.abs(pct)+'% vs last month</div>'; })()
+    + (function(){ var cf6 = ((State.data.insights||{}).cashflow6m||[])||[]; var prevE = cf6.length>=2?cf6[cf6.length-2].expense:0; var pct = prevE>0?Math.round((totalSpend-prevE)/prevE*100):0; var sign=pct>=0?'▲':'▼'; var col=pct>=0?'var(--danger)':'var(--success)'; return '<div style="color:'+col+';font-size:12px;font-weight:700">'+sign+' '+Math.abs(pct)+'% vs last month</div>'; })()
     + '</div></div></div>';
   html += '<div class="section-header"><div class="section-title">Spending by Category</div>'
     + '<div class="view-all" onclick="App.goTab(\'transactions\')">View All</div></div>'
@@ -16691,7 +16567,7 @@ function renderInsightsSpending() {
 
 function renderInsightsBudget() {
   var period  = State.insightsPeriod || 'month';
-  var allTxsBu = State.data.transactions || DEMO.transactions;
+  var allTxsBu = (State.data.transactions||[]);
   var nowBu    = new Date();
   var curMExpBu = allTxsBu.filter(function(t) { var d = new Date(t.date); return t._type === 'expense' && d.getMonth() === nowBu.getMonth() && d.getFullYear() === nowBu.getFullYear(); });
   function spentInCat(cats) {
@@ -16770,7 +16646,7 @@ function renderInsightsBudget() {
 
 function renderInsightsTrends() {
   var period   = State.insightsTrendPeriod || 'month';
-  var cf6m     = DEMO.insights.cashflow6m || [];
+  var cf6m     = ((State.data.insights||{}).cashflow6m||[]) || [];
   var incData  = cf6m.map(function(m) { return m.income; });
   var expData  = cf6m.map(function(m) { return m.expense; });
   var invData  = [38000, 40500, 41200, 42000, 43800, 45000];
@@ -16816,8 +16692,8 @@ function renderInsightsCalendar() {
   var selDay  = (State.insightsCalDay != null && State.insightsCalDay <= maxDays)
     ? State.insightsCalDay
     : (month === today.getMonth() && year === today.getFullYear() ? today.getDate() : null);
-  var allTx  = State.data.transactions || DEMO.transactions;
-  var allRem = State.data.reminders || DEMO.reminders;
+  var allTx  = (State.data.transactions||[]);
+  var allRem = (State.data.reminders||[]);
   var eventMap = {};
   allTx.forEach(function(t) {
     if (!t.date) return;
@@ -16909,7 +16785,7 @@ function renderInsightsCalendar() {
    8b. MORE / PROFILE SCREEN
 ══════════════════════════════════════════════════════ */
 function renderMore() {
-  const u = State.user || DEMO.user;
+  const u = State.user || (State.user||{});
   const initial = (u.name||'U').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
 
   function menuSection(title, items) {
@@ -17070,7 +16946,7 @@ function renderNotifications() {
 
 /* ── Edit Profile ────────────────────────────────────── */
 function renderEditProfile() {
-  var u = State.user || DEMO.user || {};
+  var u = State.user || (State.user||{}) || {};
   return '<div class="screen-wrap">'
     +'<div class="form-header">'+_stubBackBtn('more')
     +'<div class="form-header-title">Edit Profile</div>'
@@ -17220,7 +17096,7 @@ function renderMarketOverview() {
 
 /* ── Portfolio Performance ───────────────────────────── */
 function renderPortfolioPerformance() {
-  var invs = State.data.investments || DEMO.investments || [];
+  var invs = (State.data.investments||[]);
   var totalInvested = invs.reduce(function(s,i){return s+(i.invested||0);},0);
   var totalCurrent  = invs.reduce(function(s,i){return s+(i.current||0);},0);
   var totalGain     = totalCurrent - totalInvested;
@@ -17269,7 +17145,7 @@ function renderPortfolioPerformance() {
 
 /* ── Portfolio Allocation ────────────────────────────── */
 function renderPortfolioAllocation() {
-  var invs  = State.data.investments || DEMO.investments || [];
+  var invs  = (State.data.investments||[]);
   var bycat = {};
   invs.forEach(function(i){var c=i.category||'Other';bycat[c]=(bycat[c]||0)+(i.current||0);});
   var total = Object.values(bycat).reduce(function(s,v){return s+v;},0)||1;
@@ -17354,7 +17230,7 @@ function renderGoalDetail() {
     {name:'Vacation — Europe',   target:250000, saved:68000,  icon:'✈️', color:'#60A5FA', deadline:'Mar 2027',  monthly:15000},
     {name:'New Car Down Payment',target:400000, saved:120000, icon:'🚗', color:'#F59E0B', deadline:'Jun 2027',  monthly:20000},
     {name:'Children\'s Education',target:2000000,saved:340000, icon:'🎓',color:'#EF4444', deadline:'Jan 2034',  monthly:12000},
-  ].concat(DEMO._goals || []);
+  ].concat((State.data.goals||[]));
   return '<div class="screen-wrap">'
     +'<div class="form-header">'+_stubBackBtn('wealth')
     +'<div class="form-header-title">Goals</div>'
@@ -17661,7 +17537,7 @@ function renderCurrencySettings() {
 
 /* ── Rental Properties screen ─────────────────────── */
 function renderRentalProperties() {
-  var rentals = DEMO.rentals || [];
+  var rentals = (State.data.rentals||[]);
   var totalVal = rentals.reduce(function(s,r){return s+(r.market_value||0);},0);
   var totalRent = rentals.reduce(function(s,r){return s+(r.monthly_rent||0);},0);
   var html = '<div class="screen-wrap">'
@@ -17702,7 +17578,7 @@ function renderRentalProperties() {
 
 /* ── Other Assets screen ────────────────────────── */
 function renderOtherAssets() {
-  var assets = DEMO.otherAssets || [];
+  var assets = (State.data.otherAssets||[]);
   var total = assets.reduce(function(s,x){return s+(x.value||0);},0);
   var html = '<div class="screen-wrap">'
     +'<div class="form-header">'+_stubBackBtn('wealth')
@@ -17728,7 +17604,7 @@ function renderOtherAssets() {
 
 /* ── Loans & EMI screen ─────────────────────────── */
 function renderLoansEmi() {
-  var loans = DEMO.loans || [];
+  var loans = (State.data.loans||[]);
   var totalOut = loans.reduce(function(s,l){return s+(l.outstanding||0);},0);
   var totalEmi = loans.reduce(function(s,l){return s+(l.emi||0);},0);
   var html = '<div class="screen-wrap">'
@@ -17768,7 +17644,7 @@ function renderLoansEmi() {
 
 /* ── Credit Cards detail screen ─────────────────── */
 function renderCreditCardsDetail() {
-  var cards = DEMO.creditCards || [];
+  var cards = (State.data.creditCards||[]);
   var totalOut = cards.reduce(function(s,c){return s+(c.outstanding||0);},0);
   var totalLim = cards.reduce(function(s,c){return s+(c.limit||0);},0);
   var html = '<div class="screen-wrap">'
@@ -17810,7 +17686,7 @@ function renderCreditCardsDetail() {
 
 /* ── Lend & Borrow screen ───────────────────────── */
 function renderLendBorrow() {
-  var all = DEMO.lendBorrow || [];
+  var all = (State.data.lendBorrow||[]);
   var lent = all.filter(function(x){return x.type==='lent';});
   var borrowed = all.filter(function(x){return x.type==='borrowed';});
   var totalLent = lent.filter(function(x){return x.status!=='settled';}).reduce(function(s,x){return s+(x.remaining||x.amount||0);},0);
@@ -24754,16 +24630,13 @@ const App = {
       State.token = tok;
       State.user  = data.user || { name: name, email: email };
     } else {
-      // No backend — register locally with demo data
-      State.token = 'demo-token';
+      // No backend — register locally with entered credentials
+      State.token = 'local-' + Date.now();
       State.user  = { name: name, email: email, initial: name.charAt(0).toUpperCase() };
     }
 
     localStorage.setItem('fc_token', State.token);
     localStorage.setItem('fc_user', JSON.stringify(State.user));
-
-    // Personalise DEMO.user name so the whole app shows the real user name
-    if (DEMO && DEMO.user) { DEMO.user.name = name; DEMO.user.email = email; }
 
     await loadDashboardData();
     document.getElementById('tab-bar').style.display = 'flex';
@@ -24805,11 +24678,11 @@ const App = {
       localStorage.setItem('fc_token', State.token);
       localStorage.setItem('fc_user', JSON.stringify(State.user));
     } else {
-      // Demo mode — no backend or invalid token response
-      State.token = 'demo-token';
-      State.user  = { ...DEMO.user };
-      localStorage.setItem('fc_token', 'demo-token');
-      localStorage.setItem('fc_user', JSON.stringify(DEMO.user));
+      // Offline mode — no backend available, use entered credentials for display
+      State.token = 'local-' + Date.now();
+      State.user  = { name: email.split('@')[0], email: email };
+      localStorage.setItem('fc_token', State.token);
+      localStorage.setItem('fc_user', JSON.stringify(State.user));
     }
 
     await loadDashboardData();
@@ -24821,7 +24694,8 @@ const App = {
     State.token = null; State.user = null;
     State.data  = { accounts:null, reminders:null, recentTx:null, dashboard:null,
                     transactions:null, budgets:null, investments:null, creditCards:null,
-                    loans:null, income:null, expenses:null };
+                    loans:null, income:null, expenses:null,
+                    insights:null, lendBorrow:null, rentals:null, otherAssets:null, goals:null };
     // Reset all UI state
     State.addTxType   = null; State.txEditData = null; State.txIsEdit = false;
     State.txShowSearch = false; State.txSearch = ''; State.txAccountFilter = 'all';
@@ -25158,7 +25032,7 @@ const App = {
   },
 
   openAcctMenu(id) {
-    const a = (State.data.accounts || DEMO.accounts).find(x=>x.account_id===id);
+    const a = ((State.data.accounts||[])).find(x=>x.account_id===id);
     if (!a) return;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -25186,7 +25060,7 @@ const App = {
   },
 
   toggleVisibility(id) {
-    const accts = State.data.accounts || DEMO.accounts;
+    const accts = (State.data.accounts||[]);
     const a = accts.find(x=>x.account_id===id);
     if (a) { a.visible = a.visible===false ? true : false; }
     this.showToast(a && a.visible===false ? 'Account hidden' : 'Account visible');
@@ -25198,7 +25072,7 @@ const App = {
     const balance = parseFloat(document.getElementById('af-balance')?.value || '0');
     const isEditNow = State.screen === 'edit-account';
     const editIdNow = State.params?.id;
-    const acctsCur  = State.data.accounts || DEMO.accounts;
+    const acctsCur  = (State.data.accounts||[]);
     const existingAcct = isEditNow ? acctsCur.find(a=>a.account_id===editIdNow) : null;
     const type    = (State.addAcctType !== 'bank' ? State.addAcctType : null) || (existingAcct?.account_type) || State.addAcctType || 'bank';
     const color   = State.acctColor !== '#6C47FF' ? State.acctColor : (existingAcct?.color || State.acctColor || '#6C47FF');
@@ -25214,7 +25088,7 @@ const App = {
       institution: document.getElementById('af-bank')?.value?.trim() || '',
       account_number: document.getElementById('af-accno')?.value?.trim() || '',
       ifsc: document.getElementById('af-ifsc')?.value?.trim() || '',
-      holder: document.getElementById('af-holder')?.value?.trim() || ((State.user||DEMO.user).name),
+      holder: document.getElementById('af-holder')?.value?.trim() || ((State.user||(State.user||{})).name),
       branch: document.getElementById('af-branch')?.value?.trim() || '',
       sub_type: document.getElementById('af-subtype')?.value || typeMeta.label,
       ...(type === 'cash' ? { cash_location: document.getElementById('af-loc')?.value?.trim() || '' } : {}),
@@ -25250,18 +25124,18 @@ const App = {
     }
 
     // Optimistic local update
-    const accts = State.data.accounts || DEMO.accounts;
+    const accts = (State.data.accounts||[]);
     if (isEdit) {
       const idx = accts.findIndex(a=>a.account_id===editId);
       if (idx >= 0) {
         const oldBalance = accts[idx].balance || 0;
         Object.assign(accts[idx], payload);
-        if (DEMO.dashboard) DEMO.dashboard.total_balance += (balance - oldBalance);
+        if (State.data.dashboard) State.data.dashboard.total_balance += (balance - oldBalance);
       }
     } else {
       const newAcct = { ...payload, account_id: uid('a') };
       accts.push(newAcct);
-      if (DEMO.dashboard) DEMO.dashboard.total_balance += balance;
+      if (State.data.dashboard) State.data.dashboard.total_balance += balance;
     }
     State.data.accounts = accts;
 
@@ -25293,13 +25167,12 @@ const App = {
       method: 'DELETE',
       headers: { 'Authorization':'Bearer '+State.token }
     }).catch(()=>null);
-    const accts = State.data.accounts || DEMO.accounts;
+    const accts = (State.data.accounts||[]);
     const idx   = accts.findIndex(a=>a.account_id===id);
     if (idx >= 0) {
-      if (DEMO.dashboard) DEMO.dashboard.total_balance -= (accts[idx].balance || 0);
+      if (State.data.dashboard) State.data.dashboard.total_balance -= (accts[idx].balance || 0);
       accts.splice(idx, 1);
     }
-    DEMO.transactions = (DEMO.transactions || []).filter(t => t.account_id !== id && t.to_account_id !== id);
     if (State.data.transactions) State.data.transactions = State.data.transactions.filter(t => t.account_id !== id && t.to_account_id !== id);
     State.data.recentTx = (State.data.recentTx || []).filter(t => t.account_id !== id && t.to_account_id !== id);
     State.data.accounts = accts;
@@ -25309,8 +25182,8 @@ const App = {
   },
 
   exportAccount(id, format) {
-    const a     = (State.data.accounts||DEMO.accounts).find(x=>x.account_id===id);
-    const txs   = (State.data.transactions||DEMO.transactions||[]).filter(t=>t.account_id===id||t.to_account_id===id);
+    const a     = ((State.data.accounts||[])).find(x=>x.account_id===id);
+    const txs   = ((State.data.transactions||[])||[]).filter(t=>t.account_id===id||t.to_account_id===id);
     const name  = a ? a.name : 'Account';
 
     if (format === 'csv') {
@@ -25338,7 +25211,7 @@ const App = {
   },
 
   exportAllAccounts() {
-    const accts = State.data.accounts || DEMO.accounts;
+    const accts = (State.data.accounts||[]);
     const rows  = ['Account,Type,Balance,Institution,Visible'];
     const csvQ2 = v => { const s = String(v == null ? '' : v); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     accts.forEach(a => rows.push([a.name, a.account_type, a.balance, a.institution||'', a.visible!==false?'Yes':'No'].map(csvQ2).join(',')));
@@ -25388,10 +25261,10 @@ const App = {
   },
 
   splitTx(id) {
-    const allTxs = State.data.transactions || DEMO.transactions || [];
+    const allTxs = (State.data.transactions||[]);
     const tx = allTxs.find(t => t.id === id);
     if (!tx) return;
-    const cats = (DEMO.categories || []).filter(c=>c.type===tx._type||c.type==='expense').map(c=>c.name);
+    const cats = (TX_CATEGORIES || []).filter(c=>c.type===tx._type||c.type==='expense').map(c=>c.name);
     const catOpts = cats.map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join('');
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay center';
@@ -25431,7 +25304,7 @@ const App = {
     if (filled.length < 2) { this.showToast('Enter at least two amounts'); return; }
     const sum = amts.reduce((s,a)=>s+a,0);
     if (Math.abs(sum - total) > 1) { this.showToast('Amounts must add up to '+formatINR(total)); return; }
-    const allTxs = State.data.transactions || DEMO.transactions;
+    const allTxs = (State.data.transactions||[]);
     const idx = allTxs.findIndex(t=>t.id===id);
     if (idx === -1) { overlay.remove(); return; }
     const orig = allTxs[idx];
@@ -25448,7 +25321,7 @@ const App = {
   },
 
   editTx(id) {
-    const allTxs = State.data.transactions || DEMO.transactions || [];
+    const allTxs = (State.data.transactions||[]);
     const tx = allTxs.find(t => t.id === id);
     if (!tx) return;
     State.txEditData = tx;
@@ -25458,7 +25331,7 @@ const App = {
   },
 
   repeatTx(id) {
-    const allTxs = State.data.transactions || DEMO.transactions || [];
+    const allTxs = (State.data.transactions||[]);
     const tx = allTxs.find(t => t.id === id);
     if (!tx) return;
     State.txEditData = tx;
@@ -25498,20 +25371,15 @@ const App = {
   },
 
   _doDeleteTx(id) {
-    const txList = State.data.transactions || DEMO.transactions;
+    const txList = (State.data.transactions||[]);
     const idx = txList.findIndex(t => t.id === id);
     if (idx !== -1) {
       const tx = txList[idx];
       txList.splice(idx, 1);
-      // Also remove from DEMO if present
-      const di = DEMO.transactions.findIndex(t => t.id === id);
-      if (di !== -1) DEMO.transactions.splice(di, 1);
       const txD = new Date(tx.date); const now2 = new Date();
       const isCur = txD.getMonth()===now2.getMonth() && txD.getFullYear()===now2.getFullYear();
-      if (tx._type === 'income')  { if (isCur) DEMO.dashboard.monthly_income   -= tx.amount; DEMO.dashboard.total_balance -= tx.amount; }
-      if (tx._type === 'expense') { if (isCur) DEMO.dashboard.monthly_expenses -= tx.amount; DEMO.dashboard.total_balance += tx.amount; }
       // Also reverse individual account balance
-      const allAccts = State.data.accounts || DEMO.accounts;
+      const allAccts = (State.data.accounts||[]);
       const srcAcct = allAccts.find(a => a.account_id === tx.account_id);
       if (tx._type === 'income'   && srcAcct) srcAcct.balance -= tx.amount;
       if (tx._type === 'expense'  && srcAcct) srcAcct.balance += tx.amount;
@@ -25560,7 +25428,7 @@ const App = {
 
     const isEdit = State.txIsEdit && State.txEditData;
     const editId = isEdit ? State.txEditData.id : null;
-    const allAccts = State.data.accounts || DEMO.accounts;
+    const allAccts = (State.data.accounts||[]);
 
     const txData = {
       _type: type, amount, date, category: cat,
@@ -25572,16 +25440,13 @@ const App = {
 
     let applyNewBalances = true;
     if (isEdit) {
-      const txList = State.data.transactions || DEMO.transactions;
+      const txList = (State.data.transactions||[]);
       const idx = txList.findIndex(t => t.id === editId);
       if (idx !== -1) {
         const old = txList[idx];
         // Reverse old dashboard totals (only if in current month)
         const oldDate = new Date(old.date); const now3 = new Date();
         const oldIsCur = oldDate.getMonth()===now3.getMonth() && oldDate.getFullYear()===now3.getFullYear();
-        if (old._type === 'income'  && oldIsCur) { DEMO.dashboard.monthly_income   -= old.amount; }
-        if (old._type === 'expense' && oldIsCur) { DEMO.dashboard.monthly_expenses -= old.amount; }
-        DEMO.dashboard.total_balance -= (old._type==='income' ? old.amount : old._type==='expense' ? -old.amount : 0);
         // Reverse old individual account balances
         const oldAcct = allAccts.find(a => a.account_id === old.account_id);
         if (old._type === 'income'  && oldAcct) oldAcct.balance -= old.amount;
@@ -25598,14 +25463,11 @@ const App = {
     } else {
       const newTx = { id: uid('tx_'), ...txData };
       if (State.data.transactions) State.data.transactions.unshift(newTx);
-      DEMO.transactions.unshift(newTx);
     }
 
     if (applyNewBalances) {
     const txDate2 = new Date(date); const now2 = new Date();
     const isCurrentMonth = txDate2.getMonth() === now2.getMonth() && txDate2.getFullYear() === now2.getFullYear();
-    if (type === 'income')  { if (isCurrentMonth) DEMO.dashboard.monthly_income   += amount; DEMO.dashboard.total_balance += amount; }
-    if (type === 'expense') { if (isCurrentMonth) DEMO.dashboard.monthly_expenses += amount; DEMO.dashboard.total_balance -= amount; }
     // Update individual account balances
     const srcAcct = allAccts.find(a => a.account_id === acct);
     if (type === 'income'  && srcAcct) srcAcct.balance += amount;
@@ -25634,7 +25496,7 @@ const App = {
   },
 
   markReminderPaid(id) {
-    const rems = State.data.reminders || DEMO.reminders || [];
+    const rems = (State.data.reminders||[]);
     const r = rems.find(x => x.reminder_id === id);
     if (r) { r.is_completed = true; r.completed_on = new Date().toISOString().slice(0,10); r.paid_amount = r.amount; }
     this.showToast('Reminder marked as paid ✅');
@@ -25656,7 +25518,7 @@ const App = {
   },
 
   _doSnooze(id, days) {
-    const r = (State.data.reminders || DEMO.reminders || []).find(x => x.reminder_id === id);
+    const r = ((State.data.reminders||[])).find(x => x.reminder_id === id);
     if (!r) return;
     if (r.is_completed) { this.showToast('Cannot snooze a completed reminder'); return; }
     if (r && r.reminder_date) {
@@ -25685,7 +25547,7 @@ const App = {
   },
 
   _doDeleteReminder(id) {
-    const rems = State.data.reminders || DEMO.reminders || [];
+    const rems = (State.data.reminders||[]);
     const idx = rems.findIndex(x => x.reminder_id === id);
     if (idx !== -1) rems.splice(idx, 1);
     this.showToast('Reminder deleted');
@@ -25693,7 +25555,7 @@ const App = {
   },
 
   duplicateReminder(id) {
-    const rems = State.data.reminders || DEMO.reminders || [];
+    const rems = (State.data.reminders||[]);
     const r = rems.find(x => x.reminder_id === id);
     if (!r) return;
     const copy = Object.assign({}, r, { reminder_id: uid('rem_'), is_completed: false, completed_on: null, paid_amount: null });
@@ -25720,7 +25582,7 @@ const App = {
     if (!title)  { this.showToast('Please enter a reminder title'); return; }
     if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
     if (!date)   { this.showToast('Please select a due date'); return; }
-    const remsList = State.data.reminders || DEMO.reminders || [];
+    const remsList = (State.data.reminders||[]);
     const existing = remsList.find(function(r){ return r.reminder_id === rf.id; });
     const newRem = {
       reminder_id: existing ? rf.id : uid('rem_'),
@@ -25781,8 +25643,7 @@ const App = {
     const icon = document.getElementById('nc-icon')?.value || '📦';
     if (!name) { this.showToast('Please enter a category name'); return; }
     const newCat = { id: uid('cat_'), name, icon, color: '#6C47FF', sub: [], type: tab };
-    if (!DEMO.categories) DEMO.categories = [];
-    DEMO.categories.push(newCat);
+    TX_CATEGORIES.push(newCat);
     overlay?.remove();
     this.showToast('Category "'+name+'" added!');
     this.render();
@@ -25809,7 +25670,7 @@ const App = {
   _saveCatEdit(id, overlay) {
     const name = document.getElementById('ec-name')?.value?.trim();
     if (!name) { this.showToast('Please enter a category name'); return; }
-    const cats = DEMO.categories || [];
+    const cats = TX_CATEGORIES || [];
     const cat = cats.find(c=>c.id===id);
     if (cat) { cat.name = name; this.showToast('Category updated!'); }
     else { this.showToast('Category updated (demo mode)'); }
@@ -25818,7 +25679,7 @@ const App = {
   },
 
   _deleteCategory(id, tab, overlay) {
-    const cats = DEMO.categories || [];
+    const cats = TX_CATEGORIES || [];
     const idx = cats.findIndex(c=>c.id===id);
     if (idx !== -1) { cats.splice(idx,1); this.showToast('Category deleted'); }
     else { this.showToast('Category deleted (demo mode)'); }
@@ -25918,7 +25779,7 @@ const App = {
   },
 
   _exportData(ext, range) {
-    const allTxs = State.data.transactions || DEMO.transactions || [];
+    const allTxs = (State.data.transactions||[]);
     const now = new Date();
     let filtered = allTxs;
     if (range === 'This Month') {
@@ -25935,7 +25796,7 @@ const App = {
     if (ext === 'csv' || ext === 'xlsx') {
       const rows = [['Date','Type','Amount','Category','Account','Description']];
       filtered.forEach(t => {
-        const acct = (State.data.accounts||DEMO.accounts).find(a=>a.account_id===t.account_id);
+        const acct = ((State.data.accounts||[])).find(a=>a.account_id===t.account_id);
         rows.push([t.date||'',t._type||'',t.amount||0,t.category||'',acct?acct.name:'',t.description||t.source||'']);
       });
       const csv = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -25946,7 +25807,7 @@ const App = {
       a.click();
       this.showToast('CSV exported — '+filtered.length+' transactions');
     } else if (ext === 'json') {
-      const data = {exported: new Date().toISOString(), range, transactions: filtered, accounts: State.data.accounts||DEMO.accounts};
+      const data = {exported: new Date().toISOString(), range, transactions: filtered, accounts: (State.data.accounts||[])};
       const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -26007,8 +25868,8 @@ const App = {
       color: colors[Math.floor(Math.random()*colors.length)],
       deadline: deadline || 'Dec 2027', monthly: monthly || 0
     };
-    if (!DEMO._goals) DEMO._goals = [];
-    DEMO._goals.push(newGoal);
+    if (!State.data.goals) State.data.goals = [];
+    State.data.goals.push(newGoal);
     overlay.remove();
     this.showToast('Goal added!');
     this.render();
@@ -26021,13 +25882,12 @@ const App = {
     const dob   = document.getElementById('ep-dob')?.value?.trim();
     if (!name)  { this.showToast('Please enter your name'); return; }
     if (!email) { this.showToast('Please enter your email'); return; }
-    const u = State.user || DEMO.user;
+    const u = State.user || (State.user||{});
     u.name  = name;
     u.email = email;
     if (phone) u.phone = phone;
     if (dob)   u.dob   = dob;
     if (State.user) State.user = u;
-    if (DEMO.user)  DEMO.user  = u;
     this.showToast('Profile updated!');
     this.goTab('more');
   },
@@ -29633,27 +29493,12 @@ function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
    10. INIT
 ══════════════════════════════════════════════════════ */
 (async function init() {
-  // Recover from demo-token stored without user (e.g. corrupted localStorage)
-  if (State.token === 'demo-token' && !State.user) {
-    State.user = { ...DEMO.user };
-    localStorage.setItem('fc_user', JSON.stringify(DEMO.user));
-  }
-
   if (State.token && State.user) {
-    if (State.token === 'demo-token') {
-      // Demo mode — skip backend validation, load DEMO data directly
-      await loadDashboardData();
-      document.getElementById('tab-bar').style.display = 'flex';
-      App.goTab('dashboard');
-    } else {
-      // Real token — validate with backend first
-      await loadDashboardData();
-      // If a 401 was received, _handleApiUnauth() already cleared the token
-      // and rendered the login screen — don't overwrite that navigation.
-      if (!State.token) return;
-      document.getElementById('tab-bar').style.display = 'flex';
-      App.goTab('dashboard');
-    }
+    await loadDashboardData();
+    // If a 401 was received, _handleApiUnauth() already cleared the token
+    if (!State.token) return;
+    document.getElementById('tab-bar').style.display = 'flex';
+    App.goTab('dashboard');
   } else {
     App.navigate('login');
   }
