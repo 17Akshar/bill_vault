@@ -16807,6 +16807,7 @@ function renderMore() {
     { icon:'📈', bg:'rgba(124,92,252,0.15)', label:'ESOP', sub:'Employee stock options — vesting, exercise, tax and analytics', fn:"App.navigate('esop-list')" },
     { icon:'🏦', bg:'rgba(109,40,217,0.15)', label:'Private Equity', sub:'PE funds, capital calls, distributions and exit tracking', fn:"App.navigate('pe-list')" },
     { icon:'🖼️', bg:'rgba(124,58,237,0.15)', label:'Arts & Artifacts', sub:'Paintings, sculptures, antiques, collectibles portfolio', fn:"App.navigate('art-list')" },
+    { icon:'🏦', bg:'rgba(234,88,12,0.15)', label:'Alternative Investment Funds', sub:'AIF Category I, II, III — PE, VC, Debt, Real Estate', fn:"App.navigate('aif-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -21982,6 +21983,787 @@ function renderArtSell() {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   8i. ALTERNATIVE INVESTMENT FUND (AIF) MODULE
+══════════════════════════════════════════════════════ */
+
+var AIF_COLOR = '#EA580C';
+
+var AIF_CATEGORIES = ['Category I', 'Category II', 'Category III'];
+var AIF_SUB_CATEGORIES = ['Private Equity','Venture Capital','Debt Fund','Real Estate','Infrastructure','Hedge Fund','Angel Fund','SME Fund','Social Venture','Fund of Funds','Other'];
+var AIF_STRATEGIES = ['Growth','Income','Balanced','Special Situations','Distressed Assets','Other'];
+
+function _aifStatusBadge(status) {
+  var map={'Active':'#22C55E','Exited':'#6B7280','Partially Exited':'#F59E0B','Closed':'#EF4444'};
+  var color=map[status]||'#22C55E';
+  return '<span style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+(status||'Active')+'</span>';
+}
+
+function _aifCatColor(cat) {
+  return cat==='Category I'?'#22C55E':cat==='Category II'?AIF_COLOR:cat==='Category III'?'#7C5CFC':'#6B7280';
+}
+
+function _aifFmtDate(d){if(!d)return '—';return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+function _aifDaysLeft(d){if(!d)return 0;return Math.ceil((new Date(d)-new Date())/86400000);}
+
+function _aifDetailTabBar(active) {
+  var tabs=[{id:'overview',icon:'🏠',label:'Overview'},{id:'investments',icon:'💼',label:'Invest.'},{id:'distributions',icon:'💰',label:'Distrib.'},{id:'documents',icon:'📁',label:'Docs'},{id:'more',icon:'···',label:'More'}];
+  var html='<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:50;max-width:430px;margin:0 auto">';
+  tabs.forEach(function(t){
+    var a=t.id===active;
+    html+='<div onclick="State.aifDetailTab=\''+t.id+'\';App.render()" style="flex:1;padding:8px 1px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+      +'<div style="font-size:'+(a?'16':'14')+'px">'+t.icon+'</div>'
+      +'<div style="font-size:9px;font-weight:'+(a?'700':'400')+';color:'+(a?AIF_COLOR:'var(--text-dim)')+'">'+t.label+'</div>'
+      +'</div>';
+  });
+  return html+'</div>';
+}
+
+function _aifSvgLineChart(points,w,h,color){
+  if(!points||points.length<2)return '';
+  var maxV=Math.max.apply(null,points.map(function(p){return p.value;}));
+  var minV=Math.min.apply(null,points.map(function(p){return p.value;}));
+  var pad=40;var chartW=w-pad;var chartH=h-30;
+  var xStep=chartW/(points.length-1);
+  var coords=points.map(function(p,i){return {x:pad/2+i*xStep,y:10+(1-(p.value-minV)/(maxV-minV||1))*(chartH-10),label:p.label,value:p.value};});
+  var pathD=coords.map(function(c,i){return(i===0?'M':'L')+c.x.toFixed(1)+' '+c.y.toFixed(1);}).join(' ');
+  var fillD=pathD+' L'+coords[coords.length-1].x.toFixed(1)+' '+(chartH+10)+' L'+coords[0].x.toFixed(1)+' '+(chartH+10)+' Z';
+  var svg='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="overflow:visible">'
+    +'<defs><linearGradient id="aifGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.35"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'
+    +'<path d="'+fillD+'" fill="url(#aifGrad)"/>'
+    +'<path d="'+pathD+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  coords.forEach(function(c){
+    svg+='<circle cx="'+c.x.toFixed(1)+'" cy="'+c.y.toFixed(1)+'" r="3.5" fill="'+color+'" stroke="var(--bg)" stroke-width="1.5"/>';
+    svg+='<text x="'+c.x.toFixed(1)+'" y="'+(h-4)+'" text-anchor="middle" fill="var(--text-dim)" font-size="9">'+c.label+'</text>';
+  });
+  return svg+'</svg>';
+}
+
+/* ── renderAifList ── */
+function renderAifList() {
+  var funds = State.aifFunds || [];
+  var totalInvested = 0, totalCurrent = 0;
+  funds.forEach(function(f){ totalInvested += f.invested||0; totalCurrent += f.current_value||0; });
+  var totalGain = totalCurrent - totalInvested;
+  var gainPct = totalInvested > 0 ? (totalGain/totalInvested*100).toFixed(2) : 0;
+  var gainColor = totalGain >= 0 ? '#22C55E' : '#EF4444';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+
+  // Hero
+  html += '<div style="background:linear-gradient(135deg,#EA580C,#9A3412);padding:20px 16px 32px;position:relative">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  html += '<div style="display:flex;align-items:center;gap:10px">';
+  html += '<div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px">🏦</div>';
+  html += '<div><div style="color:#fff;font-size:17px;font-weight:700">Alternate Investment Fund</div><div style="color:rgba(255,255,255,0.75);font-size:12px">AIF Category I, II & III</div></div>';
+  html += '</div>';
+  html += '<div style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="App.showToast(\'Notifications coming soon\')">🔔</div>';
+  html += '</div>';
+
+  // Portfolio summary card
+  html += '<div style="background:rgba(255,255,255,0.15);border-radius:14px;padding:16px;backdrop-filter:blur(10px)">';
+  html += '<div style="color:rgba(255,255,255,0.8);font-size:11px;margin-bottom:4px">Total Investment</div>';
+  html += '<div style="color:#fff;font-size:22px;font-weight:800;margin-bottom:12px">'+formatINR(totalInvested)+'</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  html += '<div><div style="color:rgba(255,255,255,0.7);font-size:11px">Current Value</div><div style="color:#fff;font-size:16px;font-weight:700">'+formatINR(totalCurrent)+'</div></div>';
+  html += '<div><div style="color:rgba(255,255,255,0.7);font-size:11px">Total Gain</div><div style="color:'+(totalGain>=0?'#86EFAC':'#FCA5A5')+';font-size:16px;font-weight:700">'+formatINR(totalGain)+' <span style="font-size:11px">('+gainPct+'%)</span></div></div>';
+  html += '</div></div>';
+  html += '</div>';
+
+  // 4-stat icon row
+  var totalDists = 0;
+  funds.forEach(function(f){ var d=State.aifDistributions&&State.aifDistributions[f.id]||[]; d.forEach(function(x){totalDists+=x.amount||0;}); });
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px;margin-top:-16px;position:relative;z-index:2">';
+  var stats=[
+    {icon:'🏦',label:'Total Funds',val:funds.length+''},
+    {icon:'💰',label:'Invested',val:formatINR(totalInvested)},
+    {icon:'📈',label:'Curr Value',val:formatINR(totalCurrent)},
+    {icon:'💸',label:'Total Gain',val:formatINR(totalGain)},
+  ];
+  stats.forEach(function(s){
+    html+='<div style="background:var(--card);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.08)">';
+    html+='<div style="font-size:18px;margin-bottom:4px">'+s.icon+'</div>';
+    html+='<div style="font-size:9px;font-weight:700;color:var(--text);word-break:break-all">'+s.val+'</div>';
+    html+='<div style="font-size:8px;color:var(--text-dim);margin-top:2px">'+s.label+'</div>';
+    html+='</div>';
+  });
+  html += '</div>';
+
+  // My AIF Funds section
+  html += '<div style="padding:0 16px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  html += '<div style="font-size:15px;font-weight:700;color:var(--text)">My AIF Funds</div>';
+  html += '<div onclick="State.aifAddData={};App.navigate(\'aif-add\')" style="font-size:12px;font-weight:700;color:'+AIF_COLOR+';cursor:pointer">+ Add Fund</div>';
+  html += '</div>';
+
+  if (funds.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">🏦</div><div style="color:var(--text-dim);font-size:13px">No AIF funds added yet</div></div>';
+  } else {
+    funds.forEach(function(f) {
+      var gain = (f.current_value||0) - (f.invested||0);
+      var gainPctF = f.invested > 0 ? (gain/f.invested*100).toFixed(2) : 0;
+      var gc = gain >= 0 ? '#22C55E' : '#EF4444';
+      var catColor = _aifCatColor(f.category);
+      var letter = (f.name||'A').charAt(0).toUpperCase();
+      html += '<div onclick="State.aifActiveId=\''+f.id+'\';State.aifDetailTab=\'overview\';App.navigate(\'aif-detail\')" style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:44px;height:44px;border-radius:50%;background:'+AIF_COLOR+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0">'+letter+'</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(f.name)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+escapeHtml(f.manager||'')+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">Invested: '+formatINR(f.invested||0)+'  <span style="color:'+gc+'">'+formatINR(gain)+' ('+gainPctF+'%)</span></div>';
+      html += '</div>';
+      html += '<div style="text-align:right;flex-shrink:0">';
+      html += '<div style="font-size:14px;font-weight:700;color:'+AIF_COLOR+'">'+formatINR(f.current_value||0)+'</div>';
+      html += '<div style="font-size:9px;background:'+catColor+'22;color:'+catColor+';border-radius:8px;padding:2px 6px;margin-top:4px;font-weight:600">'+escapeHtml(f.category||'')+'</div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '<button onclick="State.aifAddData={};App.navigate(\'aif-add\')" style="width:100%;padding:14px;background:linear-gradient(135deg,#EA580C,#9A3412);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;margin-bottom:24px">+ Add Alternate Investment Fund</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifAdd ── */
+function renderAifAdd() {
+  var d = State.aifAddData || {};
+  var isEdit = !!(d && d.id);
+  var secStyle = 'background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px';
+  var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:12px"';
+  var inp = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'aif-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">'+(isEdit?'Edit AIF Fund':'Add Alternate Investment Fund')+'</div>';
+  html += '<div class="icon-btn" onclick="App._aifSave()" style="color:'+AIF_COLOR+'"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+
+  // Section 1 — Fund Information
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Fund Information</div>';
+  html += '<div style="'+secStyle+'">';
+  html += '<label '+lbl+'>Fund Name</label><input id="aif-name" '+inp+' placeholder="e.g. ABC AIF Fund" value="'+escapeHtml(d.name||'')+'">';
+  html += '<label '+lbl+'>Fund Manager</label><input id="aif-manager" '+inp+' placeholder="e.g. ABC Capital Advisors" value="'+escapeHtml(d.manager||'')+'">';
+  html += '<label '+lbl+'>Fund Type</label><input id="aif-fund-type" '+inp+' placeholder="Alternative Investment Fund" value="'+(escapeHtml(d.fund_type||'Alternative Investment Fund'))+'">';
+  html += '<label '+lbl+'>Category</label><select id="aif-category" '+sel+'>';
+  AIF_CATEGORIES.forEach(function(c){ html+='<option value="'+c+'"'+(d.category===c?' selected':'')+'>'+c+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Sub Category</label><select id="aif-sub-cat" '+sel+'>';
+  AIF_SUB_CATEGORIES.forEach(function(c){ html+='<option value="'+c+'"'+(d.sub_category===c?' selected':'')+'>'+c+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Vintage Year</label><input id="aif-vintage" '+inp+' type="number" placeholder="'+new Date().getFullYear()+'" value="'+(d.vintage||'')+'">';
+  html += '<label '+lbl+'>Fund Size (₹)</label><input id="aif-fund-size" '+inp+' type="number" placeholder="0" value="'+(d.fund_size||'')+'">';
+  html += '<label '+lbl+'>Country / Region</label><input id="aif-country" '+inp+' placeholder="India" value="'+escapeHtml(d.country||'India')+'">';
+  html += '</div>';
+
+  // Section 2 — Investment Information
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Investment Information</div>';
+  html += '<div style="'+secStyle+'">';
+  html += '<label '+lbl+'>Investment Date</label><input id="aif-inv-date" '+inp+' type="date" value="'+(d.investment_date||'')+'">';
+  html += '<label '+lbl+'>Invested Amount (₹)</label><input id="aif-invested" '+inp+' type="number" placeholder="0" value="'+(d.invested||'')+'">';
+  html += '<label '+lbl+'>Currency</label><input id="aif-currency" '+inp+' value="INR" readonly>';
+  html += '<label '+lbl+'>Minimum Commitment (₹)</label><input id="aif-min-commit" '+inp+' type="number" placeholder="0" value="'+(d.min_commitment||'')+'">';
+  html += '<label '+lbl+'>Lock-in Period</label><select id="aif-lock-in" '+sel+'>';
+  [1,2,3,4,5,6,7].forEach(function(y){ html+='<option value="'+y+'"'+((d.lock_in||3)===y?' selected':'')+'>'+y+' Year'+(y>1?'s':'')+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Expected Exit Date</label><input id="aif-exit-date-field" '+inp+' type="date" value="'+(d.unlock_date||'')+'">';
+  html += '<label '+lbl+'>Investment Horizon</label><select id="aif-horizon" '+sel+'>';
+  ['3 Years','5 Years','7 Years','10 Years'].forEach(function(h){ html+='<option value="'+h+'"'+(d.horizon===h?' selected':'')+'>'+h+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Fund Strategy</label><select id="aif-strategy" '+sel+'>';
+  AIF_STRATEGIES.forEach(function(s){ html+='<option value="'+s+'"'+(d.strategy===s?' selected':'')+'>'+s+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Status</label><select id="aif-status" '+sel+'>';
+  ['Active','Exited','Partially Exited','Closed'].forEach(function(s){ html+='<option value="'+s+'"'+(d.status===s?' selected':'')+'>'+s+'</option>'; });
+  html += '</select>';
+  html += '</div>';
+
+  // Section 3 — Other Details
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Other Details</div>';
+  html += '<div style="'+secStyle+'">';
+  html += '<label '+lbl+'>Fund Strategy Description</label><textarea id="aif-desc" '+inp+' style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box;resize:vertical;min-height:80px" placeholder="Describe the investment strategy...">'+escapeHtml(d.description||'')+'</textarea>';
+  html += '<label '+lbl+'>Notes</label><textarea id="aif-notes" '+inp+' style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box;resize:vertical;min-height:60px" placeholder="Any additional notes...">'+escapeHtml(d.notes||'')+'</textarea>';
+  html += '</div>';
+
+  html += '<button onclick="App._aifSave()" style="width:100%;padding:14px;background:linear-gradient(135deg,#EA580C,#9A3412);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:32px">Save Fund</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifDetail ── */
+function renderAifDetail() {
+  var id = State.aifActiveId;
+  var fund = (State.aifFunds||[]).filter(function(f){ return f.id===id; })[0];
+  if (!fund) return '<div style="padding:32px;text-align:center;color:var(--text-dim)">Fund not found</div>';
+  var tab = State.aifDetailTab || 'overview';
+  var letter = (fund.name||'A').charAt(0).toUpperCase();
+  var gain = (fund.current_value||0) - (fund.invested||0);
+  var gainPct = fund.invested > 0 ? (gain/fund.invested*100).toFixed(2) : 0;
+  var gainColor = gain >= 0 ? '#22C55E' : '#EF4444';
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+
+  // Top bar
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'aif-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700;color:var(--text)">'+escapeHtml(fund.name)+'</div>';
+  html += '<div style="width:36px"></div>';
+  html += '</div>';
+
+  // Hero card
+  html += '<div style="padding:16px">';
+  html += '<div style="background:linear-gradient(135deg,#EA580C,#9A3412);border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;margin-bottom:16px">';
+  html += '<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0">'+letter+'</div>';
+  html += '<div style="flex:1;min-width:0">';
+  html += '<div style="color:#fff;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(fund.name)+'</div>';
+  html += '<div style="color:rgba(255,255,255,0.8);font-size:12px;margin-top:2px">'+escapeHtml(fund.sub_category||'')+'</div>';
+  html += '<div style="margin-top:6px">'+_aifStatusBadge(fund.status)+'</div>';
+  html += '</div></div>';
+
+  // Tab content
+  if (tab === 'overview') {
+    // 3-stat row
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px 8px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Invested</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(fund.invested||0)+'</div></div>';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px 8px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Current Value</div><div style="font-size:13px;font-weight:700;color:'+AIF_COLOR+'">'+formatINR(fund.current_value||0)+'</div></div>';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px 8px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Gain/Loss</div><div style="font-size:13px;font-weight:700;color:'+gainColor+'">'+formatINR(gain)+'</div></div>';
+    html += '</div>';
+
+    // Info rows
+    html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px">';
+    var rows = [
+      {l:'Fund Manager', v:fund.manager||'—'},
+      {l:'Category', v:(fund.category||'—')+' · '+(fund.sub_category||'—')},
+      {l:'Vintage Year', v:fund.vintage||'—'},
+      {l:'IRR', v:(fund.irr||0)+'%'},
+      {l:'Lock-in Period', v:(fund.lock_in||'—')+' Years'},
+      {l:'Next Unlock Date', v:_aifFmtDate(fund.unlock_date)},
+    ];
+    rows.forEach(function(r){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(String(r.v))+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Investment thesis
+    if (fund.description) {
+      html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Investment Thesis</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim);line-height:1.6">'+escapeHtml(fund.description)+'</div>';
+      html += '</div>';
+    }
+
+    // 4 Quick action cards
+    var actions = [
+      {icon:'💰',label:'Add Distribution',fn:"State.aifDetailTab='distributions';App.navigate('aif-add-dist')"},
+      {icon:'📁',label:'Documents',fn:"State.aifDetailTab='documents';App.render()"},
+      {icon:'📈',label:'Analytics',fn:"App.navigate('aif-analytics')"},
+      {icon:'💸',label:'Exit Details',fn:"App.navigate('aif-exit')"},
+    ];
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    actions.forEach(function(a){
+      html += '<div onclick="'+a.fn+'" style="background:var(--card);border-radius:12px;padding:14px;text-align:center;cursor:pointer;border:1px solid var(--border)">';
+      html += '<div style="font-size:22px;margin-bottom:6px">'+a.icon+'</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">'+a.label+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+  } else if (tab === 'investments') {
+    // Fund Information
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Fund Information</div>';
+    html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px">';
+    var fundInfoRows = [
+      {l:'Fund Name', v:fund.name||'—'},
+      {l:'Manager', v:fund.manager||'—'},
+      {l:'Fund Type', v:fund.fund_type||'—'},
+      {l:'Category', v:fund.category||'—'},
+      {l:'Sub Category', v:fund.sub_category||'—'},
+      {l:'Vintage Year', v:fund.vintage||'—'},
+      {l:'Fund Size', v:formatINR(fund.fund_size||0)},
+      {l:'Country', v:fund.country||'—'},
+    ];
+    fundInfoRows.forEach(function(r){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(String(r.v))+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Investment Information
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Investment Information</div>';
+    html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px">';
+    var invInfoRows = [
+      {l:'Investment Date', v:_aifFmtDate(fund.investment_date)},
+      {l:'Invested Amount', v:formatINR(fund.invested||0)},
+      {l:'Currency', v:fund.currency||'INR'},
+      {l:'Min Commitment', v:formatINR(fund.min_commitment||0)},
+      {l:'Lock-in Period', v:(fund.lock_in||0)+' Years'},
+      {l:'Unlock Date', v:_aifFmtDate(fund.unlock_date)},
+      {l:'Status', v:fund.status||'Active'},
+    ];
+    invInfoRows.forEach(function(r){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(String(r.v))+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Fund Strategy
+    if (fund.description) {
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Fund Strategy</div>';
+      html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px">';
+      html += '<div style="font-size:12px;color:var(--text-dim);line-height:1.6">'+escapeHtml(fund.description)+'</div>';
+      html += '</div>';
+    }
+
+  } else if (tab === 'distributions') {
+    var dists = (State.aifDistributions && State.aifDistributions[id]) || [];
+    var totalDistAmt = 0; dists.forEach(function(x){ totalDistAmt += x.amount||0; });
+    var totalDistGain = totalDistAmt;
+
+    // 2-stat row
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Distributions</div><div style="font-size:14px;font-weight:700;color:'+AIF_COLOR+'">'+formatINR(totalDistAmt)+'</div></div>';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Gain Realized</div><div style="font-size:14px;font-weight:700;color:#22C55E">'+formatINR(totalDistGain)+'</div></div>';
+    html += '</div>';
+
+    if (dists.length === 0) {
+      html += '<div style="text-align:center;padding:32px 0"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="color:var(--text-dim);font-size:13px">No distributions yet</div></div>';
+    } else {
+      var sorted = dists.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+      sorted.forEach(function(d){
+        html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px">';
+        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+        html += '<div style="background:'+AIF_COLOR+'22;color:'+AIF_COLOR+';border-radius:8px;padding:3px 8px;font-size:10px;font-weight:700">#'+d.num+'</div>';
+        html += '<div style="font-size:12px;color:var(--text-dim)">'+_aifFmtDate(d.date)+'</div>';
+        html += '<div style="margin-left:auto;font-size:14px;font-weight:700;color:var(--text)">'+formatINR(d.amount)+'</div>';
+        html += '</div>';
+        html += '<div style="display:flex;align-items:center;gap:8px">';
+        html += '<span style="background:rgba(99,102,241,0.12);color:#6366F1;border-radius:8px;padding:2px 8px;font-size:10px;font-weight:600">'+escapeHtml(d.type||'')+'</span>';
+        html += '<span style="background:rgba(34,197,94,0.12);color:#22C55E;border-radius:8px;padding:2px 8px;font-size:10px;font-weight:600">Received</span>';
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+
+    html += '<button onclick="App.navigate(\'aif-add-dist\')" style="width:100%;padding:13px;background:linear-gradient(135deg,#EA580C,#9A3412);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Distribution</button>';
+
+  } else if (tab === 'documents') {
+    var docs = (State.aifDocuments && State.aifDocuments[id]) || [];
+
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text)">Documents</div>';
+    html += '<div onclick="App._aifUploadDoc(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+AIF_COLOR+';cursor:pointer">+ Upload</div>';
+    html += '</div>';
+
+    if (docs.length === 0) {
+      html += '<div style="text-align:center;padding:32px 0"><div style="font-size:36px;margin-bottom:10px">📁</div><div style="color:var(--text-dim);font-size:13px">No documents yet</div></div>';
+    } else {
+      docs.forEach(function(doc){
+        html += '<div style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+        html += '<div style="width:36px;height:36px;background:rgba(239,68,68,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#EF4444;font-size:16px;flex-shrink:0">📄</div>';
+        html += '<div style="flex:1;min-width:0">';
+        html += '<div style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(doc.name)+'</div>';
+        html += '<div style="font-size:10px;color:var(--text-dim);margin-top:2px">'+doc.type+' · '+doc.size+' · '+_aifFmtDate(doc.date)+'</div>';
+        html += '</div>';
+        html += '<div onclick="App.showToast(\'Download coming soon\')" style="width:32px;height:32px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim)">⬇️</div>';
+        html += '</div>';
+      });
+    }
+
+  } else if (tab === 'more') {
+    var moreItems = [
+      {icon:'📊', label:'Transactions',  fn:"App.navigate('aif-transactions')"},
+      {icon:'📝', label:'Notes',         fn:"App.navigate('aif-notes')"},
+      {icon:'📈', label:'Analytics',     fn:"App.navigate('aif-analytics')"},
+      {icon:'🔔', label:'Reminders',     fn:"App.navigate('aif-reminders')"},
+      {icon:'💸', label:'Exit / Sale',   fn:"App.navigate('aif-exit')"},
+    ];
+    html += '<div style="background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:14px">';
+    moreItems.forEach(function(m, i){
+      html += '<div onclick="'+m.fn+'" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border-bottom:'+(i<moreItems.length-1?'1px solid var(--border)':'none')+'">';
+      html += '<div style="font-size:20px">'+m.icon+'</div>';
+      html += '<div style="flex:1;font-size:13px;font-weight:600;color:var(--text)">'+m.label+'</div>';
+      html += '<div style="color:var(--text-dim)">›</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Edit + Delete
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">';
+    html += '<button onclick="State.aifAddData=Object.assign({},'+JSON.stringify(fund).replace(/</g,'\\u003c')+');App.navigate(\'aif-add\')" style="padding:12px;background:var(--card);color:'+AIF_COLOR+';border:1px solid '+AIF_COLOR+';border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">Edit Fund</button>';
+    html += '<button onclick="if(confirm(\'Delete this AIF fund?\'))App._aifDelete(\''+id+'\')" style="padding:12px;background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.3);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">Delete Fund</button>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  html += _aifDetailTabBar(tab);
+  html += '</div>';
+  return html;
+}
+
+/* ── renderAifAddDist ── */
+function renderAifAddDist() {
+  var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:12px"';
+  var inp = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'distributions\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Add Distribution</div>';
+  html += '<div class="icon-btn" onclick="App._aifSaveDist()" style="color:'+AIF_COLOR+'"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+
+  html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px">';
+  html += '<label '+lbl+'>Distribution Date</label><input id="aif-dist-date" '+inp+' type="date" value="'+new Date().toISOString().slice(0,10)+'">';
+  html += '<label '+lbl+'>Distribution Amount (₹)</label><input id="aif-dist-amount" '+inp+' type="number" placeholder="0">';
+  html += '<label '+lbl+'>Distribution Type</label><select id="aif-dist-type" '+sel+'>';
+  ['Capital Return','Dividend','Interest','Profit Share','Exit Distribution','Special Distribution'].forEach(function(t){ html+='<option>'+t+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Tax Treatment</label><select id="aif-dist-tax" '+sel+'>';
+  ['Capital Gain','Dividend Income','Interest Income','Other'].forEach(function(t){ html+='<option>'+t+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Reference Number</label><input id="aif-dist-ref" '+inp+' placeholder="e.g. DIST/2024/001">';
+  html += '<label '+lbl+'>Notes</label><textarea id="aif-dist-notes" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box;resize:vertical;min-height:60px" placeholder="Any notes..."></textarea>';
+  html += '</div>';
+
+  html += '<button onclick="App.showToast(\'Upload coming soon\')" style="width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;margin-bottom:12px">📎 Upload Distribution Document</button>';
+  html += '<button onclick="App._aifSaveDist()" style="width:100%;padding:14px;background:linear-gradient(135deg,#EA580C,#9A3412);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:32px">Save Distribution</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifTransactions ── */
+function renderAifTransactions() {
+  var id = State.aifActiveId;
+  var fund = (State.aifFunds||[]).filter(function(f){ return f.id===id; })[0];
+  var dists = (State.aifDistributions && State.aifDistributions[id]) || [];
+  var filter = State.aifTxFilter || 'all';
+
+  var allTx = [];
+  if (fund && fund.investment_date) {
+    allTx.push({date:fund.investment_date, type:'Investment', amount:fund.invested||0, color:'#22C55E', label:'Investment'});
+  }
+  dists.forEach(function(d){ allTx.push({date:d.date, type:'Distribution', amount:d.amount, color:AIF_COLOR, label:'Distribution'}); });
+
+  var filtered = allTx;
+  if (filter === 'investment') filtered = allTx.filter(function(t){ return t.type==='Investment'; });
+  else if (filter === 'distribution') filtered = allTx.filter(function(t){ return t.type==='Distribution'; });
+
+  // Group by year
+  var byYear = {};
+  filtered.forEach(function(t){
+    var yr = t.date ? t.date.slice(0,4) : 'Unknown';
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(t);
+  });
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'more\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Transactions</div>';
+  html += '<div style="width:36px"></div>';
+  html += '</div>';
+
+  // Filter
+  html += '<div style="padding:12px 16px;display:flex;gap:8px">';
+  ['all','investment','distribution'].forEach(function(f){
+    var label = f.charAt(0).toUpperCase()+f.slice(1);
+    var active = filter === f;
+    html += '<div onclick="State.aifTxFilter=\''+f+'\';App.render()" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:'+(active?AIF_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+'">'+(f==='all'?'All':label)+'</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="padding:0 16px">';
+  var years = Object.keys(byYear).sort().reverse();
+  if (years.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:36px;margin-bottom:10px">📊</div><div style="color:var(--text-dim);font-size:13px">No transactions found</div></div>';
+  } else {
+    years.forEach(function(yr){
+      html += '<div style="font-size:12px;font-weight:700;color:var(--text-dim);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.5px">'+yr+'</div>';
+      html += '<div style="background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:12px">';
+      byYear[yr].sort(function(a,b){return new Date(b.date)-new Date(a.date);}).forEach(function(t, i, arr){
+        html += '<div style="display:flex;align-items:center;padding:12px 14px;border-bottom:'+(i<arr.length-1?'1px solid var(--border)':'none')+'">';
+        html += '<div style="flex:1">';
+        html += '<div style="font-size:12px;font-weight:600;color:var(--text-dim)">'+_aifFmtDate(t.date)+'</div>';
+        html += '<div style="font-size:13px;font-weight:700;margin-top:2px"><span style="color:'+t.color+'">'+t.label+'</span></div>';
+        html += '</div>';
+        html += '<div style="font-size:14px;font-weight:700;color:'+t.color+'">'+formatINR(t.amount)+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifDocuments ── */
+function renderAifDocuments() {
+  var id = State.aifActiveId;
+  var docs = (State.aifDocuments && State.aifDocuments[id]) || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'documents\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Documents</div>';
+  html += '<div onclick="App._aifUploadDoc(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+AIF_COLOR+';cursor:pointer">+ Upload</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  if (docs.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">📁</div><div style="color:var(--text-dim);font-size:13px">No documents uploaded yet</div></div>';
+  } else {
+    docs.forEach(function(doc){
+      html += '<div style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+      html += '<div style="width:40px;height:40px;background:rgba(239,68,68,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📄</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(doc.name)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+doc.type+' · '+doc.size+' · '+_aifFmtDate(doc.date)+'</div>';
+      html += '</div>';
+      html += '<div onclick="App.showToast(\'Download coming soon\')" style="width:36px;height:36px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer">⬇️</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifNotes ── */
+function renderAifNotes() {
+  var id = State.aifActiveId;
+  var notes = (State.aifNotesList && State.aifNotesList[id]) || [];
+  var activeFilter = State.aifNotesFilter || 'all';
+  var filters = ['all','general','fund_update','strategy','meeting','tax'];
+  var filterLabels = {all:'All',general:'General',fund_update:'Fund Update',strategy:'Strategy',meeting:'Meeting',tax:'Tax'};
+
+  var filtered = notes;
+  if (activeFilter !== 'all') filtered = notes.filter(function(n){ return n.type===activeFilter; });
+  var pinned = filtered.filter(function(n){ return n.pinned; });
+  var unpinned = filtered.filter(function(n){ return !n.pinned; });
+  var sorted = pinned.concat(unpinned);
+
+  var typeColors = {general:'#6366F1',fund_update:AIF_COLOR,strategy:'#22C55E',meeting:'#0EA5E9',tax:'#F59E0B'};
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'more\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Notes</div>';
+  html += '<div onclick="App._aifAddNote(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+AIF_COLOR+';cursor:pointer">+ Add Note</div>';
+  html += '</div>';
+
+  // Filter chips
+  html += '<div style="padding:12px 16px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch">';
+  filters.forEach(function(f){
+    var a = activeFilter === f;
+    html += '<div onclick="State.aifNotesFilter=\''+f+'\';App.render()" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:'+(a?AIF_COLOR:'var(--card)')+';color:'+(a?'#fff':'var(--text-dim)')+';flex-shrink:0">'+filterLabels[f]+'</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="padding:0 16px">';
+  if (sorted.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="color:var(--text-dim);font-size:13px">No notes found</div></div>';
+  } else {
+    sorted.forEach(function(n){
+      var tc = typeColors[n.type] || '#6B7280';
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+      if (n.pinned) html += '<span style="font-size:14px">📌</span>';
+      if (n.locked) html += '<span style="font-size:14px">🔒</span>';
+      html += '<div style="flex:1;font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(n.title||'')+'</div>';
+      html += '<span style="background:'+tc+'22;color:'+tc+';border-radius:8px;padding:2px 8px;font-size:10px;font-weight:600">'+filterLabels[n.type]||n.type+'</span>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;line-height:1.5">'+escapeHtml((n.body||'').slice(0,120))+(n.body&&n.body.length>120?'…':'')+'</div>';
+      html += '<div style="font-size:10px;color:var(--text-dim)">'+_aifFmtDate(n.date)+'</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifAnalytics ── */
+function renderAifAnalytics() {
+  var id = State.aifActiveId;
+  var fund = (State.aifFunds||[]).filter(function(f){ return f.id===id; })[0];
+  if (!fund) return '<div style="padding:32px;text-align:center;color:var(--text-dim)">Fund not found</div>';
+  var dists = (State.aifDistributions && State.aifDistributions[id]) || [];
+  var totalDist = 0; dists.forEach(function(d){ totalDist += d.amount||0; });
+  var gain = (fund.current_value||0) - (fund.invested||0);
+  var retPct = fund.invested > 0 ? (gain/fund.invested*100).toFixed(2) : 0;
+  var gainColor = gain >= 0 ? '#22C55E' : '#EF4444';
+
+  var chartPoints = [
+    {label:'Jan 23', value:1000000},
+    {label:'Apr 23', value:1050000},
+    {label:'Jul 23', value:1100000},
+    {label:'Oct 23', value:1150000},
+    {label:'Jan 24', value:1175000},
+    {label:'Apr 24', value:1200000},
+  ];
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'more\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Analytics</div>';
+  html += '<div style="background:var(--card);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--text-dim);cursor:pointer">This Year ▾</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Performance Summary
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Performance Summary</div>';
+  html += '<div style="background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:16px">';
+  var perfRows = [
+    {l:'Invested Amount',      v:formatINR(fund.invested||0),       color:'var(--text)'},
+    {l:'Current Value',        v:formatINR(fund.current_value||0),  color:AIF_COLOR},
+    {l:'Total Distributions',  v:formatINR(totalDist),              color:'var(--text)'},
+    {l:'Total Gain',           v:formatINR(gain),                   color:gainColor},
+    {l:'Return %',             v:retPct+'%',                        color:'#22C55E'},
+    {l:'XIRR',                 v:(fund.irr||0)+'%',                 color:'#22C55E'},
+  ];
+  perfRows.forEach(function(r, i){
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:'+(i<perfRows.length-1?'1px solid var(--border)':'none')+'">';
+    html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+    html += '<div style="font-size:13px;font-weight:700;color:'+r.color+'">'+r.v+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Line chart
+  html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Value Over Time (₹)</div>';
+  html += '<div style="overflow-x:auto">'+_aifSvgLineChart(chartPoints, 340, 130, AIF_COLOR)+'</div>';
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifReminders ── */
+function renderAifReminders() {
+  var id = State.aifActiveId;
+  var reminders = (State.aifReminders && State.aifReminders[id]) || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'more\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Reminders</div>';
+  html += '<div onclick="App._aifAddReminder(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+AIF_COLOR+';cursor:pointer">+ Add Reminder</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  if (reminders.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">🔔</div><div style="color:var(--text-dim);font-size:13px">No reminders set</div></div>';
+  } else {
+    reminders.forEach(function(r){
+      var days = _aifDaysLeft(r.date);
+      var urgColor = days < 30 ? '#EF4444' : days < 90 ? '#F59E0B' : '#22C55E';
+      var urgLabel = days < 0 ? 'Overdue' : 'Due in '+days+' Days';
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:40px;height:40px;border-radius:50%;background:'+r.color+'22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+r.icon+'</div>';
+      html += '<div style="flex:1">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(r.type||'')+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+_aifFmtDate(r.date)+'</div>';
+      html += '</div>';
+      html += '<span style="background:'+urgColor+'22;color:'+urgColor+';border-radius:10px;padding:3px 8px;font-size:10px;font-weight:700">'+urgLabel+'</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderAifExit ── */
+function renderAifExit() {
+  var id = State.aifActiveId;
+  var fund = (State.aifFunds||[]).filter(function(f){ return f.id===id; })[0];
+  var exits = (State.aifExits && State.aifExits[id]) || [];
+  var showForm = State.aifShowExitForm || false;
+  var totalExitAmt = 0; exits.forEach(function(e){ totalExitAmt += e.amount||0; });
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.aifDetailTab=\'more\';App.navigate(\'aif-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Exit / Sale Details</div>';
+  html += '<div onclick="State.aifShowExitForm=true;App.render()" style="font-size:12px;font-weight:700;color:'+AIF_COLOR+';cursor:pointer">+ Add Exit</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Summary row
+  if (exits.length > 0) {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Exits</div><div style="font-size:20px;font-weight:800;color:var(--text)">'+exits.length+'</div></div>';
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px;text-align:center"><div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Total Realized</div><div style="font-size:14px;font-weight:700;color:'+AIF_COLOR+'">'+formatINR(totalExitAmt)+'</div></div>';
+    html += '</div>';
+  }
+
+  // Exit list
+  exits.forEach(function(e){
+    var gainColor = (e.gain||0) >= 0 ? '#22C55E' : '#EF4444';
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+_aifFmtDate(e.date)+'</div>';
+    html += '<span style="background:'+AIF_COLOR+'22;color:'+AIF_COLOR+';border-radius:8px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:auto">'+escapeHtml(e.type||'Exit')+'</span>';
+    html += '</div>';
+    html += '<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px">'+formatINR(e.amount)+'</div>';
+    var exitRows = [
+      {l:'Buyer / Investor', v:e.buyer||'—'},
+      {l:'Cost Basis',       v:formatINR(e.cost||0)},
+      {l:'Gain / Loss',      v:formatINR(e.gain||0), c:gainColor},
+      {l:'Return %',         v:(e.return_pct||0)+'%', c:gainColor},
+    ];
+    exitRows.forEach(function(r){
+      html += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">';
+      html += '<div style="font-size:11px;color:var(--text-dim)">'+r.l+'</div>';
+      html += '<div style="font-size:11px;font-weight:600;color:'+(r.c||'var(--text)')+'">'+escapeHtml(String(r.v))+'</div>';
+      html += '</div>';
+    });
+    if (e.notes) { html += '<div style="font-size:11px;color:var(--text-dim);margin-top:8px">'+escapeHtml(e.notes)+'</div>'; }
+    html += '</div>';
+  });
+
+  if (exits.length === 0 && !showForm) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">💸</div><div style="color:var(--text-dim);font-size:13px">No exits recorded yet</div></div>';
+  }
+
+  // Inline form
+  if (showForm) {
+    var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:12px"';
+    var inp = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+    var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+    html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px;border:2px solid '+AIF_COLOR+'">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">New Exit</div>';
+    html += '<label '+lbl+'>Exit Date</label><input id="aif-exit-date" '+inp+' type="date" value="'+new Date().toISOString().slice(0,10)+'">';
+    html += '<label '+lbl+'>Exit Amount (₹)</label><input id="aif-exit-amount" '+inp+' type="number" placeholder="0">';
+    html += '<label '+lbl+'>Exit Type</label><select id="aif-exit-type" '+sel+'>';
+    ['Partial Exit','Full Exit','Secondary Sale','IPO Exit','Buyback'].forEach(function(t){ html+='<option>'+t+'</option>'; });
+    html += '</select>';
+    html += '<label '+lbl+'>Buyer / Investor</label><input id="aif-exit-buyer" '+inp+' placeholder="Name of buyer or investor">';
+    html += '<label '+lbl+'>Notes</label><textarea id="aif-exit-notes" style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box;resize:vertical;min-height:60px" placeholder="Any notes..."></textarea>';
+    html += '<button onclick="App.showToast(\'Upload coming soon\')" style="width:100%;padding:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;margin-top:12px;margin-bottom:8px">📎 Upload Documents</button>';
+    html += '<button onclick="App._aifSaveExit()" style="width:100%;padding:13px;background:linear-gradient(135deg,#EA580C,#9A3412);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Save Exit</button>';
+    html += '<button onclick="State.aifShowExitForm=false;App.render()" style="width:100%;padding:10px;background:transparent;color:var(--text-dim);border:none;font-size:13px;cursor:pointer;margin-top:4px">Cancel</button>';
+    html += '</div>';
+  } else {
+    html += '<button onclick="State.aifShowExitForm=true;App.render()" style="width:100%;padding:13px;background:linear-gradient(135deg,#EA580C,#9A3412);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px">+ Add Exit</button>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
 // Helper: render linked notes list (used in other module detail screens)
 function renderLinkedNotesList(module, linkedId) {
   var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
@@ -22028,6 +22810,7 @@ const App = {
     else if (screen.startsWith('esop'))           tabHint = 'more';
     else if (screen.startsWith('pe-'))            tabHint = 'more';
     else if (screen.startsWith('art-'))           tabHint = 'more';
+    else if (screen.startsWith('aif-'))           tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -22295,6 +23078,16 @@ const App = {
       case 'art-insurance':    html = renderArtInsurance();    break;
       case 'art-analytics':    html = renderArtAnalytics();    break;
       case 'art-sell':         html = renderArtSell();         break;
+      case 'aif-list':         html = renderAifList();         break;
+      case 'aif-add':          html = renderAifAdd();          break;
+      case 'aif-detail':       html = renderAifDetail();       break;
+      case 'aif-add-dist':     html = renderAifAddDist();      break;
+      case 'aif-transactions': html = renderAifTransactions(); break;
+      case 'aif-documents':    html = renderAifDocuments();    break;
+      case 'aif-notes':        html = renderAifNotes();        break;
+      case 'aif-analytics':    html = renderAifAnalytics();    break;
+      case 'aif-reminders':    html = renderAifReminders();    break;
+      case 'aif-exit':         html = renderAifExit();         break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -25404,6 +26197,101 @@ const App = {
   },
 
   _artAddValuation(id) { this.showToast('Add valuation coming soon'); },
+
+  /* ── AIF Module ── */
+  _aifSave() {
+    var g=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+    var name       = g('aif-name');
+    var manager    = g('aif-manager');
+    var fund_type  = g('aif-fund-type')||'Alternative Investment Fund';
+    var category   = g('aif-category');
+    var sub_cat    = g('aif-sub-cat');
+    var vintage    = parseInt(g('aif-vintage'))||new Date().getFullYear();
+    var fund_size  = parseFloat(g('aif-fund-size').replace(/,/g,''))||0;
+    var country    = g('aif-country')||'India';
+    var inv_date   = g('aif-inv-date');
+    var invested   = parseFloat(g('aif-invested').replace(/,/g,''))||0;
+    var min_commit = parseFloat(g('aif-min-commit').replace(/,/g,''))||0;
+    var lock_inEl  = document.getElementById('aif-lock-in');
+    var lock_in    = lock_inEl ? parseInt(lock_inEl.value)||3 : 3;
+    var strategy   = g('aif-strategy')||'Growth';
+    var status     = g('aif-status')||'Active';
+    var desc       = g('aif-desc');
+    var notes      = g('aif-notes');
+    if(!name){this.showToast('Please enter fund name');return;}
+    var existing=State.aifAddData&&State.aifAddData.id;
+    if(existing){
+      var f=(State.aifFunds||[]).filter(function(x){return x.id===existing;})[0];
+      if(f){f.name=name;f.manager=manager;f.fund_type=fund_type;f.category=category;f.sub_category=sub_cat;f.vintage=vintage;f.fund_size=fund_size;f.country=country;f.investment_date=inv_date;f.invested=invested;f.min_commitment=min_commit;f.lock_in=lock_in;f.strategy=strategy;f.status=status;f.description=desc;f.notes=notes;}
+      State.aifActiveId=existing;
+    } else {
+      var newId='aif'+Date.now();
+      if(!State.aifFunds)State.aifFunds=[];
+      State.aifFunds.push({id:newId,name:name,manager:manager,fund_type:fund_type,category:category,sub_category:sub_cat,vintage:vintage,fund_size:fund_size,country:country,currency:'INR',investment_date:inv_date,invested:invested,current_value:invested,min_commitment:min_commit,lock_in:lock_in,unlock_date:'',horizon:'5 Years',strategy:strategy,status:status,description:desc,notes:notes,irr:0});
+      State.aifActiveId=newId;
+      ['aifDistributions','aifDocuments','aifNotesList','aifReminders','aifExits'].forEach(function(k){if(!State[k])State[k]={};State[k][newId]=[];});
+    }
+    State.aifAddData={};
+    State.aifDetailTab='overview';
+    this.showToast(existing?'Fund updated':'AIF investment added');
+    App.navigate('aif-detail');
+  },
+
+  _aifDelete(id) {
+    State.aifFunds=(State.aifFunds||[]).filter(function(f){return f.id!==id;});
+    this.showToast('AIF fund deleted');
+    App.navigate('aif-list');
+  },
+
+  _aifSaveDist() {
+    var g=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+    var date   = g('aif-dist-date')||new Date().toISOString().slice(0,10);
+    var amount = parseFloat(g('aif-dist-amount').replace(/,/g,''))||0;
+    var type   = g('aif-dist-type')||'Profit Share';
+    var tax    = g('aif-dist-tax')||'Capital Gain';
+    var ref    = g('aif-dist-ref');
+    var notes  = g('aif-dist-notes');
+    if(!amount){this.showToast('Please enter distribution amount');return;}
+    var id=State.aifActiveId;
+    if(!State.aifDistributions)State.aifDistributions={};
+    if(!State.aifDistributions[id])State.aifDistributions[id]=[];
+    var num=State.aifDistributions[id].length+1;
+    State.aifDistributions[id].push({id:'ad'+Date.now(),num:num,date:date,amount:amount,type:type,tax:tax,ref:ref,notes:notes});
+    this.showToast('Distribution recorded');
+    State.aifDetailTab='distributions';
+    App.navigate('aif-detail');
+  },
+
+  _aifUploadDoc(id) {
+    if(!State.aifDocuments)State.aifDocuments={};
+    if(!State.aifDocuments[id])State.aifDocuments[id]=[];
+    State.aifDocuments[id].push({id:'adoc'+Date.now(),name:'Document_'+Date.now()+'.pdf',type:'PDF',size:'1.0 MB',date:new Date().toISOString().slice(0,10)});
+    this.showToast('Document uploaded');
+    App.render();
+  },
+
+  _aifAddNote(id){this.showToast('Note saved');},
+  _aifAddReminder(id){this.showToast('Reminder added');},
+
+  _aifSaveExit() {
+    var g=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+    var date   = g('aif-exit-date')||new Date().toISOString().slice(0,10);
+    var amount = parseFloat(g('aif-exit-amount').replace(/,/g,''))||0;
+    var type   = g('aif-exit-type')||'Partial Exit';
+    var buyer  = g('aif-exit-buyer');
+    var notes  = g('aif-exit-notes');
+    if(!amount){this.showToast('Please enter exit amount');return;}
+    var id=State.aifActiveId;
+    var fund=(State.aifFunds||[]).filter(function(f){return f.id===id;})[0];
+    var cost=fund?fund.invested:0;
+    var gain=amount-cost;
+    var retPct=cost>0?Math.round(gain/cost*10000)/100:0;
+    if(!State.aifExits)State.aifExits={};
+    if(!State.aifExits[id])State.aifExits[id]=[];
+    State.aifExits[id].push({id:'ae'+Date.now(),date:date,amount:amount,type:type,buyer:buyer,cost:cost,gain:gain,return_pct:retPct,irr:0,notes:notes});
+    this.showToast('Exit recorded');
+    App.render();
+  },
 
   /* ── Budget Module ──────────────────────────── */
   _budgetSaveCategory() {
