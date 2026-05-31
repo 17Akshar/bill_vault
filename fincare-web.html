@@ -16610,6 +16610,7 @@ function renderMore() {
     { icon:'🚗', bg:'rgba(124,92,252,0.15)', label:'Motor Insurance',     sub:'Manage vehicle insurance policies, claims and renewals', fn:"App.navigate('motor-list')" },
     { icon:'🚙', bg:'rgba(13,148,136,0.15)', label:'Vehicles', sub:'Digital garage — expenses, fuel, service, insurance and documents', fn:"App.navigate('vehicle-list')" },
     { icon:'📈', bg:'rgba(124,92,252,0.15)', label:'ESOP', sub:'Employee stock options — vesting, exercise, tax and analytics', fn:"App.navigate('esop-list')" },
+    { icon:'🏦', bg:'rgba(109,40,217,0.15)', label:'Private Equity', sub:'PE funds, capital calls, distributions and exit tracking', fn:"App.navigate('pe-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -20143,6 +20144,796 @@ function renderEsopSummary() {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   8g. PRIVATE EQUITY MODULE
+══════════════════════════════════════════════════════ */
+
+var PE_COLOR = '#6D28D9';
+
+var PE_FUND_TYPES = ['Growth Equity','Venture Capital','Buyout','Angel Investment','Startup Investment','AIF','Fund of Funds','Family Office','Syndicate','Direct','Other'];
+var PE_INDUSTRIES = ['Technology','Healthcare','Fintech','Manufacturing','Consumer','Real Estate','Energy','Education','Other'];
+var PE_ROUNDS = ['Seed','Pre-Series A','Series A','Series B','Series C','Growth','Pre-IPO','Other'];
+
+function _peStatusBadge(status) {
+  var map = { 'Active':'#22C55E','Exited':'#6B7280','Partially Exited':'#F59E0B','Closed':'#EF4444' };
+  var color = map[status] || '#22C55E';
+  return '<span style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+(status||'Active')+'</span>';
+}
+
+function _peCCStatusBadge(status) {
+  var map = { paid:'#22C55E', upcoming:'#F59E0B', overdue:'#EF4444', 'partially paid':'#0891B2' };
+  var color = map[(status||'').toLowerCase()] || '#6B7280';
+  var label = status ? status.charAt(0).toUpperCase()+status.slice(1) : '—';
+  return '<span style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700">'+label+'</span>';
+}
+
+function _peDaysLeft(d) { if(!d) return 0; return Math.ceil((new Date(d)-new Date())/(86400000)); }
+
+function _peFmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+
+function _peFundAbbr(name) {
+  if(!name) return 'PE';
+  var w = name.trim().split(/\s+/);
+  return w.length >= 2 ? (w[0][0]+w[1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+}
+
+function _peDetailTabBar(active) {
+  var tabs = [{id:'overview',icon:'🏠',label:'Overview'},{id:'investment',icon:'💼',label:'Investment'},{id:'capital_calls',icon:'📞',label:'Cap Calls'},{id:'distributions',icon:'💰',label:'Distrib.'},{id:'more',icon:'···',label:'More'}];
+  var html = '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:50;max-width:430px;margin:0 auto">';
+  tabs.forEach(function(t){
+    var a = t.id===active;
+    html += '<div onclick="State.peDetailTab=\''+t.id+'\';App.render()" style="flex:1;padding:8px 1px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+      +'<div style="font-size:'+(a?'16':'14')+'px">'+t.icon+'</div>'
+      +'<div style="font-size:9px;font-weight:'+(a?'700':'400')+';color:'+(a?PE_COLOR:'var(--text-dim)')+'">'+t.label+'</div>'
+      +'</div>';
+  });
+  return html + '</div>';
+}
+
+function _peSvgLineChart(points, w, h, color) {
+  if (!points || points.length < 2) return '';
+  var maxV = Math.max.apply(null, points.map(function(p){ return p.value; }));
+  var minV = Math.min.apply(null, points.map(function(p){ return p.value; }));
+  var pad = 40; var chartW = w - pad; var chartH = h - 30;
+  var xStep = chartW / (points.length - 1);
+  var coords = points.map(function(p, i) {
+    var x = pad/2 + i * xStep;
+    var y = 10 + (1 - (p.value - minV) / (maxV - minV || 1)) * (chartH - 10);
+    return { x: x, y: y, label: p.label, value: p.value };
+  });
+  var pathD = coords.map(function(c,i){ return (i===0?'M':'L')+c.x.toFixed(1)+' '+c.y.toFixed(1); }).join(' ');
+  var fillD = pathD + ' L'+coords[coords.length-1].x.toFixed(1)+' '+(chartH+10)+' L'+coords[0].x.toFixed(1)+' '+(chartH+10)+' Z';
+  var svg = '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="overflow:visible">'
+    +'<defs><linearGradient id="peGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'
+    +'<path d="'+fillD+'" fill="url(#peGrad)"/>'
+    +'<path d="'+pathD+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  coords.forEach(function(c) {
+    svg += '<circle cx="'+c.x.toFixed(1)+'" cy="'+c.y.toFixed(1)+'" r="3.5" fill="'+color+'" stroke="var(--bg)" stroke-width="1.5"/>';
+    svg += '<text x="'+c.x.toFixed(1)+'" y="'+(h-4)+'" text-anchor="middle" fill="var(--text-dim)" font-size="9">'+c.label+'</text>';
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+function renderPeList() {
+  var funds = State.peFunds || [];
+  var totalInvested = 0, totalValue = 0, totalDist = 0;
+  funds.forEach(function(f){ totalInvested += (f.invested||0); totalValue += (f.current_value||0); totalDist += (f.distributions||0); });
+  var totalGain = totalValue - totalInvested;
+  var unrealizedGain = totalGain - totalDist;
+  var avgIrr = funds.length ? (funds.reduce(function(a,f){ return a+(f.irr||0); },0)/funds.length).toFixed(2) : 0;
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+
+  // Hero gradient card
+  html += '<div style="background:linear-gradient(135deg,#6D28D9,#4C1D95);padding:20px 16px 28px;position:relative">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  html += '<div style="display:flex;align-items:center;gap:10px">';
+  html += '<div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">💼</div>';
+  html += '<div><div style="color:#fff;font-size:18px;font-weight:700">Private Equity</div><div style="color:rgba(255,255,255,0.75);font-size:12px">PE Investments</div></div>';
+  html += '</div>';
+  html += '<div style="color:#fff;font-size:20px;cursor:pointer" onclick="App.showToast(\'Notifications coming soon\')">🔔</div>';
+  html += '</div>';
+
+  // Total investment value
+  html += '<div style="color:rgba(255,255,255,0.8);font-size:12px;margin-bottom:4px">Total Investment Value</div>';
+  html += '<div style="color:#fff;font-size:28px;font-weight:800;margin-bottom:16px">'+formatINR(totalValue)+'</div>';
+
+  // 3-stat row
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
+  var stats3 = [
+    {label:'Current Value', val:formatINR(totalValue)},
+    {label:'Total Gain', val:formatINR(totalGain), pos: totalGain >= 0},
+    {label:'Unrealized Gain', val:formatINR(unrealizedGain)},
+  ];
+  stats3.forEach(function(s){
+    html += '<div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 8px;text-align:center">';
+    html += '<div style="color:rgba(255,255,255,0.8);font-size:10px;margin-bottom:3px">'+s.label+'</div>';
+    html += '<div style="color:#fff;font-size:13px;font-weight:700">'+s.val+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '</div>'; // end hero
+
+  // 4-stat grid
+  html += '<div style="padding:16px">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">';
+  var stats4 = [
+    {label:'Total Funds', val:funds.length, icon:'🏦'},
+    {label:'Invested Amount', val:formatINR(totalInvested), icon:'💵'},
+    {label:'Total Distributions', val:formatINR(totalDist), icon:'💰'},
+    {label:'Net IRR', val:avgIrr+'%', icon:'📈'},
+  ];
+  stats4.forEach(function(s){
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px">';
+    html += '<div style="font-size:22px">'+s.icon+'</div>';
+    html += '<div><div style="color:var(--text-dim);font-size:11px">'+s.label+'</div><div style="color:var(--text);font-size:15px;font-weight:700">'+s.val+'</div></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Fund list header
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  html += '<div style="font-size:15px;font-weight:700;color:var(--text)">Your Private Equity Funds</div>';
+  html += '<button onclick="State.peAddData={};App.navigate(\'pe-add\')" style="background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Add Fund</button>';
+  html += '</div>';
+
+  if (funds.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">🏦</div><div style="color:var(--text-dim);font-size:13px">No PE funds yet. Add your first investment.</div></div>';
+  } else {
+    funds.forEach(function(f){
+      var gain = (f.current_value||0) - (f.invested||0);
+      var retPct = f.invested > 0 ? ((gain/f.invested)*100).toFixed(1) : 0;
+      var abbr = _peFundAbbr(f.name);
+      html += '<div onclick="State.peActiveId=\''+f.id+'\';State.peDetailTab=\'overview\';App.navigate(\'pe-detail\')" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer">';
+      html += '<div style="display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:44px;height:44px;background:linear-gradient(135deg,'+PE_COLOR+',#4C1D95);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800;flex-shrink:0">'+abbr+'</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">'+escapeHtml(f.name)+'</div>';
+      html += _peStatusBadge(f.status);
+      html += '</div>';
+      html += '<div style="color:var(--text-dim);font-size:11px;margin-top:2px">'+escapeHtml(f.manager||'')+'</div>';
+      html += '</div></div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">';
+      html += '<div style="background:var(--bg);border-radius:8px;padding:8px"><div style="color:var(--text-dim);font-size:10px">Invested</div><div style="color:var(--text);font-size:13px;font-weight:700">'+formatINR(f.invested||0)+'</div></div>';
+      html += '<div style="background:var(--bg);border-radius:8px;padding:8px"><div style="color:var(--text-dim);font-size:10px">Current Value</div><div style="color:'+(gain>=0?'#22C55E':'#EF4444')+';font-size:13px;font-weight:700">'+formatINR(f.current_value||0)+'</div></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+
+  // Add button
+  html += '<button onclick="State.peAddData={};App.navigate(\'pe-add\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PE_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Private Equity</button>';
+  html += '</div>'; // end padding
+  html += '</div>'; // end container
+  return html;
+}
+
+function renderPeAdd() {
+  var d = State.peAddData || {};
+  var isEdit = !!d.id;
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+
+  // Header
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'pe-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">'+(isEdit?'Edit':'Add')+' Private Equity</div>';
+  html += '<div class="icon-btn" onclick="App._peSave()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+PE_COLOR+'" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Section helper
+  function section(title) { return '<div style="font-size:13px;font-weight:700;color:'+PE_COLOR+';margin:18px 0 10px;text-transform:uppercase;letter-spacing:0.5px">'+title+'</div>'; }
+  function field(label, inputHtml) { return '<div style="margin-bottom:14px"><div style="font-size:12px;color:var(--text-dim);margin-bottom:5px">'+label+'</div>'+inputHtml+'</div>'; }
+  var inp = 'style="width:100%;padding:11px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box"';
+  var sel = 'style="width:100%;padding:11px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px"';
+
+  html += section('Fund Information');
+  html += field('Fund Name', '<input '+inp+' id="pe-name" placeholder="e.g. XYZ Private Equity Fund" value="'+escapeHtml(d.name||'')+'">');
+  html += field('Fund Manager', '<input '+inp+' id="pe-manager" placeholder="e.g. XYZ Capital Partners" value="'+escapeHtml(d.manager||'')+'">');
+  html += field('Fund Type', '<select '+sel+' id="pe-type"><option value="">Select type...</option>'+PE_FUND_TYPES.map(function(t){ return '<option value="'+t+'"'+(d.type===t?' selected':'')+'>'+t+'</option>'; }).join('')+'</select>');
+  html += field('Vintage Year', '<input '+inp+' id="pe-vintage" type="number" placeholder="e.g. 2023" value="'+(d.vintage||'')+'">');
+  html += field('Fund Size (₹)', '<input '+inp+' id="pe-fund-size" type="number" placeholder="e.g. 500000000" value="'+(d.fund_size||'')+'">');
+  html += field('Country / Region', '<input '+inp+' id="pe-country" placeholder="e.g. India" value="'+escapeHtml(d.country||'')+'">');
+  html += field('Currency', '<input '+inp+' id="pe-currency" placeholder="INR" value="'+escapeHtml(d.currency||'INR')+'">');
+
+  html += section('Investment Information');
+  html += field('Investment Date', '<input '+inp+' id="pe-inv-date" type="date" value="'+(d.investment_date||'')+'">');
+  html += field('Commitment Amount (₹)', '<input '+inp+' id="pe-commitment" type="number" placeholder="e.g. 2500000" value="'+(d.commitment||'')+'">');
+  html += field('Invested Amount (₹)', '<input '+inp+' id="pe-invested" type="number" placeholder="e.g. 1000000" value="'+(d.invested||'')+'">');
+  html += field('Min Commitment (₹)', '<input '+inp+' id="pe-min-commit" type="number" placeholder="e.g. 500000" value="'+(d.min_commitment||'')+'">');
+  html += field('Investment Round', '<select '+sel+' id="pe-round"><option value="">Select round...</option>'+PE_ROUNDS.map(function(r){ return '<option value="'+r+'"'+(d.round===r?' selected':'')+'>'+r+'</option>'; }).join('')+'</select>');
+  html += field('Industry Focus', '<select '+sel+' id="pe-industry"><option value="">Select industry...</option>'+PE_INDUSTRIES.map(function(x){ return '<option value="'+x+'"'+(d.industry===x?' selected':'')+'>'+x+'</option>'; }).join('')+'</select>');
+  html += field('Status', '<select '+sel+' id="pe-status"><option value="Active"'+((!d.status||d.status==='Active')?' selected':'')+'>Active</option><option value="Partially Exited"'+(d.status==='Partially Exited'?' selected':'')+'>Partially Exited</option><option value="Exited"'+(d.status==='Exited'?' selected':'')+'>Exited</option><option value="Closed"'+(d.status==='Closed'?' selected':'')+'>Closed</option></select>');
+
+  html += section('Other Details');
+  html += field('Investment Thesis', '<textarea '+inp+' id="pe-thesis" rows="3" placeholder="Describe the investment thesis...">'+escapeHtml(d.thesis||'')+'</textarea>');
+  html += field('Notes', '<textarea '+inp+' id="pe-notes" rows="2" placeholder="Any additional notes...">'+escapeHtml(d.notes||'')+'</textarea>');
+
+  html += '<button onclick="App._peSave()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+PE_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Save Fund</button>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderPeDetail() {
+  var fundId = State.peActiveId;
+  var funds = State.peFunds || [];
+  var f = funds.filter(function(x){ return x.id === fundId; })[0] || {};
+  var tab = State.peDetailTab || 'overview';
+  var abbr = _peFundAbbr(f.name);
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+
+  // Hero card (always visible)
+  html += '<div style="background:linear-gradient(135deg,'+PE_COLOR+',#4C1D95);padding:16px">';
+  html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:12px">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'pe-list\')" style="color:#fff">'+_invBackSVG+'</div>';
+  html += '<div style="flex:1"></div>';
+  html += '<div onclick="State.peAddData=Object.assign({},State.peFunds.filter(function(x){return x.id===\''+fundId+'\';})[0]||{});App.navigate(\'pe-add\')" style="color:#fff;font-size:12px;cursor:pointer;padding:4px 8px;background:rgba(255,255,255,0.2);border-radius:8px">Edit</div>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div style="width:50px;height:50px;background:rgba(255,255,255,0.25);border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:800;flex-shrink:0">'+abbr+'</div>';
+  html += '<div><div style="color:#fff;font-size:17px;font-weight:800">'+escapeHtml(f.name||'PE Fund')+'</div><div style="color:rgba(255,255,255,0.8);font-size:12px">'+escapeHtml(f.manager||'')+'</div><div style="margin-top:4px">'+_peStatusBadge(f.status)+'</div></div>';
+  html += '</div>';
+  html += '</div>'; // end hero
+
+  // Tab content
+  html += '<div style="padding:16px">';
+
+  if (tab === 'overview') {
+    var gain = (f.current_value||0) - (f.invested||0);
+    var retPct = f.invested > 0 ? ((gain/f.invested)*100).toFixed(2) : 0;
+    // Key stats grid 2x3
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+    var kstats = [
+      {label:'Commitment', val:formatINR(f.commitment||0)},
+      {label:'Invested', val:formatINR(f.invested||0)},
+      {label:'Current Value', val:formatINR(f.current_value||0), green: (f.current_value||0) >= (f.invested||0)},
+      {label:'Distributions', val:formatINR(f.distributions||0)},
+      {label:'Total Gain', val:formatINR(gain), colored:true, pos: gain>=0},
+      {label:'Return %', val:retPct+'%', colored:true, pos: retPct>=0},
+    ];
+    kstats.forEach(function(s){
+      var col = s.colored ? (s.pos ? '#22C55E' : '#EF4444') : (s.green ? '#22C55E' : 'var(--text)');
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">';
+      html += '<div style="color:var(--text-dim);font-size:11px">'+s.label+'</div>';
+      html += '<div style="color:'+col+';font-size:15px;font-weight:700;margin-top:3px">'+s.val+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Info rows
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">';
+    var rows = [
+      ['Fund Type', f.type||'—'],
+      ['Vintage Year', f.vintage||'—'],
+      ['Industry', f.industry||'—'],
+      ['IRR', (f.irr||0)+'%'],
+      ['Investment Date', _peFmtDate(f.investment_date)],
+      ['Status', f.status||'Active'],
+    ];
+    rows.forEach(function(r, i){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:'+(i?'10px 0 0':'0 0 10px')+';'+(i && i<rows.length-1?'border-bottom:1px solid var(--border);padding:10px 0':'')+'">';
+      html += '<span style="color:var(--text-dim);font-size:13px">'+r[0]+'</span>';
+      html += '<span style="color:var(--text);font-size:13px;font-weight:600">'+escapeHtml(String(r[1]))+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Investment Thesis
+    if (f.thesis) {
+      html += '<div style="background:'+PE_COLOR+'11;border:1px solid '+PE_COLOR+'33;border-radius:12px;padding:14px;margin-bottom:14px">';
+      html += '<div style="color:'+PE_COLOR+';font-size:12px;font-weight:700;margin-bottom:6px">Investment Thesis</div>';
+      html += '<div style="color:var(--text);font-size:13px;line-height:1.5">'+escapeHtml(f.thesis)+'</div>';
+      html += '</div>';
+    }
+
+    // Quick Actions 2x2
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+    var qactions = [
+      {icon:'📞', label:'Capital Calls', fn:"State.peDetailTab='capital_calls';App.render()"},
+      {icon:'💰', label:'Distributions', fn:"State.peDetailTab='distributions';App.render()"},
+      {icon:'📄', label:'Documents', fn:"App.navigate('pe-documents')"},
+      {icon:'📊', label:'Analytics', fn:"App.navigate('pe-analytics')"},
+    ];
+    qactions.forEach(function(a){
+      html += '<div onclick="'+a.fn+'" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer">';
+      html += '<div style="font-size:24px;margin-bottom:6px">'+a.icon+'</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">'+a.label+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  else if (tab === 'investment') {
+    // Fund Information
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">';
+    html += '<div style="font-size:13px;font-weight:700;color:'+PE_COLOR+';margin-bottom:12px">Fund Information</div>';
+    var finfo = [
+      ['Fund Name', f.name||'—'],
+      ['Manager', f.manager||'—'],
+      ['Fund Type', f.type||'—'],
+      ['Vintage Year', f.vintage||'—'],
+      ['Fund Size', formatINR(f.fund_size||0)],
+      ['Country', f.country||'—'],
+      ['Currency', f.currency||'—'],
+    ];
+    finfo.forEach(function(r, i){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;'+(i<finfo.length-1?'border-bottom:1px solid var(--border);':'')+'padding:9px 0">';
+      html += '<span style="color:var(--text-dim);font-size:13px">'+r[0]+'</span>';
+      html += '<span style="color:var(--text);font-size:13px;font-weight:600;max-width:200px;text-align:right">'+escapeHtml(String(r[1]))+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Investment Information
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">';
+    html += '<div style="font-size:13px;font-weight:700;color:'+PE_COLOR+';margin-bottom:12px">Investment Information</div>';
+    var iinfo = [
+      ['Investment Date', _peFmtDate(f.investment_date)],
+      ['Commitment', formatINR(f.commitment||0)],
+      ['Invested', formatINR(f.invested||0)],
+      ['Min Commitment', formatINR(f.min_commitment||0)],
+      ['Round', f.round||'—'],
+      ['Industry', f.industry||'—'],
+    ];
+    iinfo.forEach(function(r, i){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;'+(i<iinfo.length-1?'border-bottom:1px solid var(--border);':'')+'padding:9px 0">';
+      html += '<span style="color:var(--text-dim);font-size:13px">'+r[0]+'</span>';
+      html += '<span style="color:var(--text);font-size:13px;font-weight:600">'+escapeHtml(String(r[1]))+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Fund Strategy
+    if (f.thesis) {
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">';
+      html += '<div style="font-size:13px;font-weight:700;color:'+PE_COLOR+';margin-bottom:8px">Fund Strategy</div>';
+      html += '<div style="color:var(--text);font-size:13px;line-height:1.6">'+escapeHtml(f.thesis)+'</div>';
+      html += '</div>';
+    }
+  }
+
+  else if (tab === 'capital_calls') {
+    var calls = (State.peCapitalCalls && State.peCapitalCalls[fundId]) || [];
+    var totalCalled = calls.filter(function(c){ return c.status==='paid'; }).reduce(function(a,c){ return a+(c.amount||0); },0);
+    var commitment = f.commitment || 0;
+    var pct = commitment > 0 ? Math.round((totalCalled/commitment)*100) : 0;
+    var remaining = commitment - totalCalled;
+
+    // Stats
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px"><div style="color:var(--text-dim);font-size:11px">Total Commitment</div><div style="color:var(--text);font-size:15px;font-weight:700;margin-top:3px">'+formatINR(commitment)+'</div></div>';
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px"><div style="color:var(--text-dim);font-size:11px">Total Called</div><div style="color:'+PE_COLOR+';font-size:15px;font-weight:700;margin-top:3px">'+formatINR(totalCalled)+'</div></div>';
+    html += '</div>';
+
+    // Progress bar
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text-dim)">Capital Called</span><span style="font-size:12px;font-weight:700;color:'+PE_COLOR+'">'+pct+'%</span></div>';
+    html += '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+PE_COLOR+';border-radius:4px"></div></div>';
+    html += '</div>';
+
+    // Calls list
+    if (calls.length === 0) {
+      html += '<div style="text-align:center;padding:30px 0"><div style="font-size:36px;margin-bottom:10px">📞</div><div style="color:var(--text-dim);font-size:13px">No capital calls recorded yet.</div></div>';
+    } else {
+      calls.forEach(function(c){
+        html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+        html += '<div style="font-size:14px;font-weight:700;color:var(--text)">Call #'+c.num+'</div>';
+        html += _peCCStatusBadge(c.status);
+        html += '</div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+        html += '<div style="font-size:12px;color:var(--text-dim)">Date: <span style="color:var(--text)">'+_peFmtDate(c.date)+'</span></div>';
+        html += '<div style="font-size:12px;color:var(--text-dim)">Amount: <span style="color:var(--text);font-weight:700">'+formatINR(c.amount||0)+'</span></div>';
+        if (c.mode) html += '<div style="font-size:12px;color:var(--text-dim)">Mode: <span style="color:var(--text)">'+escapeHtml(c.mode)+'</span></div>';
+        if (c.ref) html += '<div style="font-size:12px;color:var(--text-dim)">Ref: <span style="color:var(--text)">'+escapeHtml(c.ref)+'</span></div>';
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+
+    // Remaining commitment
+    html += '<div style="background:'+PE_COLOR+'11;border:1px solid '+PE_COLOR+'33;border-radius:12px;padding:14px;margin-bottom:14px">';
+    html += '<div style="display:flex;justify-content:space-between"><span style="color:'+PE_COLOR+';font-size:13px;font-weight:700">Remaining Commitment</span><span style="color:'+PE_COLOR+';font-size:15px;font-weight:800">'+formatINR(remaining)+'</span></div>';
+    html += '</div>';
+
+    // Add call form
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">+ Add Capital Call</div>';
+    var inp2 = 'style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:10px"';
+    html += '<input '+inp2+' id="pe-cc-date" type="date" placeholder="Date">';
+    html += '<input '+inp2+' id="pe-cc-amount" type="number" placeholder="Amount (₹)">';
+    html += '<input '+inp2+' id="pe-cc-due" type="date" placeholder="Due Date">';
+    html += '<input '+inp2+' id="pe-cc-mode" placeholder="Payment Mode (Bank Transfer)">';
+    html += '<input '+inp2+' id="pe-cc-ref" placeholder="Reference Number">';
+    html += '<button onclick="App._peAddCapCall()" style="width:100%;padding:11px;background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Add Capital Call</button>';
+    html += '</div>';
+  }
+
+  else if (tab === 'distributions') {
+    var dists = (State.peDistributions && State.peDistributions[fundId]) || [];
+    var totalDistAmt = dists.reduce(function(a,d){ return a+(d.amount||0); },0);
+    var approxGain = (f.current_value||0) - (f.invested||0);
+
+    // Stats
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px"><div style="color:var(--text-dim);font-size:11px">Total Distributions</div><div style="color:#22C55E;font-size:15px;font-weight:700;margin-top:3px">'+formatINR(totalDistAmt)+'</div></div>';
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px"><div style="color:var(--text-dim);font-size:11px">Gain (Approx)</div><div style="color:'+(approxGain>=0?'#22C55E':'#EF4444')+';font-size:15px;font-weight:700;margin-top:3px">'+formatINR(approxGain)+'</div></div>';
+    html += '</div>';
+
+    if (dists.length === 0) {
+      html += '<div style="text-align:center;padding:30px 0"><div style="font-size:36px;margin-bottom:10px">💰</div><div style="color:var(--text-dim);font-size:13px">No distributions received yet.</div></div>';
+    } else {
+      dists.forEach(function(d){
+        html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+        html += '<div style="font-size:14px;font-weight:700;color:var(--text)">Distribution #'+d.num+'</div>';
+        html += '<span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700">Received</span>';
+        html += '</div>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+        html += '<div style="font-size:12px;color:var(--text-dim)">'+_peFmtDate(d.date)+' &nbsp;·&nbsp; '+escapeHtml(d.type||'Distribution')+'</div>';
+        html += '<div style="font-size:15px;font-weight:800;color:#22C55E">'+formatINR(d.amount||0)+'</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+
+    // Add distribution form
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">+ Add Distribution</div>';
+    var inp3 = 'style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:10px"';
+    html += '<input '+inp3+' id="pe-dist-date" type="date" placeholder="Date">';
+    html += '<input '+inp3+' id="pe-dist-amount" type="number" placeholder="Amount (₹)">';
+    html += '<input '+inp3+' id="pe-dist-type" placeholder="Type (Profit Distribution)">';
+    html += '<input '+inp3+' id="pe-dist-mode" placeholder="Payment Mode (Bank Transfer)">';
+    html += '<input '+inp3+' id="pe-dist-ref" placeholder="Reference Number">';
+    html += '<button onclick="App._peAddDistribution()" style="width:100%;padding:11px;background:#22C55E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Add Distribution</button>';
+    html += '</div>';
+  }
+
+  else if (tab === 'more') {
+    var menuItems = [
+      {icon:'📋', label:'Transactions', sub:'All capital calls & distributions', fn:"App.navigate('pe-transactions')"},
+      {icon:'📄', label:'Documents', sub:'Fund documents & agreements', fn:"App.navigate('pe-documents')"},
+      {icon:'📝', label:'Notes', sub:'Investment notes & updates', fn:"App.navigate('pe-notes')"},
+      {icon:'📊', label:'Analytics', sub:'Performance & value charts', fn:"App.navigate('pe-analytics')"},
+      {icon:'🔔', label:'Reminders', sub:'Capital calls & key dates', fn:"App.navigate('pe-reminders')"},
+      {icon:'🚪', label:'Exit / Sale Details', sub:'Partial & full exits', fn:"App.navigate('pe-exit')"},
+    ];
+    menuItems.forEach(function(item){
+      html += '<div onclick="'+item.fn+'" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer">';
+      html += '<div style="width:40px;height:40px;background:'+PE_COLOR+'15;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+item.icon+'</div>';
+      html += '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+item.label+'</div><div style="font-size:12px;color:var(--text-dim)">'+item.sub+'</div></div>';
+      html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>';
+      html += '</div>';
+    });
+
+    // Delete fund
+    html += '<button onclick="if(confirm(\'Delete this PE fund?\'))App._peDelete(\''+fundId+'\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.3);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">Delete PE Fund</button>';
+  }
+
+  html += '</div>'; // end padding
+
+  // Fixed tab bar
+  html += _peDetailTabBar(tab);
+  html += '</div>'; // end container
+  return html;
+}
+
+function renderPeDocuments() {
+  var fundId = State.peActiveId;
+  var funds = State.peFunds || [];
+  var f = funds.filter(function(x){ return x.id===fundId; })[0] || {};
+  var docs = (State.peDocuments && State.peDocuments[fundId]) || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.peDetailTab=\'more\';App.navigate(\'pe-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Documents</div>';
+  html += '<button onclick="App._peUploadDoc(\''+fundId+'\')" style="background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Upload</button>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<div style="color:var(--text-dim);font-size:12px;margin-bottom:14px">'+escapeHtml(f.name||'PE Fund')+'</div>';
+
+  if (docs.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">📄</div><div style="color:var(--text-dim);font-size:13px">No documents uploaded yet.</div></div>';
+  } else {
+    docs.forEach(function(d){
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:42px;height:42px;background:#EF444415;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📕</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(d.name)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+d.type+' &nbsp;·&nbsp; '+d.size+' &nbsp;·&nbsp; '+_peFmtDate(d.date)+'</div>';
+      html += '</div>';
+      html += '<div onclick="App.showToast(\'Downloading..\')" style="width:34px;height:34px;background:'+PE_COLOR+'15;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;flex-shrink:0">⬇️</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderPeNotes() {
+  var fundId = State.peActiveId;
+  var allNotes = (State.peNotesList && State.peNotesList[fundId]) || [];
+  var filter = State.peNotesFilter || 'all';
+  var typeMap = { fund_update:'Fund Update', strategy:'Strategy', meeting:'Meeting', tax:'Tax', general:'General' };
+  var chips = ['all','general','fund_update','strategy','meeting','tax'];
+
+  var filtered = filter === 'all' ? allNotes : allNotes.filter(function(n){ return n.type === filter; });
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.peDetailTab=\'more\';App.navigate(\'pe-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Notes</div>';
+  html += '<button onclick="App.showToast(\'Add note coming soon\')" style="background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Add Note</button>';
+  html += '</div>';
+
+  // Filter chips
+  html += '<div style="display:flex;gap:8px;padding:12px 16px;overflow-x:auto">';
+  chips.forEach(function(c){
+    var active = c === filter;
+    var label = c === 'all' ? 'All' : (typeMap[c] || c);
+    html += '<div onclick="State.peNotesFilter=\''+c+'\';App.render()" style="white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:'+(active?'700':'500')+';cursor:pointer;background:'+(active?PE_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?PE_COLOR:'var(--border)')+'">'+label+'</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="padding:0 16px 16px">';
+  if (filtered.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="color:var(--text-dim);font-size:13px">No notes found.</div></div>';
+  } else {
+    filtered.forEach(function(n){
+      var tcolor = { fund_update:'#3B82F6', strategy:'#8B5CF6', meeting:'#F59E0B', tax:'#EF4444', general:'#6B7280' };
+      var tc = tcolor[n.type] || '#6B7280';
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<span style="background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700">'+(typeMap[n.type]||n.type)+'</span>';
+      if (n.pinned) html += '<span style="font-size:14px">📌</span>';
+      if (n.locked) html += '<span style="font-size:14px">🔒</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim)">'+_peFmtDate(n.date)+'</div>';
+      html += '</div>';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:5px">'+escapeHtml(n.title)+'</div>';
+      html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.5">'+escapeHtml(n.body)+'</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderPeTransactions() {
+  var fundId = State.peActiveId;
+  var calls = (State.peCapitalCalls && State.peCapitalCalls[fundId]) || [];
+  var dists = (State.peDistributions && State.peDistributions[fundId]) || [];
+  var toggle = State.peTxToggle || 'all';
+
+  // Build combined list
+  var all = [];
+  calls.forEach(function(c){ all.push({ date:c.date, type:'Capital Call', amount:c.amount||0, status:c.status, label:'Call #'+c.num, color:'#EF4444' }); });
+  dists.forEach(function(d){ all.push({ date:d.date, type:'Distribution', amount:d.amount||0, status:'received', label:'Dist #'+d.num, color:'#22C55E' }); });
+  all.sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+
+  var filtered = toggle === 'capital_calls' ? all.filter(function(x){ return x.type==='Capital Call'; })
+    : toggle === 'distributions' ? all.filter(function(x){ return x.type==='Distribution'; })
+    : all;
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.peDetailTab=\'more\';App.navigate(\'pe-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Transactions</div>';
+  html += '<div style="width:36px"></div>';
+  html += '</div>';
+
+  // Toggle
+  html += '<div style="display:flex;gap:8px;padding:12px 16px">';
+  var toggles = [{id:'all',label:'All'},{id:'capital_calls',label:'Capital Calls'},{id:'distributions',label:'Distributions'}];
+  toggles.forEach(function(t){
+    var a = t.id === toggle;
+    html += '<div onclick="State.peTxToggle=\''+t.id+'\';App.render()" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:'+(a?'700':'500')+';cursor:pointer;background:'+(a?PE_COLOR:'var(--card)')+';color:'+(a?'#fff':'var(--text-dim)')+';border:1px solid '+(a?PE_COLOR:'var(--border)')+'">'+t.label+'</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="padding:0 16px 16px">';
+  if (filtered.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:36px;margin-bottom:10px">📋</div><div style="color:var(--text-dim);font-size:13px">No transactions found.</div></div>';
+  } else {
+    filtered.forEach(function(tx){
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<span style="background:'+tx.color+'22;color:'+tx.color+';border:1px solid '+tx.color+'44;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700">'+tx.type+'</span>';
+      html += '<span style="font-size:13px;font-weight:700;color:var(--text)">'+tx.label+'</span>';
+      html += '</div>';
+      html += '<div style="font-size:15px;font-weight:800;color:'+tx.color+'">'+formatINR(tx.amount)+'</div>';
+      html += '</div>';
+      html += '<div style="display:flex;justify-content:space-between">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+_peFmtDate(tx.date)+'</div>';
+      html += _peCCStatusBadge(tx.status);
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderPeAnalytics() {
+  var fundId = State.peActiveId;
+  var funds = State.peFunds || [];
+  var f = funds.filter(function(x){ return x.id===fundId; })[0] || {};
+  var gain = (f.current_value||0) - (f.invested||0);
+  var retPct = f.invested > 0 ? ((gain/f.invested)*100).toFixed(2) : 0;
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.peDetailTab=\'more\';App.navigate(\'pe-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Analytics</div>';
+  html += '<div style="padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-dim)">This Year ▾</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Performance Summary table
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px">';
+  html += '<div style="padding:14px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text)">Performance Summary</div>';
+  var pRows = [
+    ['Invested', formatINR(f.invested||0), 'var(--text)'],
+    ['Current Value', formatINR(f.current_value||0), (f.current_value||0)>=(f.invested||0)?'#22C55E':'#EF4444'],
+    ['Total Distributions', formatINR(f.distributions||0), '#22C55E'],
+    ['Total Gain', formatINR(gain), gain>=0?'#22C55E':'#EF4444'],
+    ['Return %', retPct+'%', retPct>=0?'#22C55E':'#EF4444'],
+    ['IRR', (f.irr||0)+'%', (f.irr||0)>=0?'#22C55E':'#EF4444'],
+  ];
+  pRows.forEach(function(r, i){
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;'+(i<pRows.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+    html += '<span style="font-size:13px;color:var(--text-dim)">'+r[0]+'</span>';
+    html += '<span style="font-size:14px;font-weight:700;color:'+r[2]+'">'+r[1]+'</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Value Over Time SVG chart
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">';
+  html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px">Value Over Time</div>';
+  var chartPoints = [
+    {label:'Feb23', value:1000000},
+    {label:'Aug23', value:1500000},
+    {label:'Feb24', value:2200000},
+    {label:'Aug24', value:2800000},
+    {label:'Mar25', value:3150000},
+  ];
+  html += '<div style="overflow-x:auto">';
+  html += _peSvgLineChart(chartPoints, 340, 140, PE_COLOR);
+  html += '</div>';
+  html += '</div>';
+
+  // Fund type breakdown
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">';
+  html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px">Fund Details</div>';
+  var fdetails = [
+    ['Fund Type', f.type||'—'],
+    ['Vintage', f.vintage||'—'],
+    ['Industry', f.industry||'—'],
+    ['Investment Round', f.round||'—'],
+  ];
+  fdetails.forEach(function(r, i){
+    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<fdetails.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+    html += '<span style="font-size:13px;color:var(--text-dim)">'+r[0]+'</span>';
+    html += '<span style="font-size:13px;font-weight:600;color:var(--text)">'+escapeHtml(String(r[1]))+'</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderPeReminders() {
+  var fundId = State.peActiveId;
+  var reminders = (State.peReminders && State.peReminders[fundId]) || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.peDetailTab=\'more\';App.navigate(\'pe-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Reminders</div>';
+  html += '<button onclick="App._peAddReminder(\''+fundId+'\')" style="background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  if (reminders.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">🔔</div><div style="color:var(--text-dim);font-size:13px">No reminders set.</div></div>';
+  } else {
+    reminders.forEach(function(r){
+      var days = _peDaysLeft(r.date);
+      var urgColor = days < 30 ? '#EF4444' : days < 90 ? '#F59E0B' : '#22C55E';
+      var badgeLabel = days < 0 ? 'Overdue' : 'Due in '+days+' Days';
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:44px;height:44px;background:'+r.color+'22;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+r.icon+'</div>';
+      html += '<div style="flex:1">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text)">'+escapeHtml(r.type)+'</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+_peFmtDate(r.date)+'</div>';
+      html += '</div>';
+      html += '<span style="background:'+urgColor+'22;color:'+urgColor+';border:1px solid '+urgColor+'44;border-radius:10px;padding:3px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+badgeLabel+'</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderPeExit() {
+  var fundId = State.peActiveId;
+  var exits = (State.peExits && State.peExits[fundId]) || [];
+  var totalRealized = exits.reduce(function(a,x){ return a+(x.realized||0); },0);
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.peDetailTab=\'more\';App.navigate(\'pe-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Exit / Sale Details</div>';
+  html += '<button onclick="App.showToast(\'Scroll down to add exit\')" style="background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">+ Add Exit</button>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Summary
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px"><div style="color:var(--text-dim);font-size:11px">Total Exits</div><div style="color:var(--text);font-size:20px;font-weight:800;margin-top:3px">'+exits.length+'</div></div>';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px"><div style="color:var(--text-dim);font-size:11px">Total Realized</div><div style="color:#22C55E;font-size:15px;font-weight:700;margin-top:3px">'+formatINR(totalRealized)+'</div></div>';
+  html += '</div>';
+
+  if (exits.length === 0) {
+    html += '<div style="text-align:center;padding:30px 0"><div style="font-size:36px;margin-bottom:10px">🚪</div><div style="color:var(--text-dim);font-size:13px">No exits recorded yet.</div></div>';
+  } else {
+    exits.forEach(function(x){
+      var gainColor = (x.gain||0) >= 0 ? '#22C55E' : '#EF4444';
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text)">'+_peFmtDate(x.date)+'</div>';
+      html += '<span style="background:#F59E0B22;color:#F59E0B;border:1px solid #F59E0B44;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700">'+escapeHtml(x.type||'Exit')+'</span>';
+      html += '</div>';
+      var exitRows = [
+        ['% Sold', (x.pct||0)+'%'],
+        ['Amount Realized', formatINR(x.realized||0)],
+        ['Cost Basis', formatINR(x.cost||0)],
+        ['Gain / Loss', formatINR(x.gain||0)],
+        ['Return %', (x.returnPct||0)+'%'],
+        ['IRR', (x.irr||0)+'%'],
+      ];
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+      exitRows.forEach(function(r){
+        var vc = (r[0]==='Gain / Loss'||r[0]==='Return %'||r[0]==='IRR') ? gainColor : 'var(--text)';
+        html += '<div style="background:var(--bg);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--text-dim)">'+r[0]+'</div><div style="font-size:12px;font-weight:700;color:'+vc+'">'+r[1]+'</div></div>';
+      });
+      html += '</div>';
+      if (x.notes) {
+        html += '<div style="font-size:12px;color:var(--text-dim);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+escapeHtml(x.notes)+'</div>';
+      }
+      html += '</div>';
+    });
+  }
+
+  // Add exit form
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">+ Record Exit</div>';
+  var inp4 = 'style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:10px"';
+  html += '<input '+inp4+' id="pe-exit-date" type="date" placeholder="Exit Date">';
+  html += '<input '+inp4+' id="pe-exit-pct" type="number" placeholder="% of holding sold (e.g. 10)">';
+  html += '<input '+inp4+' id="pe-exit-type" placeholder="Exit Type (Partial Exit / Full Exit)">';
+  html += '<input '+inp4+' id="pe-exit-realized" type="number" placeholder="Amount Realized (₹)">';
+  html += '<input '+inp4+' id="pe-exit-cost" type="number" placeholder="Cost Basis (₹)">';
+  html += '<button onclick="App._peAddExit()" style="width:100%;padding:11px;background:'+PE_COLOR+';color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Record Exit</button>';
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
 // Helper: render linked notes list (used in other module detail screens)
 function renderLinkedNotesList(module, linkedId) {
   var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
@@ -20187,6 +20978,7 @@ const App = {
     else if (screen.startsWith('motor'))          tabHint = 'more';
     else if (screen.startsWith('vehicle'))        tabHint = 'more';
     else if (screen.startsWith('esop'))           tabHint = 'more';
+    else if (screen.startsWith('pe-'))            tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -20433,6 +21225,15 @@ const App = {
       case 'esop-reminders':    html = renderEsopReminders();    break;
       case 'esop-analytics':    html = renderEsopAnalytics();    break;
       case 'esop-summary':      html = renderEsopSummary();      break;
+      case 'pe-list':         html = renderPeList();         break;
+      case 'pe-add':          html = renderPeAdd();           break;
+      case 'pe-detail':       html = renderPeDetail();        break;
+      case 'pe-documents':    html = renderPeDocuments();     break;
+      case 'pe-notes':        html = renderPeNotes();         break;
+      case 'pe-transactions': html = renderPeTransactions();  break;
+      case 'pe-analytics':    html = renderPeAnalytics();     break;
+      case 'pe-reminders':    html = renderPeReminders();     break;
+      case 'pe-exit':         html = renderPeExit();          break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -23326,6 +24127,115 @@ const App = {
     State.esopGrants = (State.esopGrants || []).filter(function(g){ return g.id !== id; });
     this.showToast('ESOP grant deleted');
     App.navigate('esop-list');
+  },
+
+  /* ── Private Equity Module ── */
+  _peSave() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var name       = g('pe-name');
+    var manager    = g('pe-manager');
+    var type       = g('pe-type');
+    var vintage    = parseInt(g('pe-vintage')) || new Date().getFullYear();
+    var fundSize   = parseFloat(g('pe-fund-size').replace(/,/g,'')) || 0;
+    var country    = g('pe-country');
+    var currency   = g('pe-currency') || 'INR';
+    var invDate    = g('pe-inv-date');
+    var commitment = parseFloat(g('pe-commitment').replace(/,/g,'')) || 0;
+    var invested   = parseFloat(g('pe-invested').replace(/,/g,'')) || 0;
+    var minCommit  = parseFloat(g('pe-min-commit').replace(/,/g,'')) || 0;
+    var round      = g('pe-round');
+    var industry   = g('pe-industry');
+    var status     = g('pe-status') || 'Active';
+    var thesis     = g('pe-thesis');
+    var notes      = g('pe-notes');
+    if (!name) { this.showToast('Please enter fund name'); return; }
+    var existing = State.peAddData && State.peAddData.id;
+    if (existing) {
+      var fund = (State.peFunds||[]).filter(function(f){ return f.id===existing; })[0];
+      if (fund) { fund.name=name; fund.manager=manager; fund.type=type; fund.vintage=vintage; fund.fund_size=fundSize; fund.country=country; fund.currency=currency; fund.investment_date=invDate; fund.commitment=commitment; fund.invested=invested; fund.min_commitment=minCommit; fund.round=round; fund.industry=industry; fund.status=status; fund.thesis=thesis; fund.notes=notes; }
+      State.peActiveId = existing;
+    } else {
+      var newId = 'pe'+Date.now();
+      if (!State.peFunds) State.peFunds = [];
+      State.peFunds.push({ id:newId, name:name, manager:manager, type:type, vintage:vintage, fund_size:fundSize, country:country, currency:currency, investment_date:invDate, commitment:commitment, invested:invested, current_value:invested, min_commitment:minCommit, round:round, industry:industry, status:status, irr:0, distributions:0, thesis:thesis, notes:notes });
+      State.peActiveId = newId;
+      var keys = ['peCapitalCalls','peDistributions','peDocuments','peNotesList','peReminders','peExits'];
+      for (var ki=0; ki<keys.length; ki++) { var kk=keys[ki]; if(!State[kk]) State[kk]={}; State[kk][newId]=[]; }
+    }
+    State.peAddData = {};
+    State.peDetailTab = 'overview';
+    this.showToast(existing ? 'Fund updated' : 'PE investment added');
+    App.navigate('pe-detail');
+  },
+
+  _peDelete(id) {
+    State.peFunds = (State.peFunds||[]).filter(function(f){ return f.id!==id; });
+    this.showToast('PE investment deleted');
+    App.navigate('pe-list');
+  },
+
+  _peAddCapCall() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var date   = g('pe-cc-date');
+    var amount = parseFloat(g('pe-cc-amount').replace(/,/g,'')) || 0;
+    var due    = g('pe-cc-due') || date;
+    var mode   = g('pe-cc-mode') || 'Bank Transfer';
+    var ref    = g('pe-cc-ref');
+    if (!amount) { this.showToast('Please enter call amount'); return; }
+    var id = State.peActiveId;
+    if (!State.peCapitalCalls) State.peCapitalCalls = {};
+    if (!State.peCapitalCalls[id]) State.peCapitalCalls[id] = [];
+    var num = State.peCapitalCalls[id].length + 1;
+    State.peCapitalCalls[id].push({ id:'cc'+Date.now(), num:num, date:date||new Date().toISOString().slice(0,10), amount:amount, due:due, status:'paid', paid_date:date||new Date().toISOString().slice(0,10), mode:mode, ref:ref });
+    this.showToast('Capital call recorded');
+    App.render();
+  },
+
+  _peAddDistribution() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var date   = g('pe-dist-date');
+    var amount = parseFloat(g('pe-dist-amount').replace(/,/g,'')) || 0;
+    var type   = g('pe-dist-type') || 'Profit Distribution';
+    var mode   = g('pe-dist-mode') || 'Bank Transfer';
+    var ref    = g('pe-dist-ref');
+    if (!amount) { this.showToast('Please enter distribution amount'); return; }
+    var id = State.peActiveId;
+    if (!State.peDistributions) State.peDistributions = {};
+    if (!State.peDistributions[id]) State.peDistributions[id] = [];
+    var num = State.peDistributions[id].length + 1;
+    State.peDistributions[id].push({ id:'d'+Date.now(), num:num, date:date||new Date().toISOString().slice(0,10), amount:amount, type:type, mode:mode, ref:ref });
+    var fund = (State.peFunds||[]).filter(function(f){ return f.id===id; })[0];
+    if (fund) fund.distributions = (fund.distributions||0) + amount;
+    this.showToast('Distribution recorded');
+    App.render();
+  },
+
+  _peUploadDoc(id) {
+    if (!State.peDocuments) State.peDocuments = {};
+    if (!State.peDocuments[id]) State.peDocuments[id] = [];
+    State.peDocuments[id].push({ id:'pd'+Date.now(), name:'Document_'+Date.now()+'.pdf', type:'PDF', size:'1.0 MB', date:new Date().toISOString().slice(0,10) });
+    this.showToast('Document uploaded');
+    App.render();
+  },
+
+  _peAddReminder(id) { this.showToast('Reminder added'); },
+
+  _peAddExit() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var date     = g('pe-exit-date');
+    var pct      = parseFloat(g('pe-exit-pct')) || 0;
+    var type     = g('pe-exit-type') || 'Partial Exit';
+    var realized = parseFloat(g('pe-exit-realized').replace(/,/g,'')) || 0;
+    var cost     = parseFloat(g('pe-exit-cost').replace(/,/g,'')) || 0;
+    if (!realized) { this.showToast('Please enter amount realized'); return; }
+    var gain = realized - cost;
+    var retPct = cost > 0 ? Math.round(gain/cost*100*100)/100 : 0;
+    var id = State.peActiveId;
+    if (!State.peExits) State.peExits = {};
+    if (!State.peExits[id]) State.peExits[id] = [];
+    State.peExits[id].push({ id:'px'+Date.now(), date:date||new Date().toISOString().slice(0,10), pct:pct, type:type, realized:realized, cost:cost, gain:gain, returnPct:retPct, irr:0, notes:'' });
+    this.showToast('Exit recorded');
+    App.render();
   },
 
   /* ── Budget Module ──────────────────────────── */
