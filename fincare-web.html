@@ -2119,6 +2119,88 @@ const State = {
       { id:'vn4', type:'general',  title:'Daily Use',            body:'Used daily for commute. Avg 40 km/day. Mileage approx 55 km/L.', date:'2021-03-09', pinned:false },
     ],
   },
+
+  // ESOP module
+  esopActiveId: 'esop1',
+  esopDetailTab: 'overview',
+  esopTxTab: 'exercise',
+  esopAddData: {},
+  esopGrants: [
+    { id:'esop1', company:'ABC Ltd', plan:'ABC Employee Stock Plan 2022', grant_number:'GRANT/ABC/2022/001',
+      employee_id:'EMP12345', grant_date:'2022-01-01', vesting_start:'2022-01-01', vesting_end:'2026-01-01',
+      vesting_period:'4 Years', granted:500, vested:350, exercised:225, exercise_price:150,
+      current_price:4500, employer:'ABC Ltd', department:'Product', designation:'Product Manager',
+      employment_start:'2021-06-15', status:'Partially Vested', notes:'Primary ESOP grant from employer' },
+    { id:'esop2', company:'XYZ Pvt Ltd', plan:'XYZ Employee Stock Plan 2021', grant_number:'GRANT/XYZ/2021/005',
+      employee_id:'EMP12345', grant_date:'2021-06-15', vesting_start:'2021-06-15', vesting_end:'2025-06-15',
+      vesting_period:'4 Years', granted:200, vested:100, exercised:0, exercise_price:100,
+      current_price:8000, employer:'XYZ Pvt Ltd', department:'Engineering', designation:'Senior Engineer',
+      employment_start:'2021-06-15', status:'Unvested', notes:'Startup ESOP - awaiting liquidity event' },
+  ],
+  esopVesting: {
+    esop1: [
+      { id:'ev1', date:'2023-01-01', shares:125, status:'vested' },
+      { id:'ev2', date:'2024-01-01', shares:125, status:'vested' },
+      { id:'ev3', date:'2025-01-01', shares:100, status:'vested' },
+      { id:'ev4', date:'2026-01-01', shares:125, status:'pending' },
+      { id:'ev5', date:'2027-01-01', shares:25,  status:'pending' },
+    ],
+    esop2: [
+      { id:'ev6', date:'2022-06-15', shares:50, status:'vested' },
+      { id:'ev7', date:'2023-06-15', shares:50, status:'vested' },
+      { id:'ev8', date:'2024-06-15', shares:50, status:'pending' },
+      { id:'ev9', date:'2025-06-15', shares:50, status:'pending' },
+    ],
+  },
+  esopExercises: {
+    esop1: [
+      { id:'ee1', date:'2024-05-10', shares:125, exercise_price:150, market_price:4500, exercise_cost:18750, market_value:562500, gain:543750, tax:135000, other_charges:2000, net_gain:406750, status:'Exercised' },
+      { id:'ee2', date:'2024-01-05', shares:125, exercise_price:150, market_price:4500, exercise_cost:18750, market_value:562500, gain:543750, tax:135000, other_charges:2000, net_gain:406750, status:'Exercised' },
+      { id:'ee3', date:'2023-01-01', shares:100, exercise_price:150, market_price:3500, exercise_cost:15000, market_value:350000, gain:335000, tax:80000, other_charges:1500, net_gain:253500, status:'Exercised' },
+    ],
+    esop2: [],
+  },
+  esopSales: {
+    esop1: [
+      { id:'es1', date:'2024-06-20', shares:100, sale_price:5200, broker:'Zerodha', brokerage:520, stt:312, other:168, gross:520000, charges:1000, net:519000, profit:504000, status:'Sold' },
+    ],
+    esop2: [],
+  },
+  esopDocuments: {
+    esop1: [
+      { id:'ed1', name:'Grant Letter',           type:'PDF', size:'1.2 MB', date:'2022-01-01' },
+      { id:'ed2', name:'ESOP Agreement',         type:'PDF', size:'2.4 MB', date:'2022-01-01' },
+      { id:'ed3', name:'Vesting Schedule',       type:'PDF', size:'1.5 MB', date:'2022-01-01' },
+      { id:'ed4', name:'Exercise Form',          type:'PDF', size:'1.1 MB', date:'2024-05-10' },
+      { id:'ed5', name:'Tax Document FY 2023-24',type:'PDF', size:'1.3 MB', date:'2024-03-31' },
+      { id:'ed6', name:'Broker Statement',       type:'PDF', size:'2.0 MB', date:'2024-06-20' },
+      { id:'ed7', name:'Other Documents',        type:'ZIP', size:'3.6 MB', date:'2024-06-20' },
+    ],
+    esop2: [
+      { id:'ed8', name:'Grant Letter',           type:'PDF', size:'0.9 MB', date:'2021-06-15' },
+    ],
+  },
+  esopNotesList: {
+    esop1: [
+      { id:'en1', type:'vesting',  title:'Next vesting',      body:'Next vesting date is 01 Jan 2026 for 125 shares.',               date:'2024-05-10', pinned:true,  locked:false },
+      { id:'en2', type:'general',  title:'Exercise planning', body:'Planning to exercise remaining shares after IPO.',                date:'2024-05-08', pinned:true,  locked:false },
+      { id:'en3', type:'tax',      title:'Tax planning',      body:'Need to plan taxes for ESOP exercise in FY 2024-25.',            date:'2024-05-08', pinned:false, locked:true  },
+      { id:'en4', type:'general',  title:'Company update',    body:'Company going for IPO in Q2 FY 2024-25.',                       date:'2024-05-01', pinned:true,  locked:false },
+    ],
+    esop2: [],
+  },
+  esopReminders: {
+    esop1: [
+      { id:'er1', type:'Upcoming Vesting',       date:'2026-01-01', icon:'📅', color:'#22C55E' },
+      { id:'er2', type:'Exercise Window Opens',  date:'2025-12-01', icon:'🔔', color:'#7C5CFC' },
+      { id:'er3', type:'Exercise Window Closes', date:'2026-03-31', icon:'⏰', color:'#F59E0B' },
+      { id:'er4', type:'Tax Filing Reminder',    date:'2025-07-31', icon:'📋', color:'#EF4444' },
+      { id:'er5', type:'Lock-in Period Ends',    date:'2027-01-01', icon:'🔒', color:'#6B7280' },
+    ],
+    esop2: [
+      { id:'er6', type:'Upcoming Vesting', date:'2024-06-15', icon:'📅', color:'#22C55E' },
+    ],
+  },
 };
 
 /* ══════════════════════════════════════════════════════
@@ -16433,6 +16515,7 @@ function renderMore() {
     { icon:'📝', bg:'rgba(99,102,241,0.15)', label:'Notes',               sub:'Smart notes linked to your financial data',            fn:"App.navigate('notes-list')" },
     { icon:'🚗', bg:'rgba(124,92,252,0.15)', label:'Motor Insurance',     sub:'Manage vehicle insurance policies, claims and renewals', fn:"App.navigate('motor-list')" },
     { icon:'🚙', bg:'rgba(13,148,136,0.15)', label:'Vehicles', sub:'Digital garage — expenses, fuel, service, insurance and documents', fn:"App.navigate('vehicle-list')" },
+    { icon:'📈', bg:'rgba(124,92,252,0.15)', label:'ESOP', sub:'Employee stock options — vesting, exercise, tax and analytics', fn:"App.navigate('esop-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -19003,6 +19086,969 @@ function renderVehicleSell() {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   8f. ESOP MODULE
+══════════════════════════════════════════════════════ */
+
+var ESOP_COLOR = '#7C5CFC';
+
+function _esopStatusBadge(status) {
+  var map = {
+    'Active':'#22C55E', 'Partially Vested':'#F59E0B', 'Fully Vested':'#22C55E',
+    'Unvested':'#6B7280', 'Exercised':'#0891B2', 'Sold':'#EF4444', 'Expired':'#6B7280'
+  };
+  var color = map[status] || '#6B7280';
+  return '<span style="background:' + color + '22;color:' + color + ';border:1px solid ' + color + '44;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">' + (status || 'Active') + '</span>';
+}
+
+function _esopDaysLeft(dateStr) {
+  if (!dateStr) return 0;
+  return Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
+}
+
+function _esopFmtDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function _esopCompanyAbbr(name) {
+  if (!name) return 'CO';
+  var words = name.trim().split(/\s+/);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.slice(0, 3).toUpperCase();
+}
+
+function _esopDetailTabBar(activeTab) {
+  var tabs = [
+    { id:'overview',     icon:'🏠', label:'Overview' },
+    { id:'vesting',      icon:'📅', label:'Vesting' },
+    { id:'exercise',     icon:'💹', label:'Exercise' },
+    { id:'transactions', icon:'🔄', label:'Transactions' },
+    { id:'more',         icon:'···', label:'More' },
+  ];
+  var html = '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:50;max-width:430px;margin:0 auto">';
+  tabs.forEach(function(t) {
+    var active = t.id === activeTab;
+    html += '<div onclick="State.esopDetailTab=\'' + t.id + '\';App.render()" style="flex:1;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+      + '<div style="font-size:' + (active ? '16' : '14') + 'px">' + t.icon + '</div>'
+      + '<div style="font-size:9px;font-weight:' + (active ? '700' : '400') + ';color:' + (active ? ESOP_COLOR : 'var(--text-dim)') + '">' + t.label + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderEsopList() {
+  var grants  = State.esopGrants || [];
+  var totalGranted = 0, totalVested = 0, totalExercised = 0;
+  var totalExerciseCost = 0, totalCurrentValue = 0, totalExPriceSum = 0, totalCurPriceSum = 0;
+  grants.forEach(function(g) {
+    totalGranted       += g.granted || 0;
+    totalVested        += g.vested  || 0;
+    totalExercised     += g.exercised || 0;
+    totalExerciseCost  += (g.granted || 0) * (g.exercise_price || 0);
+    totalCurrentValue  += (g.vested  || 0) * (g.current_price  || 0);
+    totalExPriceSum    += g.exercise_price || 0;
+    totalCurPriceSum   += g.current_price  || 0;
+  });
+  var totalUnvested   = totalGranted - totalVested;
+  var potentialGain   = totalCurrentValue - totalExerciseCost;
+  var returnPct       = totalExerciseCost > 0 ? Math.round((potentialGain / totalExerciseCost) * 100) : 0;
+  var avgExPrice      = grants.length > 0 ? Math.round(totalExPriceSum / grants.length) : 0;
+  var avgCurPrice     = grants.length > 0 ? Math.round(totalCurPriceSum / grants.length) : 0;
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:80px">';
+
+  // Hero card
+  html += '<div style="background:linear-gradient(135deg,#7C5CFC,#4C1D95);padding:24px 20px 28px;position:relative;overflow:hidden">';
+  html += '<div style="position:absolute;top:-30px;right:-30px;width:150px;height:150px;background:rgba(255,255,255,0.05);border-radius:50%"></div>';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  html += '<div style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">🏢</div><div style="color:#fff;font-size:18px;font-weight:700">ESOP</div></div>';
+  html += '<div style="font-size:22px">🔔</div>';
+  html += '</div>';
+  html += '<div style="color:rgba(255,255,255,0.75);font-size:12px;margin-bottom:4px">Total ESOP Value</div>';
+  html += '<div style="color:#fff;font-size:30px;font-weight:800;margin-bottom:16px">' + formatINR(totalCurrentValue) + '</div>';
+  html += '<div style="display:flex;gap:0;background:rgba(255,255,255,0.12);border-radius:12px;padding:12px 0">';
+  html += '<div style="flex:1;text-align:center;border-right:1px solid rgba(255,255,255,0.2)">'
+    + '<div style="color:rgba(255,255,255,0.75);font-size:10px;margin-bottom:2px">Granted</div>'
+    + '<div style="color:#fff;font-weight:700;font-size:14px">' + totalGranted + '</div></div>';
+  html += '<div style="flex:1;text-align:center;border-right:1px solid rgba(255,255,255,0.2)">'
+    + '<div style="color:rgba(255,255,255,0.75);font-size:10px;margin-bottom:2px">Vested</div>'
+    + '<div style="color:#fff;font-weight:700;font-size:14px">' + totalVested + '</div></div>';
+  html += '<div style="flex:1;text-align:center">'
+    + '<div style="color:rgba(255,255,255,0.75);font-size:10px;margin-bottom:2px">Unvested</div>'
+    + '<div style="color:#fff;font-weight:700;font-size:14px">' + totalUnvested + '</div></div>';
+  html += '</div></div>';
+
+  // Stats grid
+  html += '<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  var stats2 = [
+    { label:'Exercise Price (avg)', value:formatINR(avgExPrice) },
+    { label:'Market Price (avg)',   value:formatINR(avgCurPrice) },
+    { label:'Exercise Cost',        value:formatINR(totalExerciseCost) },
+    { label:'Potential Gain',       value:formatINR(potentialGain) },
+    { label:'Return %',             value:returnPct + '%' },
+  ];
+  stats2.forEach(function(s) {
+    html += '<div style="background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border)">'
+      + '<div style="color:var(--text-dim);font-size:10px;margin-bottom:4px">' + s.label + '</div>'
+      + '<div style="font-weight:700;font-size:14px;color:var(--text)">' + s.value + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+
+  // Holdings list
+  html += '<div style="padding:0 16px 12px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div style="font-weight:700;font-size:15px;color:var(--text)">Your ESOP Holdings</div>';
+  html += '<div onclick="State.esopAddData={};App.navigate(\'esop-add\')" style="color:' + ESOP_COLOR + ';font-size:13px;font-weight:600;cursor:pointer">+ Add ESOP</div>';
+  html += '</div>';
+
+  if (grants.length === 0) {
+    html += '<div style="text-align:center;padding:32px 0;color:var(--text-dim)">No ESOP grants added yet.</div>';
+  } else {
+    grants.forEach(function(g) {
+      var abbr     = _esopCompanyAbbr(g.company);
+      var unvested = (g.granted || 0) - (g.vested || 0);
+      var curVal   = (g.vested || 0) * (g.current_price || 0);
+      html += '<div onclick="State.esopActiveId=\'' + g.id + '\';State.esopDetailTab=\'overview\';App.navigate(\'esop-detail\')" style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">' + abbr + '</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">';
+      html += '<div style="font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(g.company) + '</div>';
+      html += _esopStatusBadge(g.status);
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(g.plan || '') + '</div>';
+      html += '<div style="display:flex;gap:16px">';
+      html += '<div style="font-size:11px;color:var(--text-dim)">Granted: <span style="color:var(--text);font-weight:600">' + (g.granted || 0) + '</span></div>';
+      html += '<div style="font-size:11px;color:var(--text-dim)">Vested: <span style="color:#22C55E;font-weight:600">' + (g.vested || 0) + '</span></div>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:' + ESOP_COLOR + ';font-weight:700;margin-top:3px">Current Value: ' + formatINR(curVal) + '</div>';
+      html += '</div></div>';
+    });
+  }
+  html += '</div>';
+
+  // Upcoming Reminders
+  var allReminders = [];
+  Object.keys(State.esopReminders || {}).forEach(function(gid) {
+    var grantObj = (grants.filter(function(g){ return g.id === gid; })[0]) || {};
+    (State.esopReminders[gid] || []).forEach(function(r) {
+      allReminders.push({ r:r, company: grantObj.company || '' });
+    });
+  });
+  allReminders.sort(function(a, b) { return new Date(a.r.date) - new Date(b.r.date); });
+  var upcoming = allReminders.slice(0, 3);
+
+  if (upcoming.length > 0) {
+    html += '<div style="padding:0 16px 16px">';
+    html += '<div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:10px">Upcoming Reminders</div>';
+    upcoming.forEach(function(item) {
+      var r = item.r;
+      var daysLeft = _esopDaysLeft(r.date);
+      var urgency = daysLeft <= 30 ? '#EF4444' : daysLeft <= 90 ? '#F59E0B' : '#22C55E';
+      html += '<div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:36px;height:36px;border-radius:50%;background:' + (r.color || ESOP_COLOR) + '22;display:flex;align-items:center;justify-content:center;font-size:16px">' + (r.icon || '📅') + '</div>';
+      html += '<div style="flex:1">';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--text)">' + escapeHtml(r.type) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim)">' + escapeHtml(item.company) + ' · ' + _esopFmtDate(r.date) + '</div>';
+      html += '</div>';
+      html += '<div style="background:' + urgency + '22;color:' + urgency + ';border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">' + daysLeft + ' days</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Add ESOP button
+  html += '<div style="padding:0 16px 24px">';
+  html += '<button onclick="State.esopAddData={};App.navigate(\'esop-add\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Add ESOP</button>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function renderEsopAdd() {
+  var d = State.esopAddData || {};
+  var isEdit = !!(d && d.id);
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+
+  // Header
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:16px 16px 8px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'esop-list\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">' + (isEdit ? 'Edit ESOP' : 'Add ESOP') + '</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Company Information
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Company Information</div>';
+  html += '<div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:16px">';
+  html += '<div class="form-group"><label class="form-label">Company Name *</label><input id="esop-company" type="text" class="form-input" placeholder="e.g. ABC Ltd" value="' + escapeHtml(d.company || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">ESOP Plan Name</label><input id="esop-plan" type="text" class="form-input" placeholder="e.g. ABC Employee Stock Plan 2022" value="' + escapeHtml(d.plan || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Grant Number</label><input id="esop-grant-number" type="text" class="form-input" placeholder="e.g. GRANT/ABC/2022/001" value="' + escapeHtml(d.grant_number || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Employee ID</label><input id="esop-employee-id" type="text" class="form-input" placeholder="e.g. EMP12345" value="' + escapeHtml(d.employee_id || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Grant Date</label><input id="esop-grant-date" type="date" class="form-input" value="' + (d.grant_date || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Vesting Start Date</label><input id="esop-vesting-start" type="date" class="form-input" value="' + (d.vesting_start || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Vesting End Date</label><input id="esop-vesting-end" type="date" class="form-input" value="' + (d.vesting_end || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Vesting Period</label><select id="esop-vesting-period" class="form-input">';
+  ['1 Year','2 Years','3 Years','4 Years','5 Years'].forEach(function(opt) {
+    html += '<option value="' + opt + '"' + (d.vesting_period === opt ? ' selected' : '') + '>' + opt + '</option>';
+  });
+  html += '</select></div>';
+  html += '</div>';
+
+  // Share Information
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Share Information</div>';
+  html += '<div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:16px">';
+  html += '<div class="form-group"><label class="form-label">Shares Granted *</label><input id="esop-granted" type="number" class="form-input" placeholder="e.g. 500" value="' + (d.granted || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Shares Vested (optional)</label><input id="esop-vested" type="number" class="form-input" placeholder="e.g. 350" value="' + (d.vested || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Shares Unvested</label><input id="esop-unvested" type="number" class="form-input" placeholder="Auto = Granted - Vested" readonly style="opacity:0.6"></div>';
+  html += '<div class="form-group"><label class="form-label">Exercise Price Per Share (₹)</label><input id="esop-exercise-price" type="number" class="form-input" placeholder="e.g. 150" value="' + (d.exercise_price || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Current Market Price (₹)</label><input id="esop-current-price" type="number" class="form-input" placeholder="e.g. 4500" value="' + (d.current_price || '') + '"></div>';
+  html += '</div>';
+
+  // Employer Information
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Employer Information</div>';
+  html += '<div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:20px">';
+  html += '<div class="form-group"><label class="form-label">Employer Name</label><input id="esop-employer" type="text" class="form-input" placeholder="e.g. ABC Ltd" value="' + escapeHtml(d.employer || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Department</label><input id="esop-department" type="text" class="form-input" placeholder="e.g. Product" value="' + escapeHtml(d.department || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Designation</label><input id="esop-designation" type="text" class="form-input" placeholder="e.g. Product Manager" value="' + escapeHtml(d.designation || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Employment Start Date</label><input id="esop-emp-start" type="date" class="form-input" value="' + (d.employment_start || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Notes</label><textarea id="esop-notes" class="form-input" rows="3" placeholder="Any additional notes...">' + escapeHtml(d.notes || '') + '</textarea></div>';
+  html += '</div>';
+
+  html += '<button onclick="App._esopSave()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Continue</button>';
+
+  html += '</div></div>';
+
+  // Auto-calc unvested
+  html += '<script>document.getElementById("esop-granted") && document.getElementById("esop-granted").addEventListener("input",function(){var g=parseInt(this.value)||0;var v=parseInt(document.getElementById("esop-vested").value)||0;document.getElementById("esop-unvested").value=g-v;});document.getElementById("esop-vested") && document.getElementById("esop-vested").addEventListener("input",function(){var g=parseInt(document.getElementById("esop-granted").value)||0;var v=parseInt(this.value)||0;document.getElementById("esop-unvested").value=g-v;});<\/script>';
+
+  return html;
+}
+
+function renderEsopDetail() {
+  var grantId = State.esopActiveId;
+  var grants  = State.esopGrants || [];
+  var g = grants.filter(function(x){ return x.id === grantId; })[0];
+  if (!g) {
+    return '<div style="padding:32px;text-align:center;color:var(--text-dim)">Grant not found. <span onclick="App.navigate(\'esop-list\')" style="color:' + ESOP_COLOR + ';cursor:pointer">Go back</span></div>';
+  }
+  var abbr    = _esopCompanyAbbr(g.company);
+  var unvested = (g.granted || 0) - (g.vested || 0);
+  var curVal   = (g.vested || 0) * (g.current_price || 0);
+  var exCost   = (g.granted || 0) * (g.exercise_price || 0);
+  var potGain  = curVal - exCost;
+  var retPct   = exCost > 0 ? Math.round((potGain / exCost) * 100) : 0;
+  var tab      = State.esopDetailTab || 'overview';
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:70px">';
+
+  // Always-visible hero
+  html += '<div style="background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);padding:16px 16px 20px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">';
+  html += '<div class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff" onclick="App.navigate(\'esop-list\')">' + _invBackSVG + '</div>';
+  html += '<div style="flex:1">';
+  html += '<div style="color:#fff;font-weight:700;font-size:16px">' + escapeHtml(g.company) + '</div>';
+  html += '<div style="color:rgba(255,255,255,0.75);font-size:11px">' + escapeHtml(g.plan || '') + '</div>';
+  html += '</div>';
+  html += _esopStatusBadge(g.status);
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0">' + abbr + '</div>';
+  html += '<div>';
+  html += '<div style="color:rgba(255,255,255,0.75);font-size:10px">Current Value</div>';
+  html += '<div style="color:#fff;font-weight:800;font-size:20px">' + formatINR(curVal) + '</div>';
+  html += '</div></div>';
+  html += '</div>';
+
+  // Tab content
+  if (tab === 'overview') {
+    html += '<div style="padding:16px">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">';
+    html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Granted</div><div style="font-weight:700;color:var(--text)">' + (g.granted||0) + '</div></div>';
+    html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Vested</div><div style="font-weight:700;color:#22C55E">' + (g.vested||0) + '</div></div>';
+    html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Unvested</div><div style="font-weight:700;color:#F59E0B">' + unvested + '</div></div>';
+    html += '</div>';
+
+    var statRows = [
+      ['Exercise Price', '₹' + formatINR(g.exercise_price || 0)],
+      ['Current Price',  '₹' + formatINR(g.current_price  || 0)],
+      ['Current Value',  formatINR(curVal)],
+      ['Exercise Cost',  formatINR(exCost)],
+      ['Potential Gain', formatINR(potGain)],
+      ['Return %',       retPct + '%'],
+    ];
+    html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+    statRows.forEach(function(row, i) {
+      html += '<div style="display:flex;justify-content:space-between;padding:11px 14px;border-bottom:' + (i < statRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+      html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text)">' + row[1] + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    var infoRows = [
+      ['Grant Date',     _esopFmtDate(g.grant_date)],
+      ['Vesting Period', g.vesting_period || '—'],
+      ['Vesting End',    _esopFmtDate(g.vesting_end)],
+      ['Status',         g.status || 'Active'],
+    ];
+    html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+    infoRows.forEach(function(row, i) {
+      html += '<div style="display:flex;justify-content:space-between;padding:11px 14px;border-bottom:' + (i < infoRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+      html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--text)">' + row[1] + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px">Quick Actions</div>';
+    var actions = [
+      { icon:'📅', label:'Vesting Schedule', fn:"State.esopDetailTab='vesting';App.render()" },
+      { icon:'💹', label:'Exercise ESOP',     fn:"State.esopDetailTab='exercise';App.render()" },
+      { icon:'🔄', label:'Transactions',      fn:"State.esopDetailTab='transactions';App.render()" },
+      { icon:'📁', label:'Documents & Notes', fn:"State.esopDetailTab='more';App.render()" },
+    ];
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+    actions.forEach(function(a) {
+      html += '<div onclick="' + a.fn + '" style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);cursor:pointer;text-align:center">';
+      html += '<div style="font-size:22px;margin-bottom:6px">' + a.icon + '</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">' + a.label + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+  } else if (tab === 'vesting') {
+    var vestList = (State.esopVesting && State.esopVesting[grantId]) || [];
+    var vTotalGranted = g.granted || 0;
+    var vTotalVested  = vestList.filter(function(v){ return v.status === 'vested'; }).reduce(function(s,v){ return s + (v.shares||0); }, 0);
+    var vTotalUnvested = vTotalGranted - vTotalVested;
+    var nextVesting   = vestList.filter(function(v){ return v.status === 'pending'; }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); })[0];
+
+    html += '<div style="padding:16px">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">';
+    html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Total Granted</div><div style="font-weight:700;color:var(--text)">' + vTotalGranted + '</div></div>';
+    html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Total Vested</div><div style="font-weight:700;color:#22C55E">' + vTotalVested + '</div></div>';
+    html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Total Unvested</div><div style="font-weight:700;color:#F59E0B">' + vTotalUnvested + '</div></div>';
+    html += '</div>';
+
+    html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+    html += '<div style="display:grid;grid-template-columns:1fr 80px 80px;padding:10px 14px;background:rgba(124,92,252,0.08);font-size:11px;font-weight:700;color:var(--text-dim)">';
+    html += '<div>Date</div><div style="text-align:center">Shares</div><div style="text-align:right">Status</div></div>';
+    vestList.forEach(function(v) {
+      var isVested = v.status === 'vested';
+      html += '<div style="display:grid;grid-template-columns:1fr 80px 80px;padding:11px 14px;border-top:1px solid var(--border);align-items:center">';
+      html += '<div style="font-size:13px;color:var(--text)">' + _esopFmtDate(v.date) + '</div>';
+      html += '<div style="text-align:center;font-size:13px;font-weight:700;color:var(--text)">' + (v.shares||0) + '</div>';
+      html += '<div style="text-align:right">';
+      if (isVested) {
+        html += '<span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">✓ Vested</span>';
+      } else {
+        html += '<span style="background:#F59E0B22;color:#F59E0B;border:1px solid #F59E0B44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">⏱ Pending</span>';
+      }
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    if (nextVesting) {
+      html += '<div style="background:linear-gradient(135deg,' + ESOP_COLOR + '22,' + ESOP_COLOR + '11);border:1px solid ' + ESOP_COLOR + '44;border-radius:12px;padding:14px">';
+      html += '<div style="font-size:12px;color:' + ESOP_COLOR + ';font-weight:700;margin-bottom:6px">Next Vesting</div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+      html += '<div><div style="font-size:14px;font-weight:700;color:var(--text)">' + _esopFmtDate(nextVesting.date) + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim)">' + _esopDaysLeft(nextVesting.date) + ' days away</div></div>';
+      html += '<div style="font-size:20px;font-weight:800;color:' + ESOP_COLOR + '">' + (nextVesting.shares||0) + ' shares</div>';
+      html += '</div></div>';
+    }
+    html += '</div>';
+
+  } else if (tab === 'exercise') {
+    html += '<div style="padding:16px">';
+    html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Exercise Details</div>';
+    html += '<div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:16px">';
+    html += '<div class="form-group"><label class="form-label">Exercise Date</label><input id="esop-ex-date" type="date" class="form-input" value="' + new Date().toISOString().slice(0,10) + '"></div>';
+    html += '<div class="form-group"><label class="form-label">Shares to Exercise</label><input id="esop-ex-shares" type="number" class="form-input" placeholder="e.g. 100" oninput="App._esopCalcExercise()"></div>';
+    html += '<div class="form-group"><label class="form-label">Exercise Price (₹ per Share)</label><input id="esop-ex-price" type="number" class="form-input" value="' + (g.exercise_price||0) + '" readonly style="opacity:0.7"></div>';
+    html += '<div class="form-group"><label class="form-label">Market Price (₹ per Share)</label><input id="esop-ex-mkt-price" type="number" class="form-input" value="' + (g.current_price||0) + '" readonly style="opacity:0.7"></div>';
+    html += '</div>';
+
+    html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Financials</div>';
+    html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+    var finRows = [
+      ['Exercise Cost',       'esop-fin-exCost',   '₹0'],
+      ['Market Value',        'esop-fin-mktVal',   '₹0'],
+      ['Potential Gain',      'esop-fin-gain',     '₹0'],
+      ['Taxes (Estimated)',   'esop-fin-tax',      '₹0'],
+      ['Other Charges',       'esop-fin-other',    '₹0'],
+      ['Net Potential Gain',  'esop-fin-netGain',  '₹0'],
+    ];
+    finRows.forEach(function(row, i) {
+      html += '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:' + (i < finRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+      html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+      html += '<div id="' + row[1] + '" style="font-size:13px;font-weight:700;color:var(--text)">' + row[2] + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="form-group"><label class="form-label">Notes</label><textarea id="esop-ex-notes" class="form-input" rows="2" placeholder="Optional notes..."></textarea></div>';
+    html += '<button onclick="App._esopSaveExercise()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Save Exercise</button>';
+    html += '</div>';
+
+  } else if (tab === 'transactions') {
+    var txTab   = State.esopTxTab || 'exercise';
+    var exList  = (State.esopExercises && State.esopExercises[grantId]) || [];
+    var saleList= (State.esopSales && State.esopSales[grantId]) || [];
+
+    html += '<div style="padding:16px">';
+    html += '<div style="display:flex;background:var(--card);border-radius:50px;padding:3px;border:1px solid var(--border);margin-bottom:16px">';
+    html += '<div onclick="State.esopTxTab=\'exercise\';App.render()" style="flex:1;text-align:center;padding:8px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;background:' + (txTab==='exercise' ? ESOP_COLOR : 'transparent') + ';color:' + (txTab==='exercise' ? '#fff' : 'var(--text-dim)') + '">Exercise Transactions</div>';
+    html += '<div onclick="State.esopTxTab=\'sale\';App.render()" style="flex:1;text-align:center;padding:8px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;background:' + (txTab==='sale' ? ESOP_COLOR : 'transparent') + ';color:' + (txTab==='sale' ? '#fff' : 'var(--text-dim)') + '">Sale Transactions</div>';
+    html += '</div>';
+
+    var list = txTab === 'exercise' ? exList : saleList;
+    if (list.length === 0) {
+      html += '<div style="text-align:center;padding:32px 0;color:var(--text-dim)">No transactions yet.</div>';
+    } else {
+      list.forEach(function(tx) {
+        html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+        html += '<div style="display:flex;align-items:center;gap:8px">';
+        html += '<div style="background:#22C55E22;color:#22C55E;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">' + (tx.shares||0) + ' shares</div>';
+        html += '<div style="font-size:12px;color:var(--text-dim)">' + _esopFmtDate(tx.date) + '</div>';
+        html += '</div>';
+        html += _esopStatusBadge(tx.status);
+        html += '</div>';
+        if (txTab === 'exercise') {
+          html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Exercise Price</span><span style="font-weight:600;color:var(--text)">₹' + formatINR(tx.exercise_price||0) + '</span></div>';
+          html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Exercise Cost</span><span style="font-weight:600;color:var(--text)">' + formatINR(tx.exercise_cost||0) + '</span></div>';
+          html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Net Gain</span><span style="font-weight:700;color:#22C55E">' + formatINR(tx.net_gain||0) + '</span></div>';
+        } else {
+          html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Sale Price</span><span style="font-weight:600;color:var(--text)">₹' + formatINR(tx.sale_price||0) + '</span></div>';
+          html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Net Amount</span><span style="font-weight:600;color:var(--text)">' + formatINR(tx.net||0) + '</span></div>';
+          html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Profit</span><span style="font-weight:700;color:#22C55E">' + formatINR(tx.profit||0) + '</span></div>';
+        }
+        html += '</div>';
+      });
+    }
+
+    html += '<div style="display:flex;gap:10px;margin-top:8px">';
+    html += '<button onclick="App.navigate(\'esop-sell\')" style="flex:1;padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.12);color:#EF4444;border:1px solid rgba(239,68,68,0.3);font-size:13px;font-weight:700;cursor:pointer">Sell Shares</button>';
+    html += '<button onclick="App.showToast(\'Add transaction coming soon\')" style="flex:1;padding:12px;border-radius:var(--radius-sm);background:' + ESOP_COLOR + '22;color:' + ESOP_COLOR + ';border:1px solid ' + ESOP_COLOR + '44;font-size:13px;font-weight:700;cursor:pointer">+ Add Transaction</button>';
+    html += '</div>';
+    html += '</div>';
+
+  } else if (tab === 'more') {
+    html += '<div style="padding:16px">';
+    var moreItems = [
+      { icon:'📁', label:'Documents',       fn:"App.navigate('esop-documents')" },
+      { icon:'📝', label:'Notes',           fn:"App.navigate('esop-notes')" },
+      { icon:'🔔', label:'Reminders',       fn:"App.navigate('esop-reminders')" },
+      { icon:'📊', label:'Analytics',       fn:"App.navigate('esop-analytics')" },
+      { icon:'📋', label:'Summary',         fn:"App.navigate('esop-summary')" },
+    ];
+    html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden">';
+    moreItems.forEach(function(item, i) {
+      html += '<div onclick="' + item.fn + '" style="display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:' + (i < moreItems.length-1 ? '1px solid var(--border)' : 'none') + ';cursor:pointer">';
+      html += '<div style="width:36px;height:36px;border-radius:10px;background:' + ESOP_COLOR + '22;display:flex;align-items:center;justify-content:center;font-size:18px">' + item.icon + '</div>';
+      html += '<div style="flex:1;font-size:14px;font-weight:600;color:var(--text)">' + item.label + '</div>';
+      html += '<div style="color:var(--text-dim)">›</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div style="margin-top:16px">';
+    html += '<button onclick="App._esopDelete(\'' + grantId + '\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.3);font-size:14px;font-weight:700;cursor:pointer">Delete ESOP Grant</button>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  html += _esopDetailTabBar(tab);
+  html += '</div>';
+  return html;
+}
+
+function renderEsopVesting() {
+  var grantId  = State.esopActiveId;
+  var grants   = State.esopGrants || [];
+  var g        = grants.filter(function(x){ return x.id === grantId; })[0] || {};
+  var vestList = (State.esopVesting && State.esopVesting[grantId]) || [];
+  var totalGranted  = g.granted || 0;
+  var totalVested   = vestList.filter(function(v){ return v.status === 'vested'; }).reduce(function(s,v){ return s + (v.shares||0); }, 0);
+  var totalUnvested = totalGranted - totalVested;
+  var nextVesting   = vestList.filter(function(v){ return v.status === 'pending'; }).sort(function(a,b){ return new Date(a.date)-new Date(b.date); })[0];
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Vesting Schedule</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">';
+  html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Total Granted</div><div style="font-weight:700;color:var(--text)">' + totalGranted + '</div></div>';
+  html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Total Vested</div><div style="font-weight:700;color:#22C55E">' + totalVested + '</div></div>';
+  html += '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border);text-align:center"><div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">Total Unvested</div><div style="font-weight:700;color:#F59E0B">' + totalUnvested + '</div></div>';
+  html += '</div>';
+
+  html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+  html += '<div style="display:grid;grid-template-columns:1fr 80px 80px;padding:10px 14px;background:rgba(124,92,252,0.08);font-size:11px;font-weight:700;color:var(--text-dim)">';
+  html += '<div>Date</div><div style="text-align:center">Shares</div><div style="text-align:right">Status</div></div>';
+  vestList.forEach(function(v) {
+    var isVested = v.status === 'vested';
+    html += '<div style="display:grid;grid-template-columns:1fr 80px 80px;padding:11px 14px;border-top:1px solid var(--border);align-items:center">';
+    html += '<div style="font-size:13px;color:var(--text)">' + _esopFmtDate(v.date) + '</div>';
+    html += '<div style="text-align:center;font-size:13px;font-weight:700;color:var(--text)">' + (v.shares||0) + '</div>';
+    html += '<div style="text-align:right">';
+    if (isVested) {
+      html += '<span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">✓ Vested</span>';
+    } else {
+      html += '<span style="background:#F59E0B22;color:#F59E0B;border:1px solid #F59E0B44;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">⏱ Pending</span>';
+    }
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  if (nextVesting) {
+    html += '<div style="background:linear-gradient(135deg,' + ESOP_COLOR + '22,' + ESOP_COLOR + '11);border:1px solid ' + ESOP_COLOR + '44;border-radius:12px;padding:14px">';
+    html += '<div style="font-size:12px;color:' + ESOP_COLOR + ';font-weight:700;margin-bottom:6px">Next Vesting</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+    html += '<div><div style="font-size:14px;font-weight:700;color:var(--text)">' + _esopFmtDate(nextVesting.date) + '</div>';
+    html += '<div style="font-size:12px;color:var(--text-dim)">' + _esopDaysLeft(nextVesting.date) + ' days away</div></div>';
+    html += '<div style="font-size:20px;font-weight:800;color:' + ESOP_COLOR + '">' + (nextVesting.shares||0) + ' shares</div>';
+    html += '</div></div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopExercise() {
+  var grantId = State.esopActiveId;
+  var grants  = State.esopGrants || [];
+  var g       = grants.filter(function(x){ return x.id === grantId; })[0] || {};
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Exercise ESOP</div>';
+  html += '</div>';
+  html += '<div onclick="App._esopSaveExercise()" style="color:' + ESOP_COLOR + ';font-size:13px;font-weight:700;cursor:pointer">✓ Save</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Exercise Details</div>';
+  html += '<div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:16px">';
+  html += '<div class="form-group"><label class="form-label">Exercise Date</label><input id="esop-ex-date" type="date" class="form-input" value="' + new Date().toISOString().slice(0,10) + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Shares to be Exercised</label><input id="esop-ex-shares" type="number" class="form-input" placeholder="e.g. 100" oninput="App._esopCalcExercise()"></div>';
+  html += '<div class="form-group"><label class="form-label">Exercise Price (₹ per Share)</label><input id="esop-ex-price" type="number" class="form-input" value="' + (g.exercise_price||0) + '" readonly style="opacity:0.7"></div>';
+  html += '<div class="form-group"><label class="form-label">Market Price (₹ per Share)</label><input id="esop-ex-mkt-price" type="number" class="form-input" value="' + (g.current_price||0) + '" readonly style="opacity:0.7"></div>';
+  html += '</div>';
+
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Financials</div>';
+  html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+  var finRows = [
+    ['Exercise Cost',       'esop-fin-exCost',  '₹0'],
+    ['Market Value',        'esop-fin-mktVal',  '₹0'],
+    ['Potential Gain',      'esop-fin-gain',    '₹0'],
+    ['Taxes (Estimated)',   'esop-fin-tax',     '₹0'],
+    ['Other Charges',       'esop-fin-other',   '₹2,000'],
+    ['Net Potential Gain',  'esop-fin-netGain', '₹0'],
+  ];
+  finRows.forEach(function(row, i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:' + (i < finRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+    html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+    html += '<div id="' + row[1] + '" style="font-size:13px;font-weight:700;color:var(--text)">' + row[2] + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="form-group"><label class="form-label">Notes</label><textarea id="esop-ex-notes" class="form-input" rows="2" placeholder="Optional notes..."></textarea></div>';
+  html += '<button onclick="App._esopSaveExercise()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Save Exercise</button>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopTransactions() {
+  var grantId  = State.esopActiveId;
+  var txTab    = State.esopTxTab || 'exercise';
+  var exList   = (State.esopExercises && State.esopExercises[grantId]) || [];
+  var saleList = (State.esopSales && State.esopSales[grantId]) || [];
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Transactions</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<div style="display:flex;background:var(--card);border-radius:50px;padding:3px;border:1px solid var(--border);margin-bottom:16px">';
+  html += '<div onclick="State.esopTxTab=\'exercise\';App.render()" style="flex:1;text-align:center;padding:8px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;background:' + (txTab==='exercise' ? ESOP_COLOR : 'transparent') + ';color:' + (txTab==='exercise' ? '#fff' : 'var(--text-dim)') + '">Exercise Transactions</div>';
+  html += '<div onclick="State.esopTxTab=\'sale\';App.render()" style="flex:1;text-align:center;padding:8px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;background:' + (txTab==='sale' ? ESOP_COLOR : 'transparent') + ';color:' + (txTab==='sale' ? '#fff' : 'var(--text-dim)') + '">Sale Transactions</div>';
+  html += '</div>';
+
+  var list = txTab === 'exercise' ? exList : saleList;
+  if (list.length === 0) {
+    html += '<div style="text-align:center;padding:32px 0;color:var(--text-dim)">No transactions yet.</div>';
+  } else {
+    list.forEach(function(tx) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<div style="background:#22C55E22;color:#22C55E;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">' + (tx.shares||0) + ' shares</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim)">' + _esopFmtDate(tx.date) + '</div>';
+      html += '</div>';
+      html += _esopStatusBadge(tx.status);
+      html += '</div>';
+      if (txTab === 'exercise') {
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Exercise Price</span><span style="font-weight:600;color:var(--text)">₹' + formatINR(tx.exercise_price||0) + '</span></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Exercise Cost</span><span style="font-weight:600;color:var(--text)">' + formatINR(tx.exercise_cost||0) + '</span></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Net Gain</span><span style="font-weight:700;color:#22C55E">' + formatINR(tx.net_gain||0) + '</span></div>';
+      } else {
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Sale Price</span><span style="font-weight:600;color:var(--text)">₹' + formatINR(tx.sale_price||0) + '</span></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Net Amount</span><span style="font-weight:600;color:var(--text)">' + formatINR(tx.net||0) + '</span></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>Profit</span><span style="font-weight:700;color:#22C55E">' + formatINR(tx.profit||0) + '</span></div>';
+      }
+      html += '</div>';
+    });
+  }
+
+  html += '<button onclick="App.showToast(\'Add transaction coming soon\')" style="width:100%;padding:12px;border-radius:var(--radius-sm);background:' + ESOP_COLOR + '22;color:' + ESOP_COLOR + ';border:1px solid ' + ESOP_COLOR + '44;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Transaction</button>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopSell() {
+  var grantId = State.esopActiveId;
+  var grants  = State.esopGrants || [];
+  var g       = grants.filter(function(x){ return x.id === grantId; })[0] || {};
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Sell ESOP</div>';
+  html += '</div>';
+  html += '<div onclick="App._esopSaveSale()" style="color:' + ESOP_COLOR + ';font-size:13px;font-weight:700;cursor:pointer">✓ Save</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Sale Details</div>';
+  html += '<div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:16px">';
+  html += '<div class="form-group"><label class="form-label">Sale Date</label><input id="esop-sale-date" type="date" class="form-input" value="' + new Date().toISOString().slice(0,10) + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Shares to Sell</label><input id="esop-sale-shares" type="number" class="form-input" placeholder="e.g. 100" oninput="App._esopCalcSale()"></div>';
+  html += '<div class="form-group"><label class="form-label">Sale Price (₹ per Share)</label><input id="esop-sale-price" type="number" class="form-input" placeholder="e.g. 5200" oninput="App._esopCalcSale()"></div>';
+  html += '<div class="form-group"><label class="form-label">Broker Name</label><input id="esop-sale-broker" type="text" class="form-input" placeholder="e.g. Zerodha"></div>';
+  html += '<div class="form-group"><label class="form-label">Brokerage Charges (₹)</label><input id="esop-sale-brokerage" type="number" class="form-input" placeholder="0" oninput="App._esopCalcSale()"></div>';
+  html += '<div class="form-group"><label class="form-label">STT (₹)</label><input id="esop-sale-stt" type="number" class="form-input" placeholder="0" oninput="App._esopCalcSale()"></div>';
+  html += '<div class="form-group"><label class="form-label">Other Charges (₹)</label><input id="esop-sale-other" type="number" class="form-input" placeholder="0" oninput="App._esopCalcSale()"></div>';
+  html += '</div>';
+
+  html += '<div style="font-size:13px;font-weight:700;color:' + ESOP_COLOR + ';margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Summary</div>';
+  html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;overflow:hidden">';
+  var sumRows = [
+    ['Gross Sale Value', 'esop-sell-gross',  '₹0'],
+    ['Total Charges',   'esop-sell-charges', '₹0'],
+    ['Net Amount',      'esop-sell-net',     '₹0'],
+    ['Profit / Loss',   'esop-sell-profit',  '₹0'],
+  ];
+  sumRows.forEach(function(row, i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:' + (i < sumRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+    html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+    html += '<div id="' + row[1] + '" style="font-size:13px;font-weight:700;color:' + (i === 3 ? '#22C55E' : 'var(--text)') + '">' + row[2] + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<button onclick="App._esopSaveSale()" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Save Sale</button>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopDocuments() {
+  var grantId = State.esopActiveId;
+  var docs    = (State.esopDocuments && State.esopDocuments[grantId]) || [];
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="State.esopDetailTab=\'more\';App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Documents</div>';
+  html += '</div>';
+  html += '<div onclick="App._esopUploadDoc(\'' + grantId + '\')" style="color:' + ESOP_COLOR + ';font-size:13px;font-weight:700;cursor:pointer">+ Upload</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  if (docs.length === 0) {
+    html += '<div style="text-align:center;padding:48px 0"><div style="font-size:40px;margin-bottom:10px">📁</div><div style="color:var(--text-dim)">No documents uploaded yet.</div></div>';
+  } else {
+    var docColors = { PDF:'#EF4444', ZIP:'#F59E0B', DOC:'#3B82F6', XLS:'#22C55E' };
+    docs.forEach(function(doc) {
+      var color = docColors[doc.type] || ESOP_COLOR;
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:40px;height:40px;border-radius:10px;background:' + color + '22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📄</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(doc.name) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim)">' + doc.type + ' · ' + doc.size + ' · ' + _esopFmtDate(doc.date) + '</div>';
+      html += '</div>';
+      html += '<div style="color:' + ESOP_COLOR + ';font-size:20px;cursor:pointer" onclick="App.showToast(\'Downloading ' + escapeHtml(doc.name) + '...\')">⬇</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopNotes() {
+  var grantId   = State.esopActiveId;
+  var allNotes  = (State.esopNotesList && State.esopNotesList[grantId]) || [];
+  var filterTab = State.esopNotesFilter || 'all';
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="State.esopDetailTab=\'more\';App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Notes</div>';
+  html += '</div>';
+  html += '<div onclick="App.showToast(\'Add note coming soon\')" style="color:' + ESOP_COLOR + ';font-size:13px;font-weight:700;cursor:pointer">+ Add Note</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  // Filter chips
+  var filters = ['all', 'general', 'vesting', 'tax', 'exercise'];
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
+  filters.forEach(function(f) {
+    var active = filterTab === f;
+    html += '<div onclick="State.esopNotesFilter=\'' + f + '\';App.render()" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:' + (active ? ESOP_COLOR : 'var(--card)') + ';color:' + (active ? '#fff' : 'var(--text-dim)') + ';border:1px solid ' + (active ? ESOP_COLOR : 'var(--border)') + '">' + f.charAt(0).toUpperCase() + f.slice(1) + '</div>';
+  });
+  html += '</div>';
+
+  var filtered = filterTab === 'all' ? allNotes : allNotes.filter(function(n){ return n.type === filterTab; });
+  var pinned   = filtered.filter(function(n){ return n.pinned; });
+  var unpinned = filtered.filter(function(n){ return !n.pinned; });
+  var sorted   = pinned.concat(unpinned);
+
+  if (sorted.length === 0) {
+    html += '<div style="text-align:center;padding:48px 0"><div style="font-size:40px;margin-bottom:10px">📝</div><div style="color:var(--text-dim)">No notes yet.</div></div>';
+  } else {
+    sorted.forEach(function(note) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text)">' + escapeHtml(note.title) + '</div>';
+      html += '<div style="display:flex;gap:6px;align-items:center">';
+      if (note.pinned) html += '<span style="font-size:14px">📌</span>';
+      if (note.locked) html += '<span style="font-size:14px">🔒</span>';
+      html += '</div></div>';
+      html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + escapeHtml(note.body) + '</div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+      html += '<span style="background:' + ESOP_COLOR + '22;color:' + ESOP_COLOR + ';border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600">' + note.type + '</span>';
+      html += '<span style="font-size:11px;color:var(--text-dim)">' + _esopFmtDate(note.date) + '</span>';
+      html += '</div></div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopReminders() {
+  var grantId   = State.esopActiveId;
+  var reminders = (State.esopReminders && State.esopReminders[grantId]) || [];
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="State.esopDetailTab=\'more\';App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Reminders</div>';
+  html += '</div>';
+  html += '<div onclick="App._esopAddReminder(\'' + grantId + '\')" style="color:' + ESOP_COLOR + ';font-size:13px;font-weight:700;cursor:pointer">+ Add Reminder</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  if (reminders.length === 0) {
+    html += '<div style="text-align:center;padding:48px 0"><div style="font-size:40px;margin-bottom:10px">🔔</div><div style="color:var(--text-dim)">No reminders set.</div></div>';
+  } else {
+    reminders.forEach(function(r) {
+      var daysLeft = _esopDaysLeft(r.date);
+      var urgency  = daysLeft <= 30 ? '#EF4444' : daysLeft <= 90 ? '#F59E0B' : '#22C55E';
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:44px;height:44px;border-radius:12px;background:' + (r.color || ESOP_COLOR) + '22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">' + (r.icon || '🔔') + '</div>';
+      html += '<div style="flex:1">';
+      html += '<div style="font-size:14px;font-weight:600;color:var(--text)">' + escapeHtml(r.type) + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim)">' + _esopFmtDate(r.date) + '</div>';
+      html += '</div>';
+      html += '<div style="background:' + urgency + '22;color:' + urgency + ';border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">' + daysLeft + ' Days Left</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopAnalytics() {
+  var grantId = State.esopActiveId;
+  var grants  = State.esopGrants || [];
+  var g       = grants.filter(function(x){ return x.id === grantId; })[0] || {};
+  var unvested  = (g.granted||0) - (g.vested||0);
+  var curVal    = (g.vested||0) * (g.current_price||0);
+  var exCost    = (g.granted||0) * (g.exercise_price||0);
+  var potGain   = curVal - exCost;
+  var retPct    = exCost > 0 ? Math.round((potGain / exCost) * 100) : 0;
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="State.esopDetailTab=\'more\';App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">Analytics</div>';
+  html += '</div>';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text)">This Year</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Performance stats
+  html += '<div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:12px">ESOP Performance</div>';
+  html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:20px;overflow:hidden">';
+  var perfRows = [
+    ['Shares Granted',   (g.granted||0) + ' shares'],
+    ['Shares Vested',    (g.vested||0) + ' shares'],
+    ['Shares Unvested',  unvested + ' shares'],
+    ['Exercise Price',   '₹' + formatINR(g.exercise_price||0)],
+    ['Current Price',    '₹' + formatINR(g.current_price||0)],
+    ['Current Value',    formatINR(curVal)],
+    ['Exercise Cost',    formatINR(exCost)],
+    ['Potential Gain',   formatINR(potGain)],
+    ['Return %',         retPct + '%'],
+  ];
+  perfRows.forEach(function(row, i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:' + (i < perfRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+    html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text)">' + row[1] + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Value Over Time chart (inline SVG line chart)
+  html += '<div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:12px">Value Over Time</div>';
+  html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px;margin-bottom:16px">';
+
+  var chartW = 320, chartH = 140, padL = 48, padR = 12, padT = 12, padB = 30;
+  var plotW  = chartW - padL - padR;
+  var plotH  = chartH - padT - padB;
+
+  var dataPoints = [
+    { label:'Jan 22', val:500000 },
+    { label:'Jul 22', val:1200000 },
+    { label:'Jan 23', val:3500000 },
+    { label:'Jul 23', val:8000000 },
+    { label:'Jan 24', val:15000000 },
+    { label:'May 24', val:22500000 },
+  ];
+  var maxVal = 22500000;
+  var n = dataPoints.length;
+
+  var pts = dataPoints.map(function(p, i) {
+    var x = padL + (i / (n - 1)) * plotW;
+    var y = padT + plotH - (p.val / maxVal) * plotH;
+    return { x: x, y: y, label: p.label, val: p.val };
+  });
+
+  var pathD = pts.map(function(p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' ');
+  var areaD = pathD + ' L' + pts[pts.length-1].x.toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z';
+
+  html += '<svg width="100%" viewBox="0 0 ' + chartW + ' ' + chartH + '" style="overflow:visible">';
+
+  // Area fill
+  html += '<path d="' + areaD + '" fill="' + ESOP_COLOR + '" opacity="0.12"/>';
+
+  // Grid lines
+  for (var gi = 0; gi <= 4; gi++) {
+    var gy = padT + plotH - (gi / 4) * plotH;
+    html += '<line x1="' + padL + '" y1="' + gy.toFixed(1) + '" x2="' + (padL + plotW) + '" y2="' + gy.toFixed(1) + '" stroke="var(--border)" stroke-width="0.5"/>';
+    var yLabelVal = Math.round((gi / 4) * maxVal / 100000) / 10;
+    html += '<text x="' + (padL - 4) + '" y="' + (gy + 4).toFixed(1) + '" text-anchor="end" font-size="8" fill="' + 'currentColor' + '" opacity="0.5">' + yLabelVal + 'L</text>';
+  }
+
+  // Line
+  html += '<path d="' + pathD + '" fill="none" stroke="' + ESOP_COLOR + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+
+  // Dots + x-axis labels
+  pts.forEach(function(p, i) {
+    html += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3" fill="' + ESOP_COLOR + '" stroke="#fff" stroke-width="1.5"/>';
+    html += '<text x="' + p.x.toFixed(1) + '" y="' + (padT + plotH + 18) + '" text-anchor="middle" font-size="8" fill="currentColor" opacity="0.6">' + p.label + '</text>';
+  });
+
+  html += '</svg>';
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderEsopSummary() {
+  var grantId  = State.esopActiveId;
+  var grants   = State.esopGrants || [];
+  var g        = grants.filter(function(x){ return x.id === grantId; })[0] || {};
+  var abbr     = _esopCompanyAbbr(g.company);
+  var unvested = (g.granted||0) - (g.vested||0);
+  var curVal   = (g.vested||0) * (g.current_price||0);
+  var exCost   = (g.granted||0) * (g.exercise_price||0);
+  var potGain  = curVal - exCost;
+  var retPct   = exCost > 0 ? Math.round((potGain / exCost) * 100) : 0;
+
+  var html = '<div style="background:var(--bg);min-height:100vh;padding-bottom:32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg);border-bottom:1px solid var(--border)">';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div class="icon-btn" onclick="State.esopDetailTab=\'more\';App.navigate(\'esop-detail\')">' + _invBackSVG + '</div>';
+  html += '<div style="font-weight:700;font-size:17px;color:var(--text)">ESOP Summary</div>';
+  html += '</div>';
+  html += '<div onclick="App.showToast(\'Sharing summary...\')" style="color:' + ESOP_COLOR + ';font-size:20px;cursor:pointer">↗</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Company card
+  html += '<div style="background:linear-gradient(135deg,' + ESOP_COLOR + '22,' + ESOP_COLOR + '11);border:1px solid ' + ESOP_COLOR + '44;border-radius:12px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">';
+  html += '<div style="width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">' + abbr + '</div>';
+  html += '<div style="flex:1">';
+  html += '<div style="font-size:15px;font-weight:700;color:var(--text)">' + escapeHtml(g.company || '') + '</div>';
+  html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">' + escapeHtml(g.plan || '') + '</div>';
+  html += _esopStatusBadge(g.status);
+  html += '</div></div>';
+
+  // Stats table
+  html += '<div style="background:var(--card);border-radius:12px;border:1px solid var(--border);margin-bottom:20px;overflow:hidden">';
+  var tableRows = [
+    ['Shares Granted',      (g.granted||0) + ' shares'],
+    ['Shares Vested',       (g.vested||0) + ' shares'],
+    ['Shares Unvested',     unvested + ' shares'],
+    ['Exercise Price',      '₹' + formatINR(g.exercise_price||0)],
+    ['Current Market Price','₹' + formatINR(g.current_price||0)],
+    ['Current Value',       formatINR(curVal)],
+    ['Exercise Cost',       formatINR(exCost)],
+    ['Potential Gain',      formatINR(potGain)],
+    ['Return %',            retPct + '%'],
+    ['Grant Date',          _esopFmtDate(g.grant_date)],
+    ['Vesting Period',      g.vesting_period || '—'],
+    ['Vesting End Date',    _esopFmtDate(g.vesting_end)],
+    ['Status',              g.status || 'Active'],
+    ['Department',          g.department || '—'],
+    ['Designation',         g.designation || '—'],
+  ];
+  tableRows.forEach(function(row, i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:' + (i < tableRows.length-1 ? '1px solid var(--border)' : 'none') + '">';
+    html += '<div style="font-size:13px;color:var(--text-dim)">' + row[0] + '</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:var(--text)">' + row[1] + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<button onclick="App.showToast(\'Downloading ESOP Summary...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + ESOP_COLOR + ',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Download Summary</button>';
+  html += '</div></div>';
+  return html;
+}
+
 // Helper: render linked notes list (used in other module detail screens)
 function renderLinkedNotesList(module, linkedId) {
   var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
@@ -19046,6 +20092,7 @@ const App = {
     else if (screen.startsWith('notes'))          tabHint = 'more';
     else if (screen.startsWith('motor'))          tabHint = 'more';
     else if (screen.startsWith('vehicle'))        tabHint = 'more';
+    else if (screen.startsWith('esop'))           tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -19280,6 +20327,18 @@ const App = {
       case 'vehicle-expense-add': html = renderVehicleExpenseAdd();  break;
       case 'vehicle-reminders':   html = renderVehicleReminders();   break;
       case 'vehicle-sell':        html = renderVehicleSell();        break;
+      case 'esop-list':         html = renderEsopList();         break;
+      case 'esop-add':          html = renderEsopAdd();          break;
+      case 'esop-detail':       html = renderEsopDetail();       break;
+      case 'esop-vesting':      html = renderEsopVesting();      break;
+      case 'esop-exercise':     html = renderEsopExercise();     break;
+      case 'esop-transactions': html = renderEsopTransactions(); break;
+      case 'esop-sell':         html = renderEsopSell();         break;
+      case 'esop-documents':    html = renderEsopDocuments();    break;
+      case 'esop-notes':        html = renderEsopNotes();        break;
+      case 'esop-reminders':    html = renderEsopReminders();    break;
+      case 'esop-analytics':    html = renderEsopAnalytics();    break;
+      case 'esop-summary':      html = renderEsopSummary();      break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -22001,6 +23060,178 @@ const App = {
     }
     this.showToast('Vehicle marked as sold');
     App.navigate('vehicle-list');
+  },
+
+  /* ── ESOP Module ── */
+  _esopSave() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var company        = g('esop-company');
+    var plan           = g('esop-plan');
+    var grantNumber    = g('esop-grant-number');
+    var employeeId     = g('esop-employee-id');
+    var grantDate      = g('esop-grant-date');
+    var vestingStart   = g('esop-vesting-start');
+    var vestingEnd     = g('esop-vesting-end');
+    var vestingPeriod  = g('esop-vesting-period');
+    var granted        = parseInt(g('esop-granted')) || 0;
+    var vested         = parseInt(g('esop-vested')) || 0;
+    var exercisePrice  = parseFloat(g('esop-exercise-price')) || 0;
+    var currentPrice   = parseFloat(g('esop-current-price')) || 0;
+    var employer       = g('esop-employer');
+    var department     = g('esop-department');
+    var designation    = g('esop-designation');
+    var empStart       = g('esop-emp-start');
+    var notes          = g('esop-notes');
+    if (!company || !granted) { this.showToast('Please enter company and shares granted'); return; }
+    var existing = State.esopAddData && State.esopAddData.id;
+    if (existing) {
+      var g2 = (State.esopGrants || []).filter(function(x){ return x.id === existing; })[0];
+      if (g2) {
+        g2.company=company; g2.plan=plan; g2.grant_number=grantNumber; g2.employee_id=employeeId;
+        g2.grant_date=grantDate; g2.vesting_start=vestingStart; g2.vesting_end=vestingEnd;
+        g2.vesting_period=vestingPeriod; g2.granted=granted; g2.vested=vested;
+        g2.exercise_price=exercisePrice; g2.current_price=currentPrice;
+        g2.employer=employer; g2.department=department; g2.designation=designation;
+        g2.employment_start=empStart; g2.notes=notes;
+      }
+      State.esopActiveId = existing;
+    } else {
+      var newId = 'esop' + Date.now();
+      if (!State.esopGrants) State.esopGrants = [];
+      State.esopGrants.push({ id:newId, company:company, plan:plan, grant_number:grantNumber,
+        employee_id:employeeId, grant_date:grantDate, vesting_start:vestingStart, vesting_end:vestingEnd,
+        vesting_period:vestingPeriod, granted:granted, vested:vested, exercised:0,
+        exercise_price:exercisePrice, current_price:currentPrice, employer:employer,
+        department:department, designation:designation, employment_start:empStart,
+        status:'Unvested', notes:notes });
+      State.esopActiveId = newId;
+      if (!State.esopVesting) State.esopVesting = {};
+      State.esopVesting[newId] = [];
+      if (!State.esopExercises) State.esopExercises = {};
+      State.esopExercises[newId] = [];
+      if (!State.esopSales) State.esopSales = {};
+      State.esopSales[newId] = [];
+      if (!State.esopDocuments) State.esopDocuments = {};
+      State.esopDocuments[newId] = [];
+      if (!State.esopNotesList) State.esopNotesList = {};
+      State.esopNotesList[newId] = [];
+      if (!State.esopReminders) State.esopReminders = {};
+      State.esopReminders[newId] = [];
+    }
+    State.esopAddData = {};
+    State.esopDetailTab = 'overview';
+    this.showToast(existing ? 'ESOP updated' : 'ESOP grant added');
+    App.navigate('esop-detail');
+  },
+
+  _esopCalcExercise() {
+    var shares   = parseFloat((document.getElementById('esop-ex-shares') || {}).value) || 0;
+    var exPrice  = parseFloat((document.getElementById('esop-ex-price') || {}).value) || 0;
+    var mktPrice = parseFloat((document.getElementById('esop-ex-mkt-price') || {}).value) || 0;
+    var exCost   = shares * exPrice;
+    var mktVal   = shares * mktPrice;
+    var gain     = mktVal - exCost;
+    var tax      = Math.round(gain * 0.30);
+    var other    = 2000;
+    var netGain  = gain - tax - other;
+    var fmt = function(n) { return '₹' + formatINR(Math.round(n)); };
+    var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    set('esop-fin-exCost',  fmt(exCost));
+    set('esop-fin-mktVal',  fmt(mktVal));
+    set('esop-fin-gain',    fmt(gain));
+    set('esop-fin-tax',     fmt(tax));
+    set('esop-fin-other',   fmt(other));
+    set('esop-fin-netGain', fmt(netGain));
+  },
+
+  _esopCalcSale() {
+    var shares    = parseFloat((document.getElementById('esop-sale-shares') || {}).value) || 0;
+    var price     = parseFloat((document.getElementById('esop-sale-price') || {}).value) || 0;
+    var brokerage = parseFloat((document.getElementById('esop-sale-brokerage') || {}).value) || 0;
+    var stt       = parseFloat((document.getElementById('esop-sale-stt') || {}).value) || 0;
+    var other     = parseFloat((document.getElementById('esop-sale-other') || {}).value) || 0;
+    var gross     = shares * price;
+    var charges   = brokerage + stt + other;
+    var net       = gross - charges;
+    var grantId   = State.esopActiveId;
+    var grant     = (State.esopGrants || []).filter(function(x){ return x.id === grantId; })[0];
+    var cost      = grant ? (shares * (grant.exercise_price || 0)) : 0;
+    var profit    = net - cost;
+    var fmt = function(n) { return '₹' + formatINR(Math.round(n)); };
+    var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    set('esop-sell-gross',   fmt(gross));
+    set('esop-sell-charges', fmt(charges));
+    set('esop-sell-net',     fmt(net));
+    set('esop-sell-profit',  fmt(profit));
+  },
+
+  _esopSaveExercise() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var date     = g('esop-ex-date');
+    var shares   = parseInt(g('esop-ex-shares')) || 0;
+    var exPrice  = parseFloat(g('esop-ex-price')) || 0;
+    var mktPrice = parseFloat(g('esop-ex-mkt-price')) || 0;
+    if (!shares) { this.showToast('Please enter shares to exercise'); return; }
+    var exCost   = shares * exPrice;
+    var mktVal   = shares * mktPrice;
+    var gain     = mktVal - exCost;
+    var tax      = Math.round(gain * 0.30);
+    var other    = 2000;
+    var netGain  = gain - tax - other;
+    var vId = State.esopActiveId;
+    if (!State.esopExercises) State.esopExercises = {};
+    if (!State.esopExercises[vId]) State.esopExercises[vId] = [];
+    State.esopExercises[vId].push({ id:'ee'+Date.now(), date:date, shares:shares,
+      exercise_price:exPrice, market_price:mktPrice, exercise_cost:exCost, market_value:mktVal,
+      gain:gain, tax:tax, other_charges:other, net_gain:netGain, status:'Exercised' });
+    this.showToast('Exercise saved');
+    State.esopDetailTab = 'transactions';
+    App.navigate('esop-detail');
+  },
+
+  _esopSaveSale() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var date      = g('esop-sale-date');
+    var shares    = parseInt(g('esop-sale-shares')) || 0;
+    var price     = parseFloat(g('esop-sale-price')) || 0;
+    var broker    = g('esop-sale-broker');
+    var brokerage = parseFloat(g('esop-sale-brokerage')) || 0;
+    var stt       = parseFloat(g('esop-sale-stt')) || 0;
+    var other     = parseFloat(g('esop-sale-other')) || 0;
+    if (!shares || !price) { this.showToast('Please enter shares and price'); return; }
+    var gross   = shares * price;
+    var charges = brokerage + stt + other;
+    var net     = gross - charges;
+    var vId     = State.esopActiveId;
+    var grant   = (State.esopGrants || []).filter(function(x){ return x.id === vId; })[0];
+    var cost    = grant ? (shares * (grant.exercise_price || 0)) : 0;
+    var profit  = net - cost;
+    if (!State.esopSales) State.esopSales = {};
+    if (!State.esopSales[vId]) State.esopSales[vId] = [];
+    State.esopSales[vId].push({ id:'es'+Date.now(), date:date, shares:shares, sale_price:price,
+      broker:broker, brokerage:brokerage, stt:stt, other:other, gross:gross, charges:charges,
+      net:net, profit:profit, status:'Sold' });
+    this.showToast('Sale recorded');
+    State.esopDetailTab = 'transactions';
+    App.navigate('esop-detail');
+  },
+
+  _esopUploadDoc(id) {
+    if (!State.esopDocuments) State.esopDocuments = {};
+    if (!State.esopDocuments[id]) State.esopDocuments[id] = [];
+    State.esopDocuments[id].push({ id:'ed'+Date.now(), name:'Document_'+Date.now()+'.pdf', type:'PDF', size:'1.0 MB', date:new Date().toISOString().slice(0,10) });
+    this.showToast('Document uploaded');
+    App.render();
+  },
+
+  _esopAddReminder(id) {
+    this.showToast('Reminder added');
+  },
+
+  _esopDelete(id) {
+    State.esopGrants = (State.esopGrants || []).filter(function(g){ return g.id !== id; });
+    this.showToast('ESOP grant deleted');
+    App.navigate('esop-list');
   },
 
   /* ── Budget Module ──────────────────────────── */
