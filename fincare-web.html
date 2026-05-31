@@ -2414,6 +2414,82 @@ const State = {
     art3: [],
     art4: [],
   },
+
+  // AIF module
+  aifActiveId: 'aif1',
+  aifDetailTab: 'overview',
+  aifTxFilter: 'all',
+  aifAddData: {},
+  aifFunds: [
+    { id:'aif1', name:'ABC AIF Fund', manager:'ABC Capital Advisors', fund_type:'Alternative Investment Fund',
+      category:'Category II', sub_category:'Private Equity', vintage:2023, fund_size:500000000,
+      country:'India', currency:'INR', investment_date:'2023-01-20', invested:1000000,
+      current_value:1175000, min_commitment:100000, lock_in:3, unlock_date:'2026-01-20',
+      horizon:'5 Years', strategy:'Growth', status:'Active',
+      description:'Investing in high growth private companies with strong management teams and scalable business models.',
+      objective:'Capital Appreciation', risk:'Medium-High', expected_return:'15-20%', irr:19.38 },
+    { id:'aif2', name:'Growth Opportunities Fund', manager:'GrowthCap Advisors', fund_type:'Alternative Investment Fund',
+      category:'Category I', sub_category:'Venture Capital', vintage:2022, fund_size:200000000,
+      country:'India', currency:'INR', investment_date:'2022-04-10', invested:700000,
+      current_value:780200, min_commitment:100000, lock_in:4, unlock_date:'2026-04-10',
+      horizon:'7 Years', strategy:'Growth', status:'Active',
+      description:'Early stage venture capital investments in technology startups.',
+      objective:'Capital Appreciation', risk:'High', expected_return:'20-30%', irr:11.43 },
+    { id:'aif3', name:'India Real Assets Fund', manager:'RealAsset Partners', fund_type:'Alternative Investment Fund',
+      category:'Category II', sub_category:'Real Estate', vintage:2021, fund_size:350000000,
+      country:'India', currency:'INR', investment_date:'2021-08-15', invested:400000,
+      current_value:420000, min_commitment:250000, lock_in:5, unlock_date:'2026-08-15',
+      horizon:'7 Years', strategy:'Income', status:'Active',
+      description:'Real estate focused AIF investing in commercial and residential assets.',
+      objective:'Income + Appreciation', risk:'Medium', expected_return:'12-15%', irr:-5.00 },
+  ],
+  aifDistributions: {
+    aif1: [
+      { id:'ad1', num:3, date:'2024-06-20', amount:125000, type:'Capital Return',   tax:'Capital Gain', ref:'DIST/2024/003', notes:'Quarterly distribution' },
+      { id:'ad2', num:2, date:'2024-03-20', amount:150000, type:'Profit Share',     tax:'Capital Gain', ref:'DIST/2024/002', notes:'Quarterly distribution' },
+      { id:'ad3', num:1, date:'2023-12-20', amount:150000, type:'Profit Share',     tax:'Capital Gain', ref:'DIST/2023/001', notes:'Year-end distribution' },
+    ],
+    aif2: [],
+    aif3: [],
+  },
+  aifDocuments: {
+    aif1: [
+      { id:'adoc1', name:'Fund Information Memorandum', type:'PDF', size:'2.4 MB', date:'2023-01-15' },
+      { id:'adoc2', name:'Subscription Agreement',       type:'PDF', size:'1.8 MB', date:'2023-01-20' },
+      { id:'adoc3', name:'KYC Documents',                type:'PDF', size:'1.2 MB', date:'2023-01-18' },
+      { id:'adoc4', name:'Capital Call Notice',           type:'PDF', size:'1.0 MB', date:'2023-01-20' },
+      { id:'adoc5', name:'Distribution Statement',        type:'PDF', size:'1.1 MB', date:'2024-06-20' },
+      { id:'adoc6', name:'Audited Financials FY 2022-23', type:'PDF', size:'2.0 MB', date:'2023-09-30' },
+    ],
+    aif2: [{ id:'adoc7', name:'Fund Information Memorandum', type:'PDF', size:'2.1 MB', date:'2022-04-01' }],
+    aif3: [{ id:'adoc8', name:'Subscription Agreement',       type:'PDF', size:'1.5 MB', date:'2021-08-10' }],
+  },
+  aifNotesList: {
+    aif1: [
+      { id:'an1', type:'fund_update', title:'Fund Update',    body:'Strong portfolio performance in Q1 2024. Key investments are performing well.',  date:'2024-04-15', pinned:false, locked:false },
+      { id:'an2', type:'strategy',    title:'Strategy Note',  body:'Focus on late stage private equity opportunities in India.',                      date:'2024-01-10', pinned:true,  locked:false },
+      { id:'an3', type:'general',     title:'General Note',   body:'Next capital call expected in July 2024.',                                         date:'2024-06-05', pinned:true,  locked:false },
+    ],
+    aif2: [],
+    aif3: [],
+  },
+  aifReminders: {
+    aif1: [
+      { id:'ar1', type:'Next Capital Call',     date:'2024-07-05', icon:'📞', color:'#EF4444' },
+      { id:'ar2', type:'Lock-in Period End',    date:'2026-01-20', icon:'🔒', color:'#F59E0B' },
+      { id:'ar3', type:'Fund Update Meeting',   date:'2024-06-30', icon:'📅', color:'#22C55E' },
+      { id:'ar4', type:'Tax Planning Review',   date:'2025-04-15', icon:'📋', color:'#0891B2' },
+    ],
+    aif2: [{ id:'ar5', type:'Lock-in Period End', date:'2026-04-10', icon:'🔒', color:'#F59E0B' }],
+    aif3: [],
+  },
+  aifExits: {
+    aif1: [
+      { id:'ae1', date:'2025-05-10', amount:500000, type:'Partial Exit', buyer:'XYZ Investors', cost:400000, gain:100000, return_pct:25, irr:0, notes:'Partial exit from portfolio company.' },
+    ],
+    aif2: [],
+    aif3: [],
+  },
 };
 
 /* ══════════════════════════════════════════════════════
