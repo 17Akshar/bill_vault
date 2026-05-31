@@ -1993,6 +1993,66 @@ const State = {
     { id:'nt9', title:'Budget Review April 2024', category:'Budget Notes', description:'Overspent on dining by 3,200 this month. Reduce to 5,000 next month. Grocery within budget.', richContent:'', tags:['Budget','April','Review'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'green', pinned:false, locked:false, linkedModule:null, linkedId:null, updatedAt:'2024-04-30T00:00:00', createdAt:'2024-04-30T00:00:00' },
     { id:'nt10', title:'NPS Fund Selection Notes', category:'Investment Notes', description:'Tier 1 active choice: 50% Equity (SBI Pension), 30% Corporate Bond, 20% Govt Securities. Review annually.', richContent:'', tags:['NPS','FundChoice','Retirement'], reminder:{enabled:false,date:'',time:'',repeat:'One Time'}, attachments:[], color:'blue', pinned:false, locked:false, linkedModule:'nps', linkedId:'nps1', updatedAt:'2024-02-15T00:00:00', createdAt:'2024-02-15T00:00:00' },
   ],
+  // Motor Insurance module
+  motorActiveId:   'mp1',
+  motorDetailTab:  'overview',
+  motorTxTab:      'premium',
+  motorNoteFilter: 'all',
+  motorAddData:    {},
+  motorPolicies: [
+    { id:'mp1', company:'Bajaj Allianz', vehicle_name:'Honda City', vehicle_type:'car', policy_number:'MOT123456789', policy_type:'Comprehensive', vehicle_number:'MH02 AB 1234', make:'Honda', model:'City', year:2022, engine_number:'ENG123456', chassis_number:'CHS987654', fuel_type:'Petrol', owner:'Rohit Sharma', nominee:'Neha Sharma', idv:650000, premium:8750, gst:1575, other_charges:425, total_premium:10750, ncb_pct:25, voluntary_deductible:2000, garage_network:1000, tenure:'1 Year', start_date:'2026-06-23', expiry_date:'2027-06-22', status:'active' },
+    { id:'mp2', company:'HDFC Ergo', vehicle_name:'Honda Activa 6G', vehicle_type:'scooter', policy_number:'MOT987654321', policy_type:'TP + Own Damage', vehicle_number:'MH02 XY 5678', make:'Honda', model:'Activa 6G', year:2021, engine_number:'ENG654321', chassis_number:'CHS123456', fuel_type:'Petrol', owner:'Rohit Sharma', nominee:'Neha Sharma', idv:75000, premium:2500, gst:450, other_charges:0, total_premium:2950, ncb_pct:0, voluntary_deductible:1000, garage_network:500, tenure:'1 Year', start_date:'2026-03-09', expiry_date:'2027-03-08', status:'active' },
+  ],
+  motorTransactions: {
+    mp1: [
+      { id:'mt1', date:'2024-05-10', premium:8750, gst:1575, other:425, total:10750, mode:'UPI',         ref:'UPI/412365789', status:'paid' },
+      { id:'mt2', date:'2023-05-08', premium:8200, gst:1476, other:0,   total:9676,  mode:'Net Banking', ref:'NBK/657483920', status:'paid' },
+      { id:'mt3', date:'2022-05-05', premium:7800, gst:1404, other:0,   total:9204,  mode:'Credit Card', ref:'CC/882174631',  status:'paid' },
+    ],
+    mp2: [
+      { id:'mt4', date:'2024-03-09', premium:2500, gst:450, other:0, total:2950, mode:'UPI', ref:'UPI/987654321', status:'paid' },
+    ],
+  },
+  motorClaims: {
+    mp1: [
+      { id:'mc1', date:'2024-07-15', type:'Own Damage', garage:'Shanti Motors', amount:45000, approved:42500, excess:2500, settlement:42500, status:'settled', settlement_date:'2024-07-25', ref:'CLM123456789' },
+    ],
+    mp2: [],
+  },
+  motorNotesList: {
+    mp1: [
+      { id:'mn1', type:'renewal', title:'Renewal Note', body:'Renew before 22 Jun 2027. Consider increasing IDV and NCB protection.', date:'2024-05-10', pinned:true },
+      { id:'mn2', type:'claim',   title:'Claim Note - 15 Jul 2024', body:'Minor accident near Powai. Claim settled successfully.', date:'2024-07-25', pinned:false },
+      { id:'mn3', type:'general', title:'Garage Contact', body:'Preferred garage: Shanti Motors, Sakinaka, Mumbai.', date:'2024-05-10', pinned:false },
+      { id:'mn4', type:'general', title:'Premium Analysis', body:'Compare premium with other insurers next year.', date:'2023-05-08', pinned:false },
+    ],
+    mp2: [],
+  },
+  motorReminders: {
+    mp1: [
+      { id:'mr1', type:'Policy Renewal',          date:'2027-06-22', icon:'🔔', color:'#7C5CFC' },
+      { id:'mr2', type:'PUC Expiry',              date:'2026-09-15', icon:'📋', color:'#F59E0B' },
+      { id:'mr3', type:'RC Expiry',               date:'2026-12-20', icon:'📄', color:'#0891B2' },
+      { id:'mr4', type:'Driving License Expiry',  date:'2027-08-10', icon:'🪪', color:'#22C55E' },
+    ],
+    mp2: [
+      { id:'mr5', type:'Policy Renewal', date:'2027-03-08', icon:'🔔', color:'#7C5CFC' },
+    ],
+  },
+  motorDocuments: {
+    mp1: [
+      { id:'md1', name:'Policy Document',        type:'PDF', size:'1.2 MB' },
+      { id:'md2', name:'RC Book',                type:'PDF', size:'1.1 MB' },
+      { id:'md3', name:'Driving License',        type:'PDF', size:'1.0 MB' },
+      { id:'md4', name:'Previous Policy',        type:'PDF', size:'0.9 MB' },
+      { id:'md5', name:'Claim Invoice',          type:'PDF', size:'1.4 MB' },
+      { id:'md6', name:'Claim Settlement Letter',type:'PDF', size:'0.8 MB' },
+    ],
+    mp2: [
+      { id:'md7', name:'Policy Document', type:'PDF', size:'0.9 MB' },
+      { id:'md8', name:'RC Book',         type:'PDF', size:'1.0 MB' },
+    ],
+  },
 };
 
 /* ══════════════════════════════════════════════════════
@@ -16305,6 +16365,7 @@ function renderMore() {
     { icon:'📅', bg:'rgba(124,58,237,0.15)', label:'Planned Payments',    sub:'Track and automate future payments and reminders',   fn:"App.navigate('pp-list')" },
     { icon:'📊', bg:'rgba(5,150,105,0.15)',  label:'Data Import & Export', sub:'Import CSV data and manage sync settings',            fn:"App.navigate('excel-sync')" },
     { icon:'📝', bg:'rgba(99,102,241,0.15)', label:'Notes',               sub:'Smart notes linked to your financial data',            fn:"App.navigate('notes-list')" },
+    { icon:'🚗', bg:'rgba(124,92,252,0.15)', label:'Motor Insurance',     sub:'Manage vehicle insurance policies, claims and renewals', fn:"App.navigate('motor-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -17162,6 +17223,613 @@ function renderLendBorrow() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   8d. MOTOR INSURANCE MODULE
+══════════════════════════════════════════════════════ */
+var MOTOR_COLOR = '#7C5CFC';
+var MOTOR_VEHICLE_TYPES = [
+  { id:'car',          label:'Car',             icon:'🚗', color:'#7C5CFC' },
+  { id:'scooter',      label:'Scooter/Activa',  icon:'🛵', color:'#0891B2' },
+  { id:'bike',         label:'Bike',            icon:'🏍️', color:'#059669' },
+  { id:'ev',           label:'EV',              icon:'⚡', color:'#22C55E' },
+  { id:'commercial',   label:'Commercial',      icon:'🚛', color:'#F59E0B' },
+  { id:'truck',        label:'Truck',           icon:'🚚', color:'#EF4444' },
+  { id:'bus',          label:'Bus',             icon:'🚌', color:'#8B5CF6' },
+  { id:'taxi',         label:'Taxi',            icon:'🚕', color:'#EC4899' },
+  { id:'auto',         label:'Auto Rickshaw',   icon:'🛺', color:'#F97316' },
+  { id:'fleet',        label:'Fleet',           icon:'🚐', color:'#6366F1' },
+  { id:'agricultural', label:'Agricultural',    icon:'🚜', color:'#84CC16' },
+  { id:'others',       label:'Others',          icon:'🚙', color:'#6B7280' },
+];
+var MOTOR_POLICY_TYPES = ['Comprehensive','Third Party','Own Damage','Zero Depreciation','Pay As You Drive','TP + Own Damage','Commercial Vehicle','Fleet Policy','Custom Policy'];
+var MOTOR_INSURERS     = ['Bajaj Allianz','HDFC Ergo','ICICI Lombard','New India Assurance','Oriental Insurance','United India Insurance','National Insurance','Tata AIG','Reliance General','SBI General','Future Generali','Royal Sundaram','Digit Insurance','Acko Insurance','Navi Insurance','Cholamandalam MS','Liberty General','Others'];
+
+function _motorVehicleInfo(typeId) {
+  return MOTOR_VEHICLE_TYPES.filter(function(t){ return t.id===typeId; })[0] || { icon:'🚙', color:'#6B7280', label:'Vehicle' };
+}
+function _motorDaysLeft(dateStr) {
+  if (!dateStr) return 0;
+  var d = new Date(dateStr), now = new Date();
+  now.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  return Math.ceil((d - now) / 86400000);
+}
+function _motorFmtDate(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+function _motorStatusBadge(status) {
+  var colors = { active:'#22C55E', expired:'#EF4444', pending:'#F59E0B' };
+  var labels = { active:'Active', expired:'Expired', pending:'Pending' };
+  var c = colors[status] || '#6B7280', l = labels[status] || status;
+  return '<span style="background:'+c+'22;color:'+c+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">'+l+'</span>';
+}
+function _motorClaimStatusBadge(s) {
+  var map = { settled:{c:'#22C55E',l:'Settled'}, pending:{c:'#F59E0B',l:'Pending'}, rejected:{c:'#EF4444',l:'Rejected'}, inprogress:{c:'#0891B2',l:'In Progress'} };
+  var r = map[s] || {c:'#6B7280',l:s};
+  return '<span style="background:'+r.c+'22;color:'+r.c+';font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">'+r.l+'</span>';
+}
+
+// ── Bottom tab bar for motor detail screens ──────────────────────────────────
+function _motorDetailTabBar(activeTab, policyId) {
+  var tabs = [
+    { id:'overview',      label:'Overview',     icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>' },
+    { id:'transactions',  label:'Transactions', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>' },
+    { id:'claims',        label:'Claims',       icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>' },
+    { id:'notes',         label:'Notes',        icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h12v-2H3v2zm0-5h12v-2H3v2zm0-7v2h12V6H3zm13 9.5l4.5 4.5L24 16.5l-4.5-4.5L15 15.5z"/></svg>' },
+    { id:'more',          label:'More',         icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>' },
+  ];
+  var html = '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:50">';
+  tabs.forEach(function(t) {
+    var active = t.id === activeTab;
+    html += '<div onclick="State.motorDetailTab=\''+t.id+'\';App.render()" style="flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;color:'+(active?MOTOR_COLOR:'var(--text-dim)')+';">'
+      + t.icon
+      + '<div style="font-size:10px;font-weight:'+(active?'700':'600')+';margin-top:3px">'+t.label+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderMotorList() {
+  var policies = State.motorPolicies || [];
+  var totalIdv = policies.reduce(function(s,p){ return s+p.idv; }, 0);
+  var totalPremium = policies.reduce(function(s,p){ return s+p.premium; }, 0);
+  var upcoming = policies.filter(function(p){ var dl = _motorDaysLeft(p.expiry_date); return dl > 0 && dl <= 30; }).length;
+  var totalClaims = Object.keys(State.motorClaims||{}).reduce(function(s,k){ return s+(State.motorClaims[k]||[]).length; }, 0);
+
+  var html = '<div class="screen-wrap">';
+  // Hero header
+  html += '<div style="background:linear-gradient(135deg,'+MOTOR_COLOR+',#4C1D95);padding:20px 20px 28px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div><div style="font-size:22px;font-weight:800;color:#fff">Motor Insurance</div><div style="font-size:12px;color:rgba(255,255,255,.7)">Manage all vehicle policies</div></div>'
+    + '<div class="icon-btn" style="background:rgba(255,255,255,.15)" onclick="App.showToast(\'Notifications coming soon\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>'
+    + '</div>'
+    // Summary cards grid
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<div style="background:rgba(255,255,255,.15);border-radius:14px;padding:14px">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:4px">TOTAL POLICIES</div>'
+    + '<div style="font-size:26px;font-weight:800;color:#fff">'+policies.length+'</div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.15);border-radius:14px;padding:14px">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:4px">TOTAL SUM INSURED</div>'
+    + '<div style="font-size:18px;font-weight:800;color:#fff">'+formatINR(totalIdv)+'</div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.15);border-radius:14px;padding:14px">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:4px">TOTAL PREMIUM PAID</div>'
+    + '<div style="font-size:18px;font-weight:800;color:#fff">'+formatINR(totalPremium)+'</div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.15);border-radius:14px;padding:14px">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:4px">UPCOMING RENEWALS</div>'
+    + '<div style="font-size:26px;font-weight:800;color:#fff">'+upcoming+'</div>'
+    + '</div>'
+    + '</div></div>';
+
+  // Your Policies
+  html += '<div style="margin:16px 16px 0">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px">YOUR POLICIES</div>'
+    + '<div onclick="State.motorAddData={};App.navigate(\'motor-add\')" style="font-size:12px;font-weight:700;color:'+MOTOR_COLOR+';cursor:pointer">+ Add Policy</div>'
+    + '</div>';
+
+  if (policies.length) {
+    policies.forEach(function(p) {
+      var vt = _motorVehicleInfo(p.vehicle_type);
+      var dl = _motorDaysLeft(p.expiry_date);
+      var dlColor = dl <= 30 ? '#EF4444' : dl <= 60 ? '#F59E0B' : '#22C55E';
+      html += '<div onclick="State.motorActiveId=\''+p.id+'\';State.motorDetailTab=\'overview\';App.navigate(\'motor-detail\')" style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border);cursor:pointer;border-left:3px solid '+MOTOR_COLOR+'">'
+        + '<div style="display:flex;align-items:flex-start;gap:12px">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:'+vt.color+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+vt.icon+'</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'
+        + '<div style="font-size:15px;font-weight:800;color:var(--text)">'+escapeHtml(p.company)+'</div>'
+        + _motorStatusBadge(p.status)
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">'+escapeHtml(p.vehicle_name)+' Insurance</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+        + '<div style="font-size:11px;color:var(--text-dim)">Policy Type: <span style="color:var(--text);font-weight:600">'+escapeHtml(p.policy_type)+'</span></div>'
+        + '<div style="font-size:11px;color:var(--text-dim)">Policy No.: <span style="color:var(--text);font-weight:600">'+escapeHtml(p.policy_number)+'</span></div>'
+        + '<div style="font-size:11px;color:var(--text-dim)">IDV: <span style="color:var(--text);font-weight:600">'+formatINR(p.idv)+'</span></div>'
+        + '<div style="font-size:11px;color:var(--text-dim)">Premium: <span style="color:var(--text);font-weight:600">'+formatINR(p.premium)+'</span></div>'
+        + '<div style="font-size:11px;color:var(--text-dim)" colspan="2">Expiry: <span style="color:'+dlColor+';font-weight:700">'+_motorFmtDate(p.expiry_date)+(dl>0?' ('+dl+' days)':' (Expired)')+'</span></div>'
+        + '</div></div></div></div>';
+    });
+  } else {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:12px">🚗</div><div style="color:var(--text-dim);font-size:14px">No policies added yet</div></div>';
+  }
+
+  html += '</div>';
+  // Add button
+  html += '<div style="margin:4px 16px 16px">'
+    + '<button onclick="State.motorAddData={};App.navigate(\'motor-add\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MOTOR_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">+ Add Motor Insurance</button>'
+    + '</div>';
+  html += '<div style="height:80px"></div></div>';
+  return html;
+}
+
+function renderMotorAdd() {
+  var d = State.motorAddData || {};
+  var isEdit = !!(d.id);
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'motor-list\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">'+(isEdit?'Edit Motor Insurance':'Add Motor Insurance')+'</div>'
+    + '<div></div></div>';
+  html += '<div style="padding:16px">';
+
+  function section(title) {
+    return '<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin:16px 0 10px">'+title+'</div>';
+  }
+  function field(label, inp) {
+    return '<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--text-dim);font-weight:600;margin-bottom:5px">'+label+'</div>'+inp+'</div>';
+  }
+  function inp(id, type, placeholder, val) {
+    return '<input id="'+id+'" type="'+(type||'text')+'" placeholder="'+placeholder+'" value="'+escapeHtml(val||'')+'" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;color:var(--text);font-size:14px;outline:none;box-sizing:border-box">';
+  }
+  function sel(id, opts, curVal) {
+    return '<select id="'+id+'" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;color:var(--text);font-size:14px;outline:none;box-sizing:border-box;appearance:none">'+opts.map(function(o){ var v=typeof o==='object'?o.id:o,l=typeof o==='object'?o.label:o; return '<option value="'+v+'"'+(curVal===v?' selected':'')+'>'+l+'</option>'; }).join('')+'</select>';
+  }
+
+  html += section('POLICY INFORMATION');
+  html += field('Insurance Company', sel('mi-company', MOTOR_INSURERS, d.company||'Bajaj Allianz'));
+  html += field('Policy Type', sel('mi-ptype', MOTOR_POLICY_TYPES, d.policy_type||'Comprehensive'));
+  html += field('Vehicle Type', sel('mi-vtype', MOTOR_VEHICLE_TYPES, d.vehicle_type||'car'));
+
+  html += section('VEHICLE DETAILS');
+  html += field('Vehicle Registration Number', inp('mi-vreg','text','MH02 AB 1234', d.vehicle_number));
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div>'+field('Make', inp('mi-make','text','Honda', d.make))+'</div>'
+    + '<div>'+field('Model', inp('mi-model','text','City', d.model))+'</div>'
+    + '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div>'+field('Manufacturing Year', inp('mi-year','number','2022', d.year))+'</div>'
+    + '<div>'+field('Fuel Type', sel('mi-fuel',['Petrol','Diesel','CNG','Electric','Hybrid'], d.fuel_type||'Petrol'))+'</div>'
+    + '</div>';
+  html += field('Engine Number', inp('mi-engine','text','ENG123456', d.engine_number));
+  html += field('Chassis Number', inp('mi-chassis','text','CHS987654', d.chassis_number));
+
+  html += section('INSURANCE DETAILS');
+  html += field('IDV (Insured Declared Value)', inp('mi-idv','number','6,50,000', d.idv));
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div>'+field('Premium Amount', inp('mi-premium','number','8750', d.premium))+'</div>'
+    + '<div>'+field('GST (18%)', inp('mi-gst','number','1575', d.gst))+'</div>'
+    + '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div>'+field('Other Charges', inp('mi-other','number','425', d.other_charges))+'</div>'
+    + '<div>'+field('Total Premium', inp('mi-total','number','10750', d.total_premium))+'</div>'
+    + '</div>';
+  html += field('NCB Percentage', sel('mi-ncb',['0%','20%','25%','35%','45%','50%'], (d.ncb_pct||0)+'%'));
+
+  html += section('POLICY PERIOD');
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div>'+field('Policy Start Date', inp('mi-start','date','', d.start_date))+'</div>'
+    + '<div>'+field('Policy End Date', inp('mi-end','date','', d.expiry_date))+'</div>'
+    + '</div>';
+
+  html += field('Policy Number', inp('mi-pnum','text','MOT123456789', d.policy_number));
+  html += field('Owner Name', inp('mi-owner','text','Rohit Sharma', d.owner));
+  html += field('Nominee', inp('mi-nominee','text','Neha Sharma', d.nominee));
+
+  html += '<button onclick="App._motorSavePolicy()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MOTOR_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Save Policy</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderMotorDetail() {
+  var id = State.motorActiveId;
+  var policies = State.motorPolicies || [];
+  var p = policies.filter(function(x){ return x.id===id; })[0];
+  if (!p) { App.navigate('motor-list'); return '<div></div>'; }
+  var tab = State.motorDetailTab || 'overview';
+  var vt = _motorVehicleInfo(p.vehicle_type);
+  var claims = (State.motorClaims||{})[id] || [];
+  var txs    = (State.motorTransactions||{})[id] || [];
+  var notes  = (State.motorNotesList||{})[id] || [];
+  var docs   = (State.motorDocuments||{})[id] || [];
+  var rems   = (State.motorReminders||{})[id] || [];
+  var dl = _motorDaysLeft(p.expiry_date);
+  var dlColor = dl <= 30 ? '#EF4444' : dl <= 60 ? '#F59E0B' : '#22C55E';
+
+  var html = '<div class="screen-wrap">';
+  // Header
+  html += '<div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'motor-list\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Policy Details</div>'
+    + '<div style="display:flex;gap:4px">'
+    + '<div class="icon-btn" onclick="State.motorAddData=Object.assign({},'+JSON.stringify(p).replace(/'/g,'\\\'').replace(/"/g,"'")+');App.navigate(\'motor-add\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
+    + '<div class="icon-btn" onclick="App.showToast(\'Options menu coming soon\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></div>'
+    + '</div></div>';
+
+  // Policy hero card (always visible)
+  html += '<div style="background:linear-gradient(135deg,'+MOTOR_COLOR+',#4C1D95);padding:16px 20px;margin-bottom:0">'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+    + '<div style="width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px">'+vt.icon+'</div>'
+    + '<div><div style="font-size:17px;font-weight:800;color:#fff">'+escapeHtml(p.company)+'</div>'
+    + '<div style="font-size:13px;color:rgba(255,255,255,.8)">'+escapeHtml(p.vehicle_name)+' Insurance</div></div>'
+    + '<div style="margin-left:auto">'+_motorStatusBadge(p.status)+'</div>'
+    + '</div></div>';
+
+  // Tab content
+  if (tab === 'overview') {
+    html += '<div style="padding:16px">';
+    // Policy summary card
+    html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border)">'
+      + '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:12px;letter-spacing:1px">POLICY SUMMARY</div>';
+    var rows = [
+      ['Policy Number',     p.policy_number],
+      ['Insurance Company', p.company],
+      ['Policy Type',       p.policy_type],
+      ['Vehicle Number',    p.vehicle_number],
+      ['Vehicle',           p.vehicle_name],
+      ['IDV',               formatINR(p.idv)],
+      ['Premium',           formatINR(p.premium)],
+      ['Start Date',        _motorFmtDate(p.start_date)],
+      ['Expiry Date',       _motorFmtDate(p.expiry_date)],
+      ['Policy Status',     p.status.charAt(0).toUpperCase()+p.status.slice(1)],
+    ];
+    rows.forEach(function(r,i) {
+      html += '<div style="display:flex;justify-content:space-between;padding:9px 0;'+(i<rows.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+        + '<div style="font-size:13px;color:var(--text-dim)">'+r[0]+'</div>'
+        + '<div style="font-size:13px;font-weight:700;color:var(--text);text-align:right;max-width:60%">'+escapeHtml(r[1]+'')+'</div>'
+        + '</div>';
+    });
+    html += '</div>';
+    // Stats row
+    var totalClaimAmt = claims.reduce(function(s,c){ return s+c.amount; }, 0);
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">'
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;text-align:center;border:1px solid var(--border)">'
+      + '<div style="font-size:18px;font-weight:800;color:'+dlColor+'">'+Math.max(0,dl)+'</div>'
+      + '<div style="font-size:10px;color:var(--text-dim);font-weight:600">Days Left</div></div>'
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;text-align:center;border:1px solid var(--border)">'
+      + '<div style="font-size:18px;font-weight:800;color:'+MOTOR_COLOR+'">'+claims.length+'</div>'
+      + '<div style="font-size:10px;color:var(--text-dim);font-weight:600">Claims Filed</div></div>'
+      + '<div style="background:var(--card);border-radius:var(--radius-sm);padding:12px;text-align:center;border:1px solid var(--border)">'
+      + '<div style="font-size:14px;font-weight:800;color:#EF4444">'+formatINR(totalClaimAmt)+'</div>'
+      + '<div style="font-size:10px;color:var(--text-dim);font-weight:600">Claim Amount</div></div>'
+      + '</div>';
+    // Quick actions
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">QUICK ACTIONS</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+      + '<div onclick="App.navigate(\'motor-documents\')" style="background:var(--card);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;border:1px solid var(--border)"><div style="font-size:24px;margin-bottom:6px">📄</div><div style="font-size:12px;font-weight:700;color:var(--text)">View Documents</div></div>'
+      + '<div onclick="State.motorDetailTab=\'claims\';App.render()" style="background:var(--card);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;border:1px solid var(--border)"><div style="font-size:24px;margin-bottom:6px">📋</div><div style="font-size:12px;font-weight:700;color:var(--text)">View Claims</div></div>'
+      + '<div onclick="App.navigate(\'motor-reminders\')" style="background:var(--card);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;border:1px solid var(--border)"><div style="font-size:24px;margin-bottom:6px">🔔</div><div style="font-size:12px;font-weight:700;color:var(--text)">Set Reminder</div></div>'
+      + '<div onclick="App._motorRenewPolicy(\''+p.id+'\')" style="background:'+MOTOR_COLOR+'22;border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;border:1px solid '+MOTOR_COLOR+'44"><div style="font-size:24px;margin-bottom:6px">🔄</div><div style="font-size:12px;font-weight:700;color:'+MOTOR_COLOR+'">Renew Policy</div></div>'
+      + '</div>';
+    html += '</div>';
+
+  } else if (tab === 'transactions') {
+    var txTab = State.motorTxTab || 'premium';
+    html += '<div style="padding:16px">';
+    html += '<div style="display:flex;background:var(--card);border-radius:var(--radius-sm);padding:4px;margin-bottom:16px;border:1px solid var(--border)">'
+      + '<div onclick="State.motorTxTab=\'premium\';App.render()" style="flex:1;padding:9px;border-radius:8px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;'+(txTab==='premium'?'background:'+MOTOR_COLOR+';color:#fff':'color:var(--text-dim)')+'">Premium History</div>'
+      + '<div onclick="State.motorTxTab=\'payment\';App.render()" style="flex:1;padding:9px;border-radius:8px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;'+(txTab==='payment'?'background:'+MOTOR_COLOR+';color:#fff':'color:var(--text-dim)')+'">Payment History</div>'
+      + '</div>';
+    if (txs.length) {
+      txs.forEach(function(tx) {
+        html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border)">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+          + '<div style="font-size:14px;font-weight:700;color:var(--text)">'+_motorFmtDate(tx.date)+'</div>'
+          + '<span style="background:#22C55E22;color:#22C55E;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">Paid</span>'
+          + '</div>'
+          + '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim);font-size:13px">Premium</span><span style="font-weight:700;color:var(--text);font-size:13px">'+formatINR(tx.premium)+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim);font-size:13px">GST</span><span style="font-weight:700;color:var(--text);font-size:13px">'+formatINR(tx.gst)+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim);font-size:13px">Total Amount</span><span style="font-weight:800;color:'+MOTOR_COLOR+';font-size:14px">'+formatINR(tx.total)+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim);font-size:13px">Payment Mode</span><span style="font-weight:700;color:var(--text);font-size:13px">'+escapeHtml(tx.mode)+'</span></div>'
+          + '<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--text-dim);font-size:13px">Transaction ID</span><span style="font-weight:700;color:var(--text);font-size:12px">'+escapeHtml(tx.ref)+'</span></div>'
+          + '</div>';
+      });
+    } else {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">💳</div><div style="color:var(--text-dim)">No transactions yet</div></div>';
+    }
+    html += '</div>';
+
+  } else if (tab === 'claims') {
+    html += '<div style="padding:16px">';
+    if (claims.length) {
+      claims.forEach(function(c,i) {
+        html += '<div style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border)">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+          + '<div style="font-size:15px;font-weight:800;color:var(--text)">Claim #'+(i+1)+'</div>'
+          + _motorClaimStatusBadge(c.status)
+          + '</div>';
+        var crow = [
+          ['Claim Date',       _motorFmtDate(c.date)],
+          ['Claim Type',       c.type],
+          ['Garage',           c.garage],
+          ['Claim Amount',     formatINR(c.amount)],
+          ['Approved Amount',  formatINR(c.approved)],
+          ['Excess Amount',    formatINR(c.excess)],
+          ['Claim Status',     c.status.charAt(0).toUpperCase()+c.status.slice(1)],
+          ['Settlement Date',  _motorFmtDate(c.settlement_date)],
+          ['Claim ID',         c.ref],
+        ];
+        crow.forEach(function(r,ri) {
+          html += '<div style="display:flex;justify-content:space-between;padding:7px 0;'+(ri<crow.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+            + '<div style="font-size:13px;color:var(--text-dim)">'+r[0]+'</div>'
+            + '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(r[1]+'')+'</div>'
+            + '</div>';
+        });
+        html += '</div>';
+      });
+    } else {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">📋</div><div style="color:var(--text-dim)">No claims filed yet</div></div>';
+    }
+    html += '<button onclick="App._motorFileClaim(\''+p.id+'\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MOTOR_COLOR+',#4C1D95);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">+ File a New Claim</button>';
+    html += '</div>';
+
+  } else if (tab === 'notes') {
+    var nFilter = State.motorNoteFilter || 'all';
+    var chips = ['all','renewal','claim','general'];
+    html += '<div style="padding:16px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      + '<div style="display:flex;gap:8px">'
+      + chips.map(function(c){ return '<div onclick="State.motorNoteFilter=\''+c+'\';App.render()" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;'+(nFilter===c?'background:'+MOTOR_COLOR+';color:#fff;':'background:var(--card);color:var(--text-dim);border:1px solid var(--border);')+'">'+c.charAt(0).toUpperCase()+c.slice(1)+'</div>'; }).join('')
+      + '</div>'
+      + '<div onclick="App._motorAddNote(\''+p.id+'\')" style="font-size:12px;font-weight:700;color:'+MOTOR_COLOR+';cursor:pointer">+ Add Note</div>'
+      + '</div>';
+    var filteredNotes = nFilter === 'all' ? notes : notes.filter(function(n){ return n.type === nFilter; });
+    if (filteredNotes.length) {
+      filteredNotes.forEach(function(n) {
+        html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);border-left:3px solid '+MOTOR_COLOR+'">'
+          + '<div style="display:flex;align-items:flex-start;gap:8px">'
+          + '<div style="flex:1">'
+          + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+          + (n.pinned ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="'+MOTOR_COLOR+'"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>' : '')
+          + '<div style="font-size:11px;font-weight:700;background:'+MOTOR_COLOR+'22;color:'+MOTOR_COLOR+';padding:2px 8px;border-radius:10px">'+n.type.charAt(0).toUpperCase()+n.type.slice(1)+'</div>'
+          + '</div>'
+          + '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">'+escapeHtml(n.title)+'</div>'
+          + '<div style="font-size:13px;color:var(--text-dim);line-height:1.5">'+escapeHtml(n.body)+'</div>'
+          + '</div>'
+          + '<div style="font-size:10px;color:var(--text-dim);white-space:nowrap">'+_motorFmtDate(n.date)+'</div>'
+          + '</div></div>';
+      });
+    } else {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">📝</div><div style="color:var(--text-dim)">No notes for this filter</div></div>';
+    }
+    html += '</div>';
+
+  } else if (tab === 'more') {
+    html += '<div style="padding:16px">';
+    var moreItems = [
+      { icon:'🛡️', label:'Coverage Details',   sub:'View all coverage types and limits',     fn:"App.navigate('motor-coverage')" },
+      { icon:'🔔', label:'Reminders',           sub:'Policy renewal, PUC, RC and DL reminders', fn:"App.navigate('motor-reminders')" },
+      { icon:'📁', label:'Documents',           sub:'Policy, RC Book, DL and claim documents', fn:"App.navigate('motor-documents')" },
+      { icon:'📊', label:'Analytics & Summary', sub:'Premium trends, claim ratio, NCB earned', fn:"App.navigate('motor-analytics')" },
+    ];
+    html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px">';
+    moreItems.forEach(function(it,i) {
+      html += '<div onclick="'+it.fn+'" style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;'+(i<moreItems.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:'+MOTOR_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px">'+it.icon+'</div>'
+        + '<div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--text)">'+it.label+'</div><div style="font-size:12px;color:var(--text-dim)">'+it.sub+'</div></div>'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>'
+        + '</div>';
+    });
+    html += '</div>';
+    html += '<button onclick="App._motorDeletePolicy(\''+p.id+'\')" style="width:100%;padding:13px;border-radius:var(--radius-sm);background:rgba(239,68,68,.1);color:#EF4444;border:1px solid rgba(239,68,68,.3);font-size:14px;font-weight:700;cursor:pointer">Delete Policy</button>';
+    html += '</div>';
+  }
+
+  html += '<div style="height:70px"></div>';
+  html += _motorDetailTabBar(tab, p.id);
+  html += '</div>';
+  return html;
+}
+
+function renderMotorCoverage() {
+  var id = State.motorActiveId;
+  var p = (State.motorPolicies||[]).filter(function(x){ return x.id===id; })[0];
+  if (!p) { App.navigate('motor-list'); return '<div></div>'; }
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    + '<div class="icon-btn" onclick="State.motorDetailTab=\'more\';App.navigate(\'motor-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Coverage Details</div>'
+    + '<div></div></div>';
+  html += '<div style="padding:16px">';
+  // Your Coverage
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">YOUR COVERAGE</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px">';
+  var coverages = [
+    { label:'Own Damage Cover',     value:formatINR(p.idv),     included:true,  amount:true },
+    { label:'Third Party Liability',value:formatINR(7500000),   included:true,  amount:true },
+    { label:'Personal Accident Cover',value:formatINR(15000000),included:true,  amount:true },
+    { label:'Zero Depreciation Cover',value:'Included',        included:true,  amount:false },
+    { label:'Roadside Assistance',  value:'Included',           included:true,  amount:false },
+    { label:'Engine Protection',    value:'Included',           included:true,  amount:false },
+    { label:'Consumables Cover',    value:'Included',           included:true,  amount:false },
+    { label:'NCB Protection',       value:'Included',           included:true,  amount:false },
+  ];
+  coverages.forEach(function(c,i) {
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;'+(i<coverages.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      + '<div style="width:20px;height:20px;border-radius:50%;background:#22C55E22;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="#22C55E"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>'
+      + '<div style="flex:1;font-size:14px;color:var(--text)">'+c.label+'</div>'
+      + '<div style="font-size:13px;font-weight:700;color:'+(c.amount?MOTOR_COLOR:'#22C55E')+'">'+c.value+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  // Other Details
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">OTHER DETAILS</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px">';
+  var otherRows = [
+    ['NCB %',                 p.ncb_pct+'%'],
+    ['Voluntary Deductible',  formatINR(p.voluntary_deductible||0)],
+    ['Garage Network',        (p.garage_network||'1000')+(p.garage_network>=1000?'+':'')],
+    ['Policy Tenure',         p.tenure||'1 Year'],
+  ];
+  otherRows.forEach(function(r,i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:13px 16px;'+(i<otherRows.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      + '<div style="font-size:14px;color:var(--text-dim)">'+r[0]+'</div>'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">'+r[1]+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  html += '<button onclick="App.showToast(\'Opening policy document...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,'+MOTOR_COLOR+',#4C1D95);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer">View Policy Document</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderMotorReminders() {
+  var id = State.motorActiveId;
+  var p = (State.motorPolicies||[]).filter(function(x){ return x.id===id; })[0];
+  var rems = (State.motorReminders||{})[id] || [];
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    + '<div class="icon-btn" onclick="State.motorDetailTab=\'more\';App.navigate(\'motor-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Reminders</div>'
+    + '<div onclick="App._motorAddReminder(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+MOTOR_COLOR+';cursor:pointer;padding:4px">+ Add</div>'
+    + '</div>';
+  html += '<div style="padding:16px">';
+  if (rems.length) {
+    rems.forEach(function(r) {
+      var dl = _motorDaysLeft(r.date);
+      var dlColor = dl <= 30 ? '#EF4444' : dl <= 90 ? '#F59E0B' : '#22C55E';
+      html += '<div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border)">'
+        + '<div style="display:flex;align-items:center;gap:12px">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:'+MOTOR_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px">'+r.icon+'</div>'
+        + '<div style="flex:1">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--text)">'+escapeHtml(r.type)+'</div>'
+        + '<div style="font-size:12px;color:var(--text-dim)">'+_motorFmtDate(r.date)+'</div>'
+        + '</div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-size:13px;font-weight:700;color:'+dlColor+'">'+Math.max(0,dl)+' Days Left</div>'
+        + '<div style="margin-top:6px"><svg width="18" height="18" viewBox="0 0 24 24" fill="'+MOTOR_COLOR+'"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>'
+        + '</div></div></div>';
+    });
+  } else {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">🔔</div><div style="color:var(--text-dim)">No reminders set</div></div>';
+  }
+  html += '<button onclick="App._motorAddReminder(\''+id+'\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MOTOR_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Reminder</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderMotorDocuments() {
+  var id = State.motorActiveId;
+  var docs = (State.motorDocuments||{})[id] || [];
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    + '<div class="icon-btn" onclick="State.motorDetailTab=\'more\';App.navigate(\'motor-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Documents</div>'
+    + '<div onclick="App._motorUploadDoc(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+MOTOR_COLOR+';cursor:pointer;padding:4px">+ Upload</div>'
+    + '</div>';
+  html += '<div style="padding:16px">';
+  if (docs.length) {
+    html += '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border)">';
+    docs.forEach(function(doc,i) {
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;'+(i<docs.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+        + '<div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg></div>'
+        + '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">'+escapeHtml(doc.name)+'</div>'
+        + '<div style="font-size:12px;color:var(--text-dim)">'+doc.type+' • '+doc.size+'</div></div>'
+        + '<div onclick="App.showToast(\'Downloading '+escapeHtml(doc.name)+'...\')" style="cursor:pointer;padding:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="'+MOTOR_COLOR+'"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></div>'
+        + '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">📁</div><div style="color:var(--text-dim)">No documents uploaded yet</div></div>';
+  }
+  html += '<button onclick="App._motorUploadDoc(\''+id+'\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(124,92,252,.12);color:'+MOTOR_COLOR+';border:1px solid rgba(124,92,252,.3);font-size:14px;font-weight:700;cursor:pointer;margin-top:16px">+ Upload Document</button>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+function renderMotorAnalytics() {
+  var id = State.motorActiveId;
+  var p = (State.motorPolicies||[]).filter(function(x){ return x.id===id; })[0];
+  if (!p) { App.navigate('motor-list'); return '<div></div>'; }
+  var claims  = (State.motorClaims||{})[id] || [];
+  var txs     = (State.motorTransactions||{})[id] || [];
+  var totalPaid    = txs.reduce(function(s,t){ return s+t.total; }, 0);
+  var totalClaimAmt = claims.reduce(function(s,c){ return s+c.amount; }, 0);
+  var totalSettled  = claims.reduce(function(s,c){ return s+c.settlement; }, 0);
+  var claimRatio   = totalPaid > 0 ? (totalClaimAmt/totalPaid*100).toFixed(2) : '0.00';
+  var html = '<div class="screen-wrap">';
+  html += '<div class="form-header">'
+    + '<div class="icon-btn" onclick="State.motorDetailTab=\'more\';App.navigate(\'motor-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Analytics & Summary</div>'
+    + '<div></div></div>';
+  html += '<div style="padding:16px">';
+  // Policy Summary grid
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">POLICY SUMMARY</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:16px">';
+  var sumRows = [
+    ['Total Premium Paid', formatINR(totalPaid)],
+    ['Total Claims',       claims.length],
+    ['Total Claim Amount', formatINR(totalClaimAmt)],
+    ['Claim Settlement',   formatINR(totalSettled)],
+    ['Claim Ratio',        claimRatio+'%'],
+    ['NCB Earned',         p.ncb_pct+'%'],
+  ];
+  sumRows.forEach(function(r,i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:12px 16px;'+(i<sumRows.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      + '<div style="font-size:14px;color:var(--text-dim)">'+r[0]+'</div>'
+      + '<div style="font-size:14px;font-weight:800;color:'+MOTOR_COLOR+'">'+r[1]+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  // Premium Trend bar chart
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">PREMIUM TREND</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:16px">';
+  if (txs.length) {
+    var maxTotal = Math.max.apply(null, txs.map(function(t){ return t.total; }));
+    var barW = 60, barMaxH = 100;
+    html += '<div style="display:flex;align-items:flex-end;gap:16px;justify-content:center">';
+    txs.slice().reverse().forEach(function(tx) {
+      var h = maxTotal > 0 ? Math.max(20, Math.round(tx.total / maxTotal * barMaxH)) : 20;
+      var yr = tx.date ? new Date(tx.date).getFullYear() : '';
+      html += '<div style="text-align:center;flex:1">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text-dim);margin-bottom:4px">'+formatINR(tx.total)+'</div>'
+        + '<div style="height:'+h+'px;background:linear-gradient(to top,'+MOTOR_COLOR+',rgba(124,92,252,.4));border-radius:6px 6px 0 0;margin-bottom:6px"></div>'
+        + '<div style="font-size:12px;color:var(--text-dim);font-weight:600">'+yr+'</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:20px 0">No premium history</div>';
+  }
+  html += '</div>';
+  // Smart Insights
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px">SMART INSIGHTS</div>'
+    + '<div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border)">';
+  var insights = [];
+  var dl = _motorDaysLeft(p.expiry_date);
+  if (dl > 0 && dl <= 30) insights.push({ icon:'⚠️', text:'Policy expires in '+dl+' days. Renew now to avoid coverage gap.', color:'#EF4444' });
+  else if (dl > 30 && dl <= 60) insights.push({ icon:'🔔', text:'Policy expiring in '+dl+' days. Start renewal process early.', color:'#F59E0B' });
+  if (p.ncb_pct < 50) insights.push({ icon:'📈', text:'Your NCB is '+p.ncb_pct+'%. No-claim years increase NCB up to 50%.', color:'#22C55E' });
+  if (txs.length >= 2) {
+    var latest = txs[0], prev = txs[1];
+    if (latest && prev && latest.total > prev.total) insights.push({ icon:'💡', text:'Premium increased by '+formatINR(latest.total-prev.total)+' vs last year. Compare quotes from other insurers.', color:MOTOR_COLOR });
+  }
+  if (!insights.length) insights.push({ icon:'✅', text:'Policy is in good standing. No immediate action needed.', color:'#22C55E' });
+  insights.forEach(function(ins,i) {
+    html += '<div style="display:flex;gap:12px;padding:14px 16px;'+(i<insights.length-1?'border-bottom:1px solid var(--border)':'')+'">'
+      + '<span style="font-size:20px">'+ins.icon+'</span>'
+      + '<div style="font-size:13px;color:var(--text);line-height:1.5">'+ins.text+'</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  html += '</div><div style="height:32px"></div></div>';
+  return html;
+}
+
+/* ═══════════════════════════════════════════════════════
    8c. NOTES MODULE — Smart Notes & Knowledge Management
 ══════════════════════════════════════════════════════ */
 var NOTES_COLOR = '#6366F1';
@@ -17785,6 +18453,7 @@ const App = {
     else if (screen.startsWith('excel'))           tabHint = 'more';
     else if (screen === 'global-search')          tabHint = 'more';
     else if (screen.startsWith('notes'))          tabHint = 'more';
+    else if (screen.startsWith('motor'))          tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -18006,6 +18675,13 @@ const App = {
       case 'notes-search':        html = renderNotesSearch();         break;
       case 'notes-security':      html = renderNotesSecurity();       break;
       case 'notes-export':        html = renderNotesExport();         break;
+      case 'motor-list':          html = renderMotorList();           break;
+      case 'motor-add':           html = renderMotorAdd();            break;
+      case 'motor-detail':        html = renderMotorDetail();         break;
+      case 'motor-coverage':      html = renderMotorCoverage();       break;
+      case 'motor-reminders':     html = renderMotorReminders();      break;
+      case 'motor-documents':     html = renderMotorDocuments();      break;
+      case 'motor-analytics':     html = renderMotorAnalytics();      break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -20492,6 +21168,118 @@ const App = {
     } else {
       App.render();
     }
+  },
+
+  /* ── Motor Insurance Module ─────────────────── */
+  _motorSavePolicy() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var company       = g('motor-company');
+    var vehicleName   = g('motor-vehicle-name');
+    var vehicleType   = g('motor-vehicle-type');
+    var policyNumber  = g('motor-policy-number');
+    var policyType    = g('motor-policy-type');
+    var vehicleNumber = g('motor-vehicle-number');
+    var make          = g('motor-make');
+    var model         = g('motor-model');
+    var year          = parseInt(g('motor-year')) || 2020;
+    var engineNumber  = g('motor-engine-number');
+    var chassisNumber = g('motor-chassis-number');
+    var fuelType      = g('motor-fuel-type');
+    var owner         = g('motor-owner');
+    var nominee       = g('motor-nominee');
+    var idv           = parseFloat(g('motor-idv')) || 0;
+    var premium       = parseFloat(g('motor-premium')) || 0;
+    var gst           = parseFloat(g('motor-gst')) || 0;
+    var otherCharges  = parseFloat(g('motor-other-charges')) || 0;
+    var ncbPct        = parseFloat(g('motor-ncb')) || 0;
+    var startDate     = g('motor-start-date');
+    var expiryDate    = g('motor-expiry-date');
+    if (!company || !vehicleName || !policyNumber) {
+      this.showToast('Please fill required fields');
+      return;
+    }
+    var existing = State.motorAddData && State.motorAddData.id;
+    if (existing) {
+      var p = (State.motorPolicies || []).filter(function(x){ return x.id === existing; })[0];
+      if (p) {
+        p.company = company; p.vehicle_name = vehicleName; p.vehicle_type = vehicleType;
+        p.policy_number = policyNumber; p.policy_type = policyType; p.vehicle_number = vehicleNumber;
+        p.make = make; p.model = model; p.year = year; p.engine_number = engineNumber;
+        p.chassis_number = chassisNumber; p.fuel_type = fuelType; p.owner = owner; p.nominee = nominee;
+        p.idv = idv; p.premium = premium; p.gst = gst; p.other_charges = otherCharges;
+        p.total_premium = premium + gst + otherCharges; p.ncb_pct = ncbPct;
+        p.start_date = startDate; p.expiry_date = expiryDate;
+      }
+      State.motorActiveId = existing;
+    } else {
+      var newId = 'mp' + Date.now();
+      var newPolicy = {
+        id: newId, company: company, vehicle_name: vehicleName, vehicle_type: vehicleType,
+        policy_number: policyNumber, policy_type: policyType, vehicle_number: vehicleNumber,
+        make: make, model: model, year: year, engine_number: engineNumber,
+        chassis_number: chassisNumber, fuel_type: fuelType, owner: owner, nominee: nominee,
+        idv: idv, premium: premium, gst: gst, other_charges: otherCharges,
+        total_premium: premium + gst + otherCharges, ncb_pct: ncbPct,
+        voluntary_deductible: 0, garage_network: 0, tenure: '1 Year',
+        start_date: startDate, expiry_date: expiryDate, status: 'active'
+      };
+      if (!State.motorPolicies) State.motorPolicies = [];
+      State.motorPolicies.push(newPolicy);
+      State.motorActiveId = newId;
+      if (!State.motorTransactions) State.motorTransactions = {};
+      State.motorTransactions[newId] = [];
+      if (!State.motorClaims) State.motorClaims = {};
+      State.motorClaims[newId] = [];
+      if (!State.motorNotesList) State.motorNotesList = {};
+      State.motorNotesList[newId] = [];
+      if (!State.motorReminders) State.motorReminders = {};
+      State.motorReminders[newId] = [];
+      if (!State.motorDocuments) State.motorDocuments = {};
+      State.motorDocuments[newId] = [];
+    }
+    State.motorAddData = {};
+    State.motorDetailTab = 'overview';
+    this.showToast(existing ? 'Policy updated' : 'Policy added successfully');
+    App.navigate('motor-detail');
+  },
+
+  _motorDeletePolicy(id) {
+    State.motorPolicies = (State.motorPolicies || []).filter(function(p){ return p.id !== id; });
+    this.showToast('Policy deleted');
+    App.navigate('motor-list');
+  },
+
+  _motorFileClaim(policyId) {
+    this.showToast('Claim filing coming soon');
+  },
+
+  _motorUploadDoc(policyId) {
+    if (!State.motorDocuments) State.motorDocuments = {};
+    if (!State.motorDocuments[policyId]) State.motorDocuments[policyId] = [];
+    State.motorDocuments[policyId].push({ id: 'md' + Date.now(), name: 'Document_' + Date.now() + '.pdf', type: 'PDF', size: '1.2 MB' });
+    this.showToast('Document uploaded successfully');
+    App.render();
+  },
+
+  _motorAddNote(policyId) {
+    this.showToast('Add note coming soon');
+  },
+
+  _motorAddReminder(policyId) {
+    this.showToast('Add reminder coming soon');
+  },
+
+  _motorRenewPolicy(id) {
+    var p = (State.motorPolicies || []).filter(function(x){ return x.id === id; })[0];
+    if (p) {
+      var newExpiry = new Date(p.expiry_date);
+      newExpiry.setFullYear(newExpiry.getFullYear() + 1);
+      var newStart = new Date(p.expiry_date);
+      p.start_date = p.expiry_date;
+      p.expiry_date = newExpiry.toISOString().slice(0, 10);
+    }
+    this.showToast('Processing renewal...');
+    App.render();
   },
 
   /* ── Budget Module ──────────────────────────── */
