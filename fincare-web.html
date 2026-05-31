@@ -19756,8 +19756,8 @@ function renderEsopDetail() {
     html += '</div>';
 
     var statRows = [
-      ['Exercise Price', '₹' + formatINR(g.exercise_price || 0)],
-      ['Current Price',  '₹' + formatINR(g.current_price  || 0)],
+      ['Exercise Price', formatINR(g.exercise_price || 0)],
+      ['Current Price',  formatINR(g.current_price  || 0)],
       ['Current Value',  formatINR(curVal)],
       ['Exercise Cost',  formatINR(exCost)],
       ['Potential Gain', formatINR(potGain)],
@@ -20297,8 +20297,8 @@ function renderEsopAnalytics() {
     ['Shares Granted',   (g.granted||0) + ' shares'],
     ['Shares Vested',    (g.vested||0) + ' shares'],
     ['Shares Unvested',  unvested + ' shares'],
-    ['Exercise Price',   '₹' + formatINR(g.exercise_price||0)],
-    ['Current Price',    '₹' + formatINR(g.current_price||0)],
+    ['Exercise Price',   formatINR(g.exercise_price||0)],
+    ['Current Price',    formatINR(g.current_price||0)],
     ['Current Value',    formatINR(curVal)],
     ['Exercise Cost',    formatINR(exCost)],
     ['Potential Gain',   formatINR(potGain)],
@@ -20406,8 +20406,8 @@ function renderEsopSummary() {
     ['Shares Granted',      (g.granted||0) + ' shares'],
     ['Shares Vested',       (g.vested||0) + ' shares'],
     ['Shares Unvested',     unvested + ' shares'],
-    ['Exercise Price',      '₹' + formatINR(g.exercise_price||0)],
-    ['Current Market Price','₹' + formatINR(g.current_price||0)],
+    ['Exercise Price',      formatINR(g.exercise_price||0)],
+    ['Current Market Price',formatINR(g.current_price||0)],
     ['Current Value',       formatINR(curVal)],
     ['Exercise Cost',       formatINR(exCost)],
     ['Potential Gain',      formatINR(potGain)],
@@ -27603,7 +27603,7 @@ const App = {
     var tax      = Math.round(gain * 0.30);
     var other    = 2000;
     var netGain  = gain - tax - other;
-    var fmt = function(n) { return '₹' + formatINR(Math.round(n)); };
+    var fmt = function(n) { return formatINR(Math.round(n)); };
     var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
     set('esop-fin-exCost',  fmt(exCost));
     set('esop-fin-mktVal',  fmt(mktVal));
@@ -27626,7 +27626,7 @@ const App = {
     var grant     = (State.esopGrants || []).filter(function(x){ return x.id === grantId; })[0];
     var cost      = grant ? (shares * (grant.exercise_price || 0)) : 0;
     var profit    = net - cost;
-    var fmt = function(n) { return '₹' + formatINR(Math.round(n)); };
+    var fmt = function(n) { return formatINR(Math.round(n)); };
     var set = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
     set('esop-sell-gross',   fmt(gross));
     set('esop-sell-charges', fmt(charges));
