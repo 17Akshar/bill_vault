@@ -16730,6 +16730,7 @@ function renderMore() {
     { icon:'🚙', bg:'rgba(13,148,136,0.15)', label:'Vehicles', sub:'Digital garage — expenses, fuel, service, insurance and documents', fn:"App.navigate('vehicle-list')" },
     { icon:'📈', bg:'rgba(124,92,252,0.15)', label:'ESOP', sub:'Employee stock options — vesting, exercise, tax and analytics', fn:"App.navigate('esop-list')" },
     { icon:'🏦', bg:'rgba(109,40,217,0.15)', label:'Private Equity', sub:'PE funds, capital calls, distributions and exit tracking', fn:"App.navigate('pe-list')" },
+    { icon:'🖼️', bg:'rgba(124,58,237,0.15)', label:'Arts & Artifacts', sub:'Paintings, sculptures, antiques, collectibles portfolio', fn:"App.navigate('art-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -21053,6 +21054,858 @@ function renderPeExit() {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   8h. ARTS & ARTIFACTS MODULE
+══════════════════════════════════════════════════════ */
+
+var ART_COLOR = '#7C3AED';
+
+var ART_CATEGORIES = ['Painting','Sculpture','Artifact','Antique','Coin','Stamp','Watch','Jewellery','Collectible','NFT','Vintage Furniture','Rare Book','Memorabilia','Other'];
+
+var ART_CATEGORY_ICONS = { Painting:'🖼️', Sculpture:'🗿', Artifact:'🏺', Antique:'🕰️', Coin:'🪙', Stamp:'📮', Watch:'⌚', Jewellery:'💍', Collectible:'🎭', NFT:'🔮', 'Vintage Furniture':'🪑', 'Rare Book':'📚', Memorabilia:'🏆', Other:'✨' };
+
+function _artIcon(cat) { return ART_CATEGORY_ICONS[cat] || '✨'; }
+
+function _artStatusBadge(status) {
+  var map = { 'Active':'#22C55E','Sold':'#6B7280','Gifted':'#F59E0B','Stored':'#0891B2','Lost':'#EF4444' };
+  var color = map[status] || '#22C55E';
+  return '<span style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+(status||'Active')+'</span>';
+}
+
+function _artFmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function _artDaysLeft(d) { if(!d) return 0; return Math.ceil((new Date(d)-new Date())/86400000); }
+
+function _artTxTypeColor(type) {
+  var m = { Purchase:'#22C55E', Revaluation:'#7C3AED', Sale:'#EF4444', Insurance:'#0891B2', Restoration:'#F59E0B', Other:'#6B7280' };
+  return m[type] || '#6B7280';
+}
+
+function _artDetailTabBar(active) {
+  var tabs = [{id:'overview',icon:'🏠',label:'Overview'},{id:'documents',icon:'📁',label:'Docs'},{id:'transactions',icon:'🔄',label:'Txns'},{id:'notes',icon:'📝',label:'Notes'},{id:'more',icon:'···',label:'More'}];
+  var html = '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:50;max-width:430px;margin:0 auto">';
+  tabs.forEach(function(t){
+    var a = t.id===active;
+    html += '<div onclick="State.artDetailTab=\''+t.id+'\';App.render()" style="flex:1;padding:8px 1px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">'
+      +'<div style="font-size:'+(a?'16':'14')+'px">'+t.icon+'</div>'
+      +'<div style="font-size:9px;font-weight:'+(a?'700':'400')+';color:'+(a?ART_COLOR:'var(--text-dim)')+'">'+t.label+'</div>'
+      +'</div>';
+  });
+  return html+'</div>';
+}
+
+function _artSvgLineChart(points, w, h, color) {
+  if (!points || points.length < 2) return '';
+  var maxV = Math.max.apply(null, points.map(function(p){return p.value;}));
+  var minV = Math.min.apply(null, points.map(function(p){return p.value;}));
+  var pad = 40; var chartW = w-pad; var chartH = h-30;
+  var xStep = chartW/(points.length-1);
+  var coords = points.map(function(p,i){
+    return {x:pad/2+i*xStep, y:10+(1-(p.value-minV)/(maxV-minV||1))*(chartH-10), label:p.label, value:p.value};
+  });
+  var pathD = coords.map(function(c,i){return (i===0?'M':'L')+c.x.toFixed(1)+' '+c.y.toFixed(1);}).join(' ');
+  var fillD = pathD+' L'+coords[coords.length-1].x.toFixed(1)+' '+(chartH+10)+' L'+coords[0].x.toFixed(1)+' '+(chartH+10)+' Z';
+  var svg = '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="overflow:visible">'
+    +'<defs><linearGradient id="artGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.02"/></linearGradient></defs>'
+    +'<path d="'+fillD+'" fill="url(#artGrad)"/>'
+    +'<path d="'+pathD+'" fill="none" stroke="'+color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  coords.forEach(function(c){
+    svg += '<circle cx="'+c.x.toFixed(1)+'" cy="'+c.y.toFixed(1)+'" r="3.5" fill="'+color+'" stroke="var(--bg)" stroke-width="1.5"/>';
+    svg += '<text x="'+c.x.toFixed(1)+'" y="'+(h-4)+'" text-anchor="middle" fill="var(--text-dim)" font-size="9">'+c.label+'</text>';
+  });
+  return svg+'</svg>';
+}
+
+/* ── renderArtList ── */
+function renderArtList() {
+  var items = State.artItems || [];
+  var totalInvestment = 0, totalCurrentValue = 0;
+  items.forEach(function(it){ totalInvestment += (it.purchase_price||0); totalCurrentValue += (it.current_value||0); });
+  var totalGain = totalCurrentValue - totalInvestment;
+  var gainPct = totalInvestment > 0 ? Math.round(totalGain/totalInvestment*10000)/100 : 0;
+  var gainColor = totalGain >= 0 ? '#22C55E' : '#EF4444';
+
+  // Category counts
+  var catCounts = {};
+  items.forEach(function(it){ catCounts[it.category] = (catCounts[it.category]||0)+1; });
+  var cats = Object.keys(catCounts);
+
+  var html = '<div style="padding-bottom:20px">';
+
+  // Hero
+  html += '<div style="background:linear-gradient(135deg,#7C3AED,#4C1D95);padding:24px 16px 20px;color:#fff">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+  html += '<div class="icon-btn" onclick="App.goTab(\'more\')" style="color:#fff">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Arts &amp; Artifacts</div>';
+  html += '<div class="icon-btn" onclick="State.artAddData={};App.navigate(\'art-add\')" style="color:#fff;font-size:20px">＋</div>';
+  html += '</div>';
+  html += '<div style="text-align:center;margin-bottom:16px">';
+  html += '<div style="font-size:48px;margin-bottom:4px">🖼️</div>';
+  html += '<div style="font-size:22px;font-weight:800">Arts &amp; Artifacts</div>';
+  html += '<div style="font-size:12px;opacity:0.8;margin-top:4px">Your collectibles portfolio</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Portfolio Summary
+  html += '<div style="padding:16px">';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px">';
+  html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;font-weight:600">PORTFOLIO SUMMARY</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+  html += '<div style="background:rgba(124,58,237,0.08);border-radius:10px;padding:12px;text-align:center">';
+  html += '<div style="font-size:11px;color:var(--text-dim)">Total Items</div>';
+  html += '<div style="font-size:20px;font-weight:800;color:'+ART_COLOR+'">'+items.length+'</div>';
+  html += '</div>';
+  html += '<div style="background:rgba(124,58,237,0.08);border-radius:10px;padding:12px;text-align:center">';
+  html += '<div style="font-size:11px;color:var(--text-dim)">Total Investment</div>';
+  html += '<div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(totalInvestment)+'</div>';
+  html += '</div>';
+  html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  html += '<div style="background:rgba(124,58,237,0.08);border-radius:10px;padding:12px;text-align:center">';
+  html += '<div style="font-size:11px;color:var(--text-dim)">Current Value</div>';
+  html += '<div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(totalCurrentValue)+'</div>';
+  html += '</div>';
+  html += '<div style="background:'+(totalGain>=0?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)')+';border-radius:10px;padding:12px;text-align:center">';
+  html += '<div style="font-size:11px;color:var(--text-dim)">Total Gain</div>';
+  html += '<div style="font-size:16px;font-weight:800;color:'+gainColor+'">'+(totalGain>=0?'+':'')+formatINR(totalGain)+'</div>';
+  html += '<div style="font-size:10px;color:'+gainColor+'">'+(gainPct>=0?'+':'')+gainPct+'%</div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Category row
+  if (cats.length > 0) {
+    html += '<div style="overflow-x:auto;white-space:nowrap;margin-bottom:14px;padding-bottom:4px">';
+    cats.forEach(function(cat){
+      html += '<span onclick="State.artCatFilter=\''+escapeHtml(cat)+'\';App.render()" style="display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;margin-right:8px;cursor:pointer">';
+      html += '<span>'+_artIcon(cat)+'</span>';
+      html += '<span style="font-weight:600">'+escapeHtml(cat)+'</span>';
+      html += '<span style="background:'+ART_COLOR+'22;color:'+ART_COLOR+';border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">'+catCounts[cat]+'</span>';
+      html += '</span>';
+    });
+    html += '</div>';
+  }
+
+  // My Collection
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<div style="font-size:14px;font-weight:700;color:var(--text)">My Collection</div>';
+  html += '<div onclick="State.artAddData={};App.navigate(\'art-add\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Add Item</div>';
+  html += '</div>';
+
+  if (items.length === 0) {
+    html += '<div style="text-align:center;padding:48px 20px">';
+    html += '<div style="font-size:48px;margin-bottom:12px">🖼️</div>';
+    html += '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">No items yet</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim)">Add your first artwork or artifact</div>';
+    html += '</div>';
+  } else {
+    var filterCat = State.artCatFilter || 'all';
+    var filtered = filterCat === 'all' ? items : items.filter(function(it){ return it.category===filterCat; });
+    filtered.forEach(function(it){
+      var gain = (it.current_value||0) - (it.purchase_price||0);
+      var gainC = gain >= 0 ? '#22C55E' : '#EF4444';
+      html += '<div onclick="State.artActiveId=\''+it.id+'\';State.artDetailTab=\'overview\';App.navigate(\'art-detail\')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:44px;height:44px;border-radius:12px;background:'+ART_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+_artIcon(it.category)+'</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(it.title)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+escapeHtml(it.artist||'—')+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(it.category)+(it.year?' · '+it.year:'')+'</div>';
+      html += '</div>';
+      html += '<div style="text-align:right;flex-shrink:0">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(it.purchase_price||0)+'</div>';
+      html += '<div style="font-size:11px;font-weight:700;color:'+gainC+'">'+(gain>=0?'▲ +':'▼ ')+formatINR(Math.abs(gain))+'</div>';
+      html += _artStatusBadge(it.status);
+      html += '</div>';
+      html += '</div>';
+    });
+  }
+
+  // Add button
+  html += '<button onclick="State.artAddData={};App.navigate(\'art-add\')" style="width:100%;padding:13px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Arts &amp; Artifact</button>';
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtAdd ── */
+function renderArtAdd() {
+  var d = State.artAddData || {};
+  var isEdit = !!(d && d.id);
+  var inp = 'style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:10px"';
+  var lbl = 'style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;display:block"';
+
+  var html = '<div style="padding-bottom:30px">';
+  // Header
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">'+(isEdit?'Edit Item':'Add Arts &amp; Artifact')+'</div>';
+  html += '<div class="icon-btn" onclick="App._artSave()" style="color:'+ART_COLOR+';font-size:20px">✓</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Section 1 – Item Information
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin-bottom:12px;letter-spacing:0.5px">1. Item Information</div>';
+  html += '<label '+lbl+'>Category</label>';
+  html += '<select id="art-category" '+inp+'>';
+  ART_CATEGORIES.forEach(function(c){ html += '<option value="'+c+'"'+(d.category===c?' selected':'')+'>'+_artIcon(c)+' '+c+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Type</label><input id="art-type" '+inp+' placeholder="e.g. Modern Art, Miniature" value="'+escapeHtml(d.type||'')+'">';
+  html += '<label '+lbl+'>Title / Name</label><input id="art-title" '+inp+' placeholder="Artwork or artifact name" value="'+escapeHtml(d.title||'')+'">';
+  html += '<label '+lbl+'>Artist / Creator</label><input id="art-artist" '+inp+' placeholder="Artist name or Unknown" value="'+escapeHtml(d.artist||'')+'">';
+  html += '<label '+lbl+'>Year of Creation</label><input id="art-year" '+inp+' type="number" placeholder="e.g. 2005" value="'+(d.year||'')+'">';
+  html += '<label '+lbl+'>Medium</label><input id="art-medium" '+inp+' placeholder="e.g. Acrylic on Canvas" value="'+escapeHtml(d.medium||'')+'">';
+  html += '<label '+lbl+'>Dimensions</label><input id="art-dimensions" '+inp+' placeholder="e.g. 24 x 36 inches" value="'+escapeHtml(d.dimensions||'')+'">';
+  html += '<label '+lbl+'>Unique Inventory ID</label><input id="art-inv-id" '+inp+' placeholder="e.g. ART-2024-001" value="'+escapeHtml(d.inventory_id||'')+'">';
+  html += '<label '+lbl+'>Description</label><textarea id="art-desc" '+inp+' rows="3" placeholder="Describe the item...">'+escapeHtml(d.description||'')+'</textarea>';
+
+  // Section 2 – Purchase Information
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin:8px 0 12px;letter-spacing:0.5px">2. Purchase Information</div>';
+  html += '<label '+lbl+'>Purchase Date</label><input id="art-pur-date" '+inp+' type="date" value="'+(d.purchase_date||'')+'">';
+  html += '<label '+lbl+'>Purchase Price (₹)</label><input id="art-pur-price" '+inp+' type="number" placeholder="0" value="'+(d.purchase_price||'')+'">';
+  html += '<label '+lbl+'>Seller Type</label>';
+  html += '<select id="art-seller-type" '+inp+'>';
+  ['Gallery','Auction House','Dealer','Private Seller','Inherited','Other'].forEach(function(s){ html += '<option value="'+s+'"'+(d.seller_type===s?' selected':'')+'>'+s+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Purchased From</label><input id="art-pur-from" '+inp+' placeholder="Seller / Gallery name" value="'+escapeHtml(d.purchase_from||'')+'">';
+  html += '<label '+lbl+'>Invoice Number</label><input id="art-invoice" '+inp+' placeholder="Invoice / Reference" value="'+escapeHtml(d.invoice||'')+'">';
+  html += '<label '+lbl+'>Currency</label><input '+inp+' value="INR" disabled>';
+
+  // Section 3 – Ownership
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin:8px 0 12px;letter-spacing:0.5px">3. Ownership</div>';
+  html += '<label '+lbl+'>Owner</label>';
+  html += '<select id="art-owner" '+inp+'>';
+  ['Self','Spouse','Joint','HUF','Trust','Company'].forEach(function(o){ html += '<option value="'+o+'"'+(d.owner===o?' selected':'')+'>'+o+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Status</label>';
+  html += '<select id="art-status" '+inp+'>';
+  ['Active','Sold','Gifted','Inherited','Lost','Stored'].forEach(function(s){ html += '<option value="'+s+'"'+(d.status===s?' selected':'')+'>'+s+'</option>'; });
+  html += '</select>';
+
+  html += '<button onclick="App._artSave()" style="width:100%;padding:13px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">Save &amp; Continue</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtDetail ── */
+function renderArtDetail() {
+  var id = State.artActiveId;
+  var item = (State.artItems||[]).filter(function(x){return x.id===id;})[0];
+  if (!item) { return '<div style="padding:20px;text-align:center">Item not found. <span onclick="App.navigate(\'art-list\')" style="color:'+ART_COLOR+';cursor:pointer">Go back</span></div>'; }
+  var tab = State.artDetailTab || 'overview';
+  var gain = (item.current_value||0) - (item.purchase_price||0);
+  var gainPct = item.purchase_price > 0 ? Math.round(gain/item.purchase_price*10000)/100 : 0;
+  var gainColor = gain >= 0 ? '#22C55E' : '#EF4444';
+
+  var html = '<div style="padding-bottom:70px">';
+
+  // Hero card (always visible)
+  html += '<div style="background:linear-gradient(135deg,#7C3AED,#4C1D95);padding:16px;color:#fff">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-list\')" style="color:#fff">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:14px;font-weight:700">Item Detail</div>';
+  html += '<div class="icon-btn" onclick="State.artAddData=Object.assign({},State.artItems.filter(function(x){return x.id===\''+id+'\'})[0]);App.navigate(\'art-add\')" style="color:#fff;font-size:16px">✏️</div>';
+  html += '</div>';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">'+_artIcon(item.category)+'</div>';
+  html += '<div style="flex:1;min-width:0">';
+  html += '<div style="font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(item.title)+'</div>';
+  html += '<div style="font-size:12px;opacity:0.85;margin-top:2px">'+escapeHtml(item.artist||'—')+'</div>';
+  html += '<div style="margin-top:6px">'+_artStatusBadge(item.status)+'</div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Tab content
+  if (tab === 'overview') {
+    // 3-stat row
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);margin-bottom:14px">';
+    html += '<div style="background:var(--bg);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-dim)">Purchase Price</div><div style="font-size:13px;font-weight:700;color:var(--text)">'+formatINR(item.purchase_price||0)+'</div></div>';
+    html += '<div style="background:var(--bg);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-dim)">Current Value</div><div style="font-size:13px;font-weight:700;color:'+ART_COLOR+'">'+formatINR(item.current_value||0)+'</div></div>';
+    html += '<div style="background:var(--bg);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-dim)">Gain/Loss</div><div style="font-size:13px;font-weight:700;color:'+gainColor+'">'+(gain>=0?'+':'')+formatINR(gain)+'</div><div style="font-size:9px;color:'+gainColor+'">'+(gainPct>=0?'+':'')+gainPct+'%</div></div>';
+    html += '</div>';
+
+    html += '<div style="padding:0 16px">';
+    // Key info rows
+    var rows = [
+      ['Category', item.category],['Type', item.type||'—'],['Artist / Creator', item.artist||'—'],
+      ['Year', item.year||'—'],['Medium', item.medium||'—'],['Dimensions', item.dimensions||'—'],
+      ['Inventory ID', item.inventory_id||'—'],['Purchase Date', _artFmtDate(item.purchase_date)],
+    ];
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">';
+    rows.forEach(function(r,i){
+      html += '<div style="display:flex;justify-content:space-between;padding:10px 14px;'+(i>0?'border-top:1px solid var(--border)':'')+'">';
+      html += '<span style="font-size:12px;color:var(--text-dim)">'+r[0]+'</span>';
+      html += '<span style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(String(r[1]))+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Status/Location/Condition
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<span style="font-size:12px;color:var(--text-dim)">Status</span>'+_artStatusBadge(item.status);
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<span style="font-size:12px;color:var(--text-dim)">Location</span><span style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(item.location||'—')+'</span>';
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+    html += '<span style="font-size:12px;color:var(--text-dim)">Condition</span><span style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(item.condition||'—')+'</span>';
+    html += '</div>';
+    html += '</div>';
+
+    // Insurance row
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">';
+    html += '<div><div style="font-size:13px;font-weight:700;color:var(--text)">Insurance</div>';
+    html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+(item.insured?escapeHtml(item.insurer||''):'Not covered')+'</div></div>';
+    if (item.insured) {
+      html += '<span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700">Insured</span>';
+    } else {
+      html += '<span style="background:var(--border);color:var(--text-dim);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700">Not Insured</span>';
+    }
+    html += '</div>';
+
+    // 4 Quick Action cards
+    var actions = [
+      {icon:'ℹ️',label:'View Info',target:'art-info'},
+      {icon:'📊',label:'Valuations',target:'art-valuation'},
+      {icon:'🛡️',label:'Insurance',target:'art-insurance'},
+      {icon:'📈',label:'Analytics',target:'art-analytics'},
+    ];
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    actions.forEach(function(a){
+      html += '<div onclick="App.navigate(\''+a.target+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer">';
+      html += '<div style="font-size:24px;margin-bottom:6px">'+a.icon+'</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:var(--text)">'+a.label+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+  } else if (tab === 'documents') {
+    var docs = (State.artDocuments && State.artDocuments[id]) || [];
+    html += '<div style="padding:16px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text)">Documents ('+docs.length+')</div>';
+    html += '<div onclick="App._artUploadDoc(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Upload</div>';
+    html += '</div>';
+    if (docs.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">📁</div><div style="color:var(--text-dim);font-size:13px">No documents yet</div></div>';
+    } else {
+      docs.forEach(function(doc){
+        var iconColor = doc.type==='PDF'?'#EF4444':'#0891B2';
+        html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+        html += '<div style="width:36px;height:36px;border-radius:8px;background:'+iconColor+'22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(doc.type==='PDF'?'📄':'🖼️')+'</div>';
+        html += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(doc.name)+'</div>';
+        html += '<div style="font-size:10px;color:var(--text-dim)">'+doc.type+' · '+doc.size+' · '+_artFmtDate(doc.date)+'</div></div>';
+        html += '<div style="font-size:11px;font-weight:700;color:'+ART_COLOR+';cursor:pointer;flex-shrink:0">↓ Download</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+  } else if (tab === 'transactions') {
+    var txAll = (State.artTransactions && State.artTransactions[id]) || [];
+    var txFilter = State.artTxFilter || 'all';
+    var txFiltered = txFilter==='all' ? txAll : txAll.filter(function(t){return t.type===txFilter;});
+    html += '<div style="padding:16px">';
+    // Filter chips
+    html += '<div style="overflow-x:auto;white-space:nowrap;margin-bottom:12px">';
+    ['all','Purchase','Revaluation','Sale'].forEach(function(f){
+      var active = (f==='all'&&txFilter==='all') || txFilter===f;
+      html += '<span onclick="State.artTxFilter=\''+f+'\';App.render()" style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px;background:'+(active?ART_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?ART_COLOR:'var(--border)')+'">'+( f==='all'?'All':f)+'</span>';
+    });
+    html += '</div>';
+    if (txFiltered.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">🔄</div><div style="color:var(--text-dim);font-size:13px">No transactions</div></div>';
+    } else {
+      txFiltered.forEach(function(tx){
+        var tc = _artTxTypeColor(tx.type);
+        html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+        html += '<div><div style="font-size:12px;color:var(--text-dim)">'+_artFmtDate(tx.date)+'</div>';
+        if (tx.type==='Revaluation') { html += '<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(tx.vendor||'')+'</div>'; }
+        html += '</div>';
+        html += '<div style="text-align:right">';
+        html += '<span style="background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:700">'+tx.type+'</span>';
+        html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-top:4px">'+formatINR(tx.amount)+'</div>';
+        html += '</div></div>';
+        if (tx.notes) { html += '<div style="font-size:11px;color:var(--text-dim);margin-top:6px">'+escapeHtml(tx.notes)+'</div>'; }
+        html += '</div>';
+      });
+    }
+    html += '<button onclick="App.navigate(\'art-add-tx\')" style="width:100%;padding:11px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Transaction</button>';
+    html += '</div>';
+
+  } else if (tab === 'notes') {
+    var notesList = (State.artNotesList && State.artNotesList[id]) || [];
+    var noteFilter = State.artNoteFilter || 'all';
+    var filteredNotes = noteFilter==='all' ? notesList : notesList.filter(function(n){return n.type===noteFilter;});
+    html += '<div style="padding:16px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    html += '<div style="font-size:14px;font-weight:700">Notes</div>';
+    html += '<div onclick="App._artAddNote(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Add Note</div>';
+    html += '</div>';
+    // Filter chips
+    html += '<div style="overflow-x:auto;white-space:nowrap;margin-bottom:12px">';
+    ['all','general','appraisal','insurance','other'].forEach(function(f){
+      var active = (f==='all'&&noteFilter==='all') || noteFilter===f;
+      html += '<span onclick="State.artNoteFilter=\''+f+'\';App.render()" style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px;background:'+(active?ART_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?ART_COLOR:'var(--border)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</span>';
+    });
+    html += '</div>';
+    if (filteredNotes.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">📝</div><div style="color:var(--text-dim);font-size:13px">No notes yet</div></div>';
+    } else {
+      filteredNotes.forEach(function(n){
+        html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+        html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(n.title)+(n.pinned?' 📌':'')+(n.locked?' 🔒':'')+'</div>';
+        html += '<div style="font-size:10px;color:var(--text-dim)">'+_artFmtDate(n.date)+'</div>';
+        html += '</div>';
+        html += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+escapeHtml(n.body)+'</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+  } else if (tab === 'more') {
+    html += '<div style="padding:16px">';
+    var moreItems = [
+      {icon:'ℹ️', label:'Item Information', sub:'Provenance, location & details', target:'art-info'},
+      {icon:'📊', label:'Valuation History', sub:'Appraisals & revaluations', target:'art-valuation'},
+      {icon:'🛡️', label:'Insurance Details', sub:'Policy & coverage information', target:'art-insurance'},
+      {icon:'📈', label:'Analytics', sub:'Value trends & performance', target:'art-analytics'},
+      {icon:'💸', label:'Sale Details', sub:'Sale & exit records', target:'art-sell'},
+    ];
+    moreItems.forEach(function(m){
+      html += '<div onclick="App.navigate(\''+m.target+'\')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer">';
+      html += '<div style="width:40px;height:40px;border-radius:10px;background:'+ART_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+m.icon+'</div>';
+      html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">'+m.label+'</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+m.sub+'</div></div>';
+      html += '<div style="color:var(--text-dim);font-size:16px">›</div>';
+      html += '</div>';
+    });
+    // Delete
+    html += '<button onclick="if(confirm(\'Delete this item?\'))App._artDelete(\''+id+'\')" style="width:100%;padding:11px;background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">🗑️ Delete Item</button>';
+    html += '</div>';
+  }
+
+  html += _artDetailTabBar(tab);
+  html += '</div>';
+  return html;
+}
+
+/* ── renderArtInfo ── */
+function renderArtInfo() {
+  var id = State.artActiveId;
+  var item = (State.artItems||[]).filter(function(x){return x.id===id;})[0];
+  if (!item) return '<div style="padding:20px">Item not found.</div>';
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;gap:8px;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700;flex:1">Item Information</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+
+  // Description
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin-bottom:8px">Description</div>';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:1.6">'+escapeHtml(item.description||'No description available.')+'</div>';
+
+  // Provenance
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin-bottom:8px">Provenance</div>';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:1.6">'+escapeHtml(item.provenance||'No provenance information available.')+'</div>';
+
+  // Location & Condition
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin-bottom:8px">Location &amp; Condition</div>';
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">';
+  html += '<div style="display:flex;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text-dim)">Location</span><span style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(item.location||'—')+'</span></div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px"><span style="font-size:12px;color:var(--text-dim)">Condition</span><span style="font-size:12px;font-weight:700;color:var(--text)">'+escapeHtml(item.condition||'—')+'</span></div>';
+  html += '</div>';
+
+  // Insurance
+  html += '<div style="font-size:12px;font-weight:700;color:'+ART_COLOR+';text-transform:uppercase;margin-bottom:8px">Insurance</div>';
+  if (item.insured) {
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">';
+    var irows = [
+      ['Status','<span style="color:#22C55E;font-weight:700">Insured ✓</span>'],
+      ['Insurer', escapeHtml(item.insurer||'—')],
+      ['Policy Number', escapeHtml(item.policy_number||'—')],
+      ['Insured Amount', formatINR(item.insured_amount||0)],
+      ['Policy Expiry', _artFmtDate(item.insurance_end)],
+    ];
+    irows.forEach(function(r,i){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;'+(i>0?'border-top:1px solid var(--border)':'')+'">';
+      html += '<span style="font-size:12px;color:var(--text-dim)">'+r[0]+'</span><span style="font-size:12px;font-weight:600;color:var(--text)">'+r[1]+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<button onclick="App.showToast(\'Opening policy document...\')" style="width:100%;padding:11px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">📄 View Policy Document</button>';
+  } else {
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;margin-bottom:14px">';
+    html += '<div style="font-size:32px;margin-bottom:8px">🛡️</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Not Insured</div>';
+    html += '<div style="font-size:12px;color:var(--text-dim)">This item is not covered by insurance</div>';
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtDocs ── */
+function renderArtDocs() {
+  var id = State.artActiveId;
+  var docs = (State.artDocuments && State.artDocuments[id]) || [];
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Documents</div>';
+  html += '<div onclick="App._artUploadDoc(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Upload</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+  if (docs.length === 0) {
+    html += '<div style="text-align:center;padding:48px 0"><div style="font-size:48px;margin-bottom:10px">📁</div><div style="color:var(--text-dim);font-size:13px">No documents uploaded</div></div>';
+  } else {
+    docs.forEach(function(doc){
+      var iconColor = doc.type==='PDF'?'#EF4444':'#0891B2';
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+      html += '<div style="width:36px;height:36px;border-radius:8px;background:'+iconColor+'22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+(doc.type==='PDF'?'📄':'🖼️')+'</div>';
+      html += '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(doc.name)+'</div>';
+      html += '<div style="font-size:10px;color:var(--text-dim)">'+doc.type+' · '+doc.size+' · '+_artFmtDate(doc.date)+'</div></div>';
+      html += '<div style="font-size:11px;font-weight:700;color:'+ART_COLOR+';cursor:pointer;flex-shrink:0">↓ Download</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtTransactions ── */
+function renderArtTransactions() {
+  var id = State.artActiveId;
+  var txAll = (State.artTransactions && State.artTransactions[id]) || [];
+  var txFilter = State.artTxFilter || 'all';
+  var txFiltered = txFilter==='all' ? txAll : txAll.filter(function(t){return t.type===txFilter;});
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Transactions</div>';
+  html += '<div onclick="App.navigate(\'art-add-tx\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Add</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+  // Filter chips
+  html += '<div style="overflow-x:auto;white-space:nowrap;margin-bottom:12px">';
+  ['all','Purchase','Revaluation','Sale'].forEach(function(f){
+    var active = (f==='all'&&txFilter==='all') || txFilter===f;
+    html += '<span onclick="State.artTxFilter=\''+f+'\';App.render()" style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px;background:'+(active?ART_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?ART_COLOR:'var(--border)')+'">'+( f==='all'?'All':f)+'</span>';
+  });
+  html += '</div>';
+  if (txFiltered.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:10px">🔄</div><div style="color:var(--text-dim);font-size:13px">No transactions</div></div>';
+  } else {
+    txFiltered.forEach(function(tx){
+      var tc = _artTxTypeColor(tx.type);
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+      html += '<div><div style="font-size:12px;color:var(--text-dim)">'+_artFmtDate(tx.date)+'</div>';
+      if (tx.vendor) { html += '<div style="font-size:11px;color:var(--text-dim)">'+escapeHtml(tx.vendor)+'</div>'; }
+      if (tx.ref) { html += '<div style="font-size:10px;color:var(--text-dim)">Ref: '+escapeHtml(tx.ref)+'</div>'; }
+      html += '</div>';
+      html += '<div style="text-align:right">';
+      html += '<span style="background:'+tc+'22;color:'+tc+';border:1px solid '+tc+'44;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:700">'+tx.type+'</span>';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-top:4px">'+formatINR(tx.amount)+'</div>';
+      html += '</div></div>';
+      if (tx.notes) { html += '<div style="font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:6px">'+escapeHtml(tx.notes)+'</div>'; }
+      html += '</div>';
+    });
+  }
+  html += '<button onclick="App.navigate(\'art-add-tx\')" style="width:100%;padding:11px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Transaction</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtAddTx ── */
+function renderArtAddTx() {
+  var inp = 'style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:10px"';
+  var lbl = 'style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;display:block"';
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;gap:8px;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-transactions\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700;flex:1">Add Transaction</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+  html += '<label '+lbl+'>Transaction Type</label>';
+  html += '<select id="art-tx-type" '+inp+'>';
+  ['Purchase','Sale','Revaluation','Insurance','Restoration','Other'].forEach(function(t){ html += '<option value="'+t+'">'+t+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Date</label><input id="art-tx-date" '+inp+' type="date" value="'+new Date().toISOString().slice(0,10)+'">';
+  html += '<label '+lbl+'>Amount (₹)</label><input id="art-tx-amount" '+inp+' type="number" placeholder="0">';
+  html += '<label '+lbl+'>From / To (Vendor / Agency)</label><input id="art-tx-vendor" '+inp+' placeholder="Vendor or agency name">';
+  html += '<label '+lbl+'>Invoice / Reference Number</label><input id="art-tx-ref" '+inp+' placeholder="Invoice or ref number">';
+  html += '<label '+lbl+'>Notes</label><textarea id="art-tx-notes" '+inp+' rows="3" placeholder="Transaction notes..."></textarea>';
+  html += '<button onclick="App.showToast(\'Upload coming soon\')" style="width:100%;padding:10px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:10px">📎 Upload Invoice / Document</button>';
+  html += '<button onclick="App._artSaveTx()" style="width:100%;padding:13px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Save Transaction</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtNotes ── */
+function renderArtNotes() {
+  var id = State.artActiveId;
+  var notesList = (State.artNotesList && State.artNotesList[id]) || [];
+  var noteFilter = State.artNoteFilter || 'all';
+  var filteredNotes = noteFilter==='all' ? notesList : notesList.filter(function(n){return n.type===noteFilter;});
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Notes</div>';
+  html += '<div onclick="App._artAddNote(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Add</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+  html += '<div style="overflow-x:auto;white-space:nowrap;margin-bottom:12px">';
+  ['all','general','appraisal','insurance','other'].forEach(function(f){
+    var active = (f==='all'&&noteFilter==='all') || noteFilter===f;
+    html += '<span onclick="State.artNoteFilter=\''+f+'\';App.render()" style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px;background:'+(active?ART_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?ART_COLOR:'var(--border)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</span>';
+  });
+  html += '</div>';
+  if (filteredNotes.length === 0) {
+    html += '<div style="text-align:center;padding:48px 0"><div style="font-size:48px;margin-bottom:10px">📝</div><div style="color:var(--text-dim);font-size:13px">No notes yet</div></div>';
+  } else {
+    filteredNotes.forEach(function(n){
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(n.title)+(n.pinned?' 📌':'')+(n.locked?' 🔒':'')+'</div>';
+      html += '<div style="font-size:10px;color:var(--text-dim)">'+_artFmtDate(n.date)+'</div>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px">'+escapeHtml(n.body)+'</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtValuation ── */
+function renderArtValuation() {
+  var id = State.artActiveId;
+  var vals = (State.artValuations && State.artValuations[id]) || [];
+  var sortedVals = vals.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.artDetailTab=\'more\';App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Valuation History</div>';
+  html += '<div onclick="App._artAddValuation(\''+id+'\')" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Add</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+  if (sortedVals.length === 0) {
+    html += '<div style="text-align:center;padding:48px 0"><div style="font-size:48px;margin-bottom:10px">📊</div><div style="color:var(--text-dim);font-size:13px">No valuations recorded</div></div>';
+  } else {
+    sortedVals.forEach(function(v,i){
+      var isFirst = i===0;
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px'+(isFirst?';border-color:'+ART_COLOR:'')+'">';
+      if (isFirst) { html += '<div style="font-size:10px;font-weight:700;color:'+ART_COLOR+';margin-bottom:6px">LATEST VALUATION</div>'; }
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+      html += '<div>';
+      html += '<div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(v.amount)+'</div>';
+      html += '<div style="font-size:12px;color:var(--text-dim);margin-top:2px">'+_artFmtDate(v.date)+'</div>';
+      if (v.agency && v.agency !== '—') { html += '<div style="font-size:11px;color:var(--text-dim)">by '+escapeHtml(v.agency)+'</div>'; }
+      html += '</div>';
+      html += '<div style="text-align:right">';
+      html += '<span style="background:'+ART_COLOR+'22;color:'+ART_COLOR+';border:1px solid '+ART_COLOR+'44;border-radius:10px;padding:3px 10px;font-size:11px;font-weight:700">'+escapeHtml(v.method||'Market Value')+'</span>';
+      if (v.notes) { html += '<div style="font-size:10px;color:var(--text-dim);margin-top:6px;max-width:130px;text-align:right">'+escapeHtml(v.notes)+'</div>'; }
+      html += '</div></div>';
+      html += '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtInsurance ── */
+function renderArtInsurance() {
+  var id = State.artActiveId;
+  var item = (State.artItems||[]).filter(function(x){return x.id===id;})[0];
+  if (!item) return '<div style="padding:20px">Item not found.</div>';
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.artDetailTab=\'more\';App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Insurance Details</div>';
+  html += '<div onclick="App.showToast(\'Edit insurance coming soon\')" style="font-size:20px;cursor:pointer">✏️</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+  if (item.insured) {
+    var daysLeft = _artDaysLeft(item.insurance_end);
+    var expStatus = daysLeft > 0 ? 'Active' : 'Expired';
+    var expColor = daysLeft > 0 ? '#22C55E' : '#EF4444';
+    html += '<div style="background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(76,29,149,0.1));border:1px solid '+ART_COLOR+'44;border-radius:14px;padding:16px;margin-bottom:14px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+    html += '<div><div style="font-size:15px;font-weight:800;color:var(--text)">'+escapeHtml(item.insurer||'—')+'</div>';
+    html += '<div style="font-size:12px;color:var(--text-dim);margin-top:2px">Policy: '+escapeHtml(item.policy_number||'—')+'</div></div>';
+    html += '<span style="background:'+expColor+'22;color:'+expColor+';border:1px solid '+expColor+'44;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700">'+expStatus+'</span>';
+    html += '</div></div>';
+
+    var irows = [
+      ['Insured Amount', formatINR(item.insured_amount||0)],
+      ['Coverage Amount', formatINR(item.insured_amount||0)],
+      ['Policy Start', _artFmtDate(item.insurance_start)],
+      ['Policy End', _artFmtDate(item.insurance_end)],
+      ['Annual Premium', formatINR(item.insurance_premium||0)],
+    ];
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">';
+    irows.forEach(function(r,i){
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;'+(i>0?'border-top:1px solid var(--border)':'')+'">';
+      html += '<span style="font-size:12px;color:var(--text-dim)">'+r[0]+'</span>';
+      html += '<span style="font-size:13px;font-weight:700;color:var(--text)">'+r[1]+'</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    if (daysLeft > 0 && daysLeft < 60) {
+      html += '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:#F59E0B">⚠️ Policy expiring in '+daysLeft+' days</div>';
+    }
+    html += '<button onclick="App.showToast(\'Opening policy document...\')" style="width:100%;padding:11px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">📄 View Policy Document</button>';
+  } else {
+    html += '<div style="text-align:center;padding:48px 20px">';
+    html += '<div style="font-size:56px;margin-bottom:12px">🛡️</div>';
+    html += '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px">Not Insured</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);margin-bottom:20px">This item does not have insurance coverage</div>';
+    html += '<button onclick="App.showToast(\'Add insurance coming soon\')" style="padding:11px 24px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">+ Add Insurance</button>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtAnalytics ── */
+function renderArtAnalytics() {
+  var id = State.artActiveId;
+  var item = (State.artItems||[]).filter(function(x){return x.id===id;})[0];
+  if (!item) return '<div style="padding:20px">Item not found.</div>';
+  var vals = (State.artValuations && State.artValuations[id]) || [];
+  // Build chart points from valuations
+  var chartPoints = vals.slice().sort(function(a,b){return new Date(a.date)-new Date(b.date);}).map(function(v){
+    var d = new Date(v.date);
+    return { label: d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'}), value: v.amount };
+  });
+  // fallback: purchase + current
+  if (chartPoints.length < 2) {
+    chartPoints = [
+      { label: _artFmtDate(item.purchase_date).slice(3), value: item.purchase_price||0 },
+      { label: 'Now', value: item.current_value||0 },
+    ];
+  }
+  var gain = (item.current_value||0) - (item.purchase_price||0);
+  var gainPct = item.purchase_price > 0 ? Math.round(gain/item.purchase_price*10000)/100 : 0;
+  var gainColor = gain >= 0 ? '#22C55E' : '#EF4444';
+
+  var html = '<div style="padding-bottom:20px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.artDetailTab=\'more\';App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Analytics</div>';
+  html += '<div style="font-size:12px;font-weight:600;color:'+ART_COLOR+';background:'+ART_COLOR+'22;padding:4px 10px;border-radius:20px">This Year</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+
+  // Chart
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Value Over Time</div>';
+  html += '<div style="overflow-x:auto">'+_artSvgLineChart(chartPoints, 340, 140, ART_COLOR)+'</div>';
+  html += '</div>';
+
+  // Stats
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+  var statItems = [
+    {label:'Purchase Price', val:formatINR(item.purchase_price||0), color:'var(--text)'},
+    {label:'Current Value', val:formatINR(item.current_value||0), color:ART_COLOR},
+    {label:'Total Gain', val:(gain>=0?'+':'')+formatINR(gain), color:gainColor},
+    {label:'Return %', val:(gainPct>=0?'+':'')+gainPct+'%', color:gainColor},
+  ];
+  statItems.forEach(function(s){
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">';
+    html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">'+s.label+'</div>';
+    html += '<div style="font-size:15px;font-weight:800;color:'+s.color+'">'+s.val+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderArtSell ── */
+function renderArtSell() {
+  var id = State.artActiveId;
+  var sales = (State.artSales && State.artSales[id]) || [];
+  var showForm = State.artShowSaleForm || false;
+  var html = '<div style="padding-bottom:30px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="State.artDetailTab=\'more\';App.navigate(\'art-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:15px;font-weight:700">Sale Details</div>';
+  html += '<div onclick="State.artShowSaleForm=true;App.render()" style="font-size:12px;font-weight:700;color:'+ART_COLOR+';cursor:pointer">+ Add Exit</div>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+
+  if (sales.length > 0) {
+    var totalAmt = 0;
+    sales.forEach(function(s){ totalAmt += (s.sale_price||0); });
+    html += '<div style="background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(76,29,149,0.1));border:1px solid '+ART_COLOR+'44;border-radius:12px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-around">';
+    html += '<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Total Exits</div><div style="font-size:18px;font-weight:800;color:'+ART_COLOR+'">'+sales.length+'</div></div>';
+    html += '<div style="width:1px;background:var(--border)"></div>';
+    html += '<div style="text-align:center"><div style="font-size:11px;color:var(--text-dim)">Total Realized</div><div style="font-size:15px;font-weight:800;color:var(--text)">'+formatINR(totalAmt)+'</div></div>';
+    html += '</div>';
+    sales.forEach(function(s){
+      var gainC = (s.gain||0) >= 0 ? '#22C55E' : '#EF4444';
+      html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+_artFmtDate(s.date)+'</div>';
+      html += '<div style="font-size:16px;font-weight:800;color:var(--text)">'+formatINR(s.sale_price)+'</div>';
+      html += '</div>';
+      var srows = [
+        ['Sold To', escapeHtml(s.sold_to||'—')],
+        ['Broker / Agent', escapeHtml(s.broker||'—')],
+        ['Commission', formatINR(s.commission||0)],
+        ['Other Charges', formatINR(s.other_charges||0)],
+        ['Net Amount', formatINR(s.net||0)],
+      ];
+      srows.forEach(function(r){
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+        html += '<span style="font-size:11px;color:var(--text-dim)">'+r[0]+'</span><span style="font-size:11px;font-weight:600;color:var(--text)">'+r[1]+'</span>';
+        html += '</div>';
+      });
+      html += '<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:center">';
+      html += '<span style="font-size:12px;font-weight:700;color:var(--text)">Gain / Loss</span>';
+      html += '<div style="text-align:right"><span style="font-size:14px;font-weight:800;color:'+gainC+'">'+(s.gain>=0?'+':'')+formatINR(s.gain)+'</span><span style="font-size:11px;color:'+gainC+';margin-left:6px">'+(s.return_pct>=0?'+':'')+s.return_pct+'%</span></div>';
+      html += '</div></div>';
+    });
+  } else if (!showForm) {
+    html += '<div style="text-align:center;padding:48px 20px">';
+    html += '<div style="font-size:56px;margin-bottom:12px">💸</div>';
+    html += '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px">No Sales Recorded</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Record a sale when you sell this item</div>';
+    html += '</div>';
+  }
+
+  // Add Exit Form
+  if (showForm) {
+    var inp2 = 'style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:10px"';
+    var lbl2 = 'style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;display:block"';
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:10px">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px">+ Add Exit</div>';
+    html += '<label '+lbl2+'>Sale Date</label><input id="art-sale-date" '+inp2+' type="date" value="'+new Date().toISOString().slice(0,10)+'">';
+    html += '<label '+lbl2+'>Sale Price (₹)</label><input id="art-sale-price" '+inp2+' type="number" placeholder="0">';
+    html += '<label '+lbl2+'>Sold To</label><input id="art-sale-sold-to" '+inp2+' placeholder="Buyer name">';
+    html += '<label '+lbl2+'>Broker / Agent</label><input id="art-sale-broker" '+inp2+' placeholder="Broker or agent name">';
+    html += '<label '+lbl2+'>Commission (₹)</label><input id="art-sale-commission" '+inp2+' type="number" placeholder="0">';
+    html += '<label '+lbl2+'>Other Charges (₹)</label><input id="art-sale-other" '+inp2+' type="number" placeholder="0">';
+    html += '<button onclick="App.showToast(\'Upload coming soon\')" style="width:100%;padding:10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;margin-bottom:10px">📎 Upload Sale Document</button>';
+    html += '<button onclick="App._artSaveSale()" style="width:100%;padding:13px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Save Sale</button>';
+    html += '<button onclick="State.artShowSaleForm=false;App.render()" style="width:100%;padding:10px;background:transparent;color:var(--text-dim);border:none;font-size:13px;cursor:pointer;margin-top:4px">Cancel</button>';
+    html += '</div>';
+  } else {
+    html += '<button onclick="State.artShowSaleForm=true;App.render()" style="width:100%;padding:13px;background:'+ART_COLOR+';color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px">+ Add Exit</button>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
 // Helper: render linked notes list (used in other module detail screens)
 function renderLinkedNotesList(module, linkedId) {
   var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
@@ -21098,6 +21951,7 @@ const App = {
     else if (screen.startsWith('vehicle'))        tabHint = 'more';
     else if (screen.startsWith('esop'))           tabHint = 'more';
     else if (screen.startsWith('pe-'))            tabHint = 'more';
+    else if (screen.startsWith('art-'))           tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -21353,6 +22207,18 @@ const App = {
       case 'pe-analytics':    html = renderPeAnalytics();     break;
       case 'pe-reminders':    html = renderPeReminders();     break;
       case 'pe-exit':         html = renderPeExit();          break;
+      case 'art-list':         html = renderArtList();         break;
+      case 'art-add':          html = renderArtAdd();          break;
+      case 'art-detail':       html = renderArtDetail();       break;
+      case 'art-info':         html = renderArtInfo();         break;
+      case 'art-docs':         html = renderArtDocs();         break;
+      case 'art-transactions': html = renderArtTransactions(); break;
+      case 'art-add-tx':       html = renderArtAddTx();        break;
+      case 'art-notes':        html = renderArtNotes();        break;
+      case 'art-valuation':    html = renderArtValuation();    break;
+      case 'art-insurance':    html = renderArtInsurance();    break;
+      case 'art-analytics':    html = renderArtAnalytics();    break;
+      case 'art-sell':         html = renderArtSell();         break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -24356,6 +25222,112 @@ const App = {
     this.showToast('Exit recorded');
     App.render();
   },
+
+  /* ── Arts & Artifacts Module ── */
+  _artSave() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var category   = g('art-category');
+    var type       = g('art-type');
+    var title      = g('art-title');
+    var artist     = g('art-artist');
+    var year       = parseInt(g('art-year'))||null;
+    var medium     = g('art-medium');
+    var dimensions = g('art-dimensions');
+    var invId      = g('art-inv-id');
+    var desc       = g('art-desc');
+    var purDate    = g('art-pur-date');
+    var purPrice   = parseFloat(g('art-pur-price').replace(/,/g,''))||0;
+    var sellerType = g('art-seller-type');
+    var purFrom    = g('art-pur-from');
+    var invoice    = g('art-invoice');
+    var owner      = g('art-owner')||'Self';
+    var status     = g('art-status')||'Active';
+    if (!title) { this.showToast('Please enter item title'); return; }
+    var existing = State.artAddData && State.artAddData.id;
+    if (existing) {
+      var item = (State.artItems||[]).filter(function(x){return x.id===existing;})[0];
+      if (item) { item.category=category; item.type=type; item.title=title; item.artist=artist; item.year=year; item.medium=medium; item.dimensions=dimensions; item.inventory_id=invId; item.description=desc; item.purchase_date=purDate; item.purchase_price=purPrice; item.purchase_from=purFrom; item.seller_type=sellerType; item.invoice=invoice; item.owner=owner; item.status=status; }
+      State.artActiveId = existing;
+    } else {
+      var newId = 'art'+Date.now();
+      if (!State.artItems) State.artItems = [];
+      State.artItems.push({id:newId,category:category,type:type,title:title,artist:artist,year:year,medium:medium,dimensions:dimensions,inventory_id:invId,description:desc,purchase_date:purDate,purchase_price:purPrice,purchase_from:purFrom,seller_type:sellerType,invoice:invoice,currency:'INR',owner:owner,current_value:purPrice,location:'',condition:'Good',insured:false,insurer:'',policy_number:'',insured_amount:0,insurance_start:'',insurance_end:'',insurance_premium:0,status:status});
+      State.artActiveId = newId;
+      var self = this;
+      ['artValuations','artDocuments','artTransactions','artNotesList','artReminders','artSales'].forEach(function(k){ if(!State[k])State[k]={}; State[k][newId]=[]; });
+    }
+    State.artAddData = {};
+    State.artDetailTab = 'overview';
+    this.showToast(existing ? 'Item updated' : 'Item added to collection');
+    App.navigate('art-detail');
+  },
+
+  _artDelete(id) {
+    State.artItems = (State.artItems||[]).filter(function(x){return x.id!==id;});
+    this.showToast('Item deleted');
+    App.navigate('art-list');
+  },
+
+  _artSaveTx() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var type   = g('art-tx-type');
+    var date   = g('art-tx-date')||new Date().toISOString().slice(0,10);
+    var amount = parseFloat(g('art-tx-amount').replace(/,/g,''))||0;
+    var vendor = g('art-tx-vendor');
+    var ref    = g('art-tx-ref');
+    var notes  = g('art-tx-notes');
+    if (!amount) { this.showToast('Please enter amount'); return; }
+    var id = State.artActiveId;
+    if (!State.artTransactions) State.artTransactions = {};
+    if (!State.artTransactions[id]) State.artTransactions[id] = [];
+    State.artTransactions[id].push({id:'at'+Date.now(),type:type||'Purchase',date:date,amount:amount,vendor:vendor,ref:ref,notes:notes});
+    if (type==='Revaluation') {
+      var item = (State.artItems||[]).filter(function(x){return x.id===id;})[0];
+      if (item) item.current_value = amount;
+      if (!State.artValuations) State.artValuations = {};
+      if (!State.artValuations[id]) State.artValuations[id] = [];
+      State.artValuations[id].push({id:'av'+Date.now(),date:date,amount:amount,agency:vendor,method:'Market Value',notes:notes});
+    }
+    this.showToast('Transaction saved');
+    State.artDetailTab = 'transactions';
+    App.navigate('art-detail');
+  },
+
+  _artUploadDoc(id) {
+    if (!State.artDocuments) State.artDocuments = {};
+    if (!State.artDocuments[id]) State.artDocuments[id] = [];
+    State.artDocuments[id].push({id:'ad'+Date.now(),name:'Document_'+Date.now()+'.pdf',type:'PDF',size:'1.0 MB',date:new Date().toISOString().slice(0,10)});
+    this.showToast('Document uploaded');
+    App.render();
+  },
+
+  _artAddNote(id) { this.showToast('Note saved'); },
+  _artAddReminder(id) { this.showToast('Reminder added'); },
+
+  _artSaveSale() {
+    var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+    var date       = g('art-sale-date')||new Date().toISOString().slice(0,10);
+    var salePrice  = parseFloat(g('art-sale-price').replace(/,/g,''))||0;
+    var soldTo     = g('art-sale-sold-to');
+    var broker     = g('art-sale-broker');
+    var commission = parseFloat(g('art-sale-commission').replace(/,/g,''))||0;
+    var other      = parseFloat(g('art-sale-other').replace(/,/g,''))||0;
+    if (!salePrice) { this.showToast('Please enter sale price'); return; }
+    var net = salePrice - commission - other;
+    var id = State.artActiveId;
+    var item = (State.artItems||[]).filter(function(x){return x.id===id;})[0];
+    var cost = item ? item.purchase_price : 0;
+    var gain = net - cost;
+    var retPct = cost > 0 ? Math.round(gain/cost*100*100)/100 : 0;
+    if (!State.artSales) State.artSales = {};
+    if (!State.artSales[id]) State.artSales[id] = [];
+    State.artSales[id].push({id:'as'+Date.now(),date:date,sale_price:salePrice,sold_to:soldTo,broker:broker,commission:commission,other_charges:other,net:net,cost:cost,gain:gain,return_pct:retPct,notes:''});
+    State.artShowSaleForm = false;
+    this.showToast('Sale recorded');
+    App.navigate('art-sell');
+  },
+
+  _artAddValuation(id) { this.showToast('Add valuation coming soon'); },
 
   /* ── Budget Module ──────────────────────────── */
   _budgetSaveCategory() {
