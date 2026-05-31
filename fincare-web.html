@@ -22810,6 +22810,882 @@ function renderAifExit() {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   8j. CRYPTOCURRENCY PORTFOLIO MANAGEMENT MODULE
+══════════════════════════════════════════════════════ */
+var CRYPTO_COLOR = '#6366F1';
+
+function _cryptoSymbolIcon(symbol) {
+  var icons = { BTC:'₿', ETH:'Ξ', SOL:'◎', BNB:'Ƀ', ADA:'₳', DOT:'●', MATIC:'⬡', DOGE:'Ð', XRP:'✕', USDT:'₮' };
+  return icons[symbol] || '🪙';
+}
+
+function _cryptoFmtDate(d) {
+  if (!d) return '—';
+  var parts = d.split('-');
+  if (parts.length < 3) return d;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return parts[2]+' '+months[parseInt(parts[1],10)-1]+' '+parts[0];
+}
+
+function _cryptoGainColor(v) { return v >= 0 ? '#22C55E' : '#EF4444'; }
+
+/* ── renderCryptoList ── */
+function renderCryptoList() {
+  var holdings = State.cryptoHoldings || [];
+  var totalInvested = 0, totalCurrent = 0;
+  holdings.forEach(function(h){ totalInvested += h.invested||0; totalCurrent += h.current_value||0; });
+  var totalGain = totalCurrent - totalInvested;
+  var totalGainPct = totalInvested > 0 ? ((totalGain/totalInvested)*100).toFixed(2) : '0.00';
+  var gainColor = _cryptoGainColor(totalGain);
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+
+  // Hero card
+  html += '<div style="background:linear-gradient(135deg,#6366F1,#4338CA);padding:24px 16px 32px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">';
+  html += '<div style="font-size:18px;font-weight:800;color:#fff">Crypto Portfolio</div>';
+  html += '<div style="display:flex;gap:10px">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-settings\')" style="background:rgba(255,255,255,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-add\')" style="background:rgba(255,255,255,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>';
+  html += '</div></div>';
+
+  html += '<div style="text-align:center;margin-bottom:8px">';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:4px">Total Portfolio Value</div>';
+  html += '<div style="font-size:32px;font-weight:800;color:#fff">'+formatINR(totalCurrent)+'</div>';
+  html += '<div style="font-size:13px;font-weight:600;color:'+(totalGain>=0?'#86EFAC':'#FCA5A5')+';margin-top:4px">'+(totalGain>=0?'+':'')+formatINR(totalGain)+' ('+totalGainPct+'%)</div>';
+  html += '</div>';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">';
+  html += '<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:12px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px">Total Invested</div><div style="font-size:16px;font-weight:700;color:#fff">'+formatINR(totalInvested)+'</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:12px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px">Total Gain/Loss</div><div style="font-size:16px;font-weight:700;color:'+(totalGain>=0?'#86EFAC':'#FCA5A5')+'">'+(totalGain>=0?'+':'')+formatINR(totalGain)+'</div></div>';
+  html += '</div></div>';
+
+  // Quick action row
+  html += '<div style="padding:12px 16px;display:flex;gap:10px;overflow-x:auto">';
+  [
+    {icon:'📊', label:'Performance', screen:'crypto-performance'},
+    {icon:'📋', label:'Tax Report', screen:'crypto-tax'},
+    {icon:'🔔', label:'Alerts', screen:'crypto-alerts'},
+    {icon:'📄', label:'Documents', screen:'crypto-documents'},
+  ].forEach(function(a){
+    html += '<div onclick="App.navigate(\''+a.screen+'\')" style="flex:0 0 auto;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;text-align:center;cursor:pointer;min-width:80px">';
+    html += '<div style="font-size:18px;margin-bottom:4px">'+a.icon+'</div>';
+    html += '<div style="font-size:10px;color:var(--text-dim)">'+a.label+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Holdings list
+  html += '<div style="padding:0 16px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<div style="font-size:14px;font-weight:700;color:var(--text)">My Holdings ('+holdings.length+')</div>';
+  html += '</div>';
+
+  if (holdings.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:12px">₿</div><div style="color:var(--text-dim);font-size:13px">No holdings yet. Add your first crypto!</div></div>';
+  }
+
+  holdings.forEach(function(h){
+    var gain = h.current_value - h.invested;
+    var gainPct = h.invested > 0 ? ((gain/h.invested)*100).toFixed(2) : '0.00';
+    var gc = _cryptoGainColor(gain);
+    html += '<div onclick="State.cryptoActiveId=\''+h.id+'\';State.cryptoDetailTab=\'overview\';App.navigate(\'crypto-detail\')" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer">';
+    html += '<div style="display:flex;align-items:center;gap:12px">';
+    html += '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6366F1,#4338CA);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0">'+_cryptoSymbolIcon(h.symbol)+'</div>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text)">'+escapeHtml(h.coin)+'</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(h.current_value)+'</div>';
+    html += '</div>';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">';
+    html += '<div style="font-size:11px;color:var(--text-dim)">'+h.units+' '+h.symbol+' • '+escapeHtml(h.exchange)+'</div>';
+    html += '<div style="font-size:11px;font-weight:600;color:'+gc+'">'+(gain>=0?'+':'')+formatINR(gain)+' ('+gainPct+'%)</div>';
+    html += '</div>';
+    html += '<div style="font-size:10px;color:var(--text-dim);margin-top:2px">Avg Buy: '+formatINR(h.avg_buy)+'/coin</div>';
+    html += '</div></div></div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoAdd ── */
+function renderCryptoAdd() {
+  var d = State.cryptoAddData || {};
+  var inp = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:14px"';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Add Cryptocurrency</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  html += '<label '+lbl+'>Select Coin</label>';
+  html += '<select id="crypto-add-coin" '+sel+'>';
+  ['Bitcoin (BTC)','Ethereum (ETH)','Solana (SOL)','BNB (BNB)','Cardano (ADA)','Dogecoin (DOGE)','Ripple (XRP)','Polkadot (DOT)','Polygon (MATIC)','Tether (USDT)'].forEach(function(c){ html += '<option'+(d.coin===c?' selected':'')+'>'+c+'</option>'; });
+  html += '</select>';
+
+  html += '<label '+lbl+'>Purchase Date</label>';
+  html += '<input id="crypto-add-date" '+inp+' type="date" value="'+(d.purchase_date||'')+'">';
+
+  html += '<label '+lbl+'>Quantity</label>';
+  html += '<input id="crypto-add-units" '+inp+' type="number" placeholder="e.g. 0.5" step="0.0001" value="'+(d.units||'')+'">';
+
+  html += '<label '+lbl+'>Price Per Coin (₹)</label>';
+  html += '<input id="crypto-add-price" '+inp+' type="number" placeholder="e.g. 2000000" value="'+(d.price||'')+'">';
+
+  html += '<label '+lbl+'>Total Amount (₹)</label>';
+  html += '<input id="crypto-add-total" '+inp+' type="number" placeholder="Auto-calculated" value="'+(d.total||'')+'">';
+
+  html += '<label '+lbl+'>Exchange</label>';
+  html += '<select id="crypto-add-exchange" '+sel+'>';
+  ['Binance','CoinDCX','WazirX','CoinSwitch','ZebPay','Kraken','Other'].forEach(function(e){ html += '<option'+(d.exchange===e?' selected':'')+'>'+e+'</option>'; });
+  html += '</select>';
+
+  html += '<label '+lbl+'>Wallet / Address (optional)</label>';
+  html += '<input id="crypto-add-wallet" '+inp+' placeholder="Wallet label or address" value="'+(escapeHtml(d.wallet||''))+'">';
+
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-top:20px;margin-bottom:4px;padding-top:14px;border-top:1px solid var(--border)">Additional Charges</div>';
+
+  html += '<label '+lbl+'>Exchange Fees (₹)</label>';
+  html += '<input id="crypto-add-exfee" '+inp+' type="number" placeholder="0" value="'+(d.exchange_fee||'')+'">';
+
+  html += '<label '+lbl+'>Network Fees (₹)</label>';
+  html += '<input id="crypto-add-netfee" '+inp+' type="number" placeholder="0" value="'+(d.network_fee||'')+'">';
+
+  html += '<button onclick="App._cryptoSaveHolding()" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4338CA);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:24px">Add to Portfolio</button>';
+  html += '<div style="height:20px"></div>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoDetail ── */
+function renderCryptoDetail() {
+  var id = State.cryptoActiveId;
+  var h = (State.cryptoHoldings||[]).filter(function(x){ return x.id===id; })[0];
+  if (!h) { return '<div style="padding:40px;text-align:center;color:var(--text-dim)">Coin not found</div>'; }
+  var tab = State.cryptoDetailTab || 'overview';
+  var gain = h.current_value - h.invested;
+  var gainPct = h.invested > 0 ? ((gain/h.invested)*100).toFixed(2) : '0.00';
+  var gc = _cryptoGainColor(gain);
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+
+  // Header
+  html += '<div style="background:linear-gradient(135deg,#6366F1,#4338CA);padding:14px 16px 0">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+  html += '<div class="icon-btn" style="background:rgba(255,255,255,0.15)" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:#fff">'+escapeHtml(h.coin)+'</div>';
+  html += '<span style="background:rgba(34,197,94,0.2);color:#86EFAC;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600">'+escapeHtml(h.status)+'</span>';
+  html += '</div>';
+
+  html += '<div style="text-align:center;padding-bottom:16px">';
+  html += '<div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 10px">'+_cryptoSymbolIcon(h.symbol)+'</div>';
+  html += '<div style="font-size:26px;font-weight:800;color:#fff">'+formatINR(h.current_value)+'</div>';
+  html += '<div style="font-size:12px;color:'+(gain>=0?'#86EFAC':'#FCA5A5')+';margin-top:2px">'+(gain>=0?'+':'')+formatINR(gain)+' ('+gainPct+'%)</div>';
+  html += '</div>';
+
+  // Tab bar
+  var tabs = [{k:'overview',l:'Overview'},{k:'transactions',l:'Transactions'},{k:'performance',l:'Performance'},{k:'documents',l:'Documents'},{k:'more',l:'More'}];
+  html += '<div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.15)">';
+  tabs.forEach(function(t){
+    var active = tab === t.k;
+    html += '<div onclick="State.cryptoDetailTab=\''+t.k+'\';App.render()" style="flex:1;text-align:center;padding:10px 2px;font-size:10px;font-weight:'+(active?'700':'500')+';color:'+(active?'#fff':'rgba(255,255,255,0.6)')+';border-bottom:2px solid '+(active?'#fff':'transparent')+';cursor:pointer">'+t.l+'</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div style="padding:16px">';
+
+  if (tab === 'overview') {
+    // Key metrics
+    var rows = [
+      {l:'Symbol', v:h.symbol},
+      {l:'Units Held', v:h.units+' '+h.symbol},
+      {l:'Invested Amount', v:formatINR(h.invested)},
+      {l:'Current Value', v:formatINR(h.current_value)},
+      {l:'Avg Buy Price', v:formatINR(h.avg_buy)+'/coin'},
+      {l:'Current Price', v:formatINR(h.current_price)+'/coin'},
+      {l:'Exchange', v:escapeHtml(h.exchange)},
+      {l:'Wallet', v:escapeHtml(h.wallet||'—')},
+      {l:'Purchase Date', v:_cryptoFmtDate(h.purchase_date)},
+      {l:'Category', v:escapeHtml(h.category||'—')},
+    ];
+    html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:14px">';
+    rows.forEach(function(r, i){
+      html += '<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<rows.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text)">'+r.v+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+    html += '<button onclick="State.cryptoBuyData={coin_id:\''+h.id+'\'};App.navigate(\'crypto-buy\')" style="padding:13px;background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">+ Buy More</button>';
+    html += '<button onclick="State.cryptoSellData={coin_id:\''+h.id+'\'};App.navigate(\'crypto-sell\')" style="padding:13px;background:linear-gradient(135deg,#EF4444,#DC2626);color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer">Sell</button>';
+    html += '</div>';
+
+  } else if (tab === 'transactions') {
+    var txs = (State.cryptoTransactions||[]).filter(function(t){ return t.coin_id===id; });
+    var filter = State.cryptoTxFilter || 'all';
+    var filters = ['all','buy','sell'];
+    html += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+    filters.forEach(function(f){
+      var active = filter===f;
+      html += '<div onclick="State.cryptoTxFilter=\''+f+'\';App.render()" style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:'+(active?CRYPTO_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?CRYPTO_COLOR:'var(--border)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</div>';
+    });
+    html += '</div>';
+    var filtered = filter==='all' ? txs : txs.filter(function(t){ return t.type===filter; });
+    if (filtered.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:36px;margin-bottom:10px">📋</div><div style="color:var(--text-dim);font-size:13px">No transactions yet</div></div>';
+    }
+    filtered.forEach(function(t){
+      var tc = t.type==='buy' ? '#22C55E' : '#EF4444';
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<span style="background:'+tc+'22;color:'+tc+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;text-transform:uppercase">'+t.type+'</span>';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+_cryptoFmtDate(t.date)+'</div>';
+      html += '</div>';
+      html += '<div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(t.total)+'</div>';
+      html += '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
+      html += '<div><div style="font-size:10px;color:var(--text-dim)">Qty</div><div style="font-size:12px;font-weight:600;color:var(--text)">'+t.units+' '+h.symbol+'</div></div>';
+      html += '<div><div style="font-size:10px;color:var(--text-dim)">Price/coin</div><div style="font-size:12px;font-weight:600;color:var(--text)">'+formatINR(t.price)+'</div></div>';
+      html += '<div><div style="font-size:10px;color:var(--text-dim)">Exchange</div><div style="font-size:12px;font-weight:600;color:var(--text)">'+escapeHtml(t.exchange)+'</div></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+
+  } else if (tab === 'performance') {
+    // Inline performance for this coin
+    var gain2 = h.current_value - h.invested;
+    var gp2 = h.invested > 0 ? ((gain2/h.invested)*100).toFixed(2) : '0.00';
+    var gc2 = _cryptoGainColor(gain2);
+    html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Performance Metrics</div>';
+    var metrics = [
+      {l:'Absolute Return', v:(gp2>0?'+':'')+gp2+'%', c:gc2},
+      {l:'Total Invested', v:formatINR(h.invested), c:'var(--text)'},
+      {l:'Current Value', v:formatINR(h.current_value), c:'var(--text)'},
+      {l:'Unrealized Gain', v:(gain2>=0?'+':'')+formatINR(gain2), c:gc2},
+      {l:'Current Price', v:formatINR(h.current_price)+'/coin', c:'var(--text)'},
+      {l:'Avg Buy Price', v:formatINR(h.avg_buy)+'/coin', c:'var(--text)'},
+    ];
+    metrics.forEach(function(m, i){
+      html += '<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<metrics.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+      html += '<div style="font-size:12px;color:var(--text-dim)">'+m.l+'</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:'+m.c+'">'+m.v+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Simple sparkline
+    var prices = [h.avg_buy*0.9, h.avg_buy, h.avg_buy*1.1, h.avg_buy*1.05, h.avg_buy*1.2, h.current_price];
+    var minP = Math.min.apply(null,prices), maxP = Math.max.apply(null,prices), rangeP = maxP-minP||1;
+    var svgW=300, svgH=80;
+    var pts = prices.map(function(p,i){ return [(i/(prices.length-1))*svgW, svgH-((p-minP)/rangeP)*(svgH-10)-5]; });
+    var pathD = pts.map(function(p,i){ return (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+    var fillD = pathD+' L'+svgW+','+svgH+' L0,'+svgH+' Z';
+    html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Price Trend</div>';
+    html += '<svg width="100%" viewBox="0 0 '+svgW+' '+svgH+'" preserveAspectRatio="none">';
+    html += '<defs><linearGradient id="cg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+CRYPTO_COLOR+'" stop-opacity="0.3"/><stop offset="100%" stop-color="'+CRYPTO_COLOR+'" stop-opacity="0.02"/></linearGradient></defs>';
+    html += '<path d="'+fillD+'" fill="url(#cg2)"/>';
+    html += '<path d="'+pathD+'" fill="none" stroke="'+CRYPTO_COLOR+'" stroke-width="2"/>';
+    pts.forEach(function(p){ html += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+CRYPTO_COLOR+'"/>'; });
+    html += '</svg>';
+    html += '</div>';
+
+  } else if (tab === 'documents') {
+    var docs = (State.cryptoDocuments||[]).filter(function(d){ return d.coin_id===id; });
+    if (docs.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:36px;margin-bottom:10px">📄</div><div style="color:var(--text-dim);font-size:13px">No documents yet</div></div>';
+    }
+    docs.forEach(function(d){
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">';
+      html += '<div style="width:40px;height:40px;border-radius:10px;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📄</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--text)">'+escapeHtml(d.name)+'</div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+escapeHtml(d.type)+' • '+_cryptoFmtDate(d.date)+' • '+d.size+'</div>';
+      html += '</div>';
+      html += '<div onclick="App.showToast(\'Document preview coming soon\')" style="color:'+CRYPTO_COLOR+';font-size:11px;font-weight:600;cursor:pointer">View</div>';
+      html += '</div>';
+    });
+    html += '<button onclick="App.showToast(\'Upload coming soon\')" style="width:100%;padding:13px;background:rgba(99,102,241,0.12);color:'+CRYPTO_COLOR+';border:1px solid rgba(99,102,241,0.3);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px">+ Upload Document</button>';
+
+  } else if (tab === 'more') {
+    var moreActions = [
+      {icon:'📝', label:'Notes', fn:"App.navigate('crypto-notes')"},
+      {icon:'📊', label:'Tax Report', fn:"App.navigate('crypto-tax')"},
+      {icon:'🔔', label:'Alerts', fn:"App.navigate('crypto-alerts')"},
+      {icon:'💱', label:'Buy More', fn:"State.cryptoBuyData={coin_id:'"+id+"'};App.navigate('crypto-buy')"},
+      {icon:'💸', label:'Sell', fn:"State.cryptoSellData={coin_id:'"+id+"'};App.navigate('crypto-sell')"},
+      {icon:'📄', label:'All Documents', fn:"App.navigate('crypto-documents')"},
+    ];
+    moreActions.forEach(function(a){
+      html += '<div onclick="'+a.fn+'" style="display:flex;align-items:center;gap:14px;background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer">';
+      html += '<div style="width:40px;height:40px;border-radius:10px;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:18px">'+a.icon+'</div>';
+      html += '<div style="font-size:14px;font-weight:600;color:var(--text)">'+a.label+'</div>';
+      html += '<div style="margin-left:auto;color:var(--text-dim)">&#8250;</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoBuy ── */
+function renderCryptoBuy() {
+  var d = State.cryptoBuyData || {};
+  var holdings = State.cryptoHoldings || [];
+  var inp = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:14px"';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Add Buy Transaction</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<label '+lbl+'>Date</label>';
+  html += '<input id="cbuy-date" '+inp+' type="date" value="'+(d.date||new Date().toISOString().slice(0,10))+'">';
+
+  html += '<label '+lbl+'>Coin</label>';
+  html += '<select id="cbuy-coin" '+sel+'>';
+  holdings.forEach(function(h){ html += '<option value="'+h.id+'"'+(d.coin_id===h.id?' selected':'')+'>'+escapeHtml(h.coin)+' ('+h.symbol+')</option>'; });
+  html += '</select>';
+
+  html += '<label '+lbl+'>Quantity</label>';
+  html += '<input id="cbuy-units" '+inp+' type="number" placeholder="e.g. 0.05" step="0.0001" value="'+(d.units||'')+'">';
+
+  html += '<label '+lbl+'>Price Per Coin (₹)</label>';
+  html += '<input id="cbuy-price" '+inp+' type="number" placeholder="e.g. 3100000" value="'+(d.price||'')+'">';
+
+  html += '<label '+lbl+'>Total Amount (₹)</label>';
+  html += '<input id="cbuy-total" '+inp+' type="number" placeholder="Auto-calculated" value="'+(d.total||'')+'">';
+
+  html += '<label '+lbl+'>Exchange</label>';
+  html += '<select id="cbuy-exchange" '+sel+'>';
+  ['Binance','CoinDCX','WazirX','CoinSwitch','ZebPay','Kraken','Other'].forEach(function(e){ html += '<option'+(d.exchange===e?' selected':'')+'>'+e+'</option>'; });
+  html += '</select>';
+
+  html += '<label '+lbl+'>Payment Method</label>';
+  html += '<select id="cbuy-payment" '+sel+'>';
+  ['Bank Transfer','UPI','NEFT/RTGS','Debit Card','Credit Card'].forEach(function(p){ html += '<option'+(d.payment===p?' selected':'')+'>'+p+'</option>'; });
+  html += '</select>';
+
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-top:20px;margin-bottom:4px;padding-top:14px;border-top:1px solid var(--border)">Charges</div>';
+  html += '<label '+lbl+'>Exchange Fee (₹)</label>';
+  html += '<input id="cbuy-exfee" '+inp+' type="number" placeholder="0" value="'+(d.exchange_fee||'')+'">';
+  html += '<label '+lbl+'>Network Fee (₹)</label>';
+  html += '<input id="cbuy-netfee" '+inp+' type="number" placeholder="0" value="'+(d.network_fee||'')+'">';
+
+  html += '<button onclick="App._cryptoSaveBuy()" style="width:100%;padding:14px;background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:24px">Add Buy Transaction</button>';
+  html += '<div style="height:20px"></div>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoSell ── */
+function renderCryptoSell() {
+  var d = State.cryptoSellData || {};
+  var holdings = State.cryptoHoldings || [];
+  var inp = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:14px"';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-detail\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Add Sell Transaction</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+  html += '<label '+lbl+'>Date</label>';
+  html += '<input id="csell-date" '+inp+' type="date" value="'+(d.date||new Date().toISOString().slice(0,10))+'">';
+
+  html += '<label '+lbl+'>Coin</label>';
+  html += '<select id="csell-coin" '+sel+'>';
+  holdings.forEach(function(h){ html += '<option value="'+h.id+'"'+(d.coin_id===h.id?' selected':'')+'>'+escapeHtml(h.coin)+' ('+h.symbol+')</option>'; });
+  html += '</select>';
+
+  html += '<label '+lbl+'>Quantity to Sell</label>';
+  html += '<input id="csell-units" '+inp+' type="number" placeholder="e.g. 0.05" step="0.0001" value="'+(d.units||'')+'">';
+
+  html += '<label '+lbl+'>Selling Price Per Coin (₹)</label>';
+  html += '<input id="csell-price" '+inp+' type="number" placeholder="e.g. 3000000" value="'+(d.price||'')+'">';
+
+  html += '<label '+lbl+'>Total Proceeds (₹)</label>';
+  html += '<input id="csell-total" '+inp+' type="number" placeholder="Auto-calculated" value="'+(d.total||'')+'">';
+
+  html += '<label '+lbl+'>Exchange</label>';
+  html += '<select id="csell-exchange" '+sel+'>';
+  ['Binance','CoinDCX','WazirX','CoinSwitch','ZebPay','Kraken','Other'].forEach(function(e){ html += '<option'+(d.exchange===e?' selected':'')+'>'+e+'</option>'; });
+  html += '</select>';
+
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-top:20px;margin-bottom:4px;padding-top:14px;border-top:1px solid var(--border)">Charges</div>';
+  html += '<label '+lbl+'>Exchange Fee (₹)</label>';
+  html += '<input id="csell-exfee" '+inp+' type="number" placeholder="0" value="'+(d.exchange_fee||'')+'">';
+  html += '<label '+lbl+'>Network Fee (₹)</label>';
+  html += '<input id="csell-netfee" '+inp+' type="number" placeholder="0" value="'+(d.network_fee||'')+'">';
+
+  html += '<button onclick="App._cryptoSaveSell()" style="width:100%;padding:14px;background:linear-gradient(135deg,#EF4444,#DC2626);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:24px">Add Sell Transaction</button>';
+  html += '<div style="height:20px"></div>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoTransactions ── */
+function renderCryptoTransactions() {
+  var txs = State.cryptoTransactions || [];
+  var filter = State.cryptoTxFilter || 'all';
+  var holdings = State.cryptoHoldings || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">All Transactions</div>';
+  html += '</div>';
+
+  html += '<div style="padding:12px 16px">';
+  var filters = ['all','buy','sell'];
+  html += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+  filters.forEach(function(f){
+    var active = filter===f;
+    html += '<div onclick="State.cryptoTxFilter=\''+f+'\';App.render()" style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:'+(active?CRYPTO_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?CRYPTO_COLOR:'var(--border)')+'">'+f.charAt(0).toUpperCase()+f.slice(1)+'</div>';
+  });
+  html += '</div>';
+
+  var filtered = filter==='all' ? txs : txs.filter(function(t){ return t.type===filter; });
+
+  if (filtered.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">📋</div><div style="color:var(--text-dim);font-size:13px">No transactions found</div></div>';
+  }
+
+  filtered.forEach(function(t){
+    var holding = holdings.filter(function(h){ return h.id===t.coin_id; })[0];
+    var symbol = holding ? holding.symbol : '?';
+    var tc = t.type==='buy' ? '#22C55E' : '#EF4444';
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<div style="width:36px;height:36px;border-radius:10px;background:'+tc+'22;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:'+tc+'">'+_cryptoSymbolIcon(symbol)+'</div>';
+    html += '<div>';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+(holding?escapeHtml(holding.coin):t.coin_id)+' — <span style="color:'+tc+'">'+t.type.toUpperCase()+'</span></div>';
+    html += '<div style="font-size:11px;color:var(--text-dim)">'+_cryptoFmtDate(t.date)+' • '+escapeHtml(t.exchange)+'</div>';
+    html += '</div></div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text)">'+formatINR(t.total)+'</div>';
+    html += '<div style="font-size:11px;color:var(--text-dim)">'+t.units+' '+symbol+'</div>';
+    html += '</div></div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:8px;border-top:1px solid var(--border)">';
+    html += '<div><div style="font-size:10px;color:var(--text-dim)">Price/coin</div><div style="font-size:11px;font-weight:600;color:var(--text)">'+formatINR(t.price)+'</div></div>';
+    html += '<div><div style="font-size:10px;color:var(--text-dim)">Fees</div><div style="font-size:11px;font-weight:600;color:var(--text)">'+formatINR((t.exchange_fee||0)+(t.network_fee||0))+'</div></div>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoPerformance ── */
+function renderCryptoPerformance() {
+  var holdings = State.cryptoHoldings || [];
+  var period = State.cryptoInsightPeriod || '1Y';
+  var totalInvested = 0, totalCurrent = 0;
+  holdings.forEach(function(h){ totalInvested += h.invested||0; totalCurrent += h.current_value||0; });
+  var totalGain = totalCurrent - totalInvested;
+  var totalGainPct = totalInvested > 0 ? ((totalGain/totalInvested)*100).toFixed(2) : '0.00';
+  var gc = _cryptoGainColor(totalGain);
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Performance</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Period selector
+  var periods = ['1M','3M','6M','1Y','ALL'];
+  html += '<div style="display:flex;gap:6px;margin-bottom:16px">';
+  periods.forEach(function(p){
+    var active = period===p;
+    html += '<div onclick="State.cryptoInsightPeriod=\''+p+'\';App.render()" style="flex:1;text-align:center;padding:7px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:'+(active?CRYPTO_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?CRYPTO_COLOR:'var(--border)')+'">'+p+'</div>';
+  });
+  html += '</div>';
+
+  // Hero metric
+  html += '<div style="background:linear-gradient(135deg,#6366F1,#4338CA);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">';
+  html += '<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:4px">Portfolio Value</div>';
+  html += '<div style="font-size:28px;font-weight:800;color:#fff">'+formatINR(totalCurrent)+'</div>';
+  html += '<div style="font-size:13px;font-weight:600;color:'+(totalGain>=0?'#86EFAC':'#FCA5A5')+';margin-top:4px">'+(totalGain>=0?'+':'')+formatINR(totalGain)+' ('+totalGainPct+'%)</div>';
+  html += '</div>';
+
+  // Area chart (simulated)
+  var chartData = period==='1M'?[100000,108000,105000,112000,115000,117000,totalCurrent]:
+                  period==='3M'?[90000,95000,100000,105000,110000,115000,totalCurrent]:
+                  period==='6M'?[75000,85000,95000,100000,110000,115000,totalCurrent]:
+                               [60000,70000,80000,95000,110000,totalCurrent];
+  var minV = Math.min.apply(null,chartData), maxV = Math.max.apply(null,chartData), rangeV = maxV-minV||1;
+  var svgW=320, svgH=100;
+  var pts = chartData.map(function(v,i){ return [(i/(chartData.length-1))*svgW, svgH-((v-minV)/rangeV)*(svgH-15)-5]; });
+  var pathD = pts.map(function(p,i){ return (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+  var fillD = pathD+' L'+svgW+','+svgH+' L0,'+svgH+' Z';
+  html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+  html += '<svg width="100%" viewBox="0 0 '+svgW+' '+svgH+'" preserveAspectRatio="none">';
+  html += '<defs><linearGradient id="cpg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+CRYPTO_COLOR+'" stop-opacity="0.4"/><stop offset="100%" stop-color="'+CRYPTO_COLOR+'" stop-opacity="0.02"/></linearGradient></defs>';
+  html += '<path d="'+fillD+'" fill="url(#cpg)"/>';
+  html += '<path d="'+pathD+'" fill="none" stroke="'+CRYPTO_COLOR+'" stroke-width="2"/>';
+  pts.forEach(function(p){ html += '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3" fill="'+CRYPTO_COLOR+'"/>'; });
+  html += '</svg>';
+  html += '</div>';
+
+  // Metrics grid
+  html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Performance Metrics</div>';
+  var metrics = [
+    {l:'Absolute Return', v:(totalGainPct>0?'+':'')+totalGainPct+'%'},
+    {l:'CAGR', v:'52.90%'},
+    {l:'XIRR', v:'47.32%'},
+    {l:'Volatility', v:'65.21%'},
+  ];
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+  metrics.forEach(function(m){
+    html += '<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center">';
+    html += '<div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">'+m.l+'</div>';
+    html += '<div style="font-size:16px;font-weight:700;color:'+CRYPTO_COLOR+'">'+m.v+'</div>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // Allocation donut
+  if (holdings.length > 0) {
+    var slices = holdings.map(function(h,i){
+      var colors = ['#7C5CFC','#38BDF8','#22C55E','#F59E0B','#EF4444'];
+      return { value: h.current_value, color: colors[i%colors.length], label: h.symbol };
+    });
+    var totalVal = slices.reduce(function(s,x){ return s+x.value; }, 0);
+    html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Portfolio Allocation</div>';
+    html += '<div style="display:flex;align-items:center;gap:16px">';
+    try {
+      html += donutSVG(slices, 48, 110);
+    } catch(e) {
+      html += '<div style="width:110px;height:110px;border-radius:50%;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:20px">&#8383;</div>';
+    }
+    html += '<div style="flex:1">';
+    slices.forEach(function(s){
+      var pct = totalVal > 0 ? ((s.value/totalVal)*100).toFixed(1) : '0';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">';
+      html += '<div style="width:10px;height:10px;border-radius:50%;background:'+s.color+';flex-shrink:0"></div>';
+      html += '<div style="font-size:11px;color:var(--text-dim);flex:1">'+s.label+'</div>';
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text)">'+pct+'%</div>';
+      html += '</div>';
+    });
+    html += '</div></div></div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoDocuments ── */
+function renderCryptoDocuments() {
+  var docs = State.cryptoDocuments || [];
+  var holdings = State.cryptoHoldings || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Documents</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  if (docs.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:48px;margin-bottom:12px">📄</div><div style="color:var(--text-dim);font-size:13px">No documents yet</div></div>';
+  }
+
+  docs.forEach(function(d){
+    var holding = holdings.filter(function(h){ return h.id===d.coin_id; })[0];
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px">';
+    html += '<div style="width:44px;height:44px;border-radius:12px;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📄</div>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(d.name)+'</div>';
+    html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+escapeHtml(d.type)+(holding?' • '+escapeHtml(holding.symbol):'')+' • '+_cryptoFmtDate(d.date)+' • '+d.size+'</div>';
+    html += '</div>';
+    html += '<div onclick="App.showToast(\'Preview coming soon\')" style="width:32px;height:32px;border-radius:8px;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">';
+    html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+CRYPTO_COLOR+'" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  html += '<button onclick="App.showToast(\'Upload coming soon\')" style="width:100%;padding:13px;background:rgba(99,102,241,0.12);color:'+CRYPTO_COLOR+';border:1px solid rgba(99,102,241,0.3);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px">+ Upload Document</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoNotes ── */
+function renderCryptoNotes() {
+  var notes = State.cryptoNotesList || [];
+  var filter = State.cryptoNotesFilter || 'all';
+  var categories = ['all','General','Strategy','Research','Tax'];
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Notes</div>';
+  html += '<div onclick="App._cryptoAddNote()" style="font-size:12px;font-weight:700;color:'+CRYPTO_COLOR+';cursor:pointer">+ Add</div>';
+  html += '</div>';
+
+  html += '<div style="padding:12px 16px 0">';
+  html += '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">';
+  categories.forEach(function(c){
+    var active = filter===c;
+    html += '<div onclick="State.cryptoNotesFilter=\''+c+'\';App.render()" style="flex:0 0 auto;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:'+(active?CRYPTO_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?CRYPTO_COLOR:'var(--border)')+'">'+c+'</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div style="padding:12px 16px">';
+
+  var filtered = filter==='all' ? notes : notes.filter(function(n){ return n.category===filter; });
+
+  if (filtered.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:36px;margin-bottom:10px">📝</div><div style="color:var(--text-dim);font-size:13px">No notes in this category</div></div>';
+  }
+
+  filtered.forEach(function(n){
+    var catColors = {General:'#6366F1',Strategy:'#22C55E',Research:'#3B82F6',Tax:'#F59E0B'};
+    var cc = catColors[n.category] || CRYPTO_COLOR;
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(n.title)+'</div>';
+    html += '<span style="background:'+cc+'22;color:'+cc+';border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600">'+escapeHtml(n.category)+'</span>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:var(--text-dim);line-height:1.5">'+escapeHtml(n.content)+'</div>';
+    html += '<div style="font-size:10px;color:var(--text-dim);margin-top:8px">'+_cryptoFmtDate(n.date)+'</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoTax ── */
+function renderCryptoTax() {
+  var taxYear = State.cryptoTaxYear || '2024-25';
+  var txs = State.cryptoTransactions || [];
+  var sells = txs.filter(function(t){ return t.type==='sell'; });
+
+  // Simple tax calc: all sells are short-term for demo
+  var totalSales = 0, totalCost = 0;
+  sells.forEach(function(t){
+    totalSales += t.total||0;
+    var hArr = (State.cryptoHoldings||[]).filter(function(h){ return h.id===t.coin_id; });
+    var hItem = hArr[0] || {avg_buy: t.price};
+    totalCost += (t.units||0) * hItem.avg_buy;
+  });
+  var shortTermGain = totalSales - totalCost;
+  var shortTermTax = shortTermGain > 0 ? shortTermGain * 0.30 : 0;
+  var totalGain = shortTermGain;
+  var totalTax = shortTermTax;
+  var netGain = totalGain - totalTax;
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Tax &amp; P&amp;L Report</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // Year selector
+  html += '<div style="display:flex;gap:8px;margin-bottom:16px">';
+  ['2024-25','2023-24','2022-23'].forEach(function(y){
+    var active = taxYear===y;
+    html += '<div onclick="State.cryptoTaxYear=\''+y+'\';App.render()" style="flex:1;text-align:center;padding:9px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:'+(active?CRYPTO_COLOR:'var(--card)')+';color:'+(active?'#fff':'var(--text-dim)')+';border:1px solid '+(active?CRYPTO_COLOR:'var(--border)')+'">FY '+y+'</div>';
+  });
+  html += '</div>';
+
+  // Short Term section
+  html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  html += '<div style="width:36px;height:36px;border-radius:10px;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:16px">&#9889;</div>';
+  html += '<div><div style="font-size:13px;font-weight:700;color:var(--text)">Short Term Capital Gains</div><div style="font-size:10px;color:var(--text-dim)">&lt; 3 Years (Taxed @ 30%)</div></div>';
+  html += '</div>';
+  var stRows = [
+    {l:'Total Sales', v:formatINR(totalSales)},
+    {l:'Cost of Acquisition', v:formatINR(totalCost)},
+    {l:'Short Term Gain', v:formatINR(shortTermGain), c:_cryptoGainColor(shortTermGain)},
+    {l:'Tax @ 30%', v:formatINR(shortTermTax), c:'#EF4444'},
+  ];
+  stRows.forEach(function(r,i){
+    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<stRows.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+    html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:'+(r.c||'var(--text)')+'">'+r.v+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Long Term section
+  html += '<div style="background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px">';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  html += '<div style="width:36px;height:36px;border-radius:10px;background:#22C55E22;display:flex;align-items:center;justify-content:center;font-size:16px">&#128200;</div>';
+  html += '<div><div style="font-size:13px;font-weight:700;color:var(--text)">Long Term Capital Gains</div><div style="font-size:10px;color:var(--text-dim)">&gt; 3 Years (Taxed @ 20%)</div></div>';
+  html += '</div>';
+  var ltRows = [
+    {l:'Total Sales', v:formatINR(0)},
+    {l:'Cost of Acquisition', v:formatINR(0)},
+    {l:'Long Term Gain', v:formatINR(0)},
+    {l:'Tax @ 20%', v:formatINR(0)},
+  ];
+  ltRows.forEach(function(r,i){
+    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<ltRows.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+    html += '<div style="font-size:12px;color:var(--text-dim)">'+r.l+'</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--text)">'+r.v+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Summary
+  html += '<div style="background:linear-gradient(135deg,#6366F1,#4338CA);border-radius:14px;padding:16px;margin-bottom:16px">';
+  html += '<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:12px">Tax Summary FY '+taxYear+'</div>';
+  var sumRows = [
+    {l:'Total Gain', v:formatINR(totalGain)},
+    {l:'Total Tax Liability', v:formatINR(totalTax)},
+    {l:'Net Gain (After Tax)', v:formatINR(netGain)},
+  ];
+  sumRows.forEach(function(r,i){
+    html += '<div style="display:flex;justify-content:space-between;padding:8px 0;'+(i<sumRows.length-1?'border-bottom:1px solid rgba(255,255,255,0.15)':'')+'">';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,0.8)">'+r.l+'</div>';
+    html += '<div style="font-size:13px;font-weight:700;color:#fff">'+r.v+'</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<button onclick="App.showToast(\'Generating report...\')" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4338CA);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Download Report</button>';
+  html += '<div style="height:20px"></div>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoAlerts ── */
+function renderCryptoAlerts() {
+  var alerts = State.cryptoAlerts || [];
+
+  var html = '<div style="min-height:100vh;background:var(--bg);padding-bottom:70px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Alerts &amp; Reminders</div>';
+  html += '<div onclick="App.showToast(\'Add alert coming soon\')" style="font-size:12px;font-weight:700;color:'+CRYPTO_COLOR+';cursor:pointer">+ Add</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  if (alerts.length === 0) {
+    html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px;margin-bottom:12px">&#128276;</div><div style="color:var(--text-dim);font-size:13px">No alerts set</div></div>';
+  }
+
+  var alertIcons = {'Price Alert':'&#128176;','Allocation Alert':'&#128202;','DCA Reminder':'&#128260;','Tax Reminder':'&#128203;'};
+  alerts.forEach(function(a){
+    var active = a.status === 'active';
+    var ic = alertIcons[a.type] || '&#128276;';
+    html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;gap:12px">';
+    html += '<div style="width:44px;height:44px;border-radius:12px;background:'+CRYPTO_COLOR+'22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+ic+'</div>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text)">'+escapeHtml(a.message)+'</div>';
+    html += '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">'+escapeHtml(a.type)+'</div>';
+    html += '</div>';
+    html += '<div onclick="App._cryptoToggleAlert(\''+a.id+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(active?CRYPTO_COLOR:'var(--bg)')+';border:2px solid '+(active?CRYPTO_COLOR:'var(--border)')+';position:relative;cursor:pointer;flex-shrink:0">';
+    html += '<div style="position:absolute;top:2px;'+(active?'right:2px':'left:2px')+';width:16px;height:16px;border-radius:50%;background:'+(active?'#fff':'var(--text-dim)')+'"></div>';
+    html += '</div></div></div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── renderCryptoSettings ── */
+function renderCryptoSettings() {
+  var s = State.cryptoSettings || {};
+  var sel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);box-sizing:border-box"';
+  var lbl = 'style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;margin-top:14px"';
+
+  var html = '<div style="min-height:100vh;background:var(--bg)">';
+  html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border)">';
+  html += '<div class="icon-btn" onclick="App.navigate(\'crypto-list\')">'+_invBackSVG+'</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--text)">Crypto Settings</div>';
+  html += '</div>';
+
+  html += '<div style="padding:16px">';
+
+  // General
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">General</div>';
+  html += '<div style="background:var(--card);border-radius:14px;padding:14px;margin-bottom:16px">';
+  html += '<label '+lbl+'>Currency</label>';
+  html += '<select id="cs-currency" '+sel+'>';
+  ['INR','USD','EUR'].forEach(function(c){ html += '<option'+(s.currency===c?' selected':'')+'>'+c+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Default Exchange</label>';
+  html += '<select id="cs-exchange" '+sel+'>';
+  ['Binance','CoinDCX','WazirX','CoinSwitch','ZebPay'].forEach(function(e){ html += '<option'+(s.exchange===e?' selected':'')+'>'+e+'</option>'; });
+  html += '</select>';
+  html += '<label '+lbl+'>Price Alert Currency</label>';
+  html += '<select id="cs-alert-currency" '+sel+'>';
+  ['INR','USD'].forEach(function(c){ html += '<option'+(s.price_alert_currency===c?' selected':'')+'>'+c+'</option>'; });
+  html += '</select>';
+  html += '</div>';
+
+  // Security
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Security</div>';
+  html += '<div style="background:var(--card);border-radius:14px;padding:4px 14px;margin-bottom:16px">';
+  var secToggles = [
+    {l:'Two Factor Authentication', k:'two_fa', v:s.two_fa},
+    {l:'Biometric Login', k:'biometric', v:s.biometric},
+  ];
+  secToggles.forEach(function(t,i){
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;'+(i<secToggles.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+    html += '<div style="font-size:13px;color:var(--text)">'+t.l+'</div>';
+    html += '<div onclick="App._cryptoToggleSetting(\''+t.k+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(t.v?CRYPTO_COLOR:'var(--bg)')+';border:2px solid '+(t.v?CRYPTO_COLOR:'var(--border)')+';position:relative;cursor:pointer;flex-shrink:0">';
+    html += '<div style="position:absolute;top:2px;'+(t.v?'right:2px':'left:2px')+';width:16px;height:16px;border-radius:50%;background:'+(t.v?'#fff':'var(--text-dim)')+'"></div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  // Notifications
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Notifications</div>';
+  html += '<div style="background:var(--card);border-radius:14px;padding:4px 14px;margin-bottom:16px">';
+  var notifToggles = [
+    {l:'Price Alerts', k:'price_alerts', v:s.price_alerts},
+    {l:'Transaction Alerts', k:'tx_alerts', v:s.tx_alerts},
+    {l:'News &amp; Updates', k:'news_updates', v:s.news_updates},
+  ];
+  notifToggles.forEach(function(t,i){
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;'+(i<notifToggles.length-1?'border-bottom:1px solid var(--border)':'')+'">';
+    html += '<div style="font-size:13px;color:var(--text)">'+t.l+'</div>';
+    html += '<div onclick="App._cryptoToggleSetting(\''+t.k+'\')" style="width:44px;height:24px;border-radius:12px;background:'+(t.v?CRYPTO_COLOR:'var(--bg)')+';border:2px solid '+(t.v?CRYPTO_COLOR:'var(--border)')+';position:relative;cursor:pointer;flex-shrink:0">';
+    html += '<div style="position:absolute;top:2px;'+(t.v?'right:2px':'left:2px')+';width:16px;height:16px;border-radius:50%;background:'+(t.v?'#fff':'var(--text-dim)')+'"></div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  html += '<button onclick="App._cryptoSaveSettings()" style="width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#4338CA);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Save Settings</button>';
+  html += '<div style="height:20px"></div>';
+  html += '</div></div>';
+  return html;
+}
+
 // Helper: render linked notes list (used in other module detail screens)
 function renderLinkedNotesList(module, linkedId) {
   var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
@@ -26350,6 +27226,104 @@ const App = {
     State.aifExits[id].push({id:'ae'+Date.now(),date:date,amount:amount,type:type,buyer:buyer,cost:cost,gain:gain,return_pct:retPct,irr:0,notes:notes});
     this.showToast('Exit recorded');
     App.render();
+  },
+
+  /* ── Crypto Module ── */
+  _cryptoSaveHolding: function() {
+    var g = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var coinFull = g('crypto-add-coin');
+    var parts = coinFull.match(/^(.+)\s+\(([^)]+)\)$/);
+    var coinName = parts ? parts[1] : coinFull;
+    var symbol = parts ? parts[2] : coinFull.substring(0,3).toUpperCase();
+    var units = parseFloat(g('crypto-add-units')) || 0;
+    var price = parseFloat(g('crypto-add-price')) || 0;
+    var total = parseFloat(g('crypto-add-total')) || (units * price);
+    var newId = symbol.toLowerCase() + Date.now();
+    var holding = {
+      id: newId, coin: coinName, symbol: symbol, units: units, avg_buy: price,
+      current_price: price, invested: total, current_value: total,
+      exchange: g('crypto-add-exchange'), wallet: g('crypto-add-wallet'),
+      purchase_date: g('crypto-add-date'), category: 'Other', status: 'Active',
+      exchange_fee: parseFloat(g('crypto-add-exfee'))||0,
+      network_fee: parseFloat(g('crypto-add-netfee'))||0,
+    };
+    if (!State.cryptoHoldings) State.cryptoHoldings = [];
+    State.cryptoHoldings.push(holding);
+    State.cryptoAddData = {};
+    App.showToast('Cryptocurrency added!');
+    App.navigate('crypto-list');
+  },
+  _cryptoSaveBuy: function() {
+    var g = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var units = parseFloat(g('cbuy-units')) || 0;
+    var price = parseFloat(g('cbuy-price')) || 0;
+    var total = parseFloat(g('cbuy-total')) || (units * price);
+    var coinId = g('cbuy-coin');
+    var tx = {
+      id: 'ct'+Date.now(), coin_id: coinId, type: 'buy',
+      date: g('cbuy-date'), units: units, price: price, total: total,
+      exchange: g('cbuy-exchange'), payment: g('cbuy-payment'),
+      exchange_fee: parseFloat(g('cbuy-exfee'))||0,
+      network_fee: parseFloat(g('cbuy-netfee'))||0, notes: '',
+    };
+    if (!State.cryptoTransactions) State.cryptoTransactions = [];
+    State.cryptoTransactions.push(tx);
+    var h = (State.cryptoHoldings||[]).filter(function(x){ return x.id===coinId; })[0];
+    if (h) {
+      var newUnits = (h.units||0) + units;
+      h.avg_buy = newUnits > 0 ? ((h.invested + total) / newUnits) : h.avg_buy;
+      h.invested = (h.invested||0) + total;
+      h.units = newUnits;
+      h.current_value = h.units * h.current_price;
+    }
+    State.cryptoBuyData = {};
+    App.showToast('Buy transaction added!');
+    App.navigate('crypto-detail');
+  },
+  _cryptoSaveSell: function() {
+    var g = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var units = parseFloat(g('csell-units')) || 0;
+    var price = parseFloat(g('csell-price')) || 0;
+    var total = parseFloat(g('csell-total')) || (units * price);
+    var coinId = g('csell-coin');
+    var tx = {
+      id: 'ct'+Date.now(), coin_id: coinId, type: 'sell',
+      date: g('csell-date'), units: units, price: price, total: total,
+      exchange: g('csell-exchange'), payment: 'Bank Transfer',
+      exchange_fee: parseFloat(g('csell-exfee'))||0,
+      network_fee: parseFloat(g('csell-netfee'))||0, notes: '',
+    };
+    if (!State.cryptoTransactions) State.cryptoTransactions = [];
+    State.cryptoTransactions.push(tx);
+    var h = (State.cryptoHoldings||[]).filter(function(x){ return x.id===coinId; })[0];
+    if (h) {
+      h.units = Math.max(0, (h.units||0) - units);
+      h.current_value = h.units * h.current_price;
+    }
+    State.cryptoSellData = {};
+    App.showToast('Sell transaction added!');
+    App.navigate('crypto-detail');
+  },
+  _cryptoToggleAlert: function(id) {
+    var a = (State.cryptoAlerts||[]).filter(function(x){ return x.id===id; })[0];
+    if (a) { a.status = a.status==='active' ? 'inactive' : 'active'; App.render(); }
+  },
+  _cryptoToggleSetting: function(key) {
+    if (!State.cryptoSettings) State.cryptoSettings = {};
+    State.cryptoSettings[key] = !State.cryptoSettings[key];
+    App.render();
+  },
+  _cryptoSaveSettings: function() {
+    var g = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    if (!State.cryptoSettings) State.cryptoSettings = {};
+    State.cryptoSettings.currency = g('cs-currency') || 'INR';
+    State.cryptoSettings.exchange = g('cs-exchange') || 'Binance';
+    State.cryptoSettings.price_alert_currency = g('cs-alert-currency') || 'INR';
+    App.showToast('Settings saved!');
+    App.navigate('crypto-list');
+  },
+  _cryptoAddNote: function() {
+    App.showToast('Add note coming soon');
   },
 
   /* ── Budget Module ──────────────────────────── */
