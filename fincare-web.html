@@ -2201,6 +2201,100 @@ const State = {
       { id:'er6', type:'Upcoming Vesting', date:'2024-06-15', icon:'📅', color:'#22C55E' },
     ],
   },
+
+  // Private Equity module
+  peActiveId: 'pe1',
+  peDetailTab: 'overview',
+  peCapCallFilter: 'all',
+  peAddData: {},
+  peFunds: [
+    { id:'pe1', name:'XYZ Private Equity Fund', manager:'XYZ Capital Partners', type:'Growth Equity',
+      vintage:2023, fund_size:500000000, country:'India', currency:'INR',
+      investment_date:'2023-02-15', commitment:2500000, invested:1000000, current_value:3150000,
+      min_commitment:500000, round:'Series B', industry:'Technology',
+      thesis:'Investing in high growth companies in Technology sector with strong management teams and scalable business models.',
+      status:'Active', irr:18.75, distributions:425000, notes:'Core PE holding' },
+    { id:'pe2', name:'ABC Growth Partners Fund', manager:'ABC Capital', type:'Venture Capital',
+      vintage:2022, fund_size:200000000, country:'India', currency:'INR',
+      investment_date:'2022-06-10', commitment:2000000, invested:2000000, current_value:2575000,
+      min_commitment:500000, round:'Series A', industry:'Fintech',
+      thesis:'Investing in early-stage fintech startups in India.',
+      status:'Active', irr:14.20, distributions:0, notes:'VC allocation' },
+    { id:'pe3', name:'LMN Opportunities Fund', manager:'LMN Advisors', type:'Buyout',
+      vintage:2021, fund_size:350000000, country:'India', currency:'INR',
+      investment_date:'2021-09-01', commitment:1000000, invested:1000000, current_value:900000,
+      min_commitment:250000, round:'Growth', industry:'Manufacturing',
+      thesis:'Control buyouts of mid-market manufacturing businesses.',
+      status:'Active', irr:-5.10, distributions:0, notes:'Underperforming — monitoring' },
+  ],
+  peCapitalCalls: {
+    pe1: [
+      { id:'cc1', num:1, date:'2023-02-15', amount:250000, due:'2023-02-15', status:'paid', paid_date:'2023-02-15', mode:'Bank Transfer', ref:'TXN/2023/001' },
+      { id:'cc2', num:2, date:'2023-05-15', amount:250000, due:'2023-05-15', status:'paid', paid_date:'2023-05-16', mode:'Bank Transfer', ref:'TXN/2023/002' },
+      { id:'cc3', num:3, date:'2023-08-15', amount:250000, due:'2023-08-15', status:'paid', paid_date:'2023-08-15', mode:'Bank Transfer', ref:'TXN/2023/003' },
+      { id:'cc4', num:4, date:'2023-11-15', amount:250000, due:'2023-11-15', status:'paid', paid_date:'2023-11-16', mode:'Bank Transfer', ref:'TXN/2023/004' },
+      { id:'cc5', num:5, date:'2024-02-15', amount:0,      due:'2024-02-15', status:'upcoming', paid_date:'', mode:'', ref:'' },
+    ],
+    pe2: [
+      { id:'cc6', num:1, date:'2022-06-10', amount:2000000, due:'2022-06-10', status:'paid', paid_date:'2022-06-10', mode:'Bank Transfer', ref:'TXN/2022/001' },
+    ],
+    pe3: [
+      { id:'cc7', num:1, date:'2021-09-01', amount:1000000, due:'2021-09-01', status:'paid', paid_date:'2021-09-01', mode:'Bank Transfer', ref:'TXN/2021/001' },
+    ],
+  },
+  peDistributions: {
+    pe1: [
+      { id:'d1', num:1, date:'2024-06-20', amount:125000, type:'Profit Distribution', mode:'Bank Transfer', ref:'DIST/2024/001' },
+      { id:'d2', num:2, date:'2024-09-20', amount:150000, type:'Profit Distribution', mode:'Bank Transfer', ref:'DIST/2024/002' },
+      { id:'d3', num:3, date:'2024-12-20', amount:150000, type:'Profit Distribution', mode:'Bank Transfer', ref:'DIST/2024/003' },
+    ],
+    pe2: [],
+    pe3: [],
+  },
+  peDocuments: {
+    pe1: [
+      { id:'pd1', name:'Fund Information Memorandum', type:'PDF', size:'2.4 MB', date:'2023-02-01' },
+      { id:'pd2', name:'Subscription Agreement',      type:'PDF', size:'1.8 MB', date:'2023-02-15' },
+      { id:'pd3', name:'Capital Call Notice',         type:'PDF', size:'1.2 MB', date:'2023-11-01' },
+      { id:'pd4', name:'Distribution Statement',      type:'PDF', size:'1.5 MB', date:'2024-06-20' },
+      { id:'pd5', name:'KYC Documents',               type:'PDF', size:'1.1 MB', date:'2023-02-10' },
+      { id:'pd6', name:'Tax Documents FY 2023-24',    type:'PDF', size:'1.8 MB', date:'2024-03-31' },
+    ],
+    pe2: [
+      { id:'pd7', name:'Subscription Agreement',      type:'PDF', size:'1.5 MB', date:'2022-06-01' },
+    ],
+    pe3: [
+      { id:'pd8', name:'Fund Information Memorandum', type:'PDF', size:'2.0 MB', date:'2021-08-15' },
+    ],
+  },
+  peNotesList: {
+    pe1: [
+      { id:'pn1', type:'fund_update', title:'Fund Update',       body:'Strong performance in Q1 2024.',                                date:'2024-04-15', pinned:false, locked:false },
+      { id:'pn2', type:'strategy',    title:'Strategy Note',     body:'Focus on SaaS and FinTech companies.',                          date:'2024-03-10', pinned:true,  locked:false },
+      { id:'pn3', type:'meeting',     title:'Meeting Note',      body:'Discussed with fund manager regarding market outlook.',          date:'2024-02-20', pinned:true,  locked:false },
+      { id:'pn4', type:'tax',         title:'Tax Note',          body:'Hold period > 2 years for LTCG benefit.',                       date:'2024-01-05', pinned:false, locked:true  },
+    ],
+    pe2: [],
+    pe3: [],
+  },
+  peReminders: {
+    pe1: [
+      { id:'pr1', type:'Next Capital Call',    date:'2024-02-15', icon:'📞', color:'#EF4444' },
+      { id:'pr2', type:'Fund Update Meeting',  date:'2024-05-30', icon:'📅', color:'#F59E0B' },
+      { id:'pr3', type:'Distribution Expected',date:'2024-06-20', icon:'💰', color:'#22C55E' },
+      { id:'pr4', type:'Tax Planning Review',  date:'2025-03-31', icon:'📋', color:'#0891B2' },
+      { id:'pr5', type:'KYC Update',           date:'2025-07-01', icon:'🪪', color:'#8B5CF6' },
+    ],
+    pe2: [],
+    pe3: [],
+  },
+  peExits: {
+    pe1: [
+      { id:'px1', date:'2025-03-20', pct:10.00, type:'Partial Exit', realized:500000, cost:250000, gain:250000, returnPct:100, irr:45.5, notes:'Secondary sale to co-investor.' },
+    ],
+    pe2: [],
+    pe3: [],
+  },
 };
 
 /* ══════════════════════════════════════════════════════
