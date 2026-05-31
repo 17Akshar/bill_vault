@@ -2053,6 +2053,72 @@ const State = {
       { id:'md8', name:'RC Book',         type:'PDF', size:'1.0 MB' },
     ],
   },
+  // Vehicle Management module
+  vehicleActiveId: 'veh1',
+  vehicleDetailTab: 'overview',
+  vehicleExpenseFilter: 'all',
+  vehicleAddData: {},
+  vehicles: [
+    { id:'veh1', type:'car', brand:'Honda', model:'City', variant:'ZX CVT', reg:'MH02 AB 1234',
+      color:'Pearl White', fuel:'Petrol', transmission:'Automatic', ownership:'Self',
+      purchase_date:'2022-05-10', purchase_price:1350000, dealer:'Shah Honda', city:'Mumbai', state:'Maharashtra',
+      current_value:950000, loan_linked:true, loan_ref:'CAR-LOAN-001', insurance_policy:'MOT123456789',
+      status:'active', notes:'Primary family car' },
+    { id:'veh2', type:'scooter', brand:'Honda', model:'Activa 6G', variant:'DLX', reg:'MH02 XY 5678',
+      color:'Pearl Silver Blue', fuel:'Petrol', transmission:'CVT', ownership:'Family',
+      purchase_date:'2021-03-09', purchase_price:75000, dealer:'Amar Honda', city:'Mumbai', state:'Maharashtra',
+      current_value:55000, loan_linked:false, loan_ref:'', insurance_policy:'MOT987654321',
+      status:'active', notes:'Daily commute scooter' },
+  ],
+  vehicleExpenses: {
+    veh1: [
+      { id:'ve1', type:'fuel',    date:'2026-05-20', amount:3200,  vendor:'HP Petrol Pump',    mode:'UPI',  bill:'',       notes:'Full tank' },
+      { id:'ve2', type:'service', date:'2026-04-15', amount:5500,  vendor:'Shah Honda Service',mode:'Card', bill:'SVC4421',notes:'30k service' },
+      { id:'ve3', type:'fuel',    date:'2026-04-10', amount:2800,  vendor:'Indian Oil',        mode:'UPI',  bill:'',       notes:'' },
+      { id:'ve4', type:'repair',  date:'2026-03-05', amount:12000, vendor:'Auto Hub',          mode:'Cash', bill:'REP1122',notes:'Bumper dent repair' },
+      { id:'ve5', type:'puc',     date:'2026-02-01', amount:500,   vendor:'PUC Center',        mode:'Cash', bill:'',       notes:'Valid till Aug 2026' },
+      { id:'ve6', type:'fuel',    date:'2026-01-22', amount:3100,  vendor:'BP Petrol',         mode:'UPI',  bill:'',       notes:'' },
+    ],
+    veh2: [
+      { id:'ve7', type:'fuel',    date:'2026-05-18', amount:450,  vendor:'HP Petrol Pump',      mode:'Cash',bill:'',       notes:'' },
+      { id:'ve8', type:'service', date:'2026-03-01', amount:2200, vendor:'Amar Honda Service',  mode:'UPI', bill:'SVC3310',notes:'General service' },
+    ],
+  },
+  vehicleDocuments: {
+    veh1: [
+      { id:'vd1', name:'RC Book',          type:'PDF', size:'1.2 MB', date:'2022-05-10' },
+      { id:'vd2', name:'Insurance Policy', type:'PDF', size:'0.8 MB', date:'2026-06-23' },
+      { id:'vd3', name:'PUC Certificate',  type:'PDF', size:'0.3 MB', date:'2026-02-01' },
+      { id:'vd4', name:'Vehicle Invoice',  type:'PDF', size:'1.5 MB', date:'2022-05-10' },
+      { id:'vd5', name:'Driving License',  type:'PDF', size:'1.0 MB', date:'2022-05-10' },
+    ],
+    veh2: [
+      { id:'vd6', name:'RC Book',          type:'PDF', size:'0.9 MB', date:'2021-03-09' },
+      { id:'vd7', name:'Insurance Policy', type:'PDF', size:'0.7 MB', date:'2026-03-09' },
+    ],
+  },
+  vehicleReminders: {
+    veh1: [
+      { id:'vr1', type:'Insurance Renewal', date:'2027-06-22', icon:'🛡️', color:'#7C5CFC' },
+      { id:'vr2', type:'PUC Expiry',        date:'2026-08-01', icon:'📋', color:'#F59E0B' },
+      { id:'vr3', type:'Service Due',       date:'2026-08-15', icon:'🔧', color:'#0D9488' },
+      { id:'vr4', type:'Road Tax Renewal',  date:'2027-05-10', icon:'📄', color:'#0891B2' },
+    ],
+    veh2: [
+      { id:'vr5', type:'Insurance Renewal', date:'2027-03-08', icon:'🛡️', color:'#7C5CFC' },
+      { id:'vr6', type:'Service Due',       date:'2026-09-01', icon:'🔧', color:'#0D9488' },
+    ],
+  },
+  vehicleNotesList: {
+    veh1: [
+      { id:'vn1', type:'general',  title:'Purchase Notes',       body:'Bought from Shah Honda. Extended warranty taken for 3 years.', date:'2022-05-10', pinned:true },
+      { id:'vn2', type:'service',  title:'30k Service Done',     body:'Oil changed, brake fluid topped, AC filter replaced at Shah Honda.', date:'2026-04-15', pinned:false },
+      { id:'vn3', type:'accident', title:'Minor Dent - Mar 2026',body:'Front bumper dent while parking. Repaired at Auto Hub for ₹12,000.', date:'2026-03-05', pinned:false },
+    ],
+    veh2: [
+      { id:'vn4', type:'general',  title:'Daily Use',            body:'Used daily for commute. Avg 40 km/day. Mileage approx 55 km/L.', date:'2021-03-09', pinned:false },
+    ],
+  },
 };
 
 /* ══════════════════════════════════════════════════════
