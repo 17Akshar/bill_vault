@@ -16432,6 +16432,7 @@ function renderMore() {
     { icon:'📊', bg:'rgba(5,150,105,0.15)',  label:'Data Import & Export', sub:'Import CSV data and manage sync settings',            fn:"App.navigate('excel-sync')" },
     { icon:'📝', bg:'rgba(99,102,241,0.15)', label:'Notes',               sub:'Smart notes linked to your financial data',            fn:"App.navigate('notes-list')" },
     { icon:'🚗', bg:'rgba(124,92,252,0.15)', label:'Motor Insurance',     sub:'Manage vehicle insurance policies, claims and renewals', fn:"App.navigate('motor-list')" },
+    { icon:'🚙', bg:'rgba(13,148,136,0.15)', label:'Vehicles', sub:'Digital garage — expenses, fuel, service, insurance and documents', fn:"App.navigate('vehicle-list')" },
   ]);
 
   html += menuSection('Preferences', [
@@ -18478,6 +18479,530 @@ function renderNotesExport() {
   return html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   8e. VEHICLE MANAGEMENT MODULE
+══════════════════════════════════════════════════════ */
+
+var VEHICLE_COLOR = '#0D9488';
+
+var VEHICLE_TYPES = [
+  { id:'car',              icon:'🚗', label:'Car' },
+  { id:'suv',              icon:'🚙', label:'SUV' },
+  { id:'motorcycle',       icon:'🏍️', label:'Motorcycle' },
+  { id:'scooter',          icon:'🛵', label:'Scooter' },
+  { id:'activa',           icon:'🛵', label:'Activa' },
+  { id:'electric_scooter', icon:'🛵', label:'Electric Scooter' },
+  { id:'electric_car',     icon:'⚡', label:'Electric Car' },
+  { id:'commercial',       icon:'🚐', label:'Commercial Vehicle' },
+  { id:'truck',            icon:'🚚', label:'Truck' },
+  { id:'bus',              icon:'🚌', label:'Bus' },
+  { id:'taxi',             icon:'🚕', label:'Taxi' },
+  { id:'auto',             icon:'🛺', label:'Auto Rickshaw' },
+  { id:'tractor',          icon:'🚜', label:'Tractor' },
+  { id:'van',              icon:'🚐', label:'Van' },
+  { id:'luxury',           icon:'🏎️', label:'Luxury Vehicle' },
+  { id:'vintage',          icon:'🚘', label:'Vintage Vehicle' },
+  { id:'custom',           icon:'🚗', label:'Custom' },
+];
+
+function _vehicleTypeInfo(typeId) {
+  var t = VEHICLE_TYPES.filter(function(x){ return x.id === typeId; })[0];
+  return t || { id:'custom', icon:'🚗', label:'Vehicle' };
+}
+
+function _vehicleDaysLeft(dateStr) {
+  if (!dateStr) return 0;
+  var d = new Date(dateStr);
+  var now = new Date();
+  return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+}
+
+function _vehicleFmtDate(dateStr) {
+  if (!dateStr) return '—';
+  var d = new Date(dateStr);
+  return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function _vehicleStatusBadge(status) {
+  var map = { active:'#22C55E', sold:'#EF4444', inactive:'#F59E0B', scrapped:'#6B7280' };
+  var color = map[status] || '#6B7280';
+  var label = (status||'active').charAt(0).toUpperCase() + (status||'active').slice(1);
+  return '<span style="background:' + color + '22;color:' + color + ';border:1px solid ' + color + '44;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">' + label + '</span>';
+}
+
+function _vehicleExpenseIcon(type) {
+  var icons = { fuel:'⛽', service:'🔧', repair:'🛠️', accessories:'🔩', parking:'🅿️', toll:'🛣️', puc:'📋', road_tax:'📄', cleaning:'🧹', insurance:'🛡️', loan_emi:'💰', others:'📦' };
+  return icons[type] || '📦';
+}
+
+function _vehicleDetailTabBar(activeTab) {
+  var tabs = [
+    { id:'overview',   icon:'🏠', label:'Overview' },
+    { id:'expenses',   icon:'💰', label:'Expenses' },
+    { id:'insurance',  icon:'🛡️', label:'Insur.' },
+    { id:'documents',  icon:'📁', label:'Docs' },
+    { id:'notes',      icon:'📝', label:'Notes' },
+    { id:'timeline',   icon:'📅', label:'Timeline' },
+    { id:'analytics',  icon:'📊', label:'Analytics' },
+  ];
+  var html = '<div style="position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:50;max-width:430px;margin:0 auto">';
+  tabs.forEach(function(t) {
+    var active = t.id === activeTab;
+    html += '<div onclick="State.vehicleDetailTab=\'' + t.id + '\';App.render()" style="flex:1;padding:8px 1px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer">'
+      + '<div style="font-size:' + (active ? '16' : '14') + 'px">' + t.icon + '</div>'
+      + '<div style="font-size:9px;font-weight:' + (active ? '700' : '400') + ';color:' + (active ? VEHICLE_COLOR : 'var(--text-dim)') + '">' + t.label + '</div>'
+      + '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+/* ── vehicle-list ── */
+function renderVehicleList() {
+  var vehicles = State.vehicles || [];
+  var totalPurchase = vehicles.reduce(function(s, v){ return s + (v.purchase_price || 0); }, 0);
+  var totalCurrent  = vehicles.reduce(function(s, v){ return s + (v.current_value  || 0); }, 0);
+  var totalDepr     = totalPurchase - totalCurrent;
+  var totalRunning  = 0;
+  vehicles.forEach(function(v) {
+    var exps = (State.vehicleExpenses && State.vehicleExpenses[v.id]) || [];
+    exps.forEach(function(e){ totalRunning += (e.amount || 0); });
+  });
+  var html = '<div class="screen-wrap">'
+    + '<div style="background:linear-gradient(135deg,#0D9488,#0891B2);padding:20px 16px 28px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div style="display:flex;align-items:center;gap:10px">'
+    + '<div style="width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:20px">🚙</div>'
+    + '<div><div style="font-size:22px;font-weight:800;color:#fff">My Garage</div><div style="font-size:12px;color:rgba(255,255,255,.7)">' + vehicles.length + ' vehicle' + (vehicles.length !== 1 ? 's' : '') + ' registered</div></div>'
+    + '</div>'
+    + '<div onclick="State.vehicleAddData={};App.navigate(\'vehicle-add\')" style="font-size:12px;font-weight:700;color:#fff;cursor:pointer;background:rgba(255,255,255,0.2);border-radius:20px;padding:6px 12px">+ Add</div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:12px"><div style="font-size:11px;color:rgba(255,255,255,.7)">Total Purchase Value</div><div style="font-size:16px;font-weight:800;color:#fff">' + formatINR(totalPurchase) + '</div></div>'
+    + '<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:12px"><div style="font-size:11px;color:rgba(255,255,255,.7)">Current Value</div><div style="font-size:16px;font-weight:800;color:#fff">' + formatINR(totalCurrent) + '</div></div>'
+    + '<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:12px"><div style="font-size:11px;color:rgba(255,255,255,.7)">Total Depreciation</div><div style="font-size:16px;font-weight:800;color:#EF4444">' + formatINR(totalDepr) + '</div></div>'
+    + '<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:12px"><div style="font-size:11px;color:rgba(255,255,255,.7)">Running Cost</div><div style="font-size:16px;font-weight:800;color:#fff">' + formatINR(totalRunning) + '</div></div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">';
+
+  if (vehicles.length === 0) {
+    html += '<div style="text-align:center;padding:60px 0"><div style="font-size:56px;margin-bottom:12px">🚗</div><div style="color:var(--text-dim);font-size:15px;margin-bottom:8px">No vehicles added yet</div><div style="color:var(--text-dim);font-size:13px">Add your first vehicle to start tracking</div></div>';
+  } else {
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:10px">YOUR VEHICLES</div>';
+    vehicles.forEach(function(v) {
+      var ti = _vehicleTypeInfo(v.type);
+      var exps = (State.vehicleExpenses && State.vehicleExpenses[v.id]) || [];
+      var runCost = exps.reduce(function(s,e){ return s + (e.amount||0); }, 0);
+      var depr = (v.purchase_price || 0) - (v.current_value || 0);
+      var daysToIns = 0;
+      var reminders = (State.vehicleReminders && State.vehicleReminders[v.id]) || [];
+      var insRem = reminders.filter(function(r){ return r.type === 'Insurance Renewal'; })[0];
+      if (insRem) daysToIns = _vehicleDaysLeft(insRem.date);
+      html += '<div onclick="State.vehicleActiveId=\'' + v.id + '\';State.vehicleDetailTab=\'overview\';App.navigate(\'vehicle-detail\')" style="background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border);cursor:pointer;border-left:3px solid ' + VEHICLE_COLOR + '">'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'
+        + '<div style="width:44px;height:44px;border-radius:22px;background:rgba(13,148,136,0.15);display:flex;align-items:center;justify-content:center;font-size:22px">' + ti.icon + '</div>'
+        + '<div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--text)">' + escapeHtml(v.brand) + ' ' + escapeHtml(v.model) + '</div><div style="font-size:12px;color:var(--text-dim)">' + escapeHtml(v.reg) + ' · ' + (v.fuel || '') + '</div></div>'
+        + _vehicleStatusBadge(v.status)
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
+        + '<div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--text-dim)">Purchase</div><div style="font-size:12px;font-weight:700;color:var(--text)">' + formatINR(v.purchase_price || 0) + '</div></div>'
+        + '<div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--text-dim)">Value Now</div><div style="font-size:12px;font-weight:700;color:' + VEHICLE_COLOR + '">' + formatINR(v.current_value || 0) + '</div></div>'
+        + '<div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--text-dim)">Running</div><div style="font-size:12px;font-weight:700;color:var(--text)">' + formatINR(runCost) + '</div></div>'
+        + '</div>'
+        + (daysToIns > 0 ? '<div style="font-size:11px;color:' + (daysToIns < 60 ? '#EF4444' : '#F59E0B') + '">🛡️ Insurance renews in ' + daysToIns + ' days</div>' : '')
+        + '</div>';
+    });
+  }
+
+  html += '<button onclick="State.vehicleAddData={};App.navigate(\'vehicle-add\')" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + VEHICLE_COLOR + ',#0891B2);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">+ Add Vehicle</button>'
+    + '</div></div>';
+  return html;
+}
+
+/* ── vehicle-add ── */
+function renderVehicleAdd() {
+  var d = State.vehicleAddData || {};
+  var isEdit = !!(d.id);
+  var html = '<div class="screen-wrap"><div class="form-header">'
+    + '<div class="icon-btn" onclick="App.navigate(\'' + (isEdit ? 'vehicle-detail' : 'vehicle-list') + '\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">' + (isEdit ? 'Edit Vehicle' : 'Add Vehicle') + '</div>'
+    + '</div><div style="padding:16px">';
+
+  html += '<div style="font-size:12px;font-weight:700;color:' + VEHICLE_COLOR + ';margin-bottom:10px;letter-spacing:.5px">BASIC INFORMATION</div>';
+  html += '<div class="form-group"><label class="form-label">Vehicle Type</label>'
+    + '<select id="veh-type" class="form-input"><option value="">Select type</option>';
+  VEHICLE_TYPES.forEach(function(t) {
+    html += '<option value="' + t.id + '"' + (d.type === t.id ? ' selected' : '') + '>' + t.icon + ' ' + t.label + '</option>';
+  });
+  html += '</select></div>';
+
+  var fields1 = [
+    { id:'veh-brand', label:'Brand', placeholder:'e.g. Honda, Maruti', val: d.brand || '' },
+    { id:'veh-model', label:'Model', placeholder:'e.g. City, Swift', val: d.model || '' },
+    { id:'veh-variant', label:'Variant (optional)', placeholder:'e.g. ZX CVT', val: d.variant || '' },
+    { id:'veh-reg', label:'Registration Number', placeholder:'e.g. MH02 AB 1234', val: d.reg || '' },
+    { id:'veh-color', label:'Color', placeholder:'e.g. Pearl White', val: d.color || '' },
+  ];
+  fields1.forEach(function(f) {
+    html += '<div class="form-group"><label class="form-label">' + f.label + '</label><input id="' + f.id + '" class="form-input" placeholder="' + f.placeholder + '" value="' + escapeHtml(f.val) + '"></div>';
+  });
+
+  html += '<div class="form-group"><label class="form-label">Fuel Type</label>'
+    + '<select id="veh-fuel" class="form-input">'
+    + ['Petrol','Diesel','CNG','Electric','Hybrid','LPG'].map(function(x){ return '<option' + (d.fuel===x?' selected':'') + '>' + x + '</option>'; }).join('')
+    + '</select></div>';
+  html += '<div class="form-group"><label class="form-label">Transmission</label>'
+    + '<select id="veh-transmission" class="form-input">'
+    + ['Manual','Automatic','CVT','DCT','AMT'].map(function(x){ return '<option' + (d.transmission===x?' selected':'') + '>' + x + '</option>'; }).join('')
+    + '</select></div>';
+  html += '<div class="form-group"><label class="form-label">Ownership Type</label>'
+    + '<select id="veh-ownership" class="form-input">'
+    + ['Self','Family','Business','Commercial'].map(function(x){ return '<option' + (d.ownership===x?' selected':'') + '>' + x + '</option>'; }).join('')
+    + '</select></div>';
+
+  html += '<div style="font-size:12px;font-weight:700;color:' + VEHICLE_COLOR + ';margin:18px 0 10px;letter-spacing:.5px">PURCHASE DETAILS</div>';
+  html += '<div class="form-group"><label class="form-label">Purchase Date</label><input id="veh-purchase-date" type="date" class="form-input" value="' + (d.purchase_date || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Purchase Price (₹)</label><input id="veh-purchase-price" type="number" class="form-input" placeholder="1350000" value="' + (d.purchase_price || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Dealer Name (optional)</label><input id="veh-dealer" class="form-input" placeholder="Dealer name" value="' + escapeHtml(d.dealer || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">City</label><input id="veh-city" class="form-input" placeholder="Mumbai" value="' + escapeHtml(d.city || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Current Market Value (₹)</label><input id="veh-current-value" type="number" class="form-input" placeholder="950000" value="' + (d.current_value || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Loan Linked</label>'
+    + '<select id="veh-loan-linked" class="form-input"><option value="no"' + (!d.loan_linked ? ' selected' : '') + '>No</option><option value="yes"' + (d.loan_linked ? ' selected' : '') + '>Yes</option></select></div>';
+  html += '<div class="form-group"><label class="form-label">Loan Reference (if linked)</label><input id="veh-loan-ref" class="form-input" placeholder="e.g. CAR-LOAN-001" value="' + escapeHtml(d.loan_ref || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Linked Insurance Policy No.</label><input id="veh-insurance-policy" class="form-input" placeholder="e.g. MOT123456789" value="' + escapeHtml(d.insurance_policy || '') + '"></div>';
+  html += '<div class="form-group"><label class="form-label">Notes</label><textarea id="veh-notes" class="form-input" rows="2" placeholder="Additional notes...">' + escapeHtml(d.notes || '') + '</textarea></div>';
+
+  html += '<button onclick="App._vehicleSave()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + VEHICLE_COLOR + ',#0891B2);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Save Vehicle</button>';
+  if (isEdit) {
+    html += '<button onclick="App._vehicleDelete(\'' + d.id + '\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.3);font-size:15px;font-weight:600;cursor:pointer;margin-top:8px">Delete Vehicle</button>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/* ── vehicle-detail ── */
+function renderVehicleDetail() {
+  var vehicles = State.vehicles || [];
+  var p = vehicles.filter(function(v){ return v.id === State.vehicleActiveId; })[0];
+  if (!p) { App.navigate('vehicle-list'); return '<div></div>'; }
+  var ti = _vehicleTypeInfo(p.type);
+  var tab = State.vehicleDetailTab || 'overview';
+
+  var html = '<div class="screen-wrap" style="padding-bottom:70px">'
+    + '<div style="background:linear-gradient(135deg,#0D9488,#0891B2);padding:16px">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'
+    + '<div class="icon-btn" onclick="App.navigate(\'vehicle-list\')" style="color:#fff">' + _invBackSVG + '</div>'
+    + '<div style="font-size:16px;font-weight:700;color:#fff;flex:1">Vehicle Details</div>'
+    + '<div class="icon-btn" onclick="State.vehicleAddData=JSON.parse(JSON.stringify(State.vehicles.filter(function(v){return v.id===\'' + p.id + '\';})[0]));App.navigate(\'vehicle-add\')" style="color:#fff"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<div style="width:52px;height:52px;border-radius:26px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:28px">' + ti.icon + '</div>'
+    + '<div style="flex:1">'
+    + '<div style="font-size:18px;font-weight:800;color:#fff">' + escapeHtml(p.brand) + ' ' + escapeHtml(p.model) + (p.variant ? ' ' + escapeHtml(p.variant) : '') + '</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.75)">' + escapeHtml(p.reg) + ' · ' + (p.fuel || '') + ' · ' + (p.transmission || '') + '</div>'
+    + '</div>'
+    + _vehicleStatusBadge(p.status)
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:16px">';
+
+  if (tab === 'overview') {
+    var depr = (p.purchase_price || 0) - (p.current_value || 0);
+    var deprPct = p.purchase_price > 0 ? Math.round(depr / p.purchase_price * 100) : 0;
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+      + '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text-dim)">Purchase Price</div><div style="font-size:15px;font-weight:700;color:var(--text)">' + formatINR(p.purchase_price || 0) + '</div></div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text-dim)">Current Value</div><div style="font-size:15px;font-weight:700;color:' + VEHICLE_COLOR + '">' + formatINR(p.current_value || 0) + '</div></div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text-dim)">Depreciation</div><div style="font-size:15px;font-weight:700;color:#EF4444">' + formatINR(depr) + ' (' + deprPct + '%)</div></div>'
+      + '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text-dim)">Ownership</div><div style="font-size:15px;font-weight:700;color:var(--text)">' + (p.ownership || '—') + '</div></div>'
+      + '</div>';
+
+    html += '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border);margin-bottom:14px">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:8px">VEHICLE DETAILS</div>'
+      + [['Color', p.color||'—'], ['Fuel Type', p.fuel||'—'], ['Transmission', p.transmission||'—'], ['Purchase Date', _vehicleFmtDate(p.purchase_date)], ['Dealer', p.dealer||'—'], ['City', p.city||'—']]
+        .map(function(r){ return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim);font-size:13px">' + r[0] + '</span><span style="color:var(--text);font-size:13px;font-weight:600">' + escapeHtml(String(r[1])) + '</span></div>'; }).join('')
+      + '</div>';
+
+    if (p.insurance_policy) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid rgba(124,92,252,0.3);margin-bottom:14px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--text)">🛡️ Insurance</div>'
+        + '<div onclick="App.navigate(\'motor-list\')" style="font-size:12px;color:#7C5CFC;font-weight:600;cursor:pointer">View Policy →</div></div>'
+        + '<div style="font-size:12px;color:var(--text-dim)">Policy No. ' + escapeHtml(p.insurance_policy) + '</div>'
+        + '</div>';
+    }
+
+    if (p.loan_linked && p.loan_ref) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:12px;border:1px solid rgba(34,197,94,0.3);margin-bottom:14px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--text)">💳 Loan</div>'
+        + '<div onclick="App.navigate(\'loan-list\')" style="font-size:12px;color:#22C55E;font-weight:600;cursor:pointer">View Loan →</div></div>'
+        + '<div style="font-size:12px;color:var(--text-dim)">Ref: ' + escapeHtml(p.loan_ref) + '</div>'
+        + '</div>';
+    }
+
+    html += '<div style="font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:10px">QUICK ACTIONS</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      + ['Add Expense:vehicle-expense-add:💰', 'Add Reminder:vehicle-reminders:🔔', 'Documents:vehicle-documents:📁', 'Sell Vehicle:vehicle-sell:💸']
+        .map(function(s){ var p2=s.split(':'); return '<div onclick="App.navigate(\'' + p2[1] + '\')" style="background:var(--card);border-radius:10px;padding:12px;text-align:center;cursor:pointer;border:1px solid var(--border)"><div style="font-size:22px;margin-bottom:4px">' + p2[2] + '</div><div style="font-size:11px;font-weight:600;color:var(--text)">' + p2[0] + '</div></div>'; }).join('')
+      + '</div>';
+
+  } else if (tab === 'expenses') {
+    var allExps = (State.vehicleExpenses && State.vehicleExpenses[p.id]) || [];
+    var filter  = State.vehicleExpenseFilter || 'all';
+    var expTypes = ['all','fuel','service','repair','puc','others'];
+    var filtered = filter === 'all' ? allExps : allExps.filter(function(e){ return e.type === filter; });
+    var total = filtered.reduce(function(s,e){ return s+(e.amount||0); }, 0);
+
+    html += '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">';
+    expTypes.forEach(function(t) {
+      var active = filter === t;
+      html += '<div onclick="State.vehicleExpenseFilter=\'' + t + '\';App.render()" style="padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;background:' + (active ? VEHICLE_COLOR : 'var(--card)') + ';color:' + (active ? '#fff' : 'var(--text-dim)') + ';border:1px solid ' + (active ? VEHICLE_COLOR : 'var(--border)') + '">' + t.charAt(0).toUpperCase() + t.slice(1) + '</div>';
+    });
+    html += '</div>';
+
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      + '<div style="font-size:13px;color:var(--text-dim)">' + filtered.length + ' expense' + (filtered.length!==1?'s':'') + '</div>'
+      + '<div style="font-size:15px;font-weight:700;color:var(--text)">Total: ' + formatINR(total) + '</div>'
+      + '</div>';
+
+    if (filtered.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px">💰</div><div style="color:var(--text-dim);margin-top:8px">No expenses recorded</div></div>';
+    } else {
+      filtered.slice().reverse().forEach(function(e) {
+        html += '<div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border);display:flex;align-items:center;gap:10px">'
+          + '<div style="width:36px;height:36px;border-radius:18px;background:rgba(13,148,136,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">' + _vehicleExpenseIcon(e.type) + '</div>'
+          + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">' + (e.type.charAt(0).toUpperCase()+e.type.slice(1)) + '</div><div style="font-size:11px;color:var(--text-dim)">' + escapeHtml(e.vendor||'—') + ' · ' + _vehicleFmtDate(e.date) + '</div></div>'
+          + '<div style="font-size:14px;font-weight:700;color:var(--text)">' + formatINR(e.amount||0) + '</div>'
+          + '</div>';
+      });
+    }
+    html += '<button onclick="App.navigate(\'vehicle-expense-add\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + VEHICLE_COLOR + ',#0891B2);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">+ Add Expense</button>';
+
+  } else if (tab === 'insurance') {
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px">Insurance Details</div>';
+    if (p.insurance_policy) {
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;border:1px solid rgba(124,92,252,0.3);margin-bottom:12px">'
+        + '<div style="font-size:13px;font-weight:700;color:#7C5CFC;margin-bottom:8px">🛡️ Linked Policy</div>'
+        + '<div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">Policy No.</div>'
+        + '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px">' + escapeHtml(p.insurance_policy) + '</div>'
+        + '<button onclick="App.navigate(\'motor-list\')" style="width:100%;padding:12px;border-radius:var(--radius-sm);background:rgba(124,92,252,0.12);color:#7C5CFC;border:1px solid rgba(124,92,252,0.3);font-weight:600;cursor:pointer">View Full Policy →</button>'
+        + '</div>';
+    } else {
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border);margin-bottom:12px;text-align:center">'
+        + '<div style="font-size:36px;margin-bottom:8px">🛡️</div>'
+        + '<div style="font-size:14px;color:var(--text-dim);margin-bottom:12px">No insurance policy linked</div>'
+        + '<button onclick="App.navigate(\'motor-list\')" style="padding:10px 20px;border-radius:var(--radius-sm);background:rgba(124,92,252,0.12);color:#7C5CFC;border:1px solid rgba(124,92,252,0.3);font-weight:600;cursor:pointer">Go to Motor Insurance →</button>'
+        + '</div>';
+    }
+    var reminders = (State.vehicleReminders && State.vehicleReminders[p.id]) || [];
+    var insRem = reminders.filter(function(r){ return r.type === 'Insurance Renewal'; })[0];
+    if (insRem) {
+      var dLeft = _vehicleDaysLeft(insRem.date);
+      html += '<div style="background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border)">'
+        + '<div style="font-size:12px;color:var(--text-dim)">Insurance Renewal Reminder</div>'
+        + '<div style="font-size:14px;font-weight:700;color:' + (dLeft < 60 ? '#EF4444' : '#22C55E') + '">' + _vehicleFmtDate(insRem.date) + ' · ' + dLeft + ' days left</div>'
+        + '</div>';
+    }
+
+  } else if (tab === 'documents') {
+    var docs = (State.vehicleDocuments && State.vehicleDocuments[p.id]) || [];
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">Documents (' + docs.length + ')</div>'
+      + '<div onclick="App._vehicleUploadDoc(\'' + p.id + '\')" style="font-size:12px;font-weight:600;color:' + VEHICLE_COLOR + ';cursor:pointer">+ Upload</div>'
+      + '</div>';
+    if (docs.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px">📁</div><div style="color:var(--text-dim);margin-top:8px">No documents uploaded</div></div>';
+    } else {
+      docs.forEach(function(doc) {
+        html += '<div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border);display:flex;align-items:center;gap:10px">'
+          + '<div style="width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">📄</div>'
+          + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">' + escapeHtml(doc.name) + '</div><div style="font-size:11px;color:var(--text-dim)">' + doc.type + ' · ' + doc.size + '</div></div>'
+          + '<div onclick="App.showToast(\'Downloading...\')" style="font-size:18px;cursor:pointer">⬇️</div>'
+          + '</div>';
+      });
+    }
+
+  } else if (tab === 'notes') {
+    var notes = (State.vehicleNotesList && State.vehicleNotesList[p.id]) || [];
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      + '<div style="font-size:14px;font-weight:700;color:var(--text)">Notes (' + notes.length + ')</div>'
+      + '<div onclick="App._vehicleAddNote(\'' + p.id + '\')" style="font-size:12px;font-weight:600;color:' + VEHICLE_COLOR + ';cursor:pointer">+ Add Note</div>'
+      + '</div>';
+    if (notes.length === 0) {
+      html += '<div style="text-align:center;padding:40px 0"><div style="font-size:40px">📝</div><div style="color:var(--text-dim);margin-top:8px">No notes yet</div></div>';
+    } else {
+      var pinnedNotes = notes.filter(function(n){ return n.pinned; });
+      var otherNotes  = notes.filter(function(n){ return !n.pinned; });
+      pinnedNotes.concat(otherNotes).forEach(function(n) {
+        html += '<div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border);border-left:3px solid ' + VEHICLE_COLOR + '">'
+          + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--text)">' + escapeHtml(n.title) + '</div>'
+          + (n.pinned ? '<span style="font-size:14px">📌</span>' : '')
+          + '</div>'
+          + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">' + escapeHtml(n.body) + '</div>'
+          + '<div style="font-size:11px;color:var(--text-dim)">' + _vehicleFmtDate(n.date) + ' · ' + n.type + '</div>'
+          + '</div>';
+      });
+    }
+
+  } else if (tab === 'timeline') {
+    var allExpsT  = (State.vehicleExpenses && State.vehicleExpenses[p.id]) || [];
+    var allDocsT  = (State.vehicleDocuments && State.vehicleDocuments[p.id]) || [];
+    var events = [];
+    events.push({ date: p.purchase_date || '', icon:'🚗', color:'#22C55E', title:'Vehicle Purchased', sub: formatINR(p.purchase_price || 0) + ' from ' + (p.dealer || 'dealer') });
+    allExpsT.forEach(function(e) {
+      events.push({ date: e.date, icon: _vehicleExpenseIcon(e.type), color: VEHICLE_COLOR, title: (e.type.charAt(0).toUpperCase()+e.type.slice(1)) + ' Expense', sub: formatINR(e.amount||0) + (e.vendor ? ' at ' + e.vendor : '') });
+    });
+    allDocsT.forEach(function(d2) {
+      events.push({ date: d2.date, icon:'📄', color:'#0891B2', title: d2.name + ' Uploaded', sub: d2.size });
+    });
+    if (p.status === 'sold') {
+      events.push({ date: p.sale_date || '', icon:'💸', color:'#EF4444', title:'Vehicle Sold', sub: p.sale_price ? formatINR(p.sale_price) : '' });
+    }
+    events.sort(function(a,b){ return b.date.localeCompare(a.date); });
+
+    html += '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px">Vehicle Timeline</div>';
+    events.forEach(function(ev) {
+      html += '<div style="display:flex;gap:12px;margin-bottom:12px">'
+        + '<div style="display:flex;flex-direction:column;align-items:center">'
+        + '<div style="width:32px;height:32px;border-radius:16px;background:' + ev.color + '22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">' + ev.icon + '</div>'
+        + '<div style="width:2px;flex:1;background:var(--border);margin:4px 0"></div>'
+        + '</div>'
+        + '<div style="flex:1;padding-bottom:12px;border-bottom:1px solid var(--border)">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--text)">' + escapeHtml(ev.title) + '</div>'
+        + '<div style="font-size:11px;color:var(--text-dim)">' + escapeHtml(ev.sub) + ' · ' + _vehicleFmtDate(ev.date) + '</div>'
+        + '</div>'
+        + '</div>';
+    });
+
+  } else if (tab === 'analytics') {
+    var expsA = (State.vehicleExpenses && State.vehicleExpenses[p.id]) || [];
+    var totFuel    = expsA.filter(function(e){ return e.type==='fuel'; }).reduce(function(s,e){ return s+e.amount; }, 0);
+    var totService = expsA.filter(function(e){ return e.type==='service'; }).reduce(function(s,e){ return s+e.amount; }, 0);
+    var totRepair  = expsA.filter(function(e){ return e.type==='repair'; }).reduce(function(s,e){ return s+e.amount; }, 0);
+    var totOther   = expsA.filter(function(e){ return e.type !== 'fuel' && e.type !== 'service' && e.type !== 'repair'; }).reduce(function(s,e){ return s+e.amount; }, 0);
+    var totAll     = totFuel + totService + totRepair + totOther;
+    var deprA      = (p.purchase_price||0) - (p.current_value||0);
+    var totOwnership = (p.purchase_price||0) + totAll;
+
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+      + [['Purchase Price', formatINR(p.purchase_price||0), '#fff'], ['Current Value', formatINR(p.current_value||0), VEHICLE_COLOR], ['Depreciation', formatINR(deprA), '#EF4444'], ['Total Expenses', formatINR(totAll), '#F59E0B'], ['Total Fuel', formatINR(totFuel), '#0891B2'], ['Total Service', formatINR(totService), '#22C55E'], ['Total Repairs', formatINR(totRepair), '#8B5CF6'], ['Ownership Cost', formatINR(totOwnership), '#fff']]
+        .map(function(r){ return '<div style="background:var(--card);border-radius:10px;padding:10px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text-dim)">' + r[0] + '</div><div style="font-size:13px;font-weight:700;color:' + r[2] + '">' + r[1] + '</div></div>'; }).join('')
+      + '</div>';
+
+    if (totAll > 0) {
+      var bars = [
+        { label:'Fuel',    values: [totFuel] },
+        { label:'Service', values: [totService] },
+        { label:'Repair',  values: [totRepair] },
+        { label:'Others',  values: [totOther] },
+      ].filter(function(b){ return b.values[0] > 0; });
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Expense Breakdown</div>';
+      html += barChartSVG(bars, 340, 140, [VEHICLE_COLOR]);
+    }
+
+    html += '<button onclick="App.showToast(\'Generating report...\')" style="width:100%;padding:14px;border-radius:var(--radius-sm);background:rgba(13,148,136,0.12);color:' + VEHICLE_COLOR + ';border:1px solid rgba(13,148,136,0.3);font-weight:600;cursor:pointer;margin-top:12px">📊 Download Report</button>';
+  }
+
+  html += '</div>' + _vehicleDetailTabBar(tab) + '</div>';
+  return html;
+}
+
+/* ── vehicle-expense-add ── */
+function renderVehicleExpenseAdd() {
+  var vehicles = State.vehicles || [];
+  var p = vehicles.filter(function(v){ return v.id === State.vehicleActiveId; })[0];
+  var vName = p ? (p.brand + ' ' + p.model) : 'Vehicle';
+  var expTypes = ['Fuel','Service','Repair','Accessories','Parking','Toll','PUC','Road Tax','Cleaning','Insurance','Loan EMI','Others'];
+  var html = '<div class="screen-wrap"><div class="form-header">'
+    + '<div class="icon-btn" onclick="State.vehicleDetailTab=\'expenses\';App.navigate(\'vehicle-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Add Expense</div>'
+    + '</div><div style="padding:16px">'
+    + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">For: ' + escapeHtml(vName) + '</div>';
+
+  html += '<div class="form-group"><label class="form-label">Expense Type</label>'
+    + '<select id="vexp-type" class="form-input"><option value="">Select type</option>'
+    + expTypes.map(function(t){ return '<option value="' + t.toLowerCase().replace(/ /g,'_') + '">' + t + '</option>'; }).join('')
+    + '</select></div>';
+
+  var fields = [
+    { id:'vexp-date',   label:'Date',         type:'date',   placeholder:'' },
+    { id:'vexp-amount', label:'Amount (₹)',    type:'number', placeholder:'0' },
+    { id:'vexp-vendor', label:'Vendor / Shop', type:'text',   placeholder:'HP Petrol Pump' },
+  ];
+  fields.forEach(function(f) {
+    html += '<div class="form-group"><label class="form-label">' + f.label + '</label><input id="' + f.id + '" type="' + f.type + '" class="form-input" placeholder="' + f.placeholder + '"></div>';
+  });
+
+  html += '<div class="form-group"><label class="form-label">Payment Mode</label>'
+    + '<select id="vexp-mode" class="form-input">'
+    + ['UPI','Cash','Credit Card','Debit Card','Net Banking'].map(function(x){ return '<option>' + x + '</option>'; }).join('')
+    + '</select></div>';
+  html += '<div class="form-group"><label class="form-label">Bill Number (optional)</label><input id="vexp-bill" class="form-input" placeholder="Bill/Invoice number"></div>';
+  html += '<div class="form-group"><label class="form-label">Notes</label><textarea id="vexp-notes" class="form-input" rows="2" placeholder="Additional notes..."></textarea></div>';
+  html += '<button onclick="App._vehicleAddExpense()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,' + VEHICLE_COLOR + ',#0891B2);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Save Expense</button>';
+  html += '</div></div>';
+  return html;
+}
+
+/* ── vehicle-reminders ── */
+function renderVehicleReminders() {
+  var vehicles = State.vehicles || [];
+  var p = vehicles.filter(function(v){ return v.id === State.vehicleActiveId; })[0];
+  var vName = p ? (p.brand + ' ' + p.model) : 'Vehicle';
+  var reminders = (State.vehicleReminders && State.vehicleReminders[State.vehicleActiveId]) || [];
+
+  var html = '<div class="screen-wrap"><div class="form-header">'
+    + '<div class="icon-btn" onclick="State.vehicleDetailTab=\'overview\';App.navigate(\'vehicle-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Reminders</div>'
+    + '<div onclick="App._vehicleAddReminder(\'' + (State.vehicleActiveId||'') + '\')" style="font-size:12px;font-weight:700;color:' + VEHICLE_COLOR + ';cursor:pointer;padding:6px 12px">+ Add</div>'
+    + '</div><div style="padding:16px">'
+    + '<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">For: ' + escapeHtml(vName) + '</div>';
+
+  if (reminders.length === 0) {
+    html += '<div style="text-align:center;padding:60px 0"><div style="font-size:48px">🔔</div><div style="color:var(--text-dim);margin-top:8px">No reminders set</div></div>';
+  } else {
+    reminders.forEach(function(r) {
+      var dLeft = _vehicleDaysLeft(r.date);
+      var urgentColor = dLeft < 30 ? '#EF4444' : (dLeft < 90 ? '#F59E0B' : '#22C55E');
+      html += '<div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">'
+        + '<div style="width:42px;height:42px;border-radius:21px;background:' + r.color + '22;display:flex;align-items:center;justify-content:center;font-size:20px">' + r.icon + '</div>'
+        + '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">' + escapeHtml(r.type) + '</div><div style="font-size:12px;color:var(--text-dim)">' + _vehicleFmtDate(r.date) + '</div></div>'
+        + '<div style="background:' + urgentColor + '22;color:' + urgentColor + ';border:1px solid ' + urgentColor + '44;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700">' + dLeft + ' days</div>'
+        + '</div>';
+    });
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+/* ── vehicle-sell ── */
+function renderVehicleSell() {
+  var vehicles = State.vehicles || [];
+  var p = vehicles.filter(function(v){ return v.id === State.vehicleActiveId; })[0];
+  var vName = p ? (p.brand + ' ' + p.model) : 'Vehicle';
+
+  var html = '<div class="screen-wrap"><div class="form-header">'
+    + '<div class="icon-btn" onclick="State.vehicleDetailTab=\'overview\';App.navigate(\'vehicle-detail\')">' + _invBackSVG + '</div>'
+    + '<div class="form-header-title">Sell Vehicle</div>'
+    + '</div><div style="padding:16px">'
+    + '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;margin-bottom:16px">'
+    + '<div style="font-size:13px;font-weight:700;color:#EF4444;margin-bottom:4px">⚠️ Selling: ' + escapeHtml(vName) + '</div>'
+    + '<div style="font-size:12px;color:var(--text-dim)">This will mark the vehicle as Sold. You can view it in history.</div>'
+    + '</div>';
+
+  html += '<div class="form-group"><label class="form-label">Sale Date</label><input id="vsell-date" type="date" class="form-input"></div>';
+  html += '<div class="form-group"><label class="form-label">Sale Price (₹)</label><input id="vsell-price" type="number" class="form-input" placeholder="0"></div>';
+  html += '<div class="form-group"><label class="form-label">Buyer Name</label><input id="vsell-buyer" class="form-input" placeholder="Buyer full name"></div>';
+  html += '<div class="form-group"><label class="form-label">Transfer Charges (₹)</label><input id="vsell-transfer" type="number" class="form-input" placeholder="0"></div>';
+  html += '<div class="form-group"><label class="form-label">RTO Charges (₹)</label><input id="vsell-rto" type="number" class="form-input" placeholder="0"></div>';
+  html += '<div class="form-group"><label class="form-label">Sale Notes</label><textarea id="vsell-notes" class="form-input" rows="2" placeholder="Notes about the sale..."></textarea></div>';
+
+  html += '<button onclick="App._vehicleSellVehicle()" style="width:100%;padding:15px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#EF4444,#B91C1C);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Mark as Sold</button>';
+  html += '</div></div>';
+  return html;
+}
+
 // Helper: render linked notes list (used in other module detail screens)
 function renderLinkedNotesList(module, linkedId) {
   var notes = (State.notes||[]).filter(function(n){ return n.linkedModule===module && n.linkedId===linkedId; });
@@ -18520,6 +19045,7 @@ const App = {
     else if (screen === 'global-search')          tabHint = 'more';
     else if (screen.startsWith('notes'))          tabHint = 'more';
     else if (screen.startsWith('motor'))          tabHint = 'more';
+    else if (screen.startsWith('vehicle'))        tabHint = 'more';
     else if (screen.startsWith('profile'))        tabHint = 'more';
     else if (screen === 'investment-dashboard' || screen.startsWith('investment') || screen.startsWith('term-insurance') || screen.startsWith('gold') || screen.startsWith('epf') || screen.startsWith('ppf') || screen.startsWith('nps') || screen.startsWith('bond') || screen.startsWith('mf')) tabHint = 'investments';
     if (tabHint) {
@@ -18748,6 +19274,12 @@ const App = {
       case 'motor-reminders':     html = renderMotorReminders();      break;
       case 'motor-documents':     html = renderMotorDocuments();      break;
       case 'motor-analytics':     html = renderMotorAnalytics();      break;
+      case 'vehicle-list':        html = renderVehicleList();        break;
+      case 'vehicle-add':         html = renderVehicleAdd();         break;
+      case 'vehicle-detail':      html = renderVehicleDetail();      break;
+      case 'vehicle-expense-add': html = renderVehicleExpenseAdd();  break;
+      case 'vehicle-reminders':   html = renderVehicleReminders();   break;
+      case 'vehicle-sell':        html = renderVehicleSell();        break;
       case 'profile-list':        html = renderProfileList();         break;
       case 'profile-create':      html = renderProfileCreate();       break;
       case 'pp-list':             html = renderPPList();              break;
@@ -21346,6 +21878,129 @@ const App = {
     }
     this.showToast('Processing renewal...');
     App.render();
+  },
+
+  /* ── Vehicle Management Module ── */
+  _vehicleSave() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var type         = g('veh-type');
+    var brand        = g('veh-brand');
+    var model        = g('veh-model');
+    var variant      = g('veh-variant');
+    var reg          = g('veh-reg');
+    var color        = g('veh-color');
+    var fuel         = g('veh-fuel');
+    var transmission = g('veh-transmission');
+    var ownership    = g('veh-ownership');
+    var purchaseDate = g('veh-purchase-date');
+    var purchasePrice= parseFloat(g('veh-purchase-price')) || 0;
+    var dealer       = g('veh-dealer');
+    var city         = g('veh-city');
+    var currentValue = parseFloat(g('veh-current-value')) || 0;
+    var loanLinkedEl = document.getElementById('veh-loan-linked');
+    var loanLinked   = loanLinkedEl ? (loanLinkedEl.value === 'yes') : false;
+    var loanRef      = g('veh-loan-ref');
+    var insPolicy    = g('veh-insurance-policy');
+    var notes        = g('veh-notes');
+    if (!brand || !model) { this.showToast('Please enter brand and model'); return; }
+    var existing = State.vehicleAddData && State.vehicleAddData.id;
+    if (existing) {
+      var p = (State.vehicles || []).filter(function(v){ return v.id === existing; })[0];
+      if (p) {
+        p.type=type; p.brand=brand; p.model=model; p.variant=variant; p.reg=reg; p.color=color;
+        p.fuel=fuel; p.transmission=transmission; p.ownership=ownership;
+        p.purchase_date=purchaseDate; p.purchase_price=purchasePrice; p.dealer=dealer; p.city=city;
+        p.current_value=currentValue; p.loan_linked=loanLinked; p.loan_ref=loanRef;
+        p.insurance_policy=insPolicy; p.notes=notes;
+      }
+      State.vehicleActiveId = existing;
+    } else {
+      var newId = 'veh' + Date.now();
+      var newV = { id:newId, type:type, brand:brand, model:model, variant:variant, reg:reg,
+        color:color, fuel:fuel, transmission:transmission, ownership:ownership,
+        purchase_date:purchaseDate, purchase_price:purchasePrice, dealer:dealer, city:city,
+        state:'', current_value:currentValue, loan_linked:loanLinked, loan_ref:loanRef,
+        insurance_policy:insPolicy, status:'active', notes:notes };
+      if (!State.vehicles) State.vehicles = [];
+      State.vehicles.push(newV);
+      State.vehicleActiveId = newId;
+      if (!State.vehicleExpenses) State.vehicleExpenses = {};
+      State.vehicleExpenses[newId] = [];
+      if (!State.vehicleDocuments) State.vehicleDocuments = {};
+      State.vehicleDocuments[newId] = [];
+      if (!State.vehicleReminders) State.vehicleReminders = {};
+      State.vehicleReminders[newId] = [];
+      if (!State.vehicleNotesList) State.vehicleNotesList = {};
+      State.vehicleNotesList[newId] = [];
+    }
+    State.vehicleAddData = {};
+    State.vehicleDetailTab = 'overview';
+    this.showToast(existing ? 'Vehicle updated' : 'Vehicle added successfully');
+    App.navigate('vehicle-detail');
+  },
+
+  _vehicleDelete(id) {
+    State.vehicles = (State.vehicles || []).filter(function(v){ return v.id !== id; });
+    this.showToast('Vehicle deleted');
+    App.navigate('vehicle-list');
+  },
+
+  _vehicleAddExpense() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var type   = g('vexp-type');
+    var date   = g('vexp-date');
+    var amount = parseFloat(g('vexp-amount')) || 0;
+    var vendor = g('vexp-vendor');
+    var mode   = g('vexp-mode');
+    var bill   = g('vexp-bill');
+    var notes  = g('vexp-notes');
+    if (!type || !amount) { this.showToast('Please enter type and amount'); return; }
+    if (!date) { var today = new Date(); date = today.toISOString().slice(0,10); }
+    var vId = State.vehicleActiveId;
+    if (!State.vehicleExpenses) State.vehicleExpenses = {};
+    if (!State.vehicleExpenses[vId]) State.vehicleExpenses[vId] = [];
+    State.vehicleExpenses[vId].push({ id:'ve'+Date.now(), type:type, date:date, amount:amount, vendor:vendor, mode:mode, bill:bill, notes:notes });
+    this.showToast('Expense added');
+    State.vehicleDetailTab = 'expenses';
+    App.navigate('vehicle-detail');
+  },
+
+  _vehicleUploadDoc(vId) {
+    if (!State.vehicleDocuments) State.vehicleDocuments = {};
+    if (!State.vehicleDocuments[vId]) State.vehicleDocuments[vId] = [];
+    State.vehicleDocuments[vId].push({ id:'vd'+Date.now(), name:'Document_'+Date.now()+'.pdf', type:'PDF', size:'1.0 MB', date:new Date().toISOString().slice(0,10) });
+    this.showToast('Document uploaded');
+    App.render();
+  },
+
+  _vehicleAddNote(vId) {
+    this.showToast('Add note coming soon');
+  },
+
+  _vehicleAddReminder(vId) {
+    this.showToast('Add reminder coming soon');
+  },
+
+  _vehicleSellVehicle() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var date     = g('vsell-date');
+    var price    = parseFloat(g('vsell-price')) || 0;
+    var buyer    = g('vsell-buyer');
+    var transfer = parseFloat(g('vsell-transfer')) || 0;
+    var rto      = parseFloat(g('vsell-rto')) || 0;
+    var notes    = g('vsell-notes');
+    if (!price) { this.showToast('Please enter sale price'); return; }
+    var vId = State.vehicleActiveId;
+    var p   = (State.vehicles || []).filter(function(v){ return v.id === vId; })[0];
+    if (p) {
+      p.status     = 'sold';
+      p.sale_date  = date;
+      p.sale_price = price;
+      p.sale_buyer = buyer;
+      p.sale_notes = notes;
+    }
+    this.showToast('Vehicle marked as sold');
+    App.navigate('vehicle-list');
   },
 
   /* ── Budget Module ──────────────────────────── */
