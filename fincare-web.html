@@ -1627,6 +1627,9 @@ const State = {
   addTxType: null,
   txExpertPeriod: 'month',
   txCatTab: 'expense',
+  catSelectedCat: null,
+  catSelectedSub: null,
+  txMemberFilter: 'all',
   txMoreOptions: false,
   txRecurring: false,
   // Reminders module
@@ -3855,8 +3858,40 @@ const TX_CAT_ICONS = {
 };
 function txCatMeta(cat) { return TX_CAT_ICONS[cat] || {icon:'💰',color:'#A0A3BD'}; }
 
+var SAMPLE_TXS = [
+  { id:'tx1', _type:'income',   payee:'Salary',           category:'Salary',           account:'HDFC Bank',        account_id:'a1', date:'2026-04-23', amount:100000, color:'#10B981', icon:'💰' },
+  { id:'tx2', _type:'income',   payee:'Freelance Work',   category:'Freelance',        account:'HDFC Bank',        account_id:'a1', date:'2026-04-21', amount:25000,  color:'#38BDF8', icon:'💻' },
+  { id:'tx3', _type:'expense',  payee:'Rent',             category:'Housing',          account:'HDFC Bank',        account_id:'a1', date:'2026-04-20', amount:15000,  color:'#8B5CF6', icon:'🏠' },
+  { id:'tx4', _type:'expense',  payee:'Amazon',           category:'Shopping',         account:'HDFC Credit Card', account_id:'a2', date:'2026-04-20', amount:2500,   color:'#F59E0B', icon:'🛍️' },
+  { id:'tx5', _type:'expense',  payee:'Swiggy',           category:'Food & Dining',    account:'PhonePe',          account_id:'a3', date:'2026-04-19', amount:650,    color:'#EF4444', icon:'🍽️' },
+  { id:'tx6', _type:'expense',  payee:'Electricity Bill', category:'Bills & Utilities',account:'HDFC Bank',        account_id:'a1', date:'2026-04-18', amount:1200,   color:'#F59E0B', icon:'💡' },
+  { id:'tx7', _type:'transfer', payee:'Transfer to Wife', category:'Transfer',         account:'HDFC Bank',        account_id:'a1', date:'2026-04-18', amount:10000,  color:'#6366F1', icon:'🔄' },
+];
+
+var SAMPLE_CATEGORIES = {
+  expense: [
+    { id:'c1', name:'Shopping',       icon:'🛍️', color:'#F59E0B', subs:['Online Shopping','Clothing','Electronics','Footwear','Others'] },
+    { id:'c2', name:'Food & Dining',  icon:'🍽️', color:'#EF4444', subs:['Restaurant','Groceries','Cafe','Sweets'] },
+    { id:'c3', name:'Housing',        icon:'🏠', color:'#8B5CF6', subs:['Rent','Maintenance','Electricity'] },
+    { id:'c4', name:'Transportation', icon:'🚗', color:'#3B82F6', subs:['Fuel','Metro','Cab','Parking'] },
+    { id:'c5', name:'Utilities',      icon:'⚡', color:'#F59E0B', subs:['Electricity','Water','Internet','Gas'] },
+  ],
+  income: [
+    { id:'i1', name:'Salary',     icon:'💰', color:'#10B981', subs:['Monthly','Bonus','Arrears'] },
+    { id:'i2', name:'Business',   icon:'💼', color:'#6C47FF', subs:['Sales','Commission','Consulting'] },
+    { id:'i3', name:'Freelance',  icon:'💻', color:'#38BDF8', subs:['Design','Development','Writing'] },
+    { id:'i4', name:'Investment', icon:'📈', color:'#10B981', subs:['Dividends','Interest','Capital Gain'] },
+  ],
+  transfer: [
+    { id:'t1', name:'Bank Transfer', icon:'🏦', color:'#6366F1', subs:['Self Transfer','Family','Others'] },
+  ]
+};
+
 function renderTransactions() {
   var allTx  = (State.data.transactions||[]);
+  // Use sample data when no real transactions available
+  var usingSample = false;
+  if (!allTx.length) { allTx = SAMPLE_TXS; usingSample = true; }
   var accts  = (State.data.accounts||[]);
   var filter = State.txFilter || 'all';
   var month  = State.txMonth != null ? State.txMonth : new Date().getMonth();
@@ -4227,8 +4262,8 @@ function renderAddTransfer() {
   var p = State.txEditData || {};
   var isEdit = State.txIsEdit && p.id;
   var accts = (State.data.accounts||[]);
-  var fromOpts = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.account_id||accts[0]?.account_id)?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
-  var toOpts   = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.to_account_id||accts[1]?.account_id)?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
+  var fromOpts = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.account_id||(accts[0]&&accts[0].account_id))?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
+  var toOpts   = accts.map(function(a){return '<option value="'+a.account_id+'"'+(a.account_id===(p.to_account_id||(accts[1]&&accts[1].account_id))?' selected':'')+'>'+escapeHtml(a.name)+' ('+formatINR(a.balance)+')</option>';}).join('');
   var now = new Date();
   var pDate = p.date ? new Date(p.date) : now;
   var hasTime = p.date && p.date.length > 10;
