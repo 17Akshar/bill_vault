@@ -1732,6 +1732,136 @@ async def delete_rental(rental_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Rental not found")
     return {"message": "Rental deleted"}
 
+# ==================== GOALS ENDPOINTS ====================
+
+class GoalCreate(BaseModel):
+    name: str
+    target_amount: float
+    current_amount: float = 0
+    target_date: Optional[str] = None
+    category: str = "savings"  # savings, emergency, vacation, home, education, other
+    notes: Optional[str] = None
+
+class GoalUpdate(BaseModel):
+    name: Optional[str] = None
+    target_amount: Optional[float] = None
+    current_amount: Optional[float] = None
+    target_date: Optional[str] = None
+    category: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[str] = None  # active, completed
+
+@api_router.get("/goals")
+async def get_goals(request: Request):
+    user = await get_current_user(request)
+    goals = await db.goals.find({"user_id": user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return goals
+
+@api_router.post("/goals")
+async def create_goal(data: GoalCreate, request: Request):
+    user = await get_current_user(request)
+    goal_id = f"goal_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    goal = {
+        "goal_id": goal_id,
+        "user_id": user.user_id,
+        "name": data.name,
+        "target_amount": data.target_amount,
+        "current_amount": data.current_amount,
+        "target_date": data.target_date,
+        "category": data.category,
+        "notes": data.notes,
+        "status": "active",
+        "created_at": now,
+    }
+    await db.goals.insert_one(goal)
+    goal.pop("_id", None)
+    return goal
+
+@api_router.put("/goals/{goal_id}")
+async def update_goal(goal_id: str, data: GoalUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.goals.find_one({"goal_id": goal_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.goals.update_one({"goal_id": goal_id, "user_id": user.user_id}, {"$set": update_data})
+    updated = await db.goals.find_one({"goal_id": goal_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/goals/{goal_id}")
+async def delete_goal(goal_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.goals.delete_one({"goal_id": goal_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return {"message": "Goal deleted"}
+
+# ==================== OTHER ASSETS ENDPOINTS ====================
+
+class OtherAssetCreate(BaseModel):
+    name: str
+    asset_type: str  # jewelry, vehicle, electronics, property, art, other
+    current_value: float
+    purchase_value: float = 0
+    purchase_date: Optional[str] = None
+    notes: Optional[str] = None
+
+class OtherAssetUpdate(BaseModel):
+    name: Optional[str] = None
+    asset_type: Optional[str] = None
+    current_value: Optional[float] = None
+    purchase_value: Optional[float] = None
+    purchase_date: Optional[str] = None
+    notes: Optional[str] = None
+
+@api_router.get("/other-assets")
+async def get_other_assets(request: Request):
+    user = await get_current_user(request)
+    assets = await db.other_assets.find({"user_id": user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return assets
+
+@api_router.post("/other-assets")
+async def create_other_asset(data: OtherAssetCreate, request: Request):
+    user = await get_current_user(request)
+    asset_id = f"asset_{uuid.uuid4().hex[:12]}"
+    now = datetime.now(timezone.utc)
+    asset = {
+        "asset_id": asset_id,
+        "user_id": user.user_id,
+        "name": data.name,
+        "asset_type": data.asset_type,
+        "current_value": data.current_value,
+        "purchase_value": data.purchase_value,
+        "purchase_date": data.purchase_date,
+        "notes": data.notes,
+        "created_at": now,
+    }
+    await db.other_assets.insert_one(asset)
+    asset.pop("_id", None)
+    return asset
+
+@api_router.put("/other-assets/{asset_id}")
+async def update_other_asset(asset_id: str, data: OtherAssetUpdate, request: Request):
+    user = await get_current_user(request)
+    existing = await db.other_assets.find_one({"asset_id": asset_id, "user_id": user.user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    await db.other_assets.update_one({"asset_id": asset_id, "user_id": user.user_id}, {"$set": update_data})
+    updated = await db.other_assets.find_one({"asset_id": asset_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/other-assets/{asset_id}")
+async def delete_other_asset(asset_id: str, request: Request):
+    user = await get_current_user(request)
+    result = await db.other_assets.delete_one({"asset_id": asset_id, "user_id": user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return {"message": "Asset deleted"}
+
 # ==================== INVESTMENT HEADINGS ENDPOINTS ====================
 
 @api_router.post("/investment-headings")

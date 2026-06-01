@@ -3290,6 +3290,33 @@ async function apiPost(path, body) {
   } catch { return null; }
 }
 
+async function apiPut(path, body) {
+  if (!State.token) return null;
+  try {
+    const res = await fetch(API_BASE + path, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + State.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401) { _handleApiUnauth(); return null; }
+    if (!res.ok) throw new Error(res.status);
+    return await res.json();
+  } catch { return null; }
+}
+
+async function apiDelete(path) {
+  if (!State.token) return null;
+  try {
+    const res = await fetch(API_BASE + path, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + State.token },
+    });
+    if (res.status === 401) { _handleApiUnauth(); return null; }
+    if (!res.ok) throw new Error(res.status);
+    return true;
+  } catch { return null; }
+}
+
 async function loadDashboardData() {
   const now = new Date();
   const [dash, accts, rems, invs, loans, cards, rentals, otherAssets, lendBorrow, goals, members] = await Promise.all([
@@ -3301,9 +3328,9 @@ async function loadDashboardData() {
     apiGet('/credit-cards'),
     apiGet('/rentals'),
     apiGet('/other-assets'),
-    apiGet('/lend-borrow'),
+    apiGet('/lending'),
     apiGet('/goals'),
-    apiGet('/members'),
+    apiGet('/family-members'),
   ]);
   const txArr = await Promise.all([
     apiGet(`/income?month=${now.getMonth()+1}&year=${now.getFullYear()}`),
