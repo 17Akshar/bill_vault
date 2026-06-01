@@ -38,7 +38,12 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
-from firebase_admin import auth as firebase_auth
+try:
+    from firebase_admin import auth as firebase_auth
+    _FIREBASE_AUTH_AVAILABLE = True
+except ImportError:
+    firebase_auth = None
+    _FIREBASE_AUTH_AVAILABLE = False
 
 from firebase_config import db
 
@@ -239,6 +244,8 @@ def _verify_phone_id_token(id_token: str) -> str:
     Verify a Firebase ID token from Phone Auth. Returns the E.164 phone_number claim.
     Raises HTTPException on invalid token or missing phone.
     """
+    if not _FIREBASE_AUTH_AVAILABLE or firebase_auth is None:
+        raise HTTPException(status_code=503, detail="Phone verification not available in local mode")
     try:
         decoded = firebase_auth.verify_id_token(id_token, check_revoked=False)
     except Exception:
@@ -357,7 +364,7 @@ async def reset_password_with_phone(data: PhonePasswordResetRequest, request: Re
 
     # Sync to Firebase Auth if user has a firebase_uid
     fb_uid = user_doc.get("firebase_uid")
-    if fb_uid:
+    if fb_uid and _FIREBASE_AUTH_AVAILABLE and firebase_auth is not None:
         try:
             firebase_auth.update_user(fb_uid, password=data.new_password)
         except Exception as e:

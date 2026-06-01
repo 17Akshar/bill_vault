@@ -1,23 +1,32 @@
 """
 Firebase Configuration & Firestore Database Wrapper
 Provides MongoDB-compatible interface over Firestore for minimal migration effort.
+Falls back to LocalFileDB (JSON files) when Firebase credentials are not set.
 """
 import os
 import json
 import asyncio
+import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
+from pathlib import Path
 from dotenv import load_dotenv
-
-import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth, firestore, storage as firebase_storage
-from google.cloud.firestore_v1 import FieldFilter
 
 load_dotenv()
 
+# Attempt Firebase imports — they may not be installed in local-mode environments
+try:
+    import firebase_admin
+    from firebase_admin import credentials, auth as firebase_auth, firestore, storage as firebase_storage
+    from google.cloud.firestore_v1 import FieldFilter
+    _FIREBASE_AVAILABLE = True
+except ImportError:
+    _FIREBASE_AVAILABLE = False
+
 # ==================== FIREBASE INITIALIZATION ====================
 
-def _get_firebase_credentials():
+def _get_firebase_credentials() -> "credentials.Certificate":
     """Build credentials from env vars"""
     project_id = os.getenv("FIREBASE_PROJECT_ID")
     client_email = os.getenv("FIREBASE_CLIENT_EMAIL")
@@ -73,17 +82,26 @@ def get_firestore_client():
 
 # ==================== FIREBASE AUTH HELPERS ====================
 
-def verify_firebase_token(id_token: str) -> dict:
-    """Verify a Firebase ID token and return decoded claims"""
+def verify_firebase_token(id_token: str) -> Optional[dict]:
+    """Verify a Firebase ID token and return decoded claims.
+    Returns None (instead of raising) when Firebase is not initialized
+    so that non-Firebase auth paths continue to work in local mode.
+    """
+    if not _FIREBASE_AVAILABLE:
+        return None
     try:
+        if not firebase_admin._apps:
+            return None
         decoded = firebase_auth.verify_id_token(id_token)
         return decoded
     except Exception as e:
-        raise ValueError(f"Invalid Firebase token: {str(e)}")
+        return None
 
 
-def create_firebase_user(email: str, password: str, display_name: str = None) -> str:
-    """Create a user in Firebase Auth, returns uid"""
+def create_firebase_user(email: str, password: str, display_name: str = None) -> Optional[str]:
+    """Create a user in Firebase Auth, returns uid (or None in local mode)"""
+    if not _FIREBASE_AVAILABLE or not firebase_admin._apps:
+        return None
     kwargs = {"email": email, "password": password}
     if display_name:
         kwargs["display_name"] = display_name
@@ -92,11 +110,14 @@ def create_firebase_user(email: str, password: str, display_name: str = None) ->
 
 
 def delete_firebase_user(uid: str):
-    """Delete a user from Firebase Auth"""
+    """Delete a user from Firebase Auth (no-op in local mode)"""
+    if not _FIREBASE_AVAILABLE or not firebase_admin._apps:
+        return
     firebase_auth.delete_user(uid)
 
 
 # ==================== FIRESTORE MONGODB-COMPATIBLE WRAPPER ====================
+# These classes are only used when Firebase credentials are present.
 
 def _split_filters(filters: List[Dict]):
     """Split filters into (firestore_filter, client_side_filters).
@@ -181,6 +202,11 @@ def _doc_to_dict(doc) -> Optional[Dict]:
         if isinstance(v, datetime):
             d[k] = v.isoformat()
     return d
+
+
+def _firebase_only(cls):
+    """Class decorator — returned unchanged; exists to mark Firebase-only classes."""
+    return cls
 
 
 class _Result:
@@ -532,6 +558,256 @@ def _serialize_doc(doc: Dict) -> Dict:
     return result
 
 
+# ==================== LOCAL FILE DB (fallback when Firebase is not configured) ====================
+
+_LOCAL_DATA_DIR = Path(__file__).parent / "local_data"
+_collection_locks: Dict[str, asyncio.Lock] = {}
+
+
+def _get_lock(name: str) -> asyncio.Lock:
+    if name not in _collection_locks:
+        _collection_locks[name] = asyncio.Lock()
+    return _collection_locks[name]
+
+
+def _json_default(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _load_collection(name: str) -> Dict[str, Dict]:
+    path = _LOCAL_DATA_DIR / f"{name}.json"
+    if not path.exists():
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_collection(name: str, data: Dict[str, Dict]):
+    _LOCAL_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path = _LOCAL_DATA_DIR / f"{name}.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, default=_json_default, ensure_ascii=False, indent=2)
+
+
+class LocalQuery:
+    """Chainable query object for LocalCollection — mirrors FirestoreQuery interface."""
+
+    def __init__(self, documents: List[Dict], filters: List[Dict]):
+        self._documents = documents
+        self._filters = filters
+        self._sort_field: Optional[str] = None
+        self._sort_reverse: bool = False
+        self._limit_val: Optional[int] = None
+
+    def sort(self, field: str, direction: int):
+        self._sort_field = field
+        self._sort_reverse = (direction == -1)
+        return self
+
+    def limit(self, n: int):
+        self._limit_val = n
+        return self
+
+    async def to_list(self, max_count: int = 1000) -> List[Dict]:
+        results = [d for d in self._documents if _matches_filters(d, self._filters)]
+        if self._sort_field:
+            try:
+                results.sort(
+                    key=lambda x: x.get(self._sort_field) if x.get(self._sort_field) is not None else "",
+                    reverse=self._sort_reverse,
+                )
+            except TypeError:
+                results.sort(key=lambda x: str(x.get(self._sort_field) or ""), reverse=self._sort_reverse)
+        limit = self._limit_val if self._limit_val is not None else max_count
+        return results[:limit]
+
+
+class LocalCollection:
+    """MongoDB-compatible collection backed by a JSON file."""
+
+    # Collections where the document key IS the user_id (one doc per user)
+    _SINGLE_USER_DOC_COLLECTIONS = {"users", "user_settings", "user_mpin"}
+
+    # Priority list for choosing a stable document key (same as FirestoreCollection.insert_one)
+    _KEY_PRIORITY = [
+        "transaction_id", "income_id", "expense_id", "bill_id", "investment_id",
+        "heading_id", "reminder_id", "note_id", "family_member_id",
+        "card_id", "loan_id", "lending_id", "rental_id",
+        "payment_id", "account_id", "attempt_id", "log_id",
+        "snapshot_id", "transfer_id",
+        "loan_transaction_id", "emi_reminder_id", "prepayment_id",
+        "goal_id", "asset_id",
+        "user_id",
+    ]
+
+    def __init__(self, name: str):
+        self._name = name
+
+    def _pick_doc_id(self, doc: Dict) -> str:
+        for key in self._KEY_PRIORITY:
+            if key in doc:
+                val = doc[key]
+                # Don't use user_id as doc key for multi-record collections
+                if key == "user_id" and self._name not in self._SINGLE_USER_DOC_COLLECTIONS:
+                    break
+                return str(val)
+        return str(uuid.uuid4())
+
+    def find(self, query: Dict = None, projection: Dict = None) -> LocalQuery:
+        filters = _mongo_query_to_firestore(query or {})
+        data = _load_collection(self._name)
+        documents = list(data.values())
+        return LocalQuery(documents, filters)
+
+    async def find_one(self, query: Dict, projection: Dict = None) -> Optional[Dict]:
+        filters = _mongo_query_to_firestore(query or {})
+        data = _load_collection(self._name)
+        for doc in data.values():
+            if _matches_filters(doc, filters):
+                return dict(doc)
+        return None
+
+    async def insert_one(self, document: Dict):
+        lock = _get_lock(self._name)
+        async with lock:
+            data = _load_collection(self._name)
+            doc_id = self._pick_doc_id(document)
+            # If key already exists and it's NOT a single-user-doc collection, generate unique key
+            if doc_id in data and self._name not in self._SINGLE_USER_DOC_COLLECTIONS:
+                doc_id = str(uuid.uuid4())
+            doc = {k: v for k, v in document.items() if k != "_id"}
+            data[doc_id] = doc
+            _save_collection(self._name, data)
+        return _Result(inserted_id=doc_id, acknowledged=True)
+
+    async def update_one(self, query: Dict, update: Dict, upsert: bool = False):
+        lock = _get_lock(self._name)
+        async with lock:
+            filters = _mongo_query_to_firestore(query or {})
+            data = _load_collection(self._name)
+
+            # Find matching document
+            target_key = None
+            for key, doc in data.items():
+                if _matches_filters(doc, filters):
+                    target_key = key
+                    break
+
+            update_data = {}
+            has_operator = "$set" in update or "$inc" in update or "$push" in update
+            if "$set" in update:
+                update_data.update({k: v for k, v in update["$set"].items() if k != "_id"})
+            if "$inc" in update:
+                if target_key is not None:
+                    existing = data[target_key]
+                    for k, v in update["$inc"].items():
+                        update_data[k] = existing.get(k, 0) + v
+                elif upsert:
+                    for k, v in update["$inc"].items():
+                        update_data[k] = v
+            if "$push" in update:
+                for k, v in update["$push"].items():
+                    if target_key is not None:
+                        existing_list = data[target_key].get(k, [])
+                        if not isinstance(existing_list, list):
+                            existing_list = []
+                        update_data[k] = existing_list + [v]
+                    else:
+                        update_data[k] = [v]
+            if not has_operator:
+                update_data = {k: v for k, v in update.items() if k != "_id"}
+
+            if target_key is not None:
+                data[target_key].update(update_data)
+                _save_collection(self._name, data)
+                return _Result(matched_count=1, modified_count=1)
+            elif upsert:
+                merged = {}
+                for f in filters:
+                    if f["op"] == "==":
+                        merged[f["field"]] = f["value"]
+                merged.update(update_data)
+                doc_id = self._pick_doc_id(merged)
+                if doc_id in data and self._name not in self._SINGLE_USER_DOC_COLLECTIONS:
+                    doc_id = str(uuid.uuid4())
+                data[doc_id] = merged
+                _save_collection(self._name, data)
+                return _Result(matched_count=0, modified_count=0, upserted_id=doc_id)
+        return _Result(matched_count=0, modified_count=0)
+
+    async def update_many(self, query: Dict, update: Dict):
+        lock = _get_lock(self._name)
+        async with lock:
+            filters = _mongo_query_to_firestore(query or {})
+            data = _load_collection(self._name)
+            count = 0
+            update_data = {}
+            if "$set" in update:
+                update_data = {k: v for k, v in update["$set"].items() if k != "_id"}
+            else:
+                update_data = {k: v for k, v in update.items() if k != "_id"}
+            for key, doc in data.items():
+                if _matches_filters(doc, filters):
+                    data[key].update(update_data)
+                    count += 1
+            if count:
+                _save_collection(self._name, data)
+        return _Result(matched_count=count, modified_count=count)
+
+    async def delete_one(self, query: Dict):
+        lock = _get_lock(self._name)
+        async with lock:
+            filters = _mongo_query_to_firestore(query or {})
+            data = _load_collection(self._name)
+            for key, doc in list(data.items()):
+                if _matches_filters(doc, filters):
+                    del data[key]
+                    _save_collection(self._name, data)
+                    return _Result(deleted_count=1)
+        return _Result(deleted_count=0)
+
+    async def delete_many(self, query: Dict):
+        lock = _get_lock(self._name)
+        async with lock:
+            filters = _mongo_query_to_firestore(query or {})
+            data = _load_collection(self._name)
+            to_delete = [k for k, doc in data.items() if _matches_filters(doc, filters)]
+            for key in to_delete:
+                del data[key]
+            if to_delete:
+                _save_collection(self._name, data)
+        return _Result(deleted_count=len(to_delete))
+
+    async def count_documents(self, query: Dict) -> int:
+        filters = _mongo_query_to_firestore(query or {})
+        data = _load_collection(self._name)
+        return sum(1 for doc in data.values() if _matches_filters(doc, filters))
+
+
+class LocalFileDB:
+    """Top-level database object backed by local JSON files."""
+
+    def __getattr__(self, name: str) -> LocalCollection:
+        return LocalCollection(name)
+
+
 # ==================== SINGLETON DB INSTANCE ====================
 
-db = FirestoreDB()
+def _make_db():
+    project_id = os.getenv("FIREBASE_PROJECT_ID", "")
+    client_email = os.getenv("FIREBASE_CLIENT_EMAIL", "")
+    private_key = os.getenv("FIREBASE_PRIVATE_KEY", "")
+    if _FIREBASE_AVAILABLE and project_id and client_email and private_key:
+        return FirestoreDB()
+    else:
+        logging.getLogger(__name__).warning(
+            "Firebase credentials not found — using local JSON file storage"
+        )
+        return LocalFileDB()
+
+db = _make_db()
