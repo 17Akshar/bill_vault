@@ -3713,7 +3713,7 @@ function renderDashboard() {
     <div class="hero-card">
       <div class="hero-top">
         <div style="flex:1">
-          <div class="hero-label">Total Net Worth ${ICON.info.replace('currentColor','rgba(255,255,255,0.5)')}</div>
+          <div class="hero-label">TOTAL NET WORTH <svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)" style="vertical-align:middle;margin-left:3px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>
           <div class="hero-amount">${formatINRFull(totalBalance)}</div>
           <div class="hero-delta" style="color:${nwUp?'#9DFFD9':'#FFB4BE'}">
             ${nwUp?'▲':'▼'} ${Math.abs(nwDeltaPct)}% vs last month
@@ -3780,7 +3780,7 @@ function renderDashboard() {
         <div class="qa-icon" style="background:#7C5CFC">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
         </div>
-        <div class="qa-label">Invest</div>
+        <div class="qa-label">Investment</div>
       </div>
       <div class="qa-card" onclick="App.navigate('add-reminder')">
         <div class="qa-icon" style="background:#F59E0B">
@@ -3788,11 +3788,11 @@ function renderDashboard() {
         </div>
         <div class="qa-label">Reminder</div>
       </div>
-      <div class="qa-card" onclick="App.navigate('global-search')">
-        <div class="qa-icon" style="background:var(--primary)">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <div class="qa-card" onclick="App.goTab('wealth')">
+        <div class="qa-icon" style="background:#0891B2">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-6 9h19v-2H4v2zm13-9v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>
         </div>
-        <div class="qa-label">Search</div>
+        <div class="qa-label">Accounts</div>
       </div>
     </div>
 
