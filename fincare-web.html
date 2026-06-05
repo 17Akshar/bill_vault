@@ -3695,6 +3695,9 @@ function renderDashboard() {
           ${ICON.bell}
           ${(() => { const p = rem.filter(r => !r.is_completed).length; return p > 0 ? `<div class="notif-badge">${p > 9 ? '9+' : p}</div>` : ''; })()}
         </div>
+        <div class="icon-btn" onclick="App.goTab('more')" style="background:var(--card2)">
+          ${ICON.settings}
+        </div>
       </div>
     </div>
 
