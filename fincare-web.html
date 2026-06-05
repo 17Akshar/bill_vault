@@ -378,13 +378,14 @@
        DASHBOARD  –  QUICK ACTIONS
     ─────────────────────────────────────────────────────── */
     .quick-row {
-      display: flex; gap: 10px; padding: 0 16px; margin-bottom: 22px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; padding: 0 16px; margin-bottom: 22px;
     }
     .qa-card {
-      flex: 1 1 0; min-width: 0;
+      min-width: 0;
       background: var(--card); border-radius: var(--radius);
-      padding: 18px 8px; display: flex; flex-direction: column;
-      align-items: center; gap: 10px; cursor: pointer;
+      padding: 22px 8px; display: flex; flex-direction: column;
+      align-items: center; gap: 12px; cursor: pointer;
       box-shadow: var(--shadow-card);
       border: 1px solid var(--border);
       transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
@@ -392,11 +393,11 @@
     }
     .qa-card:active { transform: scale(0.95); box-shadow: none; background: var(--card2); }
     .qa-icon {
-      width: 52px; height: 52px; border-radius: 26px;
+      width: 68px; height: 68px; border-radius: 34px;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
     }
-    .qa-label { color: var(--text); font-size: 12px; font-weight: 700; letter-spacing: 0.2px; }
+    .qa-label { color: var(--text); font-size: 14px; font-weight: 700; letter-spacing: 0.1px; }
 
     /* ───────────────────────────────────────────────────────
        DASHBOARD  –  ACCOUNT CARDS (horizontal scroll)
@@ -3690,12 +3691,9 @@ function renderDashboard() {
         <div class="icon-btn" onclick="App.navigate('global-search')" title="Search">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.5 6.5 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         </div>
-        <div class="icon-btn pos-rel" onclick="App.navigate('reminders')">
+        <div class="icon-btn pos-rel" onclick="App.navigate('reminders')" style="background:var(--card2)">
           ${ICON.bell}
           ${(() => { const p = rem.filter(r => !r.is_completed).length; return p > 0 ? `<div class="notif-badge">${p > 9 ? '9+' : p}</div>` : ''; })()}
-        </div>
-        <div class="icon-btn" onclick="App.goTab('more')">
-          ${ICON.settings}
         </div>
       </div>
     </div>
@@ -3713,7 +3711,7 @@ function renderDashboard() {
     <div class="hero-card">
       <div class="hero-top">
         <div style="flex:1">
-          <div class="hero-label">TOTAL NET WORTH <svg width="13" height="13" viewBox="0 0 24 24" fill="rgba(255,255,255,0.5)" style="vertical-align:middle;margin-left:3px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>
+          <div class="hero-label">TOTAL NET WORTH</div>
           <div class="hero-amount">${formatINRFull(totalBalance)}</div>
           <div class="hero-delta" style="color:${nwUp?'#9DFFD9':'#FFB4BE'}">
             ${nwUp?'▲':'▼'} ${Math.abs(nwDeltaPct)}% vs last month
@@ -3760,37 +3758,37 @@ function renderDashboard() {
     <div class="quick-row" style="flex-wrap:wrap;gap:10px">
       <div class="qa-card" onclick="App.navigate('add-transaction',{type:'income'})">
         <div class="qa-icon" style="background:${COLORS.success}">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>
         <div class="qa-label">Income</div>
       </div>
       <div class="qa-card" onclick="App.navigate('add-transaction',{type:'expense'})">
         <div class="qa-icon" style="background:${COLORS.danger}">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M19 13H5v-2h14v2z"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M19 13H5v-2h14v2z"/></svg>
         </div>
         <div class="qa-label">Expense</div>
       </div>
       <div class="qa-card" onclick="App.navigate('add-transaction',{type:'transfer'})">
         <div class="qa-icon" style="background:${COLORS.info}">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
         </div>
         <div class="qa-label">Transfer</div>
       </div>
       <div class="qa-card" onclick="App.navigate('investment-dashboard')">
         <div class="qa-icon" style="background:#7C5CFC">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
         </div>
         <div class="qa-label">Investment</div>
       </div>
       <div class="qa-card" onclick="App.navigate('add-reminder')">
         <div class="qa-icon" style="background:#F59E0B">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
         </div>
         <div class="qa-label">Reminder</div>
       </div>
       <div class="qa-card" onclick="App.goTab('wealth')">
         <div class="qa-icon" style="background:#0891B2">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-6 9h19v-2H4v2zm13-9v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm-6 9h19v-2H4v2zm13-9v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>
         </div>
         <div class="qa-label">Accounts</div>
       </div>
