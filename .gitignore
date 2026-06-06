@@ -364,3 +364,4 @@ credentials.json
 *.key
 .credentials
 backend/local_data/*.json
+backend/uploads/
