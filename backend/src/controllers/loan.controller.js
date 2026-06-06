@@ -161,7 +161,7 @@ const getInsights = asyncWrapper(async (req, res) => {
   const totalOutstanding = loans.reduce((s, l) => s + parseFloat(l.outstanding), 0);
   const totalEMI = loans.reduce((s, l) => s + l.emi, 0);
 
-  return success(res, { loans, totalOutstanding, totalEMI });
+  return success(res, loans);
 });
 
 module.exports = { list, getOne, create, update, remove, addTransaction, getInsights };

@@ -3264,6 +3264,11 @@ function _handleApiUnauth() {
   App.showToast('Session expired. Please log in again.');
 }
 
+function _unwrap(json) {
+  if (json && typeof json.success === 'boolean') return json.data ?? null;
+  return json;
+}
+
 async function apiGet(path) {
   if (!State.token) return null;
   try {
@@ -3272,7 +3277,7 @@ async function apiGet(path) {
     });
     if (res.status === 401) { _handleApiUnauth(); return null; }
     if (!res.ok) throw new Error(res.status);
-    return await res.json();
+    return _unwrap(await res.json());
   } catch { return null; }
 }
 
@@ -3285,8 +3290,10 @@ async function apiPost(path, body) {
       body: JSON.stringify(body),
     });
     if (res.status === 401) { _handleApiUnauth(); return null; }
-    if (!res.ok) throw new Error(res.status);
-    return await res.json();
+    const json = await res.json().catch(() => null);
+    State._lastApiError = res.ok ? null : (json && json.message) || 'Request failed';
+    if (!res.ok) return null;
+    return _unwrap(json);
   } catch { return null; }
 }
 
@@ -3299,8 +3306,10 @@ async function apiPut(path, body) {
       body: JSON.stringify(body),
     });
     if (res.status === 401) { _handleApiUnauth(); return null; }
-    if (!res.ok) throw new Error(res.status);
-    return await res.json();
+    const json = await res.json().catch(() => null);
+    State._lastApiError = res.ok ? null : (json && json.message) || 'Request failed';
+    if (!res.ok) return null;
+    return _unwrap(json);
   } catch { return null; }
 }
 
@@ -3330,19 +3339,29 @@ async function loadDashboardData() {
     apiGet('/other-assets'),
     apiGet('/lending'),
     apiGet('/goals'),
-    apiGet('/family-members'),
+    apiGet('/profiles'),
   ]);
-  const txArr = await Promise.all([
-    apiGet(`/income?month=${now.getMonth()+1}&year=${now.getFullYear()}`),
-    apiGet(`/expenses?month=${now.getMonth()+1}&year=${now.getFullYear()}`),
-  ]);
-  const income = txArr[0] || [];
-  const exp    = txArr[1] || [];
-  const all = [
-    ...income.map(i => ({ ...i, _type: 'income',  id: i.income_id   || i.id })),
-    ...exp.map(e    => ({ ...e, _type: 'expense', id: e.expense_id  || e.id })),
-  ].sort((a,b) => new Date(b.date) - new Date(a.date));
+  const m = now.getMonth()+1, y = now.getFullYear();
+  const txRaw = await apiGet(`/transactions?type=all&month=${m}&year=${y}&limit=100`) || [];
+  const txList = Array.isArray(txRaw) ? txRaw : (txRaw.data || []);
+  const all = txList.map(t => ({
+    ...t,
+    _type: t.type || (t.transaction_type === 'income' ? 'income' : t.transaction_type === 'expense' ? 'expense' : 'transfer'),
+  })).sort((a,b) => new Date(b.date) - new Date(a.date));
 
+  // Normalize dashboard response to flat structure expected by renderDashboard
+  if (dash && dash.netWorth) {
+    dash.net_worth        = dash.netWorth.value;
+    dash.monthly_income   = dash.currentMonth?.income || 0;
+    dash.monthly_expenses = dash.currentMonth?.expense || 0;
+    dash.savings_rate     = dash.currentMonth?.savingsRate || 0;
+    dash.income_delta_pct  = dash.currentMonth?.incomeChange || 0;
+    dash.expense_delta_pct = dash.currentMonth?.expenseChange || 0;
+    dash.savings_delta_pct = 0;
+    dash.net_worth_delta_pct = 0;
+    dash.net_worth_delta_abs = 0;
+    dash.total_balance   = dash.netWorth.value;
+  }
   State.data.dashboard   = dash || null;
   State.data.accounts    = Array.isArray(accts)       ? accts       : null;
   State.data.reminders   = Array.isArray(rems)        ? rems        : null;
@@ -3352,7 +3371,8 @@ async function loadDashboardData() {
   State.data.otherAssets = Array.isArray(otherAssets) ? otherAssets : null;
   State.data.lendBorrow  = Array.isArray(lendBorrow)  ? lendBorrow  : null;
   State.data.goals       = Array.isArray(goals)       ? goals       : null;
-  if (Array.isArray(members) && members.length) State.members = members;
+  const memberList = Array.isArray(members) ? members : [];
+  if (memberList.length) State.members = memberList;
   // Map API investment fields to the expected shape used in renderWealth()
   if (Array.isArray(invs) && invs.length) {
     State.data.investments = invs.map(i => ({
@@ -3370,17 +3390,13 @@ async function loadDashboardData() {
 }
 
 async function loadTransactionsForMonth(month, year) {
-  const txArr = await Promise.all([
-    apiGet(`/income?month=${month+1}&year=${year}`),
-    apiGet(`/expenses?month=${month+1}&year=${year}`),
-  ]);
+  const txRaw = await apiGet(`/transactions?type=all&month=${month+1}&year=${year}&limit=100`) || [];
   if (!State.token) return; // 401 fired
-  const income = txArr[0] || [];
-  const exp    = txArr[1] || [];
-  const all = [
-    ...income.map(i => ({ ...i, _type: 'income',  id: i.income_id  || i.id })),
-    ...exp.map(e    => ({ ...e, _type: 'expense', id: e.expense_id || e.id })),
-  ].sort((a,b) => new Date(b.date) - new Date(a.date));
+  const txList = Array.isArray(txRaw) ? txRaw : (txRaw.data || []);
+  const all = txList.map(t => ({
+    ...t,
+    _type: t.type || (t.transaction_type === 'income' ? 'income' : t.transaction_type === 'expense' ? 'expense' : 'transfer'),
+  })).sort((a,b) => new Date(b.date) - new Date(a.date));
   State.data.transactions = all.length ? all : null;
   State.data.txMonth      = month;
   State.data.txYear       = year;
@@ -24931,14 +24947,16 @@ const App = {
       body: JSON.stringify({ name: name, email: email, password: pass }),
     }).catch(function() { return null; });
 
-    var data = res && res.ok ? await res.json().catch(function() { return null; }) : null;
-    var tok  = data && (data.token || data.access_token);
+    var json = res && res.ok ? await res.json().catch(function() { return null; }) : null;
+    var payload = json && json.success ? json.data : json;
+    var tok  = payload && (payload.token || payload.access_token);
 
     if (tok && typeof tok === 'string' && tok.length > 0) {
       // Real backend registration succeeded
       State.token = tok;
-      State.user  = data.user || { name: name, email: email };
+      State.user  = payload.user || { name: name, email: email };
     } else {
+      if (json && !json.success) { this.showToast((json && json.message) || 'Registration failed'); this.render(); return; }
       // No backend — register locally with entered credentials
       State.token = 'local-' + Date.now();
       State.user  = { name: name, email: email, initial: name.charAt(0).toUpperCase() };
@@ -24979,14 +24997,16 @@ const App = {
       body: JSON.stringify({ email, password: pass }),
     }).catch(() => null);
 
-    const data = res && res.ok ? await res.json().catch(() => null) : null;
-    const tok  = data && (data.token || data.access_token);
+    const json = res && res.ok ? await res.json().catch(() => null) : null;
+    const payload = json && json.success ? json.data : json;
+    const tok  = payload && (payload.token || payload.access_token);
     if (tok && typeof tok === 'string' && tok.length > 0) {
       State.token = tok;
-      State.user  = data.user || { name: email.split('@')[0] };
+      State.user  = payload.user || { name: email.split('@')[0] };
       localStorage.setItem('fc_token', State.token);
       localStorage.setItem('fc_user', JSON.stringify(State.user));
     } else {
+      if (json && !json.success) { this.showToast((json && json.message) || 'Login failed'); this.render(); return; }
       // Offline mode — no backend available, use entered credentials for display
       State.token = 'local-' + Date.now();
       State.user  = { name: email.split('@')[0], email: email };
@@ -25725,21 +25745,25 @@ const App = {
     if (type === 'transfer' && !toAcct) { this.showToast('Please select a destination account'); return; }
     if (type === 'transfer' && toAcct === acct) { this.showToast('From and To accounts must be different'); return; }
 
-    const body = { amount, date, notes, account_id: acct, category: cat };
+    const cats = State.data.categories || [];
+    const catObj = cats.find(c => c.name === cat || c.id === cat);
+    const catId = catObj ? catObj.id : null;
+    const body = { amount, date, notes, account_id: acct, type,
+      category_id: catId, description: payee, payee };
     let ok = false;
-    if (type === 'income') {
-      const r = await apiPost('/income', { ...body, source: payee });
+    const isEdit = State.txIsEdit && State.txEditData;
+    const editId = isEdit ? State.txEditData.id : null;
+    if (isEdit && editId) {
+      const r = await apiPut('/transactions/' + editId, { ...body, ...(type === 'transfer' ? { to_account_id: toAcct } : {}) });
       ok = !!r;
-    } else if (type === 'expense') {
-      const r = await apiPost('/expenses', { ...body, description: payee });
+    } else if (type === 'transfer') {
+      const r = await apiPost('/transactions', { ...body, to_account_id: toAcct });
       ok = !!r;
     } else {
-      const r = await apiPost('/transfers', { ...body, from_account_id: acct, to_account_id: toAcct });
+      const r = await apiPost('/transactions', body);
       ok = !!r;
     }
 
-    const isEdit = State.txIsEdit && State.txEditData;
-    const editId = isEdit ? State.txEditData.id : null;
     const allAccts = (State.data.accounts||[]);
 
     const txData = {
@@ -25807,10 +25831,12 @@ const App = {
     this.navigate('reminder-detail');
   },
 
-  markReminderPaid(id) {
+  async markReminderPaid(id) {
     const rems = (State.data.reminders||[]);
-    const r = rems.find(x => x.reminder_id === id);
-    if (r) { r.is_completed = true; r.completed_on = new Date().toISOString().slice(0,10); r.paid_amount = r.amount; }
+    const r = rems.find(x => x.id === id || x.reminder_id === id);
+    const remId = (r && r.id) || id;
+    const res = await apiPost('/reminders/' + remId + '/pay', { paid_amount: r ? r.amount : undefined, paid_date: new Date().toISOString().slice(0,10) });
+    if (r) { r.status = 'paid'; r.is_completed = true; r.completed_on = new Date().toISOString().slice(0,10); }
     this.showToast('Reminder marked as paid ✅');
     this.navigate('reminders');
   },
@@ -25885,7 +25911,7 @@ const App = {
     this.render();
   },
 
-  saveReminder() {
+  async saveReminder() {
     const rf = State.remForm;
     if (!rf) return;
     const title  = (rf.title || '').trim();
@@ -25895,33 +25921,30 @@ const App = {
     if (!amount || amount <= 0) { this.showToast('Please enter a valid amount'); return; }
     if (!date)   { this.showToast('Please select a due date'); return; }
     const remsList = (State.data.reminders||[]);
-    const existing = remsList.find(function(r){ return r.reminder_id === rf.id; });
-    const newRem = {
-      reminder_id: existing ? rf.id : uid('rem_'),
-      title,
-      amount,
-      reminder_date: date,
+    const existing = remsList.find(function(r){ return r.id === rf.id || r.reminder_id === rf.id; });
+    const payload = {
+      title, amount, due_date: date,
       reminder_type: rf.type || 'bill',
-      provider: rf.provider || '',
       description: rf.notes || '',
       priority: rf.priority || 'medium',
-      is_completed: existing ? existing.is_completed : false,
       is_recurring: rf.recurring || false,
-      recurrence: rf.recurrence || 'monthly',
-      end_type: rf.endType || 'never',
-      end_date: rf.endDate || null,
-      end_after: rf.endAfter || null,
+      frequency: rf.recurrence || 'monthly',
       auto_pay: rf.autoPay || false,
-      alert_days: rf.alertDays || [1],
       account_id: rf.account || null,
     };
+    let ok = false;
     if (existing) {
-      const idx = remsList.indexOf(existing);
-      if (idx >= 0) remsList[idx] = newRem;
-      this.showToast('Reminder updated! 🔔');
+      const remId = existing.id || existing.reminder_id;
+      const r = await apiPut('/reminders/' + remId, payload);
+      ok = !!r;
+      if (r) { Object.assign(existing, { ...payload, reminder_date: date, reminder_type: payload.reminder_type }); }
+      this.showToast(ok ? 'Reminder updated! 🔔' : 'Updated locally 🔔');
     } else {
+      const r = await apiPost('/reminders', payload);
+      ok = !!r;
+      const newRem = r || { id: uid('rem_'), reminder_id: uid('rem_'), ...payload, reminder_date: date, is_completed: false };
       remsList.push(newRem);
-      this.showToast('Reminder saved! 🔔');
+      this.showToast(ok ? 'Reminder saved! 🔔' : 'Saved locally 🔔');
     }
     State.remForm    = null;
     State.remDetailId = null;
@@ -26164,7 +26187,7 @@ const App = {
     setTimeout(function(){document.getElementById('ag-name')&&document.getElementById('ag-name').focus();},100);
   },
 
-  _saveGoal(overlay) {
+  async _saveGoal(overlay) {
     var name = document.getElementById('ag-name')?.value?.trim();
     var target = parseFloat(document.getElementById('ag-target')?.value || '0');
     var saved = parseFloat(document.getElementById('ag-saved')?.value || '0');
@@ -26174,8 +26197,14 @@ const App = {
     if (!target || target <= 0) { this.showToast('Please enter a target amount'); return; }
     var icons = ['🎯','🌟','💫','🏆','🛡️','✈️','🚗','🏠','🎓','💰'];
     var colors = ['#22C55E','#60A5FA','#F59E0B','#EF4444','#8B5CF6','#F97316'];
-    var newGoal = {
-      name: name, target: target, saved: saved || 0,
+    var payload = {
+      name, target_amount: target, current_amount: saved || 0,
+      target_date: deadline || null,
+      monthly_contribution: monthly || 0,
+    };
+    const r = await apiPost('/goals', payload);
+    var newGoal = r || {
+      id: uid('g_'), name, target: target, saved: saved || 0,
       icon: icons[Math.floor(Math.random()*icons.length)],
       color: colors[Math.floor(Math.random()*colors.length)],
       deadline: deadline || 'Dec 2027', monthly: monthly || 0
@@ -26183,24 +26212,25 @@ const App = {
     if (!State.data.goals) State.data.goals = [];
     State.data.goals.push(newGoal);
     overlay.remove();
-    this.showToast('Goal added!');
+    this.showToast(r ? 'Goal added!' : 'Goal added (demo mode)!');
     this.render();
   },
 
-  _saveProfile() {
+  async _saveProfile() {
     const name  = document.getElementById('ep-name')?.value?.trim();
     const email = document.getElementById('ep-email')?.value?.trim();
     const phone = document.getElementById('ep-phone')?.value?.trim();
     const dob   = document.getElementById('ep-dob')?.value?.trim();
     if (!name)  { this.showToast('Please enter your name'); return; }
     if (!email) { this.showToast('Please enter your email'); return; }
-    const u = State.user || (State.user||{});
-    u.name  = name;
-    u.email = email;
+    const u = State.user || {};
+    u.name = name; u.email = email;
     if (phone) u.phone = phone;
     if (dob)   u.dob   = dob;
-    if (State.user) State.user = u;
-    this.showToast('Profile updated!');
+    const r = await apiPut('/auth/me', { name, email, phone, dob });
+    if (r) { State.user = { ...u, ...r }; localStorage.setItem('fc_user', JSON.stringify(State.user)); }
+    else State.user = u;
+    this.showToast(r ? 'Profile updated!' : 'Profile updated (locally)!');
     this.goTab('more');
   },
 

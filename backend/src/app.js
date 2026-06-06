@@ -23,6 +23,7 @@ const categoryRoutes = require('./routes/category.routes');
 const profileRoutes = require('./routes/profile.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const otherAssetRoutes = require('./routes/other-asset.routes');
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use(`${API}/categories`, categoryRoutes);
 app.use(`${API}/profiles`, profileRoutes);
 app.use(`${API}/analytics`, analyticsRoutes);
 app.use(`${API}/upload`, uploadRoutes);
+app.use(`${API}/other-assets`, otherAssetRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

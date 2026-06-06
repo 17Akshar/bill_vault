@@ -31,7 +31,7 @@ const list = asyncWrapper(async (req, res) => {
     params
   );
 
-  return success(res, { reminders: result.rows, total, page: parseInt(page), limit: parseInt(limit) });
+  return success(res, result.rows);
 });
 
 const getSummary = asyncWrapper(async (req, res) => {

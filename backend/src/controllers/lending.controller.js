@@ -24,7 +24,7 @@ const list = asyncWrapper(async (req, res) => {
     [req.user.id]
   );
 
-  return success(res, { entries: result.rows, summary: summary.rows[0] });
+  return success(res, result.rows);
 });
 
 const getOne = asyncWrapper(async (req, res) => {
