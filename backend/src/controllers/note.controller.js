@@ -60,12 +60,14 @@ const update = asyncWrapper(async (req, res) => {
   );
   if (!existing.rows.length) throw ApiError.notFound('Note not found');
 
+  const NOTE_UPDATABLE = new Set(['title','content','note_type','tags','is_pinned','is_locked','reminder_at','color']);
   const fields = [];
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (NOTE_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
+  if (!fields.length) throw ApiError.badRequest('No valid fields to update');
   params.push(req.params.id);
   const result = await pool.query(
     `UPDATE notes SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,

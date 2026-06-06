@@ -60,12 +60,14 @@ const update = asyncWrapper(async (req, res) => {
   );
   if (!existing.rows.length) throw ApiError.notFound('Credit card not found');
 
+  const CC_UPDATABLE = new Set(['card_name','issuer','card_number','credit_limit','outstanding','minimum_payment','bill_due_date','billing_date','reward_points','annual_fee','color','notes','status']);
   const fields = [];
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (CC_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
+  if (!fields.length) throw ApiError.badRequest('No valid fields to update');
   params.push(req.params.id);
   const result = await pool.query(
     `UPDATE credit_cards SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
