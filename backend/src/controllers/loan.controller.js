@@ -48,7 +48,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = loanV.validate(req.body);
+  const { error, value } = loanV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   // Auto-calculate EMI if not provided
@@ -67,8 +67,10 @@ const create = asyncWrapper(async (req, res) => {
   return created(res, result.rows[0], 'Loan added');
 });
 
+const LOAN_UPDATABLE = new Set(['loan_type','lender_name','loan_account_no','principal','outstanding',
+  'interest_rate','tenure_months','emi_amount','emi_type','start_date','end_date','emi_due_date','account_id','notes','status']);
+
 const update = asyncWrapper(async (req, res) => {
-  const { error, value } = loanV.validate(req.body, { allowUnknown: false });
   const existing = await pool.query(
     'SELECT id FROM loans WHERE id = $1 AND user_id = $2',
     [req.params.id, req.user.id]
@@ -79,8 +81,9 @@ const update = asyncWrapper(async (req, res) => {
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (LOAN_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
+  if (!fields.length) throw ApiError.badRequest('No valid fields to update');
   params.push(req.params.id);
   const result = await pool.query(
     `UPDATE loans SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,

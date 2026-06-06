@@ -105,7 +105,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = v.createInvestment.validate(req.body);
+  const { error, value } = v.createInvestment.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const { extra, ...invData } = value;
@@ -215,7 +215,7 @@ async function insertCategoryDetails(client, investmentId, category, data) {
 }
 
 const update = asyncWrapper(async (req, res) => {
-  const { error, value } = v.updateInvestment.validate(req.body);
+  const { error, value } = v.updateInvestment.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const existing = await pool.query(
@@ -251,7 +251,7 @@ const remove = asyncWrapper(async (req, res) => {
 });
 
 const addTransaction = asyncWrapper(async (req, res) => {
-  const { error, value } = v.addTransaction.validate(req.body);
+  const { error, value } = v.addTransaction.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const inv = await pool.query(

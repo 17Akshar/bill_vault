@@ -3,7 +3,7 @@ const Joi = require('joi');
 const createAccount = Joi.object({
   name: Joi.string().min(1).max(100).required(),
   account_type: Joi.string()
-    .valid('bank', 'savings', 'current', 'cash', 'wallet', 'credit', 'investment', 'other')
+    .valid('bank', 'savings', 'current', 'cash', 'wallet', 'credit', 'investment', 'upi', 'credit_card', 'other')
     .required(),
   bank_name: Joi.string().max(100).allow('', null),
   account_number: Joi.string().max(20).allow('', null),
@@ -13,7 +13,7 @@ const createAccount = Joi.object({
   icon: Joi.string().max(10).allow('', null),
   include_in_net_worth: Joi.boolean().default(true),
   notes: Joi.string().max(1000).allow('', null),
-});
+}).options({ allowUnknown: true, stripUnknown: true });
 
 const updateAccount = createAccount.fork(
   ['name', 'account_type'],

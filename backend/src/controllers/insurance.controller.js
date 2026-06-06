@@ -44,7 +44,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = insuranceV.validate(req.body);
+  const { error, value } = insuranceV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const result = await pool.query(
@@ -68,12 +68,16 @@ const update = asyncWrapper(async (req, res) => {
   );
   if (!existing.rows.length) throw ApiError.notFound('Policy not found');
 
+  const INS_UPDATABLE = new Set(['type','policy_number','provider','plan_name','sum_assured','premium_amount',
+    'premium_frequency','start_date','end_date','maturity_date','premium_due_date',
+    'nominee_name','nominee_relation','agent_name','notes','status']);
   const fields = [];
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (INS_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
+  if (!fields.length) throw ApiError.badRequest('No valid fields to update');
   params.push(req.params.id);
   const result = await pool.query(
     `UPDATE insurance_policies SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
@@ -143,9 +147,10 @@ const updateClaim = asyncWrapper(async (req, res) => {
   const result = await pool.query(
     `UPDATE insurance_claims SET
       status = COALESCE($1, status),
-      approved_amount = COALESCE($2, approved_amount)
-     WHERE id = $3 RETURNING *`,
-    [status, approved_amount, req.params.claimId]
+      approved_amount = COALESCE($2, approved_amount),
+      notes = COALESCE($3, notes)
+     WHERE id = $4 RETURNING *`,
+    [status, approved_amount, notes, req.params.claimId]
   );
   if (!result.rows.length) throw ApiError.notFound('Claim not found');
   return success(res, result.rows[0], 'Claim updated');

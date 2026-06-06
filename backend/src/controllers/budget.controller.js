@@ -61,7 +61,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = budgetV.validate(req.body);
+  const { error, value } = budgetV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const result = await pool.query(

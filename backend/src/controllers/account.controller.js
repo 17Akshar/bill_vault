@@ -33,7 +33,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = v.createAccount.validate(req.body);
+  const { error, value } = v.createAccount.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const {
@@ -52,7 +52,7 @@ const create = asyncWrapper(async (req, res) => {
 });
 
 const update = asyncWrapper(async (req, res) => {
-  const { error, value } = v.updateAccount.validate(req.body);
+  const { error, value } = v.updateAccount.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const existing = await pool.query(

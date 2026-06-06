@@ -64,7 +64,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = reminderV.validate(req.body);
+  const { error, value } = reminderV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const result = await pool.query(
@@ -79,6 +79,9 @@ const create = asyncWrapper(async (req, res) => {
   return created(res, result.rows[0], 'Reminder created');
 });
 
+const REMINDER_UPDATABLE = new Set(['title','provider','category','amount','due_date','is_recurring',
+  'recurrence_rule','recurrence_end','notify_days_before','notify_on_due','account_id','notes','status']);
+
 const update = asyncWrapper(async (req, res) => {
   const existing = await pool.query(
     'SELECT id FROM reminders WHERE id = $1 AND user_id = $2',
@@ -90,8 +93,9 @@ const update = asyncWrapper(async (req, res) => {
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (REMINDER_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
+  if (!fields.length) throw ApiError.badRequest('No valid fields to update');
   params.push(req.params.id);
   const result = await pool.query(
     `UPDATE reminders SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,

@@ -1,3 +1,4 @@
+const path = require('path');
 const { pool } = require('../database/pool');
 const { success } = require('../utils/ApiResponse');
 const asyncWrapper = require('../utils/asyncWrapper');
@@ -7,7 +8,8 @@ const uploadFile = asyncWrapper(async (req, res) => {
   if (!req.file) throw ApiError.badRequest('No file uploaded');
 
   const { entity_type, entity_id } = req.body;
-  const fileUrl = `/uploads/${req.file.destination.split('/uploads/')[1]}/${req.file.filename}`;
+  const uploadsRoot = path.join(__dirname, '../../uploads');
+  const fileUrl = '/uploads/' + path.relative(uploadsRoot, req.file.path);
 
   const result = await pool.query(
     `INSERT INTO file_uploads (user_id, filename, original_name, mime_type, file_size, url, entity_type, entity_id)

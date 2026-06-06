@@ -15,15 +15,6 @@ const list = asyncWrapper(async (req, res) => {
   query += ' ORDER BY created_at DESC';
 
   const result = await pool.query(query, params);
-
-  const summary = await pool.query(
-    `SELECT
-      SUM(CASE WHEN type='lent' THEN remaining ELSE 0 END) AS total_lent,
-      SUM(CASE WHEN type='borrowed' THEN remaining ELSE 0 END) AS total_borrowed
-     FROM lending WHERE user_id = $1 AND status = 'active'`,
-    [req.user.id]
-  );
-
   return success(res, result.rows);
 });
 
@@ -42,7 +33,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = lendingV.validate(req.body);
+  const { error, value } = lendingV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const result = await pool.query(
@@ -62,12 +53,14 @@ const update = asyncWrapper(async (req, res) => {
   );
   if (!existing.rows.length) throw ApiError.notFound('Entry not found');
 
+  const LENDING_UPDATABLE = new Set(['type','person_name','person_phone','amount','remaining','interest_rate','date','due_date','notes','account_id','status']);
   const fields = [];
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (LENDING_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
+  if (!fields.length) throw ApiError.badRequest('No valid fields to update');
   params.push(req.params.id);
   const result = await pool.query(
     `UPDATE lending SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,

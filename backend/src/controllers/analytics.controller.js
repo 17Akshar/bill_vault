@@ -113,7 +113,7 @@ const getCategoryInsights = asyncWrapper(async (req, res) => {
      FROM transactions t
      LEFT JOIN categories c ON t.category_id=c.id
      WHERE t.user_id=$1 AND t.type=$2 ${dateFilter}
-     GROUP BY c.name, c.icon, c.color
+     GROUP BY c.id, c.name, c.icon, c.color
      ORDER BY amount DESC`,
     params
   );

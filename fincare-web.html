@@ -3328,7 +3328,7 @@ async function apiDelete(path) {
 
 async function loadDashboardData() {
   const now = new Date();
-  const [dash, accts, rems, invs, loans, cards, rentals, otherAssets, lendBorrow, goals, members] = await Promise.all([
+  const [dash, accts, rems, invs, loans, cards, rentals, otherAssets, lendBorrow, goals, members, cats] = await Promise.all([
     apiGet('/dashboard'),
     apiGet('/accounts'),
     apiGet('/reminders'),
@@ -3340,6 +3340,7 @@ async function loadDashboardData() {
     apiGet('/lending'),
     apiGet('/goals'),
     apiGet('/profiles'),
+    apiGet('/categories'),
   ]);
   const m = now.getMonth()+1, y = now.getFullYear();
   const txRaw = await apiGet(`/transactions?type=all&month=${m}&year=${y}&limit=100`) || [];
@@ -3364,7 +3365,7 @@ async function loadDashboardData() {
   }
   State.data.dashboard   = dash || null;
   State.data.accounts    = Array.isArray(accts)       ? accts       : null;
-  State.data.reminders   = Array.isArray(rems)        ? rems        : null;
+  State.data.reminders   = Array.isArray(rems) ? rems.map(r => ({ ...r, reminder_date: r.due_date, reminder_type: r.category })) : null;
   State.data.loans       = Array.isArray(loans)       ? loans       : null;
   State.data.creditCards = Array.isArray(cards)       ? cards       : null;
   State.data.rentals     = Array.isArray(rentals)     ? rentals     : null;
@@ -3373,6 +3374,7 @@ async function loadDashboardData() {
   State.data.goals       = Array.isArray(goals)       ? goals       : null;
   const memberList = Array.isArray(members) ? members : [];
   if (memberList.length) State.members = memberList;
+  if (Array.isArray(cats)) State.data.categories = cats;
   // Map API investment fields to the expected shape used in renderWealth()
   if (Array.isArray(invs) && invs.length) {
     State.data.investments = invs.map(i => ({
@@ -25749,7 +25751,7 @@ const App = {
     const catObj = cats.find(c => c.name === cat || c.id === cat);
     const catId = catObj ? catObj.id : null;
     const body = { amount, date, notes, account_id: acct, type,
-      category_id: catId, description: payee, payee };
+      category_id: catId, description: payee || cat || type, payee };
     let ok = false;
     const isEdit = State.txIsEdit && State.txEditData;
     const editId = isEdit ? State.txEditData.id : null;
@@ -25835,7 +25837,7 @@ const App = {
     const rems = (State.data.reminders||[]);
     const r = rems.find(x => x.id === id || x.reminder_id === id);
     const remId = (r && r.id) || id;
-    const res = await apiPost('/reminders/' + remId + '/pay', { paid_amount: r ? r.amount : undefined, paid_date: new Date().toISOString().slice(0,10) });
+    const res = await apiPost('/reminders/' + remId + '/pay', { amount: r ? r.amount : undefined, payment_date: new Date().toISOString().slice(0,10) });
     if (r) { r.status = 'paid'; r.is_completed = true; r.completed_on = new Date().toISOString().slice(0,10); }
     this.showToast('Reminder marked as paid ✅');
     this.navigate('reminders');
@@ -25924,12 +25926,10 @@ const App = {
     const existing = remsList.find(function(r){ return r.id === rf.id || r.reminder_id === rf.id; });
     const payload = {
       title, amount, due_date: date,
-      reminder_type: rf.type || 'bill',
-      description: rf.notes || '',
-      priority: rf.priority || 'medium',
+      category: rf.type || 'bill',
+      notes: rf.notes || '',
       is_recurring: rf.recurring || false,
-      frequency: rf.recurrence || 'monthly',
-      auto_pay: rf.autoPay || false,
+      recurrence_rule: rf.recurring ? (rf.recurrence || 'monthly') : null,
       account_id: rf.account || null,
     };
     let ok = false;
@@ -25937,12 +25937,12 @@ const App = {
       const remId = existing.id || existing.reminder_id;
       const r = await apiPut('/reminders/' + remId, payload);
       ok = !!r;
-      if (r) { Object.assign(existing, { ...payload, reminder_date: date, reminder_type: payload.reminder_type }); }
+      if (r) { Object.assign(existing, { ...payload, due_date: date, reminder_date: date, reminder_type: payload.category }); }
       this.showToast(ok ? 'Reminder updated! 🔔' : 'Updated locally 🔔');
     } else {
       const r = await apiPost('/reminders', payload);
       ok = !!r;
-      const newRem = r || { id: uid('rem_'), reminder_id: uid('rem_'), ...payload, reminder_date: date, is_completed: false };
+      const newRem = r ? { ...r, reminder_date: r.due_date, reminder_type: r.category } : { id: uid('rem_'), reminder_id: uid('rem_'), ...payload, due_date: date, reminder_date: date, reminder_type: payload.category, is_completed: false };
       remsList.push(newRem);
       this.showToast(ok ? 'Reminder saved! 🔔' : 'Saved locally 🔔');
     }

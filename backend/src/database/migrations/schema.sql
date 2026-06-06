@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name            VARCHAR(100) NOT NULL,
-  account_type    VARCHAR(30) NOT NULL CHECK (account_type IN ('bank','savings','current','cash','wallet','credit','investment','other')),
+  account_type    VARCHAR(30) NOT NULL CHECK (account_type IN ('bank','savings','current','cash','wallet','credit','investment','upi','credit_card','other')),
   bank_name       VARCHAR(100),
   account_number  VARCHAR(20),
   balance         NUMERIC(15,2) NOT NULL DEFAULT 0,

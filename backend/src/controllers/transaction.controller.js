@@ -78,7 +78,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = v.createTransaction.validate(req.body);
+  const { error, value } = v.createTransaction.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const client = await pool.connect();
@@ -127,7 +127,7 @@ const create = asyncWrapper(async (req, res) => {
 });
 
 const update = asyncWrapper(async (req, res) => {
-  const { error, value } = v.updateTransaction.validate(req.body);
+  const { error, value } = v.updateTransaction.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const existing = await pool.query(
@@ -155,21 +155,27 @@ const update = asyncWrapper(async (req, res) => {
       params
     );
 
-    // Revert old balance effect and apply new
+    // Revert old balance effect
     if (old.account_id) {
-      const revert = old.type === 'income' ? -old.amount : old.type === 'expense' ? old.amount : old.amount;
-      await client.query(
-        'UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND user_id = $3',
-        [revert, old.account_id, req.user.id]
-      );
+      const revert = old.type === 'income' ? -old.amount : old.amount; // expense/transfer: add back
+      await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND user_id = $3',
+        [revert, old.account_id, req.user.id]);
     }
+    if (old.type === 'transfer' && old.to_account_id) {
+      await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2 AND user_id = $3',
+        [old.amount, old.to_account_id, req.user.id]);
+    }
+
+    // Apply new balance effect
     const updated = result.rows[0];
     if (updated.account_id) {
-      const delta = updated.type === 'income' ? updated.amount : updated.type === 'expense' ? -updated.amount : -updated.amount;
-      await client.query(
-        'UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND user_id = $3',
-        [delta, updated.account_id, req.user.id]
-      );
+      const delta = updated.type === 'income' ? updated.amount : -updated.amount; // expense/transfer: subtract
+      await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND user_id = $3',
+        [delta, updated.account_id, req.user.id]);
+    }
+    if (updated.type === 'transfer' && updated.to_account_id) {
+      await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2 AND user_id = $3',
+        [updated.amount, updated.to_account_id, req.user.id]);
     }
 
     await client.query('COMMIT');
@@ -292,7 +298,9 @@ const getCategoryBreakdown = asyncWrapper(async (req, res) => {
 });
 
 const getMonthlyTrend = asyncWrapper(async (req, res) => {
-  const { year = new Date().getFullYear(), months = 12 } = req.query;
+  const { year, months = 12 } = req.query;
+  const safeMonths = Math.max(1, Math.min(60, parseInt(months) || 12));
+  const whereExtra = year ? ` AND EXTRACT(YEAR FROM date) = ${parseInt(year)}` : ` AND date >= NOW() - INTERVAL '${safeMonths} months'`;
 
   const result = await pool.query(
     `SELECT
@@ -301,8 +309,7 @@ const getMonthlyTrend = asyncWrapper(async (req, res) => {
       SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS income,
       SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS expense
      FROM transactions
-     WHERE user_id = $1
-       AND date >= NOW() - INTERVAL '${parseInt(months)} months'
+     WHERE user_id = $1 AND type IN ('income','expense') ${whereExtra}
      GROUP BY year, month
      ORDER BY year ASC, month ASC`,
     [req.user.id]

@@ -29,7 +29,7 @@ const getOne = asyncWrapper(async (req, res) => {
 });
 
 const create = asyncWrapper(async (req, res) => {
-  const { error, value } = goalV.validate(req.body);
+  const { error, value } = goalV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
   const result = await pool.query(
@@ -48,11 +48,12 @@ const update = asyncWrapper(async (req, res) => {
   );
   if (!existing.rows.length) throw ApiError.notFound('Goal not found');
 
+  const GOAL_UPDATABLE = new Set(['name','target_amount','current_amount','target_date','category','icon','color','priority','notes','status']);
   const fields = [];
   const params = [];
   let i = 1;
   for (const [key, val] of Object.entries(req.body)) {
-    if (val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
+    if (GOAL_UPDATABLE.has(key) && val !== undefined) { fields.push(`${key} = $${i++}`); params.push(val); }
   }
 
   // Auto-mark achieved
