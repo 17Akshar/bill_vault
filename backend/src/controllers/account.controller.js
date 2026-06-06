@@ -144,4 +144,17 @@ const getStats = asyncWrapper(async (req, res) => {
   return success(res, { account: account.rows[0], stats: statsResult.rows[0] });
 });
 
-module.exports = { list, getOne, create, update, remove, getTransactions, getStats };
+const getSummary = asyncWrapper(async (req, res) => {
+  const result = await pool.query(
+    `SELECT
+      COUNT(*) AS total_accounts,
+      COALESCE(SUM(balance), 0) AS total_balance,
+      COALESCE(SUM(CASE WHEN balance > 0 THEN balance ELSE 0 END), 0) AS total_positive,
+      COALESCE(SUM(CASE WHEN balance < 0 THEN balance ELSE 0 END), 0) AS total_negative
+     FROM accounts WHERE user_id = $1 AND is_active = true`,
+    [req.user.id]
+  );
+  return success(res, result.rows[0]);
+});
+
+module.exports = { list, getOne, create, update, remove, getTransactions, getStats, getSummary };

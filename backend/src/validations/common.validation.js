@@ -46,7 +46,7 @@ const goal = Joi.object({
   category: Joi.string().max(50).allow('', null),
   icon: Joi.string().max(10).allow('', null),
   color: Joi.string().max(20).allow('', null),
-  priority: Joi.string().valid('low', 'medium', 'high').default('medium'),
+  priority: Joi.alternatives().try(Joi.string().valid('low', 'medium', 'high'), Joi.number().integer().min(1).max(3)).default('medium'),
   notes: Joi.string().max(1000).allow('', null),
 });
 
@@ -62,7 +62,7 @@ const loan = Joi.object({
   emi_type: Joi.string().valid('fixed', 'floating').default('fixed'),
   start_date: Joi.date().iso().allow(null),
   end_date: Joi.date().iso().allow(null),
-  emi_due_date: Joi.number().integer().min(1).max(31).allow(null),
+  emi_due_date: Joi.alternatives().try(Joi.number().integer().min(1).max(31), Joi.string().isoDate()).allow(null),
   account_id: Joi.string().uuid().allow(null),
   notes: Joi.string().max(1000).allow('', null),
 });
@@ -132,7 +132,7 @@ const insurance = Joi.object({
 const note = Joi.object({
   title: Joi.string().min(1).max(255).required(),
   content: Joi.string().max(50000).allow('', null),
-  note_type: Joi.string().valid('text', 'voice', 'scan', 'checklist').default('text'),
+  note_type: Joi.string().valid('text', 'voice', 'scan', 'checklist', 'general').default('text'),
   tags: Joi.array().items(Joi.string()).default([]),
   is_pinned: Joi.boolean().default(false),
   is_locked: Joi.boolean().default(false),

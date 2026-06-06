@@ -55,6 +55,11 @@ const create = asyncWrapper(async (req, res) => {
   if (!value.emi_amount && value.interest_rate && value.tenure_months) {
     value.emi_amount = calculateEMI(value.principal, value.interest_rate, value.tenure_months);
   }
+  // emi_due_date may arrive as ISO date string — extract day-of-month
+  if (value.emi_due_date && typeof value.emi_due_date === 'string') {
+    const d = new Date(value.emi_due_date);
+    value.emi_due_date = isNaN(d) ? null : d.getDate();
+  }
 
   const result = await pool.query(
     `INSERT INTO loans (user_id, loan_type, lender_name, loan_account_no, principal, outstanding,
