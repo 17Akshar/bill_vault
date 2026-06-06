@@ -41,6 +41,16 @@ const create = asyncWrapper(async (req, res) => {
   const { error, value } = ccV.validate(req.body, { stripUnknown: true });
   if (error) throw ApiError.badRequest(error.details[0].message);
 
+  // Accept date string and extract day-of-month
+  if (value.bill_due_date && typeof value.bill_due_date === 'string') {
+    const d = new Date(value.bill_due_date);
+    value.bill_due_date = isNaN(d) ? null : d.getDate();
+  }
+  if (value.billing_date && typeof value.billing_date === 'string') {
+    const d = new Date(value.billing_date);
+    value.billing_date = isNaN(d) ? null : d.getDate();
+  }
+
   const result = await pool.query(
     `INSERT INTO credit_cards
       (user_id, card_name, issuer, card_number, credit_limit, outstanding, minimum_payment,

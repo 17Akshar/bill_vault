@@ -3366,11 +3366,67 @@ async function loadDashboardData() {
   State.data.dashboard   = dash || null;
   State.data.accounts    = Array.isArray(accts)       ? accts       : null;
   State.data.reminders   = Array.isArray(rems) ? rems.map(r => ({ ...r, reminder_date: r.due_date, reminder_type: r.category })) : null;
-  State.data.loans       = Array.isArray(loans)       ? loans       : null;
-  State.data.creditCards = Array.isArray(cards)       ? cards       : null;
-  State.data.rentals     = Array.isArray(rentals)     ? rentals     : null;
+  const LOAN_COLORS = ['#3B82F6','#10B981','#F59E0B','#EC4899','#8B5CF6','#06B6D4','#EF4444','#6C47FF'];
+  State.data.loans = Array.isArray(loans) ? loans : null;
+  if (Array.isArray(loans)) {
+    State.loans = loans.map(function(l, i) {
+      return Object.assign({}, l, {
+        name: l.lender_name + ' ' + (l.loan_type || ''),
+        type: l.loan_type || 'others',
+        lender: l.lender_name || '',
+        amount: parseFloat(l.principal) || 0,
+        outstanding: parseFloat(l.outstanding) || 0,
+        paid: (parseFloat(l.principal) || 0) - (parseFloat(l.outstanding) || 0),
+        emi: parseFloat(l.emi_amount) || 0,
+        emi_type: l.emi_type || 'monthly',
+        rate: parseFloat(l.interest_rate) || 0,
+        start_date: l.start_date,
+        due_date: l.end_date || l.emi_due_date,
+        tenure: l.tenure_months || 0,
+        next_due: l.emi_due_date || l.end_date,
+        status: l.status || 'active',
+        color: LOAN_COLORS[i % LOAN_COLORS.length],
+      });
+    });
+    State.loanTransactions = [];
+  }
+  State.data.creditCards = Array.isArray(cards) ? cards : null;
+  if (Array.isArray(cards)) {
+    State.ccCards = cards.map(function(c) {
+      return Object.assign({}, c, {
+        name: c.card_name || 'Card',
+        bank: c.issuer || '',
+        last4: c.card_number ? String(c.card_number).replace(/\s/g,'').slice(-4) : '0000',
+        limit: parseFloat(c.credit_limit) || 0,
+        outstanding: parseFloat(c.outstanding) || 0,
+        available: (parseFloat(c.credit_limit) || 0) - (parseFloat(c.outstanding) || 0),
+        due_date: c.bill_due_date,
+        color: '#6C47FF',
+      });
+    });
+    State.ccTransactions = [];
+  }
+  State.data.rentals = Array.isArray(rentals) ? rentals : null;
+  if (Array.isArray(rentals)) {
+    State.rentalProperties = rentals.map(function(r) {
+      return Object.assign({}, r, {
+        name: r.property_name || 'Property',
+        type: r.property_type || 'residential',
+        sub_type: r.property_type || 'residential',
+        rent: parseFloat(r.monthly_rent) || 0,
+        deposit: parseFloat(r.security_deposit) || 0,
+        market_value: parseFloat(r.market_value) || 0,
+        rent_received_total: 0,
+        color: '#7C3AED',
+        image_emoji: '🏠',
+      });
+    });
+    State.rentalTransactions = [];
+  }
   State.data.otherAssets = Array.isArray(otherAssets) ? otherAssets : null;
-  State.data.lendBorrow  = Array.isArray(lendBorrow)  ? lendBorrow  : null;
+  State.data.lendBorrow = Array.isArray(lendBorrow) ? lendBorrow.map(function(l) {
+    return Object.assign({}, l, { person: l.person_name || '', reason: l.notes || '' });
+  }) : null;
   State.data.goals       = Array.isArray(goals)       ? goals       : null;
   const memberList = Array.isArray(members) ? members : [];
   if (memberList.length) State.members = memberList;
@@ -17771,12 +17827,14 @@ function renderLendBorrow() {
     var statusColor = x.status==='settled'?'#22C55E':x.status==='partial'?'#F59E0B':'#EF4444';
     var statusLabel = x.status==='settled'?'Settled':x.status==='partial'?'Partial':'Pending';
     var dt = x.date ? new Date(x.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    var payBtn = x.status!=='settled' ? '<button onclick="App._lbRecordPayment(\''+x.id+'\',\''+escapeHtml(x.person)+'\');event.stopPropagation()" style="margin-top:6px;font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid #22C55E;background:transparent;color:#22C55E;cursor:pointer;font-weight:700">Record Payment</button>' : '';
     return '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">'
       +'<div style="width:40px;height:40px;border-radius:20px;background:'+(x.type==='lent'?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)')+';display:flex;align-items:center;justify-content:center;font-size:18px">'+(x.type==='lent'?'⬆️':'⬇️')+'</div>'
       +'<div style="flex:1">'
       +'<div style="color:var(--text);font-size:14px;font-weight:700">'+escapeHtml(x.person)+'</div>'
       +'<div style="color:var(--text-dim);font-size:12px">'+escapeHtml(x.reason)+'</div>'
       +'<div style="color:var(--text-dim);font-size:11px">'+dt+'</div>'
+      +payBtn
       +'</div>'
       +'<div style="text-align:right">'
       +'<div style="color:'+(x.type==='lent'?'#22C55E':'#EF4444')+';font-size:15px;font-weight:800">'+formatINR(x.remaining||x.amount)+'</div>'
@@ -17785,7 +17843,9 @@ function renderLendBorrow() {
   }
   var html = '<div class="screen-wrap">'
     +'<div class="form-header">'+_stubBackBtn('wealth')
-    +'<div class="form-header-title">Lend & Borrow</div><div></div></div>'
+    +'<div class="form-header-title">Lend & Borrow</div>'
+    +'<button onclick="App._lbShowAddForm()" style="background:#6C47FF;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>'
+    +'</div>'
     +'<div style="margin:0 20px 20px">'
     +'<div style="display:flex;gap:10px;margin-bottom:16px">'
     +'<div style="flex:1;background:var(--card);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border)">'
@@ -17798,6 +17858,7 @@ function renderLendBorrow() {
     +'</div></div>'
     +(lent.length?'<div style="color:var(--text-dim);font-size:12px;font-weight:700;margin-bottom:8px;letter-spacing:1px">MONEY LENT</div>'+lent.map(lbRow).join(''):'')
     +(borrowed.length?'<div style="color:var(--text-dim);font-size:12px;font-weight:700;margin:12px 0 8px;letter-spacing:1px">MONEY BORROWED</div>'+borrowed.map(lbRow).join(''):'')
+    +(!all.length?'<div style="text-align:center;padding:40px 20px;color:var(--text-dim)">No entries yet. Tap + Add to get started.</div>':'')
     +'</div></div>';
   return html;
 }
@@ -28747,20 +28808,20 @@ const App = {
   },
 
   /* ── Credit Card Module ─────────────────────────────── */
-  _ccSaveTransaction() {
-    var cardId   = document.getElementById('cc-tx-card')?.value || State.ccActiveCard;
+  async _ccSaveTransaction() {
+    var cardId   = (document.getElementById('cc-tx-card')?.value) || State.ccActiveCard;
     var merchant = (document.getElementById('cc-tx-merchant')?.value||'').trim();
     var amount   = parseFloat(document.getElementById('cc-tx-amount')?.value||'0');
-    var cat      = document.getElementById('cc-tx-cat')?.value || 'others';
     var date     = document.getElementById('cc-tx-date')?.value || new Date().toISOString().slice(0,10);
     var notes    = document.getElementById('cc-tx-notes')?.value || '';
     if (!merchant) { this.showToast('Please enter merchant name'); return; }
     if (!amount)   { this.showToast('Please enter an amount'); return; }
-    var newTx = { id:'ct_'+Date.now(), card_id:cardId, merchant:merchant, date:date, amount:amount, category:cat, notes:notes };
-    State.ccTransactions = [newTx].concat(State.ccTransactions||[]);
-    var cards = State.ccCards || [];
-    var idx   = cards.findIndex(function(c){ return c.id===cardId; });
-    if (idx !== -1) cards[idx].outstanding = (cards[idx].outstanding||0) + amount;
+    var result = await apiPost('/credit-cards/' + cardId + '/transactions', {
+      description: merchant, merchant: merchant, amount: amount,
+      type: 'debit', date: date, notes: notes
+    });
+    if (!result) { this.showToast(State._lastApiError || 'Failed to save transaction'); return; }
+    await loadDashboardData();
     State.ccActiveCard = cardId;
     this.showToast('Transaction saved!');
     App.navigate('cc-transactions');
@@ -28788,7 +28849,7 @@ const App = {
   },
 
   /* ── Loans Module ────────────────────────────── */
-  _loanSave() {
+  async _loanSave() {
     var name      = (document.getElementById('la-name') ? document.getElementById('la-name').value : '').trim();
     var lender    = (document.getElementById('la-lender') ? document.getElementById('la-lender').value : '').trim();
     var amount    = parseFloat(document.getElementById('la-amount') ? document.getElementById('la-amount').value : '0');
@@ -28801,48 +28862,38 @@ const App = {
     var ltype     = State.loanAddType || 'others';
     if (!lender)  { this.showToast('Please enter lender name'); return; }
     if (!amount)  { this.showToast('Please enter loan amount'); return; }
-    var ti        = LOAN_TYPES.find(function(t){ return t.id===ltype; }) || LOAN_TYPES[LOAN_TYPES.length-1];
-    var colors    = ['#3B82F6','#10B981','#F59E0B','#EC4899','#8B5CF6','#06B6D4','#EF4444','#6C47FF'];
-    var newLoan = {
-      id:          'ln_'+Date.now(),
-      name:        name || (ltype==='others' ? 'Custom Loan' : ti.label+' – '+lender),
-      type:        ltype,
-      lender:      lender,
-      amount:      amount,
+    var body = {
+      loan_type: ltype,
+      lender_name: lender,
+      principal: amount,
       outstanding: outstanding || amount,
-      paid:        amount - (outstanding||amount),
-      emi:         emi || 0,
-      emi_type:    (State.loanAddData||{}).emi_type || 'monthly',
-      rate:        rate,
-      start_date:  startDate,
-      due_date:    dueDate,
-      tenure:      tenure,
-      next_due:    dueDate,
-      status:      'active',
-      color:       colors[Math.floor(Math.random()*colors.length)],
+      interest_rate: rate || 0,
+      tenure_months: tenure || 12,
+      start_date: startDate || undefined,
+      end_date: dueDate || undefined,
+      notes: name || undefined,
     };
-    State.loans = (State.loans||[]).concat([newLoan]);
+    if (emi) body.emi_amount = emi;
+    var result = await apiPost('/loans', body);
+    if (!result) { this.showToast(State._lastApiError || 'Failed to save loan'); return; }
+    await loadDashboardData();
     State.loanAddData = {};
-    State.loanActiveId = newLoan.id;
+    State.loanActiveId = result.id;
     this.showToast('Loan added successfully!');
     App.navigate('loan-detail');
   },
-  _loanSaveTx() {
+  async _loanSaveTx() {
     var loanId  = State.loanActiveId;
     var amount  = parseFloat(document.getElementById('ltx-amount') ? document.getElementById('ltx-amount').value : '0');
     var date    = (document.getElementById('ltx-date') ? document.getElementById('ltx-date').value : '') || new Date().toISOString().slice(0,10);
-    var account = document.getElementById('ltx-account') ? document.getElementById('ltx-account').value : '';
     var notes   = document.getElementById('ltx-notes') ? document.getElementById('ltx-notes').value : '';
     var txType  = State.loanTxType || 'emi';
     if (!amount) { this.showToast('Please enter an amount'); return; }
-    var newTx = { id:'lnt_'+Date.now(), loan_id:loanId, type:txType, date:date, amount:amount, mode:'upi', account:account, notes:notes, status:'paid' };
-    State.loanTransactions = [newTx].concat(State.loanTransactions||[]);
-    var loans = State.loans||[];
-    var idx   = loans.findIndex(function(l){ return l.id===loanId; });
-    if (idx!==-1 && txType!=='received') {
-      loans[idx].outstanding = Math.max(0, (loans[idx].outstanding||0)-amount);
-      loans[idx].paid        = (loans[idx].paid||0)+amount;
-    }
+    var result = await apiPost('/loans/' + loanId + '/transactions', {
+      type: txType, amount: amount, paid_date: date, notes: notes
+    });
+    if (!result) { this.showToast(State._lastApiError || 'Failed to save transaction'); return; }
+    await loadDashboardData();
     State.loanDetailTab = 'transactions';
     this.showToast('Transaction saved!');
     App.navigate('loan-detail');
@@ -28916,51 +28967,52 @@ const App = {
       App.navigate('rental-add-settings');
     }
   },
-  _rentalSaveProperty() {
+  async _rentalSaveProperty() {
     var d  = State.rentalAddData || {};
-    // Read Step 3 (Settings) fields before saving
     var el3;
     el3 = document.getElementById('ras-payment_mode'); if (el3) d.payment_mode = el3.value;
     el3 = document.getElementById('ras-account');      if (el3) d.account      = el3.value;
     el3 = document.getElementById('ras-notes');        if (el3) d.notes        = el3.value;
-    var nm = d.name || ('Property ' + Date.now()%1000);
-    if (!nm.trim()) { this.showToast('Please enter a property name'); return; }
-    var typeColors = {residential:'#7C3AED',commercial:'#F59E0B',land:'#10B981',pg:'#EC4899',custom:'#6B7280'};
-    var typeEmojis = {residential:'🏠',commercial:'🏪',land:'🌿',pg:'🏨',custom:'🔧'};
-    var t = State.rentalAddType || 'custom';
-    var newProp = {
-      id:'rp_'+Date.now(), name:nm, type:t, sub_type:d.sub_type||'Custom',
-      address:d.address||'', unit:d.unit||'', owner:d.owner||'You',
-      rent:d.rent||0, deposit:d.deposit||0, status:'active',
-      tenant_name:d.tenant_name||'', tenant_phone:d.tenant_phone||'',
-      tenant_email:d.tenant_email||'', lease_start:d.lease_start||'', lease_end:d.lease_end||'',
-      due_day:d.due_day||1, payment_mode:d.payment_mode||'bank', account:d.account||'SBI Bank •••• 5678',
-      agreement_start:d.agreement_start||d.lease_start||'', notice_period:d.notice_period||'30 Days', rent_increase:d.rent_increase||'No Increase',
-      rent_received_total:0, next_due:'', color:typeColors[t]||'#7C3AED',
-      image_emoji:typeEmojis[t]||'🏠', notes:d.notes||''
+    var nm = (d.name || '').trim() || ('Property ' + new Date().toLocaleDateString('en-IN'));
+    if (!nm) { this.showToast('Please enter a property name'); return; }
+    var t = State.rentalAddType || 'residential';
+    var body = {
+      property_name: nm,
+      property_type: t,
+      address: d.address || '',
+      market_value: d.market_value || 0,
+      monthly_rent: d.rent || 0,
+      security_deposit: d.deposit || 0,
+      tenant_name: d.tenant_name || '',
+      tenant_phone: d.tenant_phone || '',
+      tenant_email: d.tenant_email || '',
+      lease_start: d.lease_start || undefined,
+      lease_end: d.lease_end || undefined,
+      rent_due_date: d.due_day || undefined,
+      notes: d.notes || '',
     };
-    State.rentalProperties = [newProp].concat(State.rentalProperties||[]);
+    var result = await apiPost('/rentals', body);
+    if (!result) { this.showToast(State._lastApiError || 'Failed to save property'); return; }
+    await loadDashboardData();
     State.rentalAddData = {};
     State.rentalAddType = null;
+    State.rentalActiveId = result.id;
     this.showToast('Property saved!');
     App.navigate('rental-list');
   },
-  _rentalRecordRent() {
-    var el, amount=0, date='', mode='bank', ref='', notes='';
+  async _rentalRecordRent() {
+    var el, amount=0, date='', notes='';
     el=document.getElementById('rrr-amount'); if(el) amount=parseFloat(el.value)||0;
     el=document.getElementById('rrr-date');   if(el) date=el.value;
-    el=document.getElementById('rrr-mode');   if(el) mode=el.value;
-    el=document.getElementById('rrr-ref');    if(el) ref=el.value;
     el=document.getElementById('rrr-notes');  if(el) notes=el.value;
     if (!amount) { this.showToast('Please enter an amount'); return; }
     if (!date) date = new Date().toISOString().slice(0,10);
     var propId = State.rentalActiveId;
-    var d = new Date(date);
-    var month = d.toLocaleString('default',{month:'short'})+' '+d.getFullYear();
-    var newTx = { id:'rt_'+Date.now(), property_id:propId, month:month, date:date, amount:amount, mode:mode, ref:ref, notes:notes, status:'received' };
-    State.rentalTransactions = [newTx].concat(State.rentalTransactions||[]);
-    var idx = (State.rentalProperties||[]).findIndex(function(p){ return p.id===propId; });
-    if (idx !== -1) State.rentalProperties[idx].rent_received_total = (State.rentalProperties[idx].rent_received_total||0)+amount;
+    var result = await apiPost('/rentals/' + propId + '/transactions', {
+      type: 'rent', amount: amount, date: date, notes: notes
+    });
+    if (!result) { this.showToast(State._lastApiError || 'Failed to record rent'); return; }
+    await loadDashboardData();
     this.showToast('Rent recorded!');
     App.navigate('rental-detail');
   },
@@ -28982,6 +29034,95 @@ const App = {
   },
   _rentalAddReminder(propId) {
     this.showToast('Reminder added!');
+  },
+
+  /* ── Lend & Borrow Module ─────────────────────────────────── */
+  _lbShowAddForm() {
+    var inp = function(id, label, type, ph) {
+      return '<div style="margin-bottom:10px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">'+label+'</label>'
+        +'<input id="'+id+'" type="'+(type||'text')+'" placeholder="'+(ph||'')+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>';
+    };
+    var overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = '<div class="modal" style="max-width:360px">'
+      +'<div style="font-size:16px;font-weight:700;margin-bottom:16px">Add Lending / Borrowing</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:12px">'
+        +'<button id="lb-tab-lent" onclick="App._lbToggleTab(\'lent\')" style="flex:1;padding:10px;border-radius:8px;background:#22C55E22;color:#22C55E;border:2px solid #22C55E;font-size:13px;font-weight:700;cursor:pointer">💚 Lent</button>'
+        +'<button id="lb-tab-borrowed" onclick="App._lbToggleTab(\'borrowed\')" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--text-dim);border:2px solid rgba(255,255,255,.12);font-size:13px;font-weight:700;cursor:pointer">❤️ Borrowed</button>'
+      +'</div>'
+      +'<input type="hidden" id="lb-type" value="lent">'
+      +inp('lb-person','Person Name','text','Who did you lend to?')
+      +inp('lb-amount','Amount','number','0')
+      +inp('lb-date','Date','date','')
+      +inp('lb-due','Due Date (optional)','date','')
+      +inp('lb-notes','Notes (reason)','text','What is this for?')
+      +'<div style="display:flex;gap:10px;margin-top:4px">'
+        +'<button onclick="this.closest(\'.overlay\').remove()" style="flex:1;padding:12px;border-radius:8px;background:rgba(255,255,255,.08);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>'
+        +'<button onclick="App._lbSave(this.closest(\'.overlay\'))" style="flex:1;padding:12px;border-radius:8px;background:#6C47FF;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Save</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+    var dateEl = document.getElementById('lb-date');
+    if (dateEl) dateEl.value = new Date().toISOString().slice(0,10);
+  },
+  _lbToggleTab(type) {
+    document.getElementById('lb-type').value = type;
+    var lent = document.getElementById('lb-tab-lent');
+    var borr = document.getElementById('lb-tab-borrowed');
+    var personEl = document.getElementById('lb-person');
+    if (type === 'lent') {
+      lent.style.background='#22C55E22'; lent.style.color='#22C55E'; lent.style.borderColor='#22C55E';
+      borr.style.background='rgba(255,255,255,.06)'; borr.style.color='var(--text-dim)'; borr.style.borderColor='rgba(255,255,255,.12)';
+      if (personEl) personEl.placeholder = 'Who did you lend to?';
+    } else {
+      borr.style.background='#EF444422'; borr.style.color='#EF4444'; borr.style.borderColor='#EF4444';
+      lent.style.background='rgba(255,255,255,.06)'; lent.style.color='var(--text-dim)'; lent.style.borderColor='rgba(255,255,255,.12)';
+      if (personEl) personEl.placeholder = 'Who did you borrow from?';
+    }
+  },
+  async _lbSave(overlay) {
+    var type   = (document.getElementById('lb-type')?.value||'lent');
+    var person = (document.getElementById('lb-person')?.value||'').trim();
+    var amount = parseFloat(document.getElementById('lb-amount')?.value||'0');
+    var date   = document.getElementById('lb-date')?.value || new Date().toISOString().slice(0,10);
+    var due    = document.getElementById('lb-due')?.value || undefined;
+    var notes  = document.getElementById('lb-notes')?.value || '';
+    if (!person) { this.showToast('Please enter person name'); return; }
+    if (!amount) { this.showToast('Please enter amount'); return; }
+    var result = await apiPost('/lending', {
+      type: type, person_name: person, amount: amount, remaining: amount,
+      date: date, due_date: due || undefined, notes: notes
+    });
+    if (!result) { this.showToast(State._lastApiError || 'Failed to save'); return; }
+    if (overlay) overlay.remove();
+    await loadDashboardData();
+    App.render();
+    this.showToast('Entry saved!');
+  },
+  async _lbRecordPayment(id, personName) {
+    var overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = '<div class="modal" style="max-width:320px">'
+      +'<div style="font-size:16px;font-weight:700;margin-bottom:16px">Record Payment — '+escapeHtml(personName||'')+'</div>'
+      +'<div style="margin-bottom:10px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Amount</label>'
+        +'<input id="lbp-amount" type="number" placeholder="0" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+      +'<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">Date</label>'
+        +'<input id="lbp-date" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:11px;color:#fff;font-size:13px;box-sizing:border-box"></div>'
+      +'<div style="display:flex;gap:10px">'
+        +'<button onclick="this.closest(\'.overlay\').remove()" style="flex:1;padding:12px;border-radius:8px;background:rgba(255,255,255,.08);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>'
+        +'<button onclick="App._lbDoPayment(\''+id+'\',this.closest(\'.overlay\'))" style="flex:1;padding:12px;border-radius:8px;background:#22C55E;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">Record</button>'
+      +'</div></div>';
+    document.body.appendChild(overlay);
+  },
+  async _lbDoPayment(id, overlay) {
+    var amount = parseFloat(document.getElementById('lbp-amount')?.value||'0');
+    var date   = document.getElementById('lbp-date')?.value || new Date().toISOString().slice(0,10);
+    if (!amount) { this.showToast('Please enter amount'); return; }
+    var result = await apiPost('/lending/' + id + '/payment', { amount: amount, date: date, type: 'payment' });
+    if (!result) { this.showToast(State._lastApiError || 'Failed to record'); return; }
+    if (overlay) overlay.remove();
+    await loadDashboardData();
+    App.render();
+    this.showToast('Payment recorded! Remaining: ' + formatINR(result.remaining));
   },
 
   /* ── Global Search ─────────────────────────────────────── */

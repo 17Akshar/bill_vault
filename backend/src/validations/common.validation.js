@@ -74,8 +74,8 @@ const creditCard = Joi.object({
   credit_limit: Joi.number().positive().required(),
   outstanding: Joi.number().min(0).default(0),
   minimum_payment: Joi.number().min(0).allow(null),
-  bill_due_date: Joi.number().integer().min(1).max(31).allow(null),
-  billing_date: Joi.number().integer().min(1).max(31).allow(null),
+  bill_due_date: Joi.alternatives().try(Joi.number().integer().min(1).max(31), Joi.string()).allow(null),
+  billing_date: Joi.alternatives().try(Joi.number().integer().min(1).max(31), Joi.string()).allow(null),
   reward_points: Joi.number().min(0).default(0),
   annual_fee: Joi.number().min(0).allow(null),
   color: Joi.string().max(20).allow('', null),
@@ -84,7 +84,7 @@ const creditCard = Joi.object({
 
 const rental = Joi.object({
   property_name: Joi.string().min(1).max(255).required(),
-  property_type: Joi.string().valid('apartment', 'house', 'commercial', 'plot', 'other').allow(null),
+  property_type: Joi.string().valid('apartment', 'house', 'commercial', 'plot', 'residential', 'pg', 'land', 'custom', 'other').allow(null),
   address: Joi.string().max(500).allow('', null),
   market_value: Joi.number().min(0).allow(null),
   monthly_rent: Joi.number().min(0).allow(null),
@@ -112,13 +112,13 @@ const lending = Joi.object({
 });
 
 const insurance = Joi.object({
-  type: Joi.string().valid('term', 'mediclaim', 'lic', 'motor', 'vehicle', 'health', 'other').required(),
+  type: Joi.string().valid('term', 'mediclaim', 'lic', 'motor', 'vehicle', 'health', 'life', 'ulip', 'other').required(),
   policy_number: Joi.string().max(100).allow('', null),
   provider: Joi.string().min(1).max(100).required(),
   plan_name: Joi.string().min(1).max(255).required(),
   sum_assured: Joi.number().min(0).allow(null),
   premium_amount: Joi.number().min(0).allow(null),
-  premium_frequency: Joi.string().valid('monthly', 'quarterly', 'half_yearly', 'annual').default('annual'),
+  premium_frequency: Joi.string().valid('monthly', 'quarterly', 'half_yearly', 'annual', 'yearly').default('annual'),
   start_date: Joi.date().iso().allow(null),
   end_date: Joi.date().iso().allow(null),
   maturity_date: Joi.date().iso().allow(null),

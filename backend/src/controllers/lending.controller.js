@@ -99,8 +99,8 @@ const recordPayment = asyncWrapper(async (req, res) => {
 
     const newRemaining = Math.max(0, parseFloat(entryRes.rows[0].remaining) - parseFloat(amount));
     await client.query(
-      `UPDATE lending SET remaining = $1,
-        status = CASE WHEN $1 <= 0 THEN 'settled' ELSE CASE WHEN $1 < amount THEN 'partial' ELSE status END END
+      `UPDATE lending SET remaining = $1::numeric,
+        status = CASE WHEN $1::numeric <= 0 THEN 'settled' ELSE CASE WHEN $1::numeric < amount THEN 'partial' ELSE status END END
        WHERE id = $2`,
       [newRemaining, req.params.id]
     );

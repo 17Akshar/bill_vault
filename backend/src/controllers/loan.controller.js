@@ -123,8 +123,8 @@ const addTransaction = asyncWrapper(async (req, res) => {
 
     const newOutstanding = Math.max(0, parseFloat(loanRes.rows[0].outstanding) - (parseFloat(principal) || parseFloat(amount)));
     await client.query(
-      `UPDATE loans SET outstanding = $1,
-        status = CASE WHEN $1 <= 0 THEN 'closed' ELSE status END
+      `UPDATE loans SET outstanding = $1::numeric,
+        status = CASE WHEN $1::numeric <= 0 THEN 'closed' ELSE status END
        WHERE id = $2`,
       [newOutstanding, req.params.id]
     );

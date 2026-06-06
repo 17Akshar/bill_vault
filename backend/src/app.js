@@ -70,6 +70,8 @@ app.use(`${API}/analytics`, analyticsRoutes);
 app.use(`${API}/upload`, uploadRoutes);
 app.use(`${API}/other-assets`, otherAssetRoutes);
 
+app.get(`${API}/health`, (req, res) => res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() }));
+
 app.use(notFound);
 app.use(errorHandler);
 

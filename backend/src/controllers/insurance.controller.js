@@ -119,7 +119,7 @@ const payPremium = asyncWrapper(async (req, res) => {
       case 'monthly': d.setMonth(d.getMonth() + 1); break;
       case 'quarterly': d.setMonth(d.getMonth() + 3); break;
       case 'half_yearly': d.setMonth(d.getMonth() + 6); break;
-      default: d.setFullYear(d.getFullYear() + 1);
+      case 'annual': case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
     }
     await pool.query(
       'UPDATE insurance_policies SET premium_due_date = $1 WHERE id = $2',
